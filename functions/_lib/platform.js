@@ -107,3 +107,22 @@ export function failure(code, message, status, request, details) {
 export function success(data, status = 200) {
   return json({ status: "ok", data }, status);
 }
+
+export async function chargeCreditsForExecution(env, { principalId, capabilityId, version, requestId: id, credits, amountMinor, currency, idempotencyKey }) {
+  if (!principalId || !capabilityId || !version || !id || typeof idempotencyKey !== "string" || idempotencyKey.length < 16) {
+    throw new TypeError("principal, capability, version, request ID and idempotency key are required");
+  }
+  if (!Number.isSafeInteger(credits) || credits <= 0 || !Number.isSafeInteger(amountMinor) || amountMinor <= 0 || !/^[A-Z]{3}$/.test(currency || "")) {
+    throw new TypeError("credits, amount and currency must be valid positive billing values");
+  }
+  const now = new Date().toISOString();
+  const sourceRef = "usage:" + id;
+  const result = await env.DB.batch([
+    env.DB.prepare("INSERT OR IGNORE INTO credits_ledger (id, principal_id, delta_credits, entry_type, source_ref, idempotency_key, description, created_at) SELECT ?, ?, ?, 'usage_debit', ?, ?, ?, ? WHERE COALESCE((SELECT SUM(delta_credits) FROM credits_ledger WHERE principal_id = ?), 0) >= ?").bind(crypto.randomUUID(), principalId, -credits, sourceRef, idempotencyKey, "Capability " + capabilityId + " execution", now, principalId, credits),
+    env.DB.prepare("INSERT OR IGNORE INTO usage_ledger (id, principal_id, capability_id, capability_version, request_id, idempotency_key, units, amount_minor, currency, outcome, metadata_json, created_at) SELECT ?, ?, ?, ?, ?, ?, 1, ?, ?, 'succeeded', '{}', ? WHERE EXISTS (SELECT 1 FROM credits_ledger WHERE principal_id = ? AND entry_type = 'usage_debit' AND source_ref = ?)").bind(crypto.randomUUID(), principalId, capabilityId, version, id, idempotencyKey, amountMinor, currency, now, principalId, sourceRef)
+  ]);
+  if (result[0]?.meta?.changes && result[1]?.meta?.changes) return { charged: true, duplicate: false };
+  const existing = await env.DB.prepare("SELECT id FROM usage_ledger WHERE principal_id = ? AND idempotency_key = ? LIMIT 1").bind(principalId, idempotencyKey).first();
+  if (existing) return { charged: false, duplicate: true };
+  return { charged: false, insufficient_credits: true };
+}
