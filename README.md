@@ -59,3 +59,7 @@ The intended preview deployment is a separate Cloudflare Pages project connected
 ## Status
 
 Early foundation. No claim of production or agentic readiness is made until the acceptance gates in the roadmap pass against deployed infrastructure.
+
+## Deployed smoke test
+
+After a preview deployment is ready, run `YH_BASE_URL=https://<preview-host> npm run smoke` to verify health, D1, catalog, HTTP execution, modern MCP discovery/list/call, identity denial, and Bearer CORS preflight. The smoke test intentionally performs free executions and writes metering events to that environment's usage ledger.
