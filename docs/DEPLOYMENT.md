@@ -5,7 +5,8 @@
 The platform foundation has an isolated Cloudflare Pages project:
 
 - Project: `yorphives-2-preview`
-- Preview origin: `https://yorphives-2-preview.pages.dev`
+- Project origin: `https://yorphives-2-preview.pages.dev`
+- Verified deployment URL: `https://39878505.yorphives-2-preview.pages.dev`
 - Git repository: `solopreneursid/yorpHives-2.0`
 - Preview branches: enabled for all branches.
 - Production deployments: disabled for this project.
@@ -14,9 +15,11 @@ The platform foundation has an isolated Cloudflare Pages project:
 - Preview D1 database: `yorphives-2-catalogue-preview`.
 - Pages Functions binding: `DB` in the preview environment only.
 
+The first preview deployment completed successfully. Cloudflare logs confirm that the repository was cloned, the Pages Functions Worker compiled successfully, 21 static assets were uploaded, and deployment completed. The deployment has `uses_functions=true` and the preview `DB` binding attached.
+
 Migrations `0001_catalogue.sql` and `0002_catalogue_integrity.sql` are applied to the preview D1 database. It contains schema and validation triggers only; no public listings are seeded. The database prevents publication without a destination URL, publication timestamp, and review timestamp. It also rejects unsafe destination schemes, malformed JSON arrays, and paid listings without a valid currency code. These constraints were exercised against the preview database, and temporary verification rows were removed.
 
-The Pages Git source is configured, but no preview deployment has been observed yet. Do not treat the preview origin as verified until Cloudflare reports a successful deployment. After the first deployment, verify the deployment URL and run browser and content-negotiation smoke tests.
+The deployment is built and published, but browser-level visual QA and live HTTP/API smoke tests are still pending. Do not treat the preview as accepted until those checks pass.
 
 ## Production
 
