@@ -2,7 +2,7 @@ import { createApiSecret, sha256Hex } from "../../../_lib/security.js";
 import { authenticate, failure, hasScope, success, audit } from "../../../_lib/platform.js";
 import { readJson, requestId } from "../../../_lib/http.js";
 
-const ALLOWED_SCOPES = new Set(["identity:read", "capability:execute", "usage:read", "credits:read", "keys:manage", "commerce:checkout"]);
+const ALLOWED_SCOPES = new Set(["identity:read", "capability:execute", "usage:read", "credits:read", "keys:manage", "commerce:checkout", "capabilities:grant"]);
 
 export async function onRequestGet({ request, env }) {
   const auth = await authenticate(request, env);
