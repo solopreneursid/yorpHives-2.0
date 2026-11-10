@@ -1,0 +1,250 @@
+[
+  {
+    "slug": "word-counter",
+    "title": "Word Counter",
+    "category": "Writing",
+    "description": "Count words, characters, sentences, paragraphs and estimated reading time in your text.",
+    "url": "/free-tools/word-counter/",
+    "processing": "browser"
+  },
+  {
+    "slug": "character-counter",
+    "title": "Character Counter",
+    "category": "Writing",
+    "description": "Count characters with and without spaces, words and lines for social posts and writing limits.",
+    "url": "/free-tools/character-counter/",
+    "processing": "browser"
+  },
+  {
+    "slug": "case-converter",
+    "title": "Text Case Converter",
+    "category": "Writing",
+    "description": "Convert text to uppercase, lowercase, title case, sentence case and alternating case.",
+    "url": "/free-tools/case-converter/",
+    "processing": "browser"
+  },
+  {
+    "slug": "duplicate-line-remover",
+    "title": "Remove Duplicate Lines",
+    "category": "Writing",
+    "description": "Remove repeated lines from text while preserving the original order.",
+    "url": "/free-tools/duplicate-line-remover/",
+    "processing": "browser"
+  },
+  {
+    "slug": "text-diff-checker",
+    "title": "Text Diff Checker",
+    "category": "Writing",
+    "description": "Compare two text blocks and identify added, removed and unchanged lines.",
+    "url": "/free-tools/text-diff-checker/",
+    "processing": "browser"
+  },
+  {
+    "slug": "lorem-ipsum-generator",
+    "title": "Lorem Ipsum Generator",
+    "category": "Writing",
+    "description": "Generate placeholder paragraphs, sentences or words for layouts and prototypes.",
+    "url": "/free-tools/lorem-ipsum-generator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "json-formatter",
+    "title": "JSON Formatter",
+    "category": "Developer",
+    "description": "Format and inspect JSON with readable indentation and validation.",
+    "url": "/free-tools/json-formatter/",
+    "processing": "browser"
+  },
+  {
+    "slug": "json-validator",
+    "title": "JSON Validator",
+    "category": "Developer",
+    "description": "Validate JSON syntax and locate parsing errors without uploading your data.",
+    "url": "/free-tools/json-validator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "json-minifier",
+    "title": "JSON Minifier",
+    "category": "Developer",
+    "description": "Minify JSON by removing unnecessary whitespace while preserving data.",
+    "url": "/free-tools/json-minifier/",
+    "processing": "browser"
+  },
+  {
+    "slug": "base64-encoder-decoder",
+    "title": "Base64 Encoder & Decoder",
+    "category": "Developer",
+    "description": "Encode text to Base64 or decode Base64 content locally in your browser.",
+    "url": "/free-tools/base64-encoder-decoder/",
+    "processing": "browser"
+  },
+  {
+    "slug": "url-encoder-decoder",
+    "title": "URL Encoder & Decoder",
+    "category": "Developer",
+    "description": "Encode or decode URL components safely.",
+    "url": "/free-tools/url-encoder-decoder/",
+    "processing": "browser"
+  },
+  {
+    "slug": "uuid-generator",
+    "title": "UUID Generator",
+    "category": "Developer",
+    "description": "Generate cryptographically random UUID version 4 identifiers.",
+    "url": "/free-tools/uuid-generator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "password-generator",
+    "title": "Password Generator",
+    "category": "Security",
+    "description": "Generate strong random passwords locally with adjustable length and character sets.",
+    "url": "/free-tools/password-generator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "sha256-generator",
+    "title": "SHA-256 Hash Generator",
+    "category": "Security",
+    "description": "Generate a SHA-256 digest from text using the browser Web Crypto API.",
+    "url": "/free-tools/sha256-generator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "jwt-decoder",
+    "title": "JWT Decoder",
+    "category": "Developer",
+    "description": "Decode JWT header and payload locally. Signature verification is not performed.",
+    "url": "/free-tools/jwt-decoder/",
+    "processing": "browser"
+  },
+  {
+    "slug": "timestamp-converter",
+    "title": "Unix Timestamp Converter",
+    "category": "Developer",
+    "description": "Convert Unix timestamps to readable dates and dates back to timestamps.",
+    "url": "/free-tools/timestamp-converter/",
+    "processing": "browser"
+  },
+  {
+    "slug": "regex-tester",
+    "title": "Regex Tester",
+    "category": "Developer",
+    "description": "Test JavaScript regular expressions against sample text and inspect matches.",
+    "url": "/free-tools/regex-tester/",
+    "processing": "browser"
+  },
+  {
+    "slug": "html-entity-encoder",
+    "title": "HTML Entity Encoder & Decoder",
+    "category": "Developer",
+    "description": "Encode special characters as HTML entities or decode HTML entities.",
+    "url": "/free-tools/html-entity-encoder/",
+    "processing": "browser"
+  },
+  {
+    "slug": "age-calculator",
+    "title": "Age Calculator",
+    "category": "Calculators",
+    "description": "Calculate age in years, months and days from a date of birth.",
+    "url": "/free-tools/age-calculator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "date-difference-calculator",
+    "title": "Date Difference Calculator",
+    "category": "Calculators",
+    "description": "Calculate the exact difference between two dates in days, weeks and months.",
+    "url": "/free-tools/date-difference-calculator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "percentage-calculator",
+    "title": "Percentage Calculator",
+    "category": "Calculators",
+    "description": "Calculate percentages, percentage changes and what percentage one number is of another.",
+    "url": "/free-tools/percentage-calculator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "discount-calculator",
+    "title": "Discount Calculator",
+    "category": "Business",
+    "description": "Calculate sale prices, savings and stacked discounts.",
+    "url": "/free-tools/discount-calculator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "tip-calculator",
+    "title": "Tip Calculator",
+    "category": "Calculators",
+    "description": "Calculate a tip and split a bill between people.",
+    "url": "/free-tools/tip-calculator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "emi-calculator",
+    "title": "EMI Calculator",
+    "category": "Finance",
+    "description": "Estimate monthly loan payments, total interest and repayment amount.",
+    "url": "/free-tools/emi-calculator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "gst-calculator",
+    "title": "GST Calculator",
+    "category": "Business",
+    "description": "Add or remove GST and calculate the tax component using Indian GST rates.",
+    "url": "/free-tools/gst-calculator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "bmi-calculator",
+    "title": "BMI Calculator",
+    "category": "Health",
+    "description": "Calculate body mass index from height and weight. This is an informational calculation, not medical advice.",
+    "url": "/free-tools/bmi-calculator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "unit-converter",
+    "title": "Unit Converter",
+    "category": "Calculators",
+    "description": "Convert common length, mass, volume and data storage units.",
+    "url": "/free-tools/unit-converter/",
+    "processing": "browser"
+  },
+  {
+    "slug": "temperature-converter",
+    "title": "Temperature Converter",
+    "category": "Calculators",
+    "description": "Convert Celsius, Fahrenheit and Kelvin temperatures.",
+    "url": "/free-tools/temperature-converter/",
+    "processing": "browser"
+  },
+  {
+    "slug": "random-number-generator",
+    "title": "Random Number Generator",
+    "category": "Productivity",
+    "description": "Generate cryptographically random integers within a chosen range.",
+    "url": "/free-tools/random-number-generator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "pomodoro-timer",
+    "title": "Pomodoro Timer",
+    "category": "Productivity",
+    "description": "Run focused work and break sessions with a simple browser timer.",
+    "url": "/free-tools/pomodoro-timer/",
+    "processing": "browser"
+  },
+  {
+    "slug": "color-converter",
+    "title": "HEX RGB HSL Color Converter",
+    "category": "Design",
+    "description": "Convert colors between HEX, RGB and HSL formats.",
+    "url": "/free-tools/color-converter/",
+    "processing": "browser"
+  }
+]
