@@ -125,7 +125,7 @@ test("Free Tools directory exposes substantial searchable browser-first catalogu
   const html = await read("../free-tools/index.html");
   const manifest = JSON.parse(await read("../free-tools/manifest.json"));
   const runtime = await read("../free-tools/tool-runtime.js");
-  const directory = await read("../free-tools/directory.js");
+  const directory = await read("../free-tools/directory.js");\n  const imageRuntime = await read("../free-tools/image-runtime.js");
   assert.ok(manifest.length >= 36, "Expected at least 36 published free tools");
   assert.match(html, /tool-search/);
   assert.match(html, /data-filter/);
