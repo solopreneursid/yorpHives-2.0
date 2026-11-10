@@ -16,7 +16,7 @@ export async function onRequestPost({ request, env }) {
   }
   const parsed = await readJson(request);
   if (!parsed.ok || !parsed.value || typeof parsed.value !== "object" || Array.isArray(parsed.value)) return failure("INVALID_REQUEST", "Send a valid JSON object.", 400, request);
-  const { kind, display_name: displayName, email = null, label = "Initial API key", scopes = ["identity:read", "capability:execute", "usage:read", "credits:read"], daily_spending_limit_minor: dailyLimit = 0, monthly_spending_limit_minor: monthlyLimit = 0 } = parsed.value;
+  const { kind, display_name: displayName, email = null, label = "Initial API key", scopes = ["identity:read", "capability:execute", "usage:read", "credits:read", "keys:manage", "commerce:orders:read"], daily_spending_limit_minor: dailyLimit = 0, monthly_spending_limit_minor: monthlyLimit = 0 } = parsed.value;
   if (!ALLOWED_KINDS.has(kind) || typeof displayName !== "string" || displayName.trim().length < 2 || displayName.length > 100) return failure("INVALID_PRINCIPAL", "Provide a supported principal kind and a display name between 2 and 100 characters.", 422, request);
   if (email !== null && (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) return failure("INVALID_EMAIL", "Provide a valid email address or null.", 422, request);
   if (!Array.isArray(scopes) || scopes.length === 0 || scopes.some(scope => !ALLOWED_SCOPES.has(scope)) || new Set(scopes).size !== scopes.length) return failure("INVALID_SCOPES", "Requested scopes are invalid or duplicated.", 422, request);
