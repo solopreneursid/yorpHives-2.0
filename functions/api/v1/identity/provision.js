@@ -1,5 +1,5 @@
 import { createApiSecret, sha256Hex, constantTimeEqual } from "../../../_lib/security.js";
-import { audit, failure, success } from "../../../_lib/platform.js";
+import { failure, success } from "../../../_lib/platform.js";
 import { readJson, requestId } from "../../../_lib/http.js";
 
 const ALLOWED_KINDS = new Set(["human", "developer", "agent", "service"]);
