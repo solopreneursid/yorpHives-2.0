@@ -11,7 +11,7 @@ The initial text capability is public, deterministic, and has no external side e
 - 20,000 character capability input limit.
 - Explicit capability and version allowlist.
 - No dynamic code execution, arbitrary URL fetching, or provider calls.
-- Structured errors without stack traces.
+- Structured errors without stack traces.\n- MCP validates Origin and modern protocol routing headers to prevent DNS rebinding and header/body disagreement.
 - Request identifiers and no-store execution responses.
 - Public read-only catalog and OpenAPI metadata.
 - Cross-origin access is public and unauthenticated for this free capability only.
