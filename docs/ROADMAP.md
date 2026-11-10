@@ -6,7 +6,7 @@
 - [x] Human-facing discovery experience.
 - [x] Canonical first capability implementation.
 - [x] HTTP discovery and execution API.
-- [x] MCP Streamable HTTP adapter for the same handler.
+- [x] Dual-era MCP Streamable HTTP adapter: 2026-07-28 modern + 2025-11-25 legacy.
 - [x] Machine-readable manifest and OpenAPI contract.
 - [ ] Automated tests and build pass.
 - [ ] Isolated Cloudflare preview deployment.
