@@ -31,9 +31,11 @@ No live pricing has been selected or activated. Keep checkout disabled until the
 
 ## Webhook setup
 
-Configure Stripe to send `checkout.session.completed` events to `/api/webhooks/stripe`. The webhook validates the signature over the exact raw body, enforces a five-minute timestamp tolerance, matches provider session ID, amount and currency to the stored order, and credits the account at most once.
+Configure Stripe to send `checkout.session.completed` and `checkout.session.async_payment_succeeded` events to `/api/webhooks/stripe`. The webhook validates the signature over the exact raw body, enforces a five-minute timestamp tolerance, matches provider session ID, amount and currency to the stored order, and credits the account at most once.
 
 A provider event with a non-paid checkout session is rejected. A duplicate event is safely acknowledged without duplicate credits.
+
+Purchase history is available through `GET /api/v1/commerce/orders` with the `commerce:orders:read` scope. The checkout redirect is not authoritative; use this endpoint or the credit balance endpoint to confirm settlement.
 
 ## Reconciliation still required before taking live money
 
