@@ -40,3 +40,21 @@ Content-Type: application/json
 
 ## Status
 Early foundation. Capabilities marked available are implemented in the current deployment; roadmap items are not executable until explicitly published in the catalog.
+
+## Identity and authorization
+- Bearer credentials are issued per principal and stored as SHA-256 hashes.
+- Principals are distinct from API keys; key scopes are limited and revocable.
+- Provisioning requires the operator-only `YH_BOOTSTRAP_SECRET`.
+- Capability grants can impose daily execution and spending ceilings.
+
+## Usage and commerce
+- Usage: `GET /api/v1/usage` (scope: `usage:read`).
+- Credits: `GET /api/v1/commerce/credits` (scope: `credits:read`).
+- Checkout: `POST /api/v1/commerce/checkout` (scope: `commerce:checkout`, server-configured pack IDs only).
+- Stripe webhooks: `POST /api/webhooks/stripe`; credits are only issued after signature and order validation.
+- Operator reconciliation: `POST /api/v1/commerce/reconcile`; requires a separate secret.
+- Do not assume paid execution is enabled. Payment secrets and credit packs must be configured separately.
+
+## Operational status
+- Health: `GET /api/v1/health`.
+- The append-only usage, credit, payment-event, and audit ledgers are stored in the isolated preview D1 database.
