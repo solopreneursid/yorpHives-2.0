@@ -80,3 +80,13 @@ test("purchase history is principal-scoped and requires its own read scope", asy
   assert.match(orders, /commerce:orders:read/);
   assert.match(orders, /WHERE principal_id = \?/);
 });
+
+test("paid execution uses one atomic debit-plus-usage transaction", async () => {
+  const platform = await read("../functions/_lib/platform.js");
+  const start = platform.indexOf("export async function chargeCreditsForExecution");
+  const block = platform.slice(start);
+  assert.match(block, /env\.DB\.batch\(\[/);
+  assert.match(block, /NOT EXISTS \(SELECT 1 FROM usage_ledger WHERE request_id = \?\)/);
+  assert.match(block, /INSERT OR IGNORE INTO usage_ledger/);
+  assert.match(block, /idempotency_conflict/);
+});
