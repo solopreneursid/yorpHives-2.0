@@ -75,4 +75,8 @@ test("credit debits are conditional, append-only and idempotent", async () => {
   assert.match(platform, /duplicate: true/);
 });
 
-test("purchase history is principal-scoped and requires its own read scope", async () => {\n  const orders = await read("../functions/api/v1/commerce/orders.js");\n  assert.match(orders, /commerce:orders:read/);\n  assert.match(orders, /WHERE principal_id = \?/);\n});\n
+test("purchase history is principal-scoped and requires its own read scope", async () => {
+  const orders = await read("../functions/api/v1/commerce/orders.js");
+  assert.match(orders, /commerce:orders:read/);
+  assert.match(orders, /WHERE principal_id = \?/);
+});
