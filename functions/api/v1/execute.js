@@ -40,6 +40,8 @@ export async function onRequestPost({ request, env }) {
     return errorResponse(result.code, result.message, result.code === "INPUT_TOO_LARGE" ? 413 : 422, id, false, result.details);
   }
 
+  await recordUsage(env, { principalId: policy.principal?.id || null, capabilityId: body.capability, version: body.version, id });
+
   return json({
     status: "succeeded",
     request_id: id,
