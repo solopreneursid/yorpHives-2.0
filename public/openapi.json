@@ -538,6 +538,38 @@
           }
         }
       }
+    },
+    "/api/v1/commerce/orders": {
+      "get": {
+        "operationId": "listCommerceOrders",
+        "summary": "List the current principal's purchase history and order status",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Purchase history"
+          },
+          "403": {
+            "description": "Requires commerce:orders:read"
+          }
+        }
+      }
     }
   },
   "components": {
