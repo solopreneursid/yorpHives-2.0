@@ -35,7 +35,7 @@ const catalog = {
         top_terms: { type: "array", items: { type: "object", properties: { term: { type: "string" }, count: { type: "integer" } } } }
       }
     },
-    access: { authentication: "none", authorization: "public", rate_limit: "not-configured" },
+    access: { authentication: "none", authorization: "public", rate_limit: "12/minute anonymous IP; 90/minute authenticated principal" },
     pricing: { model: "free", currency: null, amount: 0, unit: "execution" },
     execution: { idempotent: true, synchronous: true, timeout_ms: 3000, max_input_bytes: 98304 },
     data_handling: { retention: "none", training_use: false, sensitive_data_recommended: false },
