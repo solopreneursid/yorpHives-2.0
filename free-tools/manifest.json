@@ -246,5 +246,45 @@
     "description": "Convert colors between HEX, RGB and HSL formats.",
     "url": "/free-tools/color-converter/",
     "processing": "browser"
+  },
+  {
+    "slug": "image-compressor",
+    "title": "Image Compressor",
+    "category": "Images",
+    "description": "Compress JPG, PNG and WebP images in your browser. Adjust quality and download the smaller image without uploading it.",
+    "url": "/free-tools/image-compressor/",
+    "processing": "browser"
+  },
+  {
+    "slug": "image-resizer",
+    "title": "Image Resizer",
+    "category": "Images",
+    "description": "Resize images to exact pixel dimensions or scale them proportionally in your browser.",
+    "url": "/free-tools/image-resizer/",
+    "processing": "browser"
+  },
+  {
+    "slug": "image-converter",
+    "title": "Image Converter",
+    "category": "Images",
+    "description": "Convert images between PNG, JPEG and WebP formats using browser canvas.",
+    "url": "/free-tools/image-converter/",
+    "processing": "browser"
+  },
+  {
+    "slug": "image-cropper",
+    "title": "Image Cropper",
+    "category": "Images",
+    "description": "Crop an image to custom dimensions in your browser and download the result.",
+    "url": "/free-tools/image-cropper/",
+    "processing": "browser"
+  },
+  {
+    "slug": "image-to-base64",
+    "title": "Image to Base64 Converter",
+    "category": "Images",
+    "description": "Convert an image to a Base64 data URL locally in your browser.",
+    "url": "/free-tools/image-to-base64/",
+    "processing": "browser"
   }
 ]
