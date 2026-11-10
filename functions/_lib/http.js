@@ -1,4 +1,4 @@
-export const MAX_JSON_BYTES = 32 * 1024;
+export const MAX_JSON_BYTES = 96 * 1024;
 
 export function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
