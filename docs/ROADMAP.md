@@ -1,47 +1,66 @@
 # YorpHives Delivery Roadmap
 
-## Stage 1 — Platform front door
+## Product structure and experience
 
-- [x] Establish the five-audience platform positioning.
-- [x] Build a responsive entry point with clear audience pathways.
-- [x] Publish a machine-readable platform overview.
-- [x] Connect homepage pathways to the discovery routes.
-- [x] Build browser search, type filters, audience filters, and listing detail views against the canonical catalogue API.
-- [ ] Verify discovery and listing flows in a successful Cloudflare preview deployment.
+- [x] Replace directory-first homepage with build-request-led positioning.
+- [x] Establish primary navigation: Home, Free Tools, Explore, Builder, Connect.
+- [x] Create dedicated Free Tools, Explore, Builder and Connect routes.
+- [x] Add privacy-preserving browser utilities: word counter, JSON formatter/validator and URL encoder/decoder.
+- [x] Load recently added YorpHives applications from the canonical catalogue.
+- [x] Keep Explore scoped to YorpHives-built applications.
+- [x] Publish truthful empty states where product data or analytics are not yet available.
+- [ ] Add project request intake with validation, spam protection and secure persistence.
+- [ ] Add more free tools based on search demand and user needs.
+- [ ] Add screenshots, demo recordings and release metadata for every YorpHives application.
 
-## Stage 2 — Canonical discovery
+## Agentic Internet foundation
 
-- [x] Define typed listing contracts and lifecycle validation.
-- [x] Add D1 catalogue schema and integrity migrations.
-- [x] Build public catalogue list and detail APIs.
-- [x] Support JSON and Markdown representations from the catalogue API.
-- [x] Filter listings by type, category, audience, and text query.
-- [x] Provision and bind the preview D1 database.
-- [ ] Add verified listing administration and moderation.
-- [ ] Add privacy-conscious usage aggregation before showing popularity.
+- [x] Publish `llms.txt` and a YorpHives well-known platform manifest.
+- [x] Publish OpenAPI documentation for the existing public catalogue endpoints.
+- [x] Support JSON and Markdown catalogue responses.
+- [ ] Add capability registry with versioned schemas and execution policies.
+- [ ] Add human, business, creator and agent identity principals.
+- [ ] Add scoped credentials, authorization middleware, revocation and audit events.
+- [ ] Add MCP server/tools backed by canonical service contracts.
+- [ ] Add rate limits, quotas, structured errors and idempotency for mutating operations.
+- [ ] Add execution observability, retry handling and abuse controls.
+- [ ] Evaluate x402 only for agent use cases that need per-request payments.
 
-## Stage 3 — Identity and Builder
+## Free Tools and discovery
 
-- [ ] Implement human, business, creator, and agent principals.
-- [ ] Add business problem briefs and builder profiles.
-- [ ] Add opportunity publishing, moderation, and discovery.
-- [ ] Add scoped API credentials and audit events.
+- [x] Publish first browser-local utilities.
+- [ ] Instrument privacy-conscious aggregate usage events.
+- [ ] Add measured trending rankings only after sufficient real usage.
+- [ ] Add catalogue admin and review/moderation workflow.
+- [ ] Add SEO metadata, structured data, sitemap and tool-specific landing pages.
 
-## Stage 4 — Applications and commerce
+## Explore applications
 
-- [ ] Build application directory and app detail contracts.
-- [ ] Integrate Dodo Payments checkout for server-owned products.
-- [ ] Verify Dodo webhooks and persist provider events idempotently.
-- [ ] Implement subscription lifecycle and entitlement reconciliation.
-- [ ] Add cancellation, refund, and chargeback handling.
+- [x] Create YorpHives-only app marketplace route.
+- [ ] Add product lifecycle and release validation.
+- [ ] Add product detail pages with genuine screenshots, demos, pricing and installation instructions.
+- [ ] Add account-aware free/premium access.
 
-## Stage 5 — Agent execution
+## Builder opportunity platform
 
-- [ ] Publish OpenAPI and MCP discovery interfaces.
-- [ ] Add capability execution contracts and explicit scopes.
-- [ ] Add rate limits, quotas, audit trails, and abuse controls.
-- [ ] Add x402 only for use cases where per-request payment is appropriate.
+- [x] Define Builder as a paid opportunity-discovery product, not a public generic directory.
+- [ ] Implement member identity and skill profiles.
+- [ ] Build opportunity source ingestion, deduplication, freshness checks and moderation.
+- [ ] Add source attribution, eligibility, location, compensation, deadlines and application links.
+- [ ] Add matching, saved searches, alerts and opportunity tracking.
+- [ ] Add YorpHives project postings and application workflow.
+- [ ] Add member workspace and access controls.
+
+## Dodo Payments and entitlements
+
+- [ ] Configure server-owned Dodo product/price mappings for monthly and annual Builder memberships and paid apps.
+- [ ] Implement checkout creation on the server.
+- [ ] Verify signed Dodo webhooks against raw request bodies.
+- [ ] Persist provider events idempotently and reconcile out-of-order lifecycle events.
+- [ ] Implement entitlements, cancellation, expiration, refunds and chargeback handling.
+- [ ] Test replay, duplicate delivery, failed delivery and access revocation.
+- [ ] Never grant paid access from a browser redirect.
 
 ## Release gates
 
-A stage is not complete because its UI exists. Require automated tests, preview deployment, smoke tests, security review for sensitive flows, and truthful release metadata. Do not connect an unverified implementation to production payments or user data.
+A stage is not complete because its UI exists. Require automated tests, preview deployment, browser and API smoke tests, accessibility checks, security review for sensitive flows, and truthful release metadata. Do not connect unverified implementation to production payments or user data.
