@@ -1,11 +1,9 @@
 export interface FreeToolDescriptor { slug: string; title: string; category: string; description: string; url: string; processing: "browser"; }
 export interface FreeToolsResponse { data: FreeToolDescriptor[]; count: number; processing: "browser"; authentication: "none"; }
-interface Env { ASSETS?: { fetch(request: Request): Promise<Response> } }
-interface Context { request: Request; env: Env }
-export async function onRequestGet({request,env}:Context):Promise<Response>{
- if(!env.ASSETS)return new Response("Static asset binding unavailable.",{status:503});
+interface Context { request: Request; next(input?: Request): Promise<Response> }
+export async function onRequestGet({request,next}:Context):Promise<Response>{
  const assetUrl=new URL("/free-tools/manifest.json",request.url);
- const asset=await env.ASSETS.fetch(new Request(assetUrl,{headers:{accept:"application/json"}}));
+ const asset=await next(new Request(assetUrl,{headers:{accept:"application/json"}}));
  if(!asset.ok)return new Response("Tool manifest unavailable.",{status:503});
  const data=await asset.json() as FreeToolDescriptor[];
  const response:FreeToolsResponse={data,count:data.length,processing:"browser",authentication:"none"};
