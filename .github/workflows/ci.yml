@@ -47,3 +47,7 @@ jobs:
         run: npm test
       - name: Build static assets
         run: npm run build
+      - name: Smoke-test deployed preview
+        env:
+          YH_BASE_URL: https://build-trust-commerce-foundat.yorphives-2-preview.pages.dev
+        run: npm run smoke
