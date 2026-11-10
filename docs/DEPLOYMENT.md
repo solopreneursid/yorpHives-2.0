@@ -5,7 +5,6 @@
 The platform foundation has an isolated Cloudflare Pages project:
 
 - Project: `yorphives-2-preview`
-- Project origin: `https://yorphives-2-preview.pages.dev`
 - Verified deployment URL: `https://39878505.yorphives-2-preview.pages.dev`
 - Git repository: `solopreneursid/yorpHives-2.0`
 - Preview branches: enabled for all branches.
