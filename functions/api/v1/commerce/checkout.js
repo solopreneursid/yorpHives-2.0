@@ -1,4 +1,4 @@
-import { authenticate, failure, hasScope, success, audit } from "../../../_lib/platform.js";
+import { authenticate, failure, hasScope, success, audit, rateLimit } from "../../../_lib/platform.js";
 import { readJson, requestId } from "../../../_lib/http.js";
 
 function creditPacks(env) {
@@ -13,6 +13,8 @@ export async function onRequestPost({ request, env }) {
   const auth = await authenticate(request, env);
   if (!auth.ok) return auth.response;
   if (!auth.principal) return failure("AUTHENTICATION_REQUIRED", "Supply an API credential.", 401, request);
+  const limit = await rateLimit(request, env, auth.principal.id);
+  if (!limit.ok) return limit.response;
   if (!hasScope(auth.principal, "commerce:checkout")) return failure("INSUFFICIENT_SCOPE", "This credential cannot purchase credits.", 403, request);
   if (!env.STRIPE_SECRET_KEY || !env.YH_CREDIT_PACKS_JSON) return failure("COMMERCE_NOT_CONFIGURED", "Checkout is disabled until the payment provider and server-side credit packs are configured.", 503, request);
   const idempotencyKey = request.headers.get("Idempotency-Key");
