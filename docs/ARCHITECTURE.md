@@ -2,55 +2,74 @@
 
 ## Design objective
 
-Build an outcome-oriented capability network with two first-class consumers: humans and software agents. Both interfaces must invoke the same versioned capability implementation.
+Build an outcome-oriented capability network with two first-class consumers: humans and software agents. Both interfaces invoke the same versioned capability implementation and shared authorization/metering layer.
 
-## Initial deployment topology
+## Current deployment topology
 
 ```
-Browser / Agent
-      |
-Cloudflare edge + Pages static assets
-      |
-Pages Functions
-  |-- /api/v1/capabilities   canonical public catalog
-  |-- /api/v1/execute        versioned execution gateway
-  |-- /api/mcp               MCP Streamable HTTP adapter
-      |
-Capability handlers
-  |-- text.analyze@1.0.0     deterministic, in-memory
+Human UI / HTTP Agent / MCP Client
+              |
+        Cloudflare edge
+              |
+        Pages Functions
+   |-- discovery + OpenAPI
+   |-- HTTP execution gateway
+   |-- MCP Streamable HTTP adapter
+   |-- identity / API key routes
+   |-- commerce / Stripe routes
+              |
+       Shared platform layer
+   |-- authentication + scopes
+   |-- rate limiting + budgets
+   |-- append-only usage / audit
+   |-- credit ledger + settlement
+              |
+        Cloudflare D1 (preview)
+              |
+      Pure capability handlers
+          text.analyze@1.0.0
 ```
 
-The first slice deliberately avoids a database, queue, AI inference provider, and user accounts. This reduces idle cost and avoids collecting personal data before a real requirement exists.
+The preview uses one isolated D1 database for principals, credentials, grants, entitlements, rate-limit windows, usage events, credits, orders, payment events, and audit events. Static assets remain on Pages. No AI inference provider, queue, or Durable Object is required for this first commercial foundation.
 
 ## Boundaries
 
-- **Experience:** accessible HTML/CSS/JS; no business logic or secrets.
-- **Discovery:** catalog contract, manifest, OpenAPI, machine guide.
-- **Gateway:** request parsing, limits, version resolution, structured errors.
+- **Experience:** accessible HTML/CSS/JS; no business secrets.
+- **Discovery:** canonical capability metadata, machine manifest, OpenAPI, and agent guide.
+- **Gateway:** request parsing, input ceilings, version resolution, structured errors, authentication and rate limiting.
+- **Identity:** durable principals separated from revocable API credentials.
+- **Authorization:** scopes, capability grants, per-principal budgets, and capability quotas.
 - **Capability runtime:** pure deterministic handlers; no implicit network access.
-- **Protocols:** HTTP is canonical; MCP adapts the same handler. Protocol adapters must not duplicate business logic.
-- **Commerce:** planned boundary for offers, quotes, entitlements, usage events, credits, billing, refunds, attribution, and provider settlement.
-- **Trust:** future identity, scopes, budgets, approvals, audit events, abuse controls.
+- **Protocols:** HTTP is canonical; MCP adapts the same handler and trust checks.
+- **Commerce:** provider-independent orders, server-controlled offers, usage and credit ledgers; Stripe is the first payment adapter.
+- **Operations:** structured logs, health checks, immutable audit trail, and controlled reconciliation.
 
-## Canonical capability identity
+## Data model and invariants
 
-Use immutable IDs such as `text.analyze` and semantic versions. Breaking input/output changes require a new major version. Catalog metadata is the canonical public description. Execution handlers are registered by `id@version`.
+- API secrets are returned once; only hashes and short prefixes are stored.
+- Financial and usage history is append-only; corrections use compensating entries.
+- Credit balances are derived from the credit ledger, never maintained as a mutable counter.
+- Provider webhooks are signature-verified and deduplicated; a paid order grants credits at most once.
+- Client-supplied amounts are never trusted. Checkout accepts a pack ID from server-side configuration.
+- A credential's scopes cannot exceed its parent credential's scopes.
+- A valid principal does not automatically receive a capability grant.
+- Zero spending limits mean no paid execution allowance, not unlimited spending.
 
 ## Future data services
 
-Only add storage when a capability needs durable state:
-- D1 for relational catalog, accounts, entitlements, usage ledger, and orders.
+Add services only when a measured requirement exists:
+- D1 for relational records and financial ledgers.
 - R2 for user-owned or generated files with lifecycle and deletion policies.
-- Queues for asynchronous jobs and metering aggregation.
-- Durable Objects only for coordination requiring strongly consistent per-entity state.
-- Workflows only for durable multi-step processes.
+- Queues for asynchronous jobs and high-volume metering aggregation.
+- Durable Objects only for strong per-entity coordination.
+- Workflows for durable multi-step operations.
 
 Do not put every request through a Durable Object or create microservices before workload boundaries justify them.
 
 ## Portability
 
-Domain models, schemas, capability contracts, pricing, authorization semantics, and workflow definitions remain provider-neutral. Cloudflare bindings are infrastructure adapters, not domain types.
+Domain models, schemas, capability contracts, pricing, authorization semantics, and workflow definitions remain provider-neutral. Cloudflare bindings and Stripe transport code are adapters, not domain types.
 
 ## Deployment isolation
 
-The current production website is served by an existing Cloudflare Pages project connected to a different GitHub repository. The existing PDF-processing Worker is also a separate production service. This repository must deploy to a separate preview Pages project first. No production DNS, current Pages project, or existing Worker is changed by this foundation branch.
+The new trust-commerce branch deploys only to the isolated `yorphives-2-preview` Pages project and its dedicated `yorphives-2-trust-preview` D1 database. The existing `yorphives.com` Pages project, production DNS, and PDF-processing Worker are not modified. A separate production database and reviewed cutover are mandatory before a production release.
