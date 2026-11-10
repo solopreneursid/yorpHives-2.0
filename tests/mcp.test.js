@@ -1,3 +1,4 @@
+import { mockD1 } from "./helpers/mock-d1.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequestPost } from "../functions/api/mcp.js";
@@ -33,7 +34,7 @@ test("modern MCP tool call enforces required routing headers and returns structu
       arguments: { text: "Hello agent. Hello internet!" },
       _meta: { "io.modelcontextprotocol/protocolVersion": "2026-07-28", "io.modelcontextprotocol/clientCapabilities": {} }
     }
-  }, { "MCP-Protocol-Version": "2026-07-28", "Mcp-Method": "tools/call", "Mcp-Name": "text_analyze" }) });
+  }, { "MCP-Protocol-Version": "2026-07-28", "Mcp-Method": "tools/call", "Mcp-Name": "text_analyze" }), env: { DB: mockD1() } });
   const body = await response.json();
   assert.equal(response.status, 200);
   assert.equal(body.result.resultType, "complete");
@@ -74,7 +75,7 @@ test("legacy MCP clients can initialize and invoke tools", async () => {
   const call = await onRequestPost({ request: request({
     jsonrpc: "2.0", id: 6, method: "tools/call",
     params: { name: "text_analyze", arguments: { text: "Legacy client works." } }
-  }, { "MCP-Protocol-Version": "2025-11-25" }) });
+  }, { "MCP-Protocol-Version": "2025-11-25" }), env: { DB: mockD1() } });
   const callBody = await call.json();
   assert.equal(callBody.result.structuredContent.word_count, 3);
 });
