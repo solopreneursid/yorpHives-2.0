@@ -7,7 +7,7 @@ The initial text capability is public, deterministic, and has no external side e
 ## Current controls
 
 - JSON-only execution requests.
-- 32 KiB request body limit.
+- 96 KiB request body limit. Rate limiting is not yet configured and is a release blocker before broad public exposure.
 - 20,000 character capability input limit.
 - Explicit capability and version allowlist.
 - No dynamic code execution, arbitrary URL fetching, or provider calls.
