@@ -16,4 +16,6 @@ Output directory: `dist`
 
 **GitHub push-triggered preview deployment is verified.** A push to `build/trust-commerce-foundation` produced a Cloudflare Pages preview deployment, and the GitHub Actions smoke-test job successfully exercised the branch alias.
 
+The latest trust-commerce implementation commit (`593c2e809084da3bf41a2109823b9f85e2c6a9c2`) has a successful GitHub Actions run covering Worker syntax, SQLite migration validation, unit/contract tests, production build, and the deployed HTTP/MCP smoke suite. The preview health endpoint also reports database, schema, and migration checks as healthy.
+
 The preview must pass browser, API, MCP, accessibility, security, migration, and build verification before any production migration is considered.
