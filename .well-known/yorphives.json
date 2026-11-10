@@ -1,0 +1,26 @@
+{
+  "name": "YorpHives",
+  "url": "https://yorphives.com",
+  "description": "A build-led digital platform with free utilities, YorpHives-built applications, a paid earning-opportunity workspace, and agent-compatible capabilities.",
+  "contact": {
+    "email": "connect@yorphives.com"
+  },
+  "human_interfaces": {
+    "home": "/",
+    "free_tools": "/free-tools/",
+    "applications": "/explore/",
+    "builder": "/builder/",
+    "project_requests": "/connect/"
+  },
+  "machine_interfaces": {
+    "overview": "/llms.txt",
+    "openapi": "/openapi.yaml",
+    "catalogue": "/api/v1/catalogue",
+    "catalogue_format": "JSON by default; Markdown via Accept: text/markdown or ?format=markdown"
+  },
+  "capability_policy": {
+    "agent_execution": "Only documented endpoints with explicit authorization may be executed.",
+    "payments": "Paid access is controlled by server-side entitlements derived from verified Dodo Payments webhooks.",
+    "status": "The platform is under active development; described future capabilities are not necessarily available."
+  }
+}
