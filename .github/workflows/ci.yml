@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Check Worker JavaScript syntax
-        run: find functions scripts -type f \\( -name '*.js' -o -name '*.mjs' \\) -print0 | xargs -0 -n1 node --check
+        run: find functions scripts -type f \( -name '*.js' -o -name '*.mjs' \) -print0 | xargs -0 -n1 node --check
       - name: Validate D1 migrations
         run: |
           python - <<'PY'
