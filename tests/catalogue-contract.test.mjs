@@ -12,6 +12,15 @@ test("catalogue schema constrains listing types, lifecycle and publication readi
   assert.match(sql, /CREATE TABLE IF NOT EXISTS catalogue_usage_daily/);
 });
 
+test("catalogue integrity migration rejects unsafe URLs and malformed JSON", async () => {
+  const sql = await read("../migrations/0002_catalogue_integrity.sql");
+  assert.match(sql, /catalogue_listing_validate_insert/);
+  assert.match(sql, /catalogue_listing_validate_update/);
+  assert.match(sql, /json_type\(NEW\.audiences_json\) != 'array'/);
+  assert.match(sql, /destination_url must use HTTP or HTTPS/);
+  assert.match(sql, /paid listings require a three-letter uppercase currency/);
+});
+
 test("catalogue list API only exposes available listings and parameterizes filters", async () => {
   const source = await read("../functions/api/v1/catalogue.ts");
   assert.match(source, /l\.status = 'available'/);
