@@ -1,0 +1,67 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "YorpHives Capability API",
+    "version": "1.0.0",
+    "description": "Public, versioned capability discovery and execution API. Public capabilities disclose pricing and data handling before invocation."
+  },
+  "servers": [{ "url": "https://yorphives.com" }],
+  "paths": {
+    "/api/v1/capabilities": {
+      "get": {
+        "operationId": "listCapabilities",
+        "summary": "Discover available capabilities",
+        "responses": {
+          "200": {
+            "description": "Canonical capability catalog",
+            "content": { "application/json": { "schema": { "type": "object", "required": ["status", "data"], "properties": { "status": { "const": "ok" }, "data": { "type": "object", "properties": { "schema_version": { "type": "string" }, "capabilities": { "type": "array", "items": { "$ref": "#/components/schemas/Capability" } } } } } } } }
+          }
+        }
+      }
+    },
+    "/api/v1/execute": {
+      "post": {
+        "operationId": "executeCapability",
+        "summary": "Execute a versioned capability",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "additionalProperties": false, "required": ["capability", "version", "input"], "properties": { "capability": { "type": "string" }, "version": { "type": "string" }, "input": { "type": "object" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Successful execution" },
+          "400": { "description": "Invalid request or JSON" },
+          "413": { "description": "Payload or input too large" },
+          "415": { "description": "Unsupported media type" },
+          "422": { "description": "Valid request with invalid capability input" },
+          "404": { "description": "Capability or version not found" }
+        }
+      }
+    },
+    "/api/mcp": {
+      "get": { "summary": "MCP endpoint information", "responses": { "200": { "description": "MCP service metadata" } } },
+      "post": { "summary": "MCP Streamable HTTP JSON-RPC endpoint", "responses": { "200": { "description": "JSON-RPC response" }, "202": { "description": "Notification accepted" } } }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Capability": {
+        "type": "object",
+        "required": ["id", "version", "name", "description", "status", "input_schema", "output_schema", "access", "pricing", "execution", "data_handling"],
+        "properties": {
+          "id": { "type": "string" },
+          "version": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "status": { "enum": ["available", "testing", "maintenance", "retired"] },
+          "input_schema": { "type": "object" },
+          "output_schema": { "type": "object" },
+          "access": { "type": "object" },
+          "pricing": { "type": "object" },
+          "execution": { "type": "object" },
+          "data_handling": { "type": "object" },
+          "safety": { "type": "object" }
+        }
+      }
+    }
+  }
+}
