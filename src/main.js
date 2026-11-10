@@ -157,6 +157,7 @@ async function hydrateCapabilityCatalog() {
       const selector = '[data-capability-id="' + CSS.escape(capability.id) + '"]';
       const card = root.querySelector(selector);
       if (!card) return;
+      card.hidden = false;
       card.dataset.capabilityVersion = capability.version;
       card.dataset.capabilityStatus = capability.status;
       card.dataset.category = capability.category;
