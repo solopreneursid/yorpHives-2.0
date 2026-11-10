@@ -11,7 +11,7 @@ export async function onRequestPost({ request, env }) {
   try { event = JSON.parse(raw); } catch { return failure("INVALID_WEBHOOK", "Webhook body must be valid JSON.", 400, request); }
   if (!event?.id || !event.type || !event.data?.object) return failure("INVALID_WEBHOOK", "Webhook event is missing required fields.", 400, request);
   const payloadHash = await sha256Hex(raw);
-  if (event.type !== "checkout.session.completed") return success({ received: true, ignored: true, event_type: event.type });
+  if (!["checkout.session.completed", "checkout.session.async_payment_succeeded"].includes(event.type)) return success({ received: true, ignored: true, event_type: event.type });
   const settled = await settleStripeSession(env, { eventId: event.id, eventType: event.type, payloadHash, session: event.data.object });
   if (!settled.ok) {
     const status = settled.code === "PAYMENT_SETTLEMENT_PENDING" ? 503 : 409;
