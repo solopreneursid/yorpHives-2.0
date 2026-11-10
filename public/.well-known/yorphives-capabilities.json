@@ -6,9 +6,19 @@
   "catalog": "https://yorphives-2-preview.pages.dev/api/v1/capabilities",
   "openapi": "https://yorphives-2-preview.pages.dev/openapi.json",
   "llms": "https://yorphives-2-preview.pages.dev/llms.txt",
-  "protocols": [\n    { "name": "mcp", "transport": "streamable-http", "endpoint": "https://yorphives-2-preview.pages.dev/api/mcp", "protocol_versions": ["2026-07-28", "2025-11-25"] },
-    { "name": "http-json", "version": "1", "endpoint": "https://yorphives-2-preview.pages.dev/api/v1/execute", "discovery": "https://yorphives-2-preview.pages.dev/openapi.json" },
-    { "name": "mcp", "transport": "streamable-http", "endpoint": "https://yorphives-2-preview.pages.dev/api/mcp", "protocol_version": "2025-03-26" }
+  "protocols": [
+    {
+      "name": "http-json",
+      "version": "1",
+      "endpoint": "https://yorphives-2-preview.pages.dev/api/v1/execute",
+      "discovery": "https://yorphives-2-preview.pages.dev/openapi.json"
+    },
+    {
+      "name": "mcp",
+      "transport": "streamable-http",
+      "endpoint": "https://yorphives-2-preview.pages.dev/api/mcp",
+      "protocol_versions": ["2026-07-28", "2025-11-25"]
+    }
   ],
   "principles": {
     "capability_contracts": "versioned",
