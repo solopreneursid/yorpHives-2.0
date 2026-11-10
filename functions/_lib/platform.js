@@ -82,9 +82,14 @@ export async function recordUsage(env, { principalId = null, capabilityId, versi
 }
 
 export async function debitCredits(env, { principalId, credits, sourceRef, idempotencyKey, description }) {
+  if (!principalId || typeof sourceRef !== "string" || sourceRef.length < 8 || typeof idempotencyKey !== "string" || idempotencyKey.length < 16) {
+    throw new TypeError("principalId, sourceRef and a 16-character idempotencyKey are required");
+  }
   if (!Number.isSafeInteger(credits) || credits <= 0) throw new TypeError("credits must be a positive integer");
   const result = await env.DB.prepare("INSERT OR IGNORE INTO credits_ledger (id, principal_id, delta_credits, entry_type, source_ref, idempotency_key, description, created_at) SELECT ?, ?, ?, 'usage_debit', ?, ?, ?, ? WHERE COALESCE((SELECT SUM(delta_credits) FROM credits_ledger WHERE principal_id = ?), 0) >= ?").bind(crypto.randomUUID(), principalId, -credits, sourceRef, idempotencyKey, description, new Date().toISOString(), principalId, credits).run();
-  return { debited: Boolean(result.meta?.changes), changes: result.meta?.changes || 0 };
+  if (result.meta?.changes) return { debited: true, duplicate: false };
+  const existing = await env.DB.prepare("SELECT id FROM credits_ledger WHERE entry_type = 'usage_debit' AND (source_ref = ? OR (principal_id = ? AND idempotency_key = ?)) LIMIT 1").bind(sourceRef, principalId, idempotencyKey).first();
+  return existing ? { debited: false, duplicate: true } : { debited: false, insufficient_credits: true };
 }
 
 export async function audit(env, { actorId = null, action, targetType = null, targetId = null, requestId: id = null, outcome = "succeeded", metadata = {} }) {
