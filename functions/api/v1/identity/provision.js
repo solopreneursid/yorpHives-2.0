@@ -3,7 +3,7 @@ import { failure, success, rateLimit } from "../../../_lib/platform.js";
 import { readJson, requestId } from "../../../_lib/http.js";
 
 const ALLOWED_KINDS = new Set(["human", "developer", "agent", "service"]);
-const ALLOWED_SCOPES = new Set(["identity:read", "capability:execute", "usage:read", "credits:read", "keys:manage", "commerce:checkout", "capabilities:grant"]);
+const ALLOWED_SCOPES = new Set(["identity:read", "capability:execute", "usage:read", "credits:read", "keys:manage", "commerce:checkout", "commerce:orders:read", "capabilities:grant"]);
 
 export async function onRequestPost({ request, env }) {
   const bootstrap = env.YH_BOOTSTRAP_SECRET;
