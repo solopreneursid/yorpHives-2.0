@@ -6,15 +6,18 @@
 - [x] Build a responsive entry point with clear audience pathways.
 - [x] Publish a machine-readable platform overview.
 - [ ] Connect discovery cards to real catalogue destinations.
-- [ ] Add search backed by canonical catalogue data.
+- [ ] Add a browser search experience backed by catalogue data.
 
 ## Stage 2 — Canonical discovery
 
-- [ ] Define typed listing contracts and lifecycle validation.
-- [ ] Add D1 catalogue schema and migrations.
-- [ ] Build public search, category, and listing APIs.
-- [ ] Add honest usage measurement before showing popularity.
-- [ ] Expose equivalent JSON and Markdown representations.
+- [x] Define typed listing contracts and lifecycle validation.
+- [x] Add the initial D1 catalogue schema and migration.
+- [x] Build public catalogue list and detail APIs.
+- [x] Support JSON and Markdown representations from the catalogue API.
+- [x] Filter listings by type, category, audience, and text query.
+- [ ] Provision and bind the preview D1 database.
+- [ ] Add verified listing administration and moderation.
+- [ ] Add privacy-conscious usage aggregation before showing popularity.
 
 ## Stage 3 — Identity and Builder
 
