@@ -22,7 +22,7 @@ Review migration SQL and target database ID before every remote apply. Never poi
 
 ## Health and observability
 
-- `GET /api/v1/health` performs a bounded database health query and reports degraded state when the binding is unavailable.
+- `GET /api/v1/health` verifies database connectivity, the required trust-commerce tables, and tracked migrations; it reports degraded state if any check is incomplete.
 - Application events use structured JSON logs. Never log bearer credentials, bootstrap secrets, payment signatures, checkout URLs, or raw customer payloads.
 - `GET /api/v1/usage` is customer-facing metering, not an operator monitoring dashboard.
 - Cloudflare Workers/Pages logs and traces must be enabled and retention/alerting configured before commercial launch.
@@ -58,4 +58,4 @@ The smoke test executes the free Text Intelligence capability over HTTP and MCP 
 
 ## Current operational gaps
 
-Cloudflare project-level observability, alert destinations, scheduled order reconciliation, tested backup/restore, and automated preview deployment from the new branch remain to be verified.
+Cloudflare project-level observability, alert destinations, scheduled order reconciliation, and tested backup/restore remain to be verified. GitHub push-triggered preview deployment is verified for the trust-commerce branch; production deployment automation and cutover remain intentionally separate.
