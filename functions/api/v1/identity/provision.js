@@ -18,7 +18,9 @@ export async function onRequestPost({ request, env }) {
   if (!ALLOWED_KINDS.has(kind) || typeof displayName !== "string" || displayName.trim().length < 2 || displayName.length > 100) return failure("INVALID_PRINCIPAL", "Provide a supported principal kind and a display name between 2 and 100 characters.", 422, request);
   if (email !== null && (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) return failure("INVALID_EMAIL", "Provide a valid email address or null.", 422, request);
   if (!Array.isArray(scopes) || scopes.length === 0 || scopes.some(scope => !ALLOWED_SCOPES.has(scope)) || new Set(scopes).size !== scopes.length) return failure("INVALID_SCOPES", "Requested scopes are invalid or duplicated.", 422, request);
-  if (!Number.isSafeInteger(dailyLimit) || dailyLimit < 0 || !Number.isSafeInteger(monthlyLimit) || monthlyLimit < 0) return failure("INVALID_SPENDING_LIMIT", "Spending limits must be non-negative integer minor currency units.", 422, request);\n  const now = new Date().toISOString();
+  if (!Number.isSafeInteger(dailyLimit) || dailyLimit < 0 || !Number.isSafeInteger(monthlyLimit) || monthlyLimit < 0) return failure("INVALID_SPENDING_LIMIT", "Spending limits must be non-negative integer minor currency units.", 422, request);
+  if (typeof label !== "string" || label.length < 1 || label.length > 80) return failure("INVALID_KEY_LABEL", "Key label must be 1 to 80 characters.", 422, request);
+  const now = new Date().toISOString();
   const principalId = crypto.randomUUID();
   const keyId = crypto.randomUUID();
   const { secret, prefix } = createApiSecret();
