@@ -4,7 +4,10 @@ export function analyzeText(input) {
   if (!input || typeof input.text !== "string") {
     return { ok: false, code: "INVALID_INPUT", message: "Provide input.text as a string.", details: { field: "input.text", expected: "string" } };
   }
-  if (Object.keys(input).some(key => key !== "text")) {\n    return { ok: false, code: "INVALID_INPUT", message: "Only the text field is accepted.", details: { allowed_fields: ["text"] } };\n  }\n  const text = input.text;
+  if (Object.keys(input).some(key => key !== "text")) {
+    return { ok: false, code: "INVALID_INPUT", message: "Only the text field is accepted.", details: { allowed_fields: ["text"] } };
+  }
+  const text = input.text;
   if (text.length > 20000) {
     return { ok: false, code: "INPUT_TOO_LARGE", message: "Text must be 20,000 characters or fewer.", details: { field: "input.text", max_length: 20000 } };
   }
@@ -32,7 +35,9 @@ export function analyzeText(input) {
       character_count: [...text].length,
       character_count_without_spaces: [...text].filter(char => !/\s/u.test(char)).length,
       sentence_count: sentences.length,
-      paragraph_count: text.split(/\n\s*\n/u).filter(part => part.trim()).length,
+      paragraph_count: text.split(/
+\s*
+/u).filter(part => part.trim()).length,
       estimated_reading_minutes: Math.max(1, Math.ceil(words.length / 225)),
       top_terms: topTerms,
       language_hint: "und",
