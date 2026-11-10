@@ -18,7 +18,6 @@ Subscriptions are optional. Monetization is modeled as independent offers attach
 
 ## Shared commerce domain
 
-Future entities:
 - Offer: what is sold and under which terms.
 - Price: amount, currency, unit, tax treatment, effective period.
 - Entitlement: what a principal is allowed to consume.
@@ -41,6 +40,10 @@ Future entities:
 - Track gross margin by capability: revenue minus compute, provider, storage, and payment fees.
 - Do not add a marketplace until provider demand and platform demand exist.
 
-## Initial release
+## Implemented foundation
 
-No payments or ads are wired into the first vertical slice. The first release validates useful execution and discovery. Monetization is introduced only after usage, conversion, and unit economics can be measured.
+The isolated preview now contains principal identity, scoped API keys, entitlements/grants, usage and credit ledgers, server-configured credit packs, a Stripe Checkout adapter, signed webhook settlement, and operator-triggered payment reconciliation. Checkout remains disabled until preview-only provider secrets and reviewed credit-pack prices are configured. No live payments are enabled.
+
+## Remaining commerce gates
+
+Refunds, disputes, tax calculation, compliant invoices, payout reconciliation, scheduled provider reconciliation, and paid capability credit reservation/debit are not yet activated. No capability should charge a user until these are implemented and verified.
