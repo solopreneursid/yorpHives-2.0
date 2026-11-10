@@ -2,7 +2,6 @@ import { json, preflight } from "../../_lib/http.js";
 
 const catalog = {
   schema_version: "1.0.0",
-  generated_at: new Date().toISOString(),
   capabilities: [{
     id: "text.analyze",
     version: "1.0.0",
