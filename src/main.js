@@ -105,7 +105,7 @@ async function analyze() {
     sampleText.focus();
     return;
   }
-  analyzeButton.disabled = true;
+  analyzeButton.disabled = true;\n  resultPanel.dataset.state = "running";
   analyzeButton.innerHTML = "Analyzing <span class='spinner'></span>";
   try {
     const response = await fetch("/api/v1/execute", {
@@ -115,9 +115,9 @@ async function analyze() {
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error?.message || "The capability could not complete this request.");
-    renderResult(payload.data);
+    renderResult(payload.data);\n    resultPanel.dataset.state = "succeeded";
   } catch (error) {
-    resultPanel.textContent = error.message || "Something went wrong. Please try again.";
+    resultPanel.textContent = error.message || "Something went wrong. Please try again.";\n    resultPanel.dataset.state = "failed";
   } finally {
     analyzeButton.disabled = false;
     analyzeButton.innerHTML = "Analyze text <span>↗</span>";
