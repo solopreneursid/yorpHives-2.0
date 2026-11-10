@@ -55,7 +55,7 @@ test("invalid capability input returns a non-retryable structured error", async 
     capability: "text.analyze",
     version: "1.0.0",
     input: { text: "ok", extra: true }
-  })) });
+  })) , env: { DB: mockD1() } });
   const body = await response.json();
   assert.equal(response.status, 422);
   assert.equal(body.error.code, "INVALID_INPUT");
