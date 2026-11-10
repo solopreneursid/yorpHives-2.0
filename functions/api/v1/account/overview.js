@@ -5,7 +5,8 @@ export async function onRequestGet({ request, env }) {
   if(!auth.ok)return auth.response;
   const id=auth.session.id;
   const [credits,creditEntries,usage,keys,orders,apps,agents]=await Promise.all([
-    env.DB.prepare("SELECT COALESCE(SUM(delta_credits),0) AS balance FROM credits_ledger WHERE principal_id = ?").bind(id).first(),\n    env.DB.prepare("SELECT id,delta_credits,entry_type,description,created_at FROM credits_ledger WHERE principal_id = ? ORDER BY created_at DESC LIMIT 50").bind(id).all(),
+    env.DB.prepare("SELECT COALESCE(SUM(delta_credits),0) AS balance FROM credits_ledger WHERE principal_id = ?").bind(id).first(),
+    env.DB.prepare("SELECT id,delta_credits,entry_type,description,created_at FROM credits_ledger WHERE principal_id = ? ORDER BY created_at DESC LIMIT 50").bind(id).all(),
     env.DB.prepare("SELECT COUNT(*) AS executions, COALESCE(SUM(amount_minor),0) AS amount_minor FROM usage_ledger WHERE principal_id = ? AND created_at >= datetime('now','-30 days')").bind(id).first(),
     env.DB.prepare("SELECT id,prefix,label,scopes_json,expires_at,revoked_at,last_used_at,created_at,application_id FROM api_keys WHERE principal_id = ? ORDER BY created_at DESC LIMIT 100").bind(id).all(),
     env.DB.prepare("SELECT id,pack_id,credits,amount_minor,currency,status,provider,created_at,paid_at FROM orders WHERE principal_id = ? ORDER BY created_at DESC LIMIT 50").bind(id).all(),
