@@ -1,5 +1,5 @@
 import { createApiSecret, sha256Hex } from "../../../_lib/security.js";
-import { authenticate, failure, hasScope, success, audit } from "../../../_lib/platform.js";
+import { authenticate, failure, hasScope, success, audit, rateLimit } from "../../../_lib/platform.js";
 import { readJson, requestId } from "../../../_lib/http.js";
 
 const ALLOWED_SCOPES = new Set(["identity:read", "capability:execute", "usage:read", "credits:read", "keys:manage", "commerce:checkout", "capabilities:grant"]);
@@ -8,6 +8,8 @@ export async function onRequestGet({ request, env }) {
   const auth = await authenticate(request, env);
   if (!auth.ok) return auth.response;
   if (!auth.principal) return failure("AUTHENTICATION_REQUIRED", "Supply an API credential.", 401, request);
+  const limit = await rateLimit(request, env, auth.principal.id);
+  if (!limit.ok) return limit.response;
   if (!hasScope(auth.principal, "keys:manage")) return failure("INSUFFICIENT_SCOPE", "This credential cannot manage API keys.", 403, request);
   const result = await env.DB.prepare("SELECT id, prefix, label, scopes_json, expires_at, revoked_at, last_used_at, created_at FROM api_keys WHERE principal_id = ? ORDER BY created_at DESC LIMIT 100").bind(auth.principal.id).all();
   return success({ keys: (result.results || []).map(key => ({ id: key.id, prefix: key.prefix, label: key.label, scopes: JSON.parse(key.scopes_json), expires_at: key.expires_at, revoked_at: key.revoked_at, last_used_at: key.last_used_at, created_at: key.created_at })) });
