@@ -5,17 +5,18 @@
 - [x] Establish the five-audience platform positioning.
 - [x] Build a responsive entry point with clear audience pathways.
 - [x] Publish a machine-readable platform overview.
-- [ ] Connect discovery cards to real catalogue destinations.
-- [ ] Add a browser search experience backed by catalogue data.
+- [x] Connect homepage pathways to the discovery routes.
+- [x] Build browser search, type filters, audience filters, and listing detail views against the canonical catalogue API.
+- [ ] Verify discovery and listing flows in a successful Cloudflare preview deployment.
 
 ## Stage 2 — Canonical discovery
 
 - [x] Define typed listing contracts and lifecycle validation.
-- [x] Add the initial D1 catalogue schema and migration.
+- [x] Add D1 catalogue schema and integrity migrations.
 - [x] Build public catalogue list and detail APIs.
 - [x] Support JSON and Markdown representations from the catalogue API.
 - [x] Filter listings by type, category, audience, and text query.
-- [ ] Provision and bind the preview D1 database.
+- [x] Provision and bind the preview D1 database.
 - [ ] Add verified listing administration and moderation.
 - [ ] Add privacy-conscious usage aggregation before showing popularity.
 
