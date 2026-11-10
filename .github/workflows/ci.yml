@@ -29,6 +29,6 @@ jobs:
       - name: Run platform contract tests
         run: npm test
       - name: Check browser script syntax
-        run: node --check app.js && node --check discover/app.js && node --check listing/app.js
+        run: node --check app.js && node --check discover/app.js && node --check listing/app.js && node --check free-tools/tools.js && node --check explore/explore.js
       - name: Check Pages middleware syntax
         run: node --check functions/_middleware.js
