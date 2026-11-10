@@ -32,12 +32,15 @@ A production migration requires an explicit cutover plan, verified parity, rollb
 1. GitHub Actions contract tests pass.
 2. Preview deployment reaches a successful deploy stage.
 3. Homepage works at mobile and desktop widths.
-4. `/discover/` search and filters work against the preview catalogue API.
-5. `/listing/?slug=...` renders available listing details safely.
-6. `/llms.txt` returns the machine-readable overview.
-9. `/api/v1/catalogue` returns JSON for browser/API clients.
-8. `/api/v1/catalogue` with `Accept: text/markdown` returns Markdown.
-9. Browser requests to `/` continue to receive HTML; Markdown negotiation returns Markdown.
-10. Security headers are present.
-11. Unpublished listings remain hidden from public endpoints.
-12. No user-facing listing, transaction, or membership is represented as live until its backing workflow is implemented and verified.
+4. Homepage trending rankings use recorded seven-day detail views and outbound launches; empty states appear when there is insufficient activity.
+5. Homepage recently added feed combines available tools and YorpHives-owned applications by publication date.
+6. `/api/v1/trending` returns measured rankings from the preview D1 aggregates.
+7. `/api/v1/catalogue/{slug}/usage` accepts same-origin view and launch events.
+8. `/listing/?slug=...` renders available listing details safely.
+9. `/llms.txt` returns the machine-readable overview.
+10. `/api/v1/catalogue` returns JSON for browser/API clients.
+11. `/api/v1/catalogue` with `Accept: text/markdown` returns Markdown.
+12. Browser requests to `/` continue to receive HTML; Markdown negotiation returns Markdown.
+13. Security headers are present.
+14. Unpublished listings remain hidden from public endpoints.
+15. No user-facing listing, transaction, or membership is represented as live until its backing workflow is implemented and verified.
