@@ -1,32 +1,35 @@
 # YorpHives
 
-> YorpHives connects people discovering tools, businesses building solutions, developers and creators finding earning opportunities, users adopting applications, and AI agents discovering and executing capabilities.
+> YorpHives is a build-led digital platform: people and businesses bring ideas and challenges to build; visitors use free browser tools; users discover applications built by YorpHives; members use Builder to discover earning opportunities; AI agents discover documented platform capabilities.
 
-## Platform pathways
+## Human-facing sections
 
-- People: discover practical tools and resources.
-- Businesses: describe challenges and discover solution-building pathways.
-- Developers and creators: discover opportunities to create, contribute, publish, and earn.
-- Application users: discover useful applications and understand availability, access, and pricing.
-- AI agents: discover structured capabilities and execute permitted actions through documented interfaces.
+- Home: https://yorphives.com/ — custom build requests, measured product activity, recent releases, and platform pathways.
+- Free Tools: https://yorphives.com/free-tools/ — browser-based utilities.
+- Explore: https://yorphives.com/explore/ — applications built and released by YorpHives only.
+- Builder: https://yorphives.com/builder/ — planned paid membership workspace for developers, creators, bloggers, freelancers, designers and entrepreneurs to discover earning opportunities.
+- Connect: https://yorphives.com/connect/ — project enquiries.
+- Contact: connect@yorphives.com
 
-## Platform principles
+## Machine-readable discovery
 
-- Discovery should be useful, truthful, and accessible without an account wherever possible.
-- Popularity and trending claims must be based on measured usage, never fabricated.
-- Human and machine interfaces should use the same canonical source of truth.
-- Execution requires explicit permissions and clear side-effect declarations.
-- Paid access is controlled by server-side entitlements derived from verified Dodo Payments webhooks. Browser redirects are not proof of payment.
+- Platform manifest: https://yorphives.com/.well-known/yorphives.json
+- OpenAPI: https://yorphives.com/openapi.yaml
+- Public catalogue: https://yorphives.com/api/v1/catalogue
+- Catalogue detail: https://yorphives.com/api/v1/catalogue/{slug}
 
-## Contact
+The catalogue returns JSON by default and Markdown when requested with Accept: text/markdown or ?format=markdown. Only reviewed and available listings are public.
 
-- General: connect@yorphives.com
-- Website: https://yorphives.com/
+## Agentic Internet principles
 
-## Current status
+YorpHives is being developed for both people and autonomous agents. The same canonical service contracts should power human interfaces and machine interfaces. Agent execution must be authenticated, authorized, rate-limited, auditable, and explicit about side effects. Discovery does not imply permission to execute.
 
-This is the platform's initial public positioning and experience. Directory listings, business workflows, creator opportunities, applications, agent execution, and payment-backed memberships are being developed in stages. Do not infer that a pathway is live merely because it is described here.
+Cloudflare Workers/Pages Functions provide edge routing and API execution; D1 stores relational platform state; Durable Objects are reserved for coordination requiring strong consistency; Workflows or Queues handle reliable asynchronous work where appropriate. Business logic and API contracts should remain portable.
 
-## Machine interfaces
+## Payments and trust
 
-Machine-readable catalogue and execution endpoints will be published as they become available and pass verification. Until then, use this document as the canonical platform overview and do not assume undocumented endpoints exist.
+Dodo Payments is the selected provider for Builder memberships and paid applications. Entitlements must be created or changed only after signed provider webhooks are verified server-side and processed idempotently. Browser success redirects are not proof of payment. Cancellation, expiration, refunds and chargebacks must reconcile access.
+
+## Truthful availability
+
+This platform is under active development. Builder paid access, Dodo checkout, identity, agent execution, MCP tools and some catalogue workflows are not yet live. Do not infer that a capability is available just because it is described here. Trending rankings must use measured, privacy-conscious usage data; never fabricate popularity.
