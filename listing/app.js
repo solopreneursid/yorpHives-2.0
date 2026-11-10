@@ -73,6 +73,31 @@ async function loadListing() {
     if (!destination) throw new Error("This listing has an invalid destination and cannot be opened.");
     const destinationLink = document.querySelector("#listing-destination");
     destinationLink.href = destination;
+    destinationLink.addEventListener("click", () => {
+      fetch("/api/v1/catalogue/" + encodeURIComponent(slug) + "/usage", {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        credentials: "same-origin",
+        keepalive: true,
+        body: JSON.stringify({ event: "launch" }),
+      }).catch(() => {});
+    });
+
+    const viewKey = "yorphives:catalogue-view:" + slug;
+    try {
+      if (!sessionStorage.getItem(viewKey)) {
+        sessionStorage.setItem(viewKey, "1");
+        fetch("/api/v1/catalogue/" + encodeURIComponent(slug) + "/usage", {
+          method: "POST",
+          headers: { "content-type": "application/json", accept: "application/json" },
+          credentials: "same-origin",
+          keepalive: true,
+          body: JSON.stringify({ event: "detail_view" }),
+        }).catch(() => {});
+      }
+    } catch {
+      // Private browsing storage restrictions should never block the listing.
+    }
 
     const machineLink = document.querySelector("#machine-link");
     const machineUrl = listing.machine_readable_url ? safeHttpUrl(listing.machine_readable_url) : null;
