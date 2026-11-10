@@ -4,13 +4,13 @@ on:
   push:
     branches: ["main", "build/**"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "build/**"]
 
 permissions:
   contents: read
 
 concurrency:
-  group: yorphives-ci-${{ github.ref }}
+  group: yorphives-ci-\${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -25,6 +25,24 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Check Worker JavaScript syntax
+        run: find functions -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Validate D1 migrations
+        run: |
+          python - <<'PY'
+          import glob, sqlite3
+          db = sqlite3.connect(':memory:')
+          paths = sorted(glob.glob("migrations/*.sql"))
+          for path in paths:
+              with open(path, encoding="utf-8") as migration:
+                  db.executescript(migration.read())
+          expected = {"principals", "api_keys", "capability_grants", "usage_ledger", "credits_ledger", "orders", "payment_events", "audit_events"}
+          actual = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+          missing = expected - actual
+          if missing:
+              raise SystemExit(f"Missing tables: {sorted(missing)}")
+          print(f"Validated {len(paths)} migrations and {len(expected)} core tables")
+          PY
       - name: Run tests
         run: npm test
       - name: Build static assets
