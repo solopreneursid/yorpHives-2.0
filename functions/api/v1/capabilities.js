@@ -2,7 +2,7 @@ import { json, preflight } from "../../_lib/http.js";
 
 const catalog = {
   schema_version: "1.0.0",
-  generated_at: "2026-11-10T00:00:00.000Z",
+  generated_at: new Date().toISOString(),
   capabilities: [{
     id: "text.analyze",
     version: "1.0.0",
@@ -36,9 +36,9 @@ const catalog = {
         top_terms: { type: "array", items: { type: "object", properties: { term: { type: "string" }, count: { type: "integer" } } } }
       }
     },
-    access: { authentication: "none", authorization: "public", rate_limit: "platform-default" },
+    access: { authentication: "none", authorization: "public", rate_limit: "not-configured" },
     pricing: { model: "free", currency: null, amount: 0, unit: "execution" },
-    execution: { idempotent: true, synchronous: true, timeout_ms: 3000, max_input_bytes: 32768 },
+    execution: { idempotent: true, synchronous: true, timeout_ms: 3000, max_input_bytes: 98304 },
     data_handling: { retention: "none", training_use: false, sensitive_data_recommended: false },
     safety: { human_approval: false, external_side_effects: false }
   }]
