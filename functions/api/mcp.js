@@ -28,7 +28,7 @@ export async function onRequestPost({ request }) {
     return errorResponse("UNSUPPORTED_MEDIA_TYPE", "MCP requests must use application/json.", 415, id);
   }
   const parsed = await readJson(request);
-  if (!parsed.ok) return errorResponse(parsed.reason === "too_large" ? "PAYLOAD_TOO_LARGE" : "INVALID_JSON", "MCP request must be valid JSON within 32 KB.", parsed.reason === "too_large" ? 413 : 400, id);
+  if (!parsed.ok) return errorResponse(parsed.reason === "too_large" ? "PAYLOAD_TOO_LARGE" : "INVALID_JSON", "MCP request must be valid JSON within 96 KB.", parsed.reason === "too_large" ? 413 : 400, id);
   const rpc = parsed.value;
   if (!rpc || rpc.jsonrpc !== "2.0" || typeof rpc.method !== "string") return rpcError(rpc?.id ?? null, -32600, "Invalid JSON-RPC request.");
 
