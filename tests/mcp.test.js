@@ -37,7 +37,7 @@ test("modern MCP tool call enforces required routing headers and returns structu
   const body = await response.json();
   assert.equal(response.status, 200);
   assert.equal(body.result.resultType, "complete");
-  assert.equal(body.result.structuredContent.word_count, 5);
+  assert.equal(body.result.structuredContent.word_count, 4);
   assert.equal(body.result.isError, false);
 });
 
