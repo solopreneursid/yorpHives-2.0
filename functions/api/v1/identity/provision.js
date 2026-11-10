@@ -6,14 +6,14 @@ const ALLOWED_KINDS = new Set(["human", "developer", "agent", "service"]);
 const ALLOWED_SCOPES = new Set(["identity:read", "capability:execute", "usage:read", "credits:read", "keys:manage", "commerce:checkout", "commerce:orders:read", "capabilities:grant"]);
 
 export async function onRequestPost({ request, env }) {
+  if (!env.DB) return failure("IDENTITY_UNAVAILABLE", "Identity database binding is missing.", 503, request);
+  const limit = await rateLimit(request, env, null);
+  if (!limit.ok) return limit.response;
   const bootstrap = env.YH_BOOTSTRAP_SECRET;
   if (!bootstrap) return failure("PROVISIONING_DISABLED", "Set the YH_BOOTSTRAP_SECRET deployment secret before provisioning principals.", 503, request);
   if (!constantTimeEqual(request.headers.get("X-YorpHives-Bootstrap") || "", bootstrap)) {
     return failure("BOOTSTRAP_UNAUTHORIZED", "A valid bootstrap credential is required.", 401, request);
   }
-  if (!env.DB) return failure("IDENTITY_UNAVAILABLE", "Identity database binding is missing.", 503, request);
-  const limit = await rateLimit(request, env, null);
-  if (!limit.ok) return limit.response;
   const parsed = await readJson(request);
   if (!parsed.ok || !parsed.value || typeof parsed.value !== "object" || Array.isArray(parsed.value)) return failure("INVALID_REQUEST", "Send a valid JSON object.", 400, request);
   const { kind, display_name: displayName, email = null, label = "Initial API key", scopes = ["identity:read", "capability:execute", "usage:read", "credits:read"], daily_spending_limit_minor: dailyLimit = 0, monthly_spending_limit_minor: monthlyLimit = 0 } = parsed.value;
