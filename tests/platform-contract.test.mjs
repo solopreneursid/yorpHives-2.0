@@ -12,7 +12,13 @@ test("homepage leads with custom build requests and the approved product navigat
     "Let's build it.",
     "Trending tools",
     "Recently added",
+    "Trending tools",
     "Discover Builder",
+    "INDIVIDUALS",
+    "STARTUPS",
+    "CREATORS",
+    "SMALL BUSINESSES",
+    "ENTERPRISE",
     "connect@yorphives.com",
   ]) {
     assert.ok(html.includes(phrase), `Missing homepage content: ${phrase}`);
@@ -20,6 +26,33 @@ test("homepage leads with custom build requests and the approved product navigat
   for (const route of ["/free-tools/", "/explore/", "/builder/", "/connect/"]) {
     assert.ok(html.includes(`href="${route}"`), `Missing navigation route: ${route}`);
   }
+});
+
+test("homepage trends use measured seven-day usage and recent releases combine tools with applications", async () => {
+  const html = await read("../index.html");
+  const app = await read("../app.js");
+  const trending = await read("../functions/api/v1/trending.ts");
+  assert.match(html, /last 7 days/);
+  assert.match(app, /fetch\("\/api\/v1\/trending"/);
+  assert.match(app, /type=tool&limit=6/);
+  assert.match(app, /type=application&limit=6/);
+  assert.match(app, /detail_views/);
+  assert.match(app, /launches/);
+  assert.match(trending, /SUM\(u\.detail_views \+ u\.launches\)/);
+  assert.match(trending, /date\('now', '-6 days'\)/);
+  assert.match(trending, /HAVING SUM\(u\.detail_views \+ u\.launches\) >= 3/);
+});
+
+test("listing detail and launch interactions are recorded as first-party daily aggregates", async () => {
+  const script = await read("../listing/app.js");
+  const endpoint = await read("../functions/api/v1/catalogue/[slug]/usage.ts");
+  assert.match(script, /event: "detail_view"/);
+  assert.match(script, /event: "launch"/);
+  assert.match(endpoint, /origin !== new URL\(request\.url\)\.origin/);
+  assert.match(endpoint, /catalogue_usage_daily/);
+  assert.match(endpoint, /detail_views/);
+  assert.match(endpoint, /launches/);
+  assert.match(endpoint, /INVALID_EVENT/);
 });
 
 test("homepage provides accessible navigation and responsive stylesheet", async () => {
