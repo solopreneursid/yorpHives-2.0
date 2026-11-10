@@ -16,7 +16,7 @@
 - Platform manifest: https://yorphives.com/.well-known/yorphives.json
 - OpenAPI: https://yorphives.com/openapi.yaml
 - Public catalogue: https://yorphives.com/api/v1/catalogue
-- Catalogue detail: https://yorphives.com/api/v1/catalogue/{slug}
+- Catalogue detail: https://yorphives.com/api/v1/catalogue/{slug}\n- Trending tools: https://yorphives.com/api/v1/trending (seven-day measured detail views + launches)\n- First-party usage events: POST https://yorphives.com/api/v1/catalogue/{slug}/usage (same-origin browser events)
 
 The catalogue returns JSON by default and Markdown when requested with Accept: text/markdown or ?format=markdown. Only reviewed and available listings are public.
 
