@@ -1,11 +1,12 @@
 import { analyzeText } from "../../_lib/text-analyze.js";
 import { errorResponse, json, preflight, readJson, requestId } from "../../_lib/http.js";
+import { authorizeCapability, recordUsage } from "../../_lib/platform.js";
 
 const handlers = new Map([["text.analyze@1.0.0", analyzeText]]);
 
 export async function onRequestOptions() { return preflight(); }
 
-export async function onRequestPost({ request }) {
+export async function onRequestPost({ request, env }) {
   const id = requestId(request);
   const contentType = (request.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
   if (contentType !== "application/json") {
@@ -25,6 +26,9 @@ export async function onRequestPost({ request }) {
   if (typeof body.capability !== "string" || typeof body.version !== "string" || !body.input || typeof body.input !== "object" || Array.isArray(body.input)) {
     return errorResponse("INVALID_REQUEST", "Provide capability, version, and input object.", 400, id, false, { required: ["capability", "version", "input"] });
   }
+
+  const policy = await authorizeCapability(request, env, body.capability);
+  if (!policy.ok) return policy.response;
 
   const handler = handlers.get(`${body.capability}@${body.version}`);
   if (!handler) {
