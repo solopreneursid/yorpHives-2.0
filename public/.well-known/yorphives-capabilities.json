@@ -1,0 +1,22 @@
+{
+  "manifest_version": "1.0",
+  "name": "YorpHives",
+  "description": "An open capability network for people and AI agents.",
+  "website": "https://yorphives.com",
+  "catalog": "https://yorphives.com/api/v1/capabilities",
+  "openapi": "https://yorphives.com/openapi.json",
+  "llms": "https://yorphives.com/llms.txt",
+  "protocols": [
+    { "name": "http-json", "version": "1", "endpoint": "https://yorphives.com/api/v1/execute", "discovery": "https://yorphives.com/openapi.json" },
+    { "name": "mcp", "transport": "streamable-http", "endpoint": "https://yorphives.com/api/mcp", "protocol_version": "2025-03-26" }
+  ],
+  "principles": {
+    "capability_contracts": "versioned",
+    "pricing_disclosed_before_execution": true,
+    "authorization_explicit": true,
+    "execution_results_structured": true,
+    "data_handling_disclosed": true
+  },
+  "catalog_version": "1.0.0",
+  "status": "early-access"
+}
