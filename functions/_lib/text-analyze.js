@@ -4,7 +4,7 @@ export function analyzeText(input) {
   if (!input || typeof input.text !== "string") {
     return { ok: false, code: "INVALID_INPUT", message: "Provide input.text as a string.", details: { field: "input.text", expected: "string" } };
   }
-  const text = input.text;
+  if (Object.keys(input).some(key => key !== "text")) {\n    return { ok: false, code: "INVALID_INPUT", message: "Only the text field is accepted.", details: { allowed_fields: ["text"] } };\n  }\n  const text = input.text;
   if (text.length > 20000) {
     return { ok: false, code: "INPUT_TOO_LARGE", message: "Text must be 20,000 characters or fewer.", details: { field: "input.text", max_length: 20000 } };
   }
