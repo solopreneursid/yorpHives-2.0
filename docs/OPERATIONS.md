@@ -9,6 +9,17 @@
 
 Never point a production environment at the preview D1 database. Create a separate production D1 database and run reviewed migrations before any production cutover.
 
+## D1 migrations
+
+The isolated preview database already has migrations `0001_trust_commerce.sql` and `0002_spending_limits.sql` applied and recorded in Wrangler's `d1_migrations` table. For future schema changes:
+
+```bash
+npx wrangler d1 migrations list yorphives-2-trust-preview --remote --config wrangler.toml
+npx wrangler d1 migrations apply yorphives-2-trust-preview --remote --config wrangler.toml
+```
+
+Review migration SQL and target database ID before every remote apply. Never point these preview commands at a production database.
+
 ## Health and observability
 
 - `GET /api/v1/health` performs a bounded database health query and reports degraded state when the binding is unavailable.
@@ -26,6 +37,16 @@ Never point a production environment at the preview D1 database. Create a separa
 6. HTTP and MCP execution both pass rate-limit and ledger checks.
 7. Credential provisioning, scope denial, key revocation, and webhook replay tests pass.
 8. No preview secret or test credential is copied into production.
+
+## Preview verification
+
+After a preview deployment finishes, run the deployed integration checks from a machine with network access:
+
+```bash
+YH_BASE_URL=https://<preview-host> npm run smoke
+```
+
+The smoke test executes the free Text Intelligence capability over HTTP and MCP and therefore appends two metering rows to the selected environment's usage ledger.
 
 ## Recovery
 
