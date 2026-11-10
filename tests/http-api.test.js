@@ -1,3 +1,4 @@
+import { mockD1 } from "./helpers/mock-d1.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequestGet as listCapabilities } from "../functions/api/v1/capabilities.js";
@@ -27,7 +28,7 @@ test("HTTP execution returns structured success and usage", async () => {
     capability: "text.analyze",
     version: "1.0.0",
     input: { text: "Build useful capabilities." }
-  })) });
+  })) , env: { DB: mockD1() } });
   const body = await response.json();
   assert.equal(response.status, 200);
   assert.equal(body.status, "succeeded");
@@ -42,7 +43,7 @@ test("unknown capability versions return a machine-readable discovery hint", asy
     capability: "unknown.capability",
     version: "9.9.9",
     input: {}
-  })) });
+  })) , env: { DB: mockD1() } });
   const body = await response.json();
   assert.equal(response.status, 404);
   assert.equal(body.error.code, "CAPABILITY_NOT_FOUND");
