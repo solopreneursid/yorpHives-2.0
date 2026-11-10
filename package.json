@@ -7,7 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test tests/platform-contract.test.mjs",
+    "test": "node --test",
     "check": "node --check app.js && node --check functions/_middleware.js && npm test"
   }
 }
