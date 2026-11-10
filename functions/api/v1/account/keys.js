@@ -1,7 +1,7 @@
-import { requireSession } from "../../_lib/session.js";
-import { readJson, json } from "../../_lib/http.js";
-import { createApiSecret, sha256Hex } from "../../_lib/security.js";
-import { audit } from "../../_lib/platform.js";
+import { requireSession } from "../../../_lib/session.js";
+import { readJson, json } from "../../../_lib/http.js";
+import { createApiSecret, sha256Hex } from "../../../_lib/security.js";
+import { audit } from "../../../_lib/platform.js";
 const ALLOWED=new Set(["identity:read","capability:execute","usage:read","credits:read","keys:manage","commerce:checkout","commerce:orders:read"]);
 export async function onRequestPost({request,env}){
  const auth=await requireSession(request,env,{csrf:true});if(!auth.ok)return auth.response;
