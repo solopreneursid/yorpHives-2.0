@@ -1,22 +1,6 @@
-const menuButton = document.querySelector(".menu-toggle");
-const mobileNav = document.querySelector("#mobile-nav");
-
-if (menuButton && mobileNav) {
-  menuButton.addEventListener("click", () => {
-    const isExpanded = menuButton.getAttribute("aria-expanded") === "true";
-    menuButton.setAttribute("aria-expanded", String(!isExpanded));
-    menuButton.setAttribute("aria-label", isExpanded ? "Open navigation" : "Close navigation");
-    mobileNav.hidden = isExpanded;
-  });
-
-  mobileNav.querySelectorAll("a").forEach((link) => {
-    link.addEventListener("click", () => {
-      menuButton.setAttribute("aria-expanded", "false");
-      menuButton.setAttribute("aria-label", "Open navigation");
-      mobileNav.hidden = true;
-    });
-  });
-}
-
-const year = document.querySelector("#year");
-if (year) year.textContent = String(new Date().getFullYear());
+const menuButton=document.querySelector(".menu-toggle");const mobileNav=document.querySelector("#mobile-nav");
+if(menuButton&&mobileNav){menuButton.addEventListener("click",()=>{const open=menuButton.getAttribute("aria-expanded")==="true";menuButton.setAttribute("aria-expanded",String(!open));menuButton.setAttribute("aria-label",open?"Open navigation":"Close navigation");mobileNav.hidden=open;});mobileNav.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{menuButton.setAttribute("aria-expanded","false");mobileNav.hidden=true;}));}
+const year=document.querySelector("#year");if(year)year.textContent=String(new Date().getFullYear());
+async function loadRecent(){const target=document.querySelector("#recent-listings");if(!target)return;try{const response=await fetch("/api/v1/catalogue?type=application&limit=3");if(!response.ok)throw new Error("Catalogue unavailable");const payload=await response.json();const items=Array.isArray(payload.data)?payload.data:[];if(!items.length){target.innerHTML='<div class="data-state compact"><div><h3>No public applications yet</h3><p>YorpHives-built products will appear here after review and release verification.</p></div><a class="section-link" href="/explore/">Explore marketplace ↗</a></div>';return;}target.replaceChildren(...items.map(item=>{const card=document.createElement("article");card.className="listing-card";const type=document.createElement("small");type.textContent="YORPHIVES APPLICATION";const title=document.createElement("h3");title.textContent=item.title;const desc=document.createElement("p");desc.textContent=item.summary;const link=document.createElement("a");link.href="/listing/?slug="+encodeURIComponent(item.slug);link.textContent="View application ↗";card.append(type,title,desc,link);return card;}));}catch{target.innerHTML='<div class="data-state compact"><div><h3>New releases are temporarily unavailable</h3><p>Please visit Explore to check the product shelf.</p></div></div>';}}
+loadRecent();
+const form=document.querySelector("#build-request-form");if(form){form.addEventListener("submit",event=>{event.preventDefault();const data=new FormData(form);const subject=encodeURIComponent("YorpHives build request: "+String(data.get("requestType")||"New project"));const body=encodeURIComponent(["Name: "+data.get("name"),"Email: "+data.get("email"),"Organization: "+(data.get("organization")||"Not provided"),"Request type: "+data.get("requestType"),"Project details:",data.get("details")].join("\n"));window.location.href="mailto:connect@yorphives.com?subject="+subject+"&body="+body;});}
