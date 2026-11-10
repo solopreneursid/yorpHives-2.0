@@ -4,12 +4,14 @@ import { readFile } from "node:fs/promises";
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
-test("discovery page is connected to the canonical catalogue API", async () => {
+test("discovery page is connected to the canonical catalogue API and mobile navigation", async () => {
   const html = await read("../discover/index.html");
   const script = await read("../discover/app.js");
   assert.match(html, /id="search-form"/);
   assert.match(html, /id="empty-state"/);
   assert.match(html, /id="load-more"/);
+  assert.match(html, /aria-controls="mobile-nav"/);
+  assert.match(html, /<nav id="mobile-nav"/);
   assert.match(script, /fetch\("\/api\/v1\/catalogue\?/);
   assert.match(script, /encodeURIComponent\(listing\.slug\)/);
   assert.match(script, /textContent = listing\.title/);
@@ -29,6 +31,8 @@ test("listing detail page loads by slug and validates external destinations", as
   const html = await read("../listing/index.html");
   const script = await read("../listing/app.js");
   assert.match(html, /id="listing-content"/);
+  assert.match(html, /aria-controls="mobile-nav"/);
+  assert.match(html, /<nav id="mobile-nav"/);
   assert.match(script, /\/api\/v1\/catalogue\//);
   assert.match(script, /url\.protocol === "https:" \|\| url\.protocol === "http:"/);
   assert.match(html, /rel="noopener noreferrer"/);
