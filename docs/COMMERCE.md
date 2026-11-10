@@ -15,6 +15,7 @@
 - Server-controlled pack list via `YH_CREDIT_PACKS_JSON`.
 - Payment-event deduplication and append-only credits ledger.
 - Credit balance derived from ledger entries, not a mutable balance field.
+- Authenticated order-history endpoint exposes pending, paid, and expired purchase states.
 - Usage history and credit balance endpoints.
 - Orders are idempotent per principal and client-supplied idempotency key.
 
