@@ -28,7 +28,7 @@ export async function onRequestPost({ request, env }) {
     } catch {
       principal = await env.DB.prepare("SELECT id, kind, display_name, email FROM principals WHERE email = ? LIMIT 1").bind(email).first();
     }
-    if (!principal) principal = { id, kind: "human", display_name: name.slice(0, 100), email };
+    if (!principal) return failure("ACCOUNT_CREATION_FAILED", "Your account could not be created. Request a new sign-in code and retry.", 503, request, { retryable: true });
   }
   const session = await issueSession(env, principal.id);
   await audit(env, { actorId: principal.id, action: "auth.session_created", targetType: "auth_session", requestId: requestId(request), metadata: { method: "email_otp" } });
