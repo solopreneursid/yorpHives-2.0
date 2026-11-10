@@ -2,7 +2,7 @@ export async function settleStripeSession(env, { eventId, eventType, payloadHash
   const orderId = session.metadata?.order_id || session.client_reference_id;
   if (!orderId || session.payment_status !== "paid") return { ok: false, code: "PAYMENT_NOT_SETTLED" };
   const order = await env.DB.prepare("SELECT * FROM orders WHERE id = ? AND provider = 'stripe'").bind(orderId).first();
-  if (!order || session.status !== "complete" || session.mode !== "payment" || order.provider_session_id !== session.id || order.amount_minor !== session.amount_total || order.currency.toLowerCase() !== session.currency) {
+  if (!order || session.status !== "complete" || session.mode !== "payment" || order.provider_session_id !== session.id || session.client_reference_id !== order.id || session.metadata?.order_id !== order.id || session.metadata?.principal_id !== order.principal_id || order.amount_minor !== session.amount_total || order.currency.toLowerCase() !== session.currency) {
     return { ok: false, code: "PAYMENT_ORDER_MISMATCH" };
   }
   const now = new Date().toISOString();
