@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 22
       - name: Run platform contract tests
-        run: node --test tests/platform-contract.test.mjs
+        run: npm test
       - name: Check browser script syntax
         run: node --check app.js
       - name: Check Pages middleware syntax
