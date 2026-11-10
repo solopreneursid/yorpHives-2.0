@@ -14,7 +14,7 @@ const catalog = {
     tags: ["text", "analysis", "writing", "utility"],
     interfaces: {
       http: { method: "POST", path: "/api/v1/execute" },
-      mcp: { tool: "text_analyze", endpoint: "/api/mcp" },
+      mcp: { tool: "text_analyze", endpoint: "/api/mcp", transport: "streamable-http", protocol_versions: ["2026-07-28", "2025-11-25"] },
       human: { path: "/#live-demo" }
     },
     input_schema: {
