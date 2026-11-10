@@ -1,43 +1,48 @@
 # Security and Trust Baseline
 
-## Initial public surface
+## Current public surface
 
-The initial text capability is public, deterministic, and has no external side effects. It does not require accounts or persist user text. It is not intended for secrets or sensitive personal data.
+The first public capability, `text.analyze@1.0.0`, is deterministic, read-only, free, and processes text in memory. It does not require a credential and does not persist submitted text. It is not intended for secrets or sensitive personal data.
 
-## Current controls
+## Implemented controls
 
-- JSON-only execution requests.
-- 96 KiB request body limit. Rate limiting is not yet configured and is a release blocker before broad public exposure.
-- 20,000 character capability input limit.
-- Explicit capability and version allowlist.
-- No dynamic code execution, arbitrary URL fetching, or provider calls.
-- Structured errors without stack traces.
-- MCP validates Origin and modern protocol routing headers to prevent DNS rebinding and header/body disagreement.
-- Request identifiers and no-store execution responses.
-- Public read-only catalog and OpenAPI metadata.
-- Cross-origin access is public and unauthenticated for this free capability only.
+- JSON-only execution with a 96 KiB request-body ceiling and 20,000-character capability input ceiling.
+- Explicit capability/version allowlist; no dynamic code execution or arbitrary URL fetching.
+- D1-backed fixed-window rate limits: 12 requests/minute per anonymous IP and 90 requests/minute per authenticated principal.
+- Principal identities are separate from credentials; API keys are 256-bit random bearer secrets stored only as SHA-256 hashes.
+- Explicit key scopes, expiry, revocation, principal status, capability grants, daily execution quotas, and principal/capability spending ceilings.
+- Append-only usage, credit, payment-event, and audit ledgers enforced by SQLite triggers.
+- Stripe Checkout uses server-controlled pack configuration, per-principal idempotency keys, signed webhook verification, timestamp tolerance, order/amount/currency matching, and duplicate-safe credit issuance.
+- Operator-triggered reconciliation retrieves pending Stripe sessions from the provider and uses the same idempotent settlement routine as webhooks.
+- MCP validates Origin and modern protocol routing headers; HTTP and MCP execution share authorization and metering.
+- Global response hardening: HSTS, nosniff, frame denial, referrer policy, permissions policy, and restrictive CSP directives.
+- Secrets are runtime bindings only; no provider or bootstrap secrets are committed.
 
-## Required before paid or stateful capabilities
+## Identity boundaries
 
-- Identity provider and verified principal model.
-- Scoped API keys / OAuth grants; no shared master credentials.
-- Capability-level authorization and tenant isolation.
-- Server-side budget reservation and spending ceilings.
-- Idempotency keys bound to principal + capability + canonical request hash.
-- Rate limiting and abuse detection at edge and principal level.
-- Per-capability timeout, concurrency, payload, and output limits.
-- SSRF controls and strict egress allowlists for network-capable capabilities.
-- Malware scanning and content validation for file uploads.
-- Audit events for authorization, execution, billing, and administrative actions.
-- Human approval for irreversible, external, or high-impact actions.
-- Secrets management; no credentials in source, browser bundles, logs, or capability outputs.
-- Retention and deletion policy for every data class.
-- Security review and abuse tests before publishing a new capability.
+The initial identity layer supports human, developer, agent, and service principals with scoped API keys. Operator provisioning requires `YH_BOOTSTRAP_SECRET`. This is not yet consumer login or a full OAuth authorization server. Email verification, account recovery, OAuth 2.1 authorization-code + PKCE, federation, and delegated agent identity remain separate work.
+
+## Paid execution policy
+
+No paid capability is currently published. The credit ledger, budget checks, capability grants, Stripe checkout adapter, and reconciliation route are infrastructure only. Checkout remains disabled until `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and a reviewed `YH_CREDIT_PACKS_JSON` are configured on the isolated preview environment. Never use live provider credentials during initial testing.
+
+Before a paid capability is published, it must:
+- disclose price, currency, unit, refund behavior, data handling, and maximum execution cost before invocation;
+- require explicit capability grant and execution scope;
+- pass principal daily/monthly and capability daily/per-execution budget checks;
+- reserve/debit credits atomically and record an immutable usage event;
+- define retry, partial-failure, cancellation, and refund semantics.
+
+## Remaining production release blockers
+
+- Consumer identity/OAuth, recovery, and consent UX.
+- Provider test-mode end-to-end tests, refunds, disputes, tax/invoice handling, and scheduled reconciliation.
+- Automated cleanup/retention for rate-limit buckets and non-financial operational records.
+- Edge-level abuse controls and bot policy tuned to observed traffic.
+- Alerting, backup/restore rehearsal, incident response, and dependency vulnerability automation.
+- Independent external MCP client conformance tests.
+- Security review before publishing any network-capable or side-effecting capability.
 
 ## Agent-specific threat model
 
-Treat agent input, tool arguments, retrieved documents, and third-party capability output as untrusted. Never let instructions embedded in content override system policy. Do not grant agents ambient authority. Require explicit scopes, declared cost ceilings, and human approval for consequential side effects.
-
-## Production release blockers
-
-No paid execution, user data persistence, external provider integration, third-party code execution, or autonomous payment is enabled in the initial slice. These remain blocked until the controls above are implemented and tested.
+Treat agent input, tool arguments, retrieved documents, and third-party capability output as untrusted. Never let instructions embedded in content override system policy. Do not grant agents ambient authority. Use one key per agent and purpose, minimal scopes, explicit budgets, and human approval for consequential or irreversible actions.
