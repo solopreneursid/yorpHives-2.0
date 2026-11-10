@@ -18,7 +18,7 @@ export function json(data, status = 200, extraHeaders = {}) {
 export function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Idempotency-Key, MCP-Protocol-Version, Mcp-Method, Mcp-Name",
     "Access-Control-Max-Age": "86400"
   };
