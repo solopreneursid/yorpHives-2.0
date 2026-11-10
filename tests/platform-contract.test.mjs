@@ -51,6 +51,15 @@ test("well-known manifest and OpenAPI document are published", async () => {
   assert.match(openapi, /\/api\/v1\/catalogue/);
 });
 
+test("Explore catalogue APIs enforce YorpHives ownership", async () => {
+  const listApi = await read("../functions/api/v1/catalogue.ts");
+  const detailApi = await read("../functions/api/v1/catalogue/[slug].ts");
+  const migration = await read("../migrations/0003_catalogue_ownership.sql");
+  assert.match(listApi, /l\\.owner_type = 'yorphives'/);
+  assert.match(detailApi, /l\\.owner_type = 'yorphives'/);
+  assert.match(migration, /owner_type TEXT NOT NULL DEFAULT 'external'/);
+});
+
 test("homepage responds with Markdown when requested", async () => {
   const request = new Request("https://yorphives.com/", {
     headers: { accept: "text/markdown" },
