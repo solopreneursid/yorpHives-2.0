@@ -49,6 +49,9 @@ export async function onRequestGet({ request, env }: CatalogueRequestContext): P
   if (type) {
     conditions.push("l.listing_type = ?");
     bindings.push(type);
+    if (type === "application") {
+      conditions.push("l.owner_type = 'yorphives'");
+    }
   }
   if (category) {
     conditions.push("c.slug = ?");
