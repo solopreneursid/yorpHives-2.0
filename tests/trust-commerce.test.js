@@ -6,6 +6,9 @@ const read = path => readFile(new URL(path, import.meta.url), "utf8");
 
 test("trust schema includes isolated principals, scoped credentials and explicit grants", async () => {
   const sql = await read("../migrations/0001_trust_commerce.sql");
+  const limits = await read("../migrations/0002_spending_limits.sql");
+  assert.match(limits, /daily_spending_limit_minor/);
+  assert.match(limits, /monthly_spending_limit_minor/);
   for (const table of ["principals", "api_keys", "capability_grants", "entitlements", "rate_limit_windows"]) {
     assert.match(sql, new RegExp(`CREATE TABLE ${table}\\b`));
   }
@@ -41,4 +44,24 @@ test("production secrets are referenced only as runtime environment bindings", a
   assert.match(checkout, /env\.STRIPE_SECRET_KEY/);
   assert.match(webhook, /env\.STRIPE_WEBHOOK_SECRET/);
   assert.doesNotMatch(routes + checkout + webhook, /sk_live_[A-Za-z0-9]+/);
+});
+
+test("identity, grants and reconciliation are gated by distinct credentials", async () => {
+  const grants = await read("../functions/api/v1/identity/grants.js");
+  const reconcile = await read("../functions/api/v1/commerce/reconcile.js");
+  const keys = await read("../functions/api/v1/identity/keys.js");
+  assert.match(grants, /capabilities:grant/);
+  assert.match(grants, /per_execution_limit_minor/);
+  assert.match(reconcile, /YH_COMMERCE_RECONCILE_SECRET/);
+  assert.match(reconcile, /settleStripeSession/);
+  assert.match(keys, /New keys cannot exceed the caller's scopes/);
+});
+
+test("HTTP and MCP execution both share the same trust and metering layer", async () => {
+  const http = await read("../functions/api/v1/execute.js");
+  const mcp = await read("../functions/api/mcp.js");
+  assert.match(http, /authorizeCapability/);
+  assert.match(http, /recordUsage/);
+  assert.match(mcp, /authorizeCapability/);
+  assert.match(mcp, /recordUsage/);
 });
