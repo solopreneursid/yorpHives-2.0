@@ -15,7 +15,7 @@ export async function onRequestPost({ request }) {
   const parsed = await readJson(request);
   if (!parsed.ok) {
     const tooLarge = parsed.reason === "too_large";
-    return errorResponse(tooLarge ? "PAYLOAD_TOO_LARGE" : "INVALID_JSON", tooLarge ? "Request body exceeds 32 KB." : "Request body must contain valid JSON.", tooLarge ? 413 : 400, id, false);
+    return errorResponse(tooLarge ? "PAYLOAD_TOO_LARGE" : "INVALID_JSON", tooLarge ? "Request body exceeds 96 KB." : "Request body must contain valid JSON.", tooLarge ? 413 : 400, id, false);
   }
 
   const body = parsed.value;
