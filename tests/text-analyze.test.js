@@ -30,6 +30,11 @@ test("rejects text above the declared maximum", () => {
   assert.equal(result.code, "INPUT_TOO_LARGE");
 });
 
+test("analysis output is deterministic for identical input", () => {
+  const input = { text: "Stable results for people and agents." };
+  assert.deepEqual(analyzeText(input).data, analyzeText(input).data);
+});
+
 test("does not mutate input", () => {
   const input = { text: "A small immutable input." };
   const before = structuredClone(input);
