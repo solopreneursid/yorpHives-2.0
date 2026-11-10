@@ -20,8 +20,9 @@ export async function onRequestPost({ request, env }) {
       report.errors.push({ order_id: order.id, code: "PROVIDER_UNAVAILABLE" });
       continue;
     }
-    const session = await response.json();
-    if (!response.ok || !session.id) {
+    let session;
+    try { session = await response.json(); } catch { report.errors.push({ order_id: order.id, code: "INVALID_PROVIDER_RESPONSE" }); continue; }
+    if (!response.ok || !session.id || session.id !== order.provider_session_id) {
       report.errors.push({ order_id: order.id, code: "PROVIDER_LOOKUP_FAILED" });
       continue;
     }
