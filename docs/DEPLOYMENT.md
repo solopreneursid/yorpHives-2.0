@@ -5,7 +5,8 @@
 The platform foundation has an isolated Cloudflare Pages project:
 
 - Project: `yorphives-2-preview`
-- Verified deployment URL: `https://39878505.yorphives-2-preview.pages.dev`
+- Latest verified deployment: `https://2009d87a.yorphives-2-preview.pages.dev`
+- Source commit: `a9ca1e7dc3764d4b9fa7f3d9215e5c9671cb2d03`
 - Git repository: `solopreneursid/yorpHives-2.0`
 - Preview branches: enabled for all branches.
 - Production deployments: disabled for this project.
@@ -14,7 +15,7 @@ The platform foundation has an isolated Cloudflare Pages project:
 - Preview D1 database: `yorphives-2-catalogue-preview`.
 - Pages Functions binding: `DB` in the preview environment only.
 
-The first preview deployment completed successfully. Cloudflare logs confirm that the repository was cloned, the Pages Functions Worker compiled successfully, 21 static assets were uploaded, and deployment completed. The deployment has `uses_functions=true` and the preview `DB` binding attached.
+The latest preview deployment completed successfully. Cloudflare logs confirm that the repository was cloned, the Pages Functions Worker compiled successfully, all required static assets were published, and deployment completed. The deployment has `uses_functions=true` and the preview `DB` binding attached.
 
 Migrations `0001_catalogue.sql` and `0002_catalogue_integrity.sql` are applied to the preview D1 database. It contains schema and validation triggers only; no public listings are seeded. The database prevents publication without a destination URL, publication timestamp, and review timestamp. It also rejects unsafe destination schemes, malformed JSON arrays, and paid listings without a valid currency code. These constraints were exercised against the preview database, and temporary verification rows were removed.
 
@@ -31,10 +32,12 @@ A production migration requires an explicit cutover plan, verified parity, rollb
 1. GitHub Actions contract tests pass.
 2. Preview deployment reaches a successful deploy stage.
 3. Homepage works at mobile and desktop widths.
-4. `/llms.txt` returns the machine-readable overview.
-5. `/api/v1/catalogue` returns JSON for browser/API clients.
-6. `/api/v1/catalogue` with `Accept: text/markdown` returns Markdown.
-7. Browser requests to `/` continue to receive HTML; Markdown negotiation returns Markdown.
-8. Security headers are present.
-9. Unpublished listings remain hidden from public endpoints.
-10. No user-facing listing, transaction, or membership is represented as live until its backing workflow is implemented and verified.
+4. `/discover/` search and filters work against the preview catalogue API.
+5. `/listing/?slug=...` renders available listing details safely.
+6. `/llms.txt` returns the machine-readable overview.
+7. `/api/v1/catalogue` returns JSON for browser/API clients.
+8. `/api/v1/catalogue` with `Accept: text/markdown` returns Markdown.
+9. Browser requests to `/` continue to receive HTML; Markdown negotiation returns Markdown.
+10. Security headers are present.
+11. Unpublished listings remain hidden from public endpoints.
+12. No user-facing listing, transaction, or membership is represented as live until its backing workflow is implemented and verified.
