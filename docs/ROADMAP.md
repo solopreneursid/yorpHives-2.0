@@ -8,8 +8,8 @@
 - [x] HTTP discovery and execution API.
 - [x] Dual-era MCP Streamable HTTP adapter: 2026-07-28 modern + 2025-11-25 legacy.
 - [x] Machine-readable manifest and OpenAPI contract.
-- [ ] Automated tests and build pass.
-- [ ] Isolated Cloudflare preview deployment.
+- [x] Automated tests and build pass (GitHub Actions).
+- [x] Isolated Cloudflare Pages preview deployment.
 - [ ] Browser and external agent integration verification.
 
 ## Phase 1 — Production hardening
