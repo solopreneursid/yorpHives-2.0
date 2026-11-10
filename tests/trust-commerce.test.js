@@ -66,3 +66,11 @@ test("HTTP and MCP execution both share the same trust and metering layer", asyn
   assert.match(mcp, /authorizeCapability/);
   assert.match(mcp, /recordUsage/);
 });
+
+test("credit debits are conditional, append-only and idempotent", async () => {
+  const platform = await read("../functions/_lib/platform.js");
+  assert.match(platform, /INSERT OR IGNORE INTO credits_ledger/);
+  assert.match(platform, /SUM\(delta_credits\)/);
+  assert.match(platform, /insufficient_credits/);
+  assert.match(platform, /duplicate: true/);
+});
