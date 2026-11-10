@@ -1,5 +1,6 @@
 import { analyzeText } from "../_lib/text-analyze.js";
 import { errorResponse, json, preflight, readJson, requestId } from "../_lib/http.js";
+import { authorizeCapability, recordUsage } from "../_lib/platform.js";
 
 const MODERN_VERSION = "2026-07-28";
 const LEGACY_VERSION = "2025-11-25";
@@ -109,9 +110,14 @@ function listTools(modern) {
   return result;
 }
 
-function callTool(id, params, modern) {
+async function callTool(id, params, modern, context) {
   if (params?.name !== tool.name) {
     return rpcError(id, -32602, "Unknown tool.", { available_tools: [tool.name] });
+  }
+  const policy = await authorizeCapability(context.request, context.env, "text.analyze");
+  if (!policy.ok) {
+    const body = await policy.response.json();
+    return rpcError(id, -32001, body.error?.message || "Execution is not authorized.", { code: body.error?.code || "EXECUTION_REJECTED", details: body.error?.details }, policy.response.status);
   }
   const result = analyzeText(params.arguments || {});
   if (!result.ok) {
@@ -143,7 +149,7 @@ export async function onRequestGet() {
   });
 }
 
-export async function onRequestPost({ request }) {
+export async function onRequestPost({ request, env }) {
   const id = requestId(request);
   if (!originAllowed(request.headers.get("Origin"))) {
     return rpcError(null, -32000, "Origin is not allowed.", undefined, 403);
@@ -178,7 +184,7 @@ export async function onRequestPost({ request }) {
     if (rpc.method === "server/discover") return rpcResult(rpc.id, discoverResult());
     if (!hasId) return new Response(null, { status: 202 });
     if (rpc.method === "tools/list") return rpcResult(rpc.id, listTools(true));
-    if (rpc.method === "tools/call") return callTool(rpc.id, rpc.params, true);
+    if (rpc.method === "tools/call") return await callTool(rpc.id, rpc.params, true, { request, env });
     return rpcError(rpc.id, -32601, "Method not found.", undefined, 404);
   }
 
@@ -200,6 +206,6 @@ export async function onRequestPost({ request }) {
   if (modernHeader && modernHeader !== LEGACY_VERSION) return protocolError(rpc.id, modernHeader);
   if (rpc.method === "ping") return rpcResult(rpc.id, {});
   if (rpc.method === "tools/list") return rpcResult(rpc.id, listTools(false));
-  if (rpc.method === "tools/call") return callTool(rpc.id, rpc.params, false);
+  if (rpc.method === "tools/call") return await callTool(rpc.id, rpc.params, false, { request, env });
   return rpcError(rpc.id, -32601, "Method not found.");
 }
