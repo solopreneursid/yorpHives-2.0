@@ -3,13 +3,13 @@
 > YorpHives is an open capability network for people and AI agents. Discover useful capabilities, inspect their contracts, invoke them, and compose them into workflows.
 
 ## Canonical discovery
-- Capability catalog: https://yorphives.com/api/v1/capabilities
-- Machine-readable manifest: https://yorphives.com/.well-known/yorphives-capabilities.json
-- OpenAPI 3.1: https://yorphives.com/openapi.json
-- MCP Streamable HTTP: https://yorphives.com/api/mcp
+- Capability catalog: https://yorphives-2-preview.pages.dev/api/v1/capabilities
+- Machine-readable manifest: https://yorphives-2-preview.pages.dev/.well-known/yorphives-capabilities.json
+- OpenAPI 3.1: https://yorphives-2-preview.pages.dev/openapi.json
+- MCP Streamable HTTP: https://yorphives-2-preview.pages.dev/api/mcp
 
 ## Execution
-POST https://yorphives.com/api/v1/execute
+POST https://yorphives-2-preview.pages.dev/api/v1/execute
 Content-Type: application/json
 
 {
@@ -27,7 +27,7 @@ Content-Type: application/json
 - External side effects: none.
 
 ## MCP
-- Endpoint: https://yorphives.com/api/mcp
+- Endpoint: https://yorphives-2-preview.pages.dev/api/mcp
 - Transport: Streamable HTTP
 - Tool: text_analyze
 - Discover tools with tools/list before invocation.
