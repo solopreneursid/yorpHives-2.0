@@ -17,7 +17,10 @@
       "name": "mcp",
       "transport": "streamable-http",
       "endpoint": "https://yorphives-2-preview.pages.dev/api/mcp",
-      "protocol_versions": ["2026-07-28", "2025-11-25"]
+      "protocol_versions": [
+        "2026-07-28",
+        "2025-11-25"
+      ]
     }
   ],
   "principles": {
@@ -28,5 +31,43 @@
     "data_handling_disclosed": true
   },
   "catalog_version": "1.0.0",
-  "status": "early-access"
+  "status": "early-access",
+  "identity": {
+    "principal_types": [
+      "human",
+      "developer",
+      "agent",
+      "service"
+    ],
+    "authentication": "bearer-api-key",
+    "key_management": "/api/v1/identity/keys",
+    "principal_endpoint": "/api/v1/identity/me",
+    "bootstrap_endpoint": "/api/v1/identity/provision",
+    "scopes": [
+      "identity:read",
+      "capability:execute",
+      "usage:read",
+      "credits:read",
+      "keys:manage",
+      "commerce:checkout",
+      "capabilities:grant"
+    ]
+  },
+  "commerce": {
+    "credit_balance": "/api/v1/commerce/credits",
+    "checkout": "/api/v1/commerce/checkout",
+    "usage": "/api/v1/usage",
+    "payment_webhook": "/api/webhooks/stripe",
+    "provider_reconciliation": "/api/v1/commerce/reconcile",
+    "pricing": "server-configured-credit-packs"
+  },
+  "trust": {
+    "api_keys_hashed_at_rest": true,
+    "credential_scopes": true,
+    "capability_grants": true,
+    "rate_limits": true,
+    "spending_ceilings": true,
+    "append_only_ledgers": true,
+    "payment_webhook_signature_verification": true
+  }
 }
