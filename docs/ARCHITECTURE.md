@@ -16,9 +16,16 @@ The product should feel like one platform, not five disconnected microsites.
 
 ### 1. Discovery
 
-A canonical catalogue describes tools, applications, services, opportunities, and agent capabilities. Every listing has a stable identifier, owner, lifecycle status, audience, category, destination, pricing/access model, and last-reviewed timestamp.
+The canonical catalogue describes tools, applications, services, opportunities, and agent capabilities. Listings have stable identifiers and slugs, audience tags, lifecycle status, category, destination, access model, authentication requirements, required scopes, side effects, and publication/review timestamps.
 
-Search and category pages must be useful without authentication. Popularity labels require measured usage data; never fabricate trending rankings.
+The initial D1 schema is in `migrations/0001_catalogue.sql`. Public discovery is exposed through:
+
+- `GET /api/v1/catalogue` — list and filter available listings.
+- `GET /api/v1/catalogue/{slug}` — retrieve one available listing.
+
+Both endpoints return JSON by default and Markdown when `Accept: text/markdown` or `?format=markdown` is supplied. Public APIs expose only `available` listings. The schema prevents a listing from becoming available without a destination, publication timestamp, and review timestamp.
+
+No catalogue items are seeded by default. Empty results are preferable to invented tools, fabricated availability, or fake popularity. Search and category pages must be useful without authentication. Popularity labels require measured usage data; never fabricate trending rankings.
 
 ### 2. Identity and trust
 
