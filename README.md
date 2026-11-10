@@ -14,16 +14,18 @@ YorpHives helps humans and AI agents discover, understand, invoke, and compose u
 6. **Portable core:** provider-specific infrastructure stays behind adapters and deployment boundaries.
 7. **Solo-founder economics:** deterministic execution first; add expensive AI and infrastructure only when demand proves the need.
 
-## Initial implementation
+## Current implementation
 
 The first vertical slice is deliberately small:
 - Premium, responsive capability discovery experience.
 - Canonical capability catalog served as machine-readable JSON.
 - Deterministic text-analysis capability with human and agent execution paths.
 - Versioned HTTP API and OpenAPI contract.
-- Agent discovery resources.
-- Structured errors, input limits, CORS policy, and request identifiers.
-- Deployment and verification gates.
+- Agent discovery resources and MCP Streamable HTTP.
+- Human/developer/agent/service principals, hashed scoped API keys, and capability grants.
+- D1-backed rate limits, execution metering, append-only financial/audit ledgers, and spending ceilings.
+- Stripe Checkout adapter, signed webhook settlement, and operator reconciliation (disabled until secrets/pricing are configured).
+- Health endpoint, global security headers, and expanded contract tests.
 
 ## Architecture
 
@@ -33,6 +35,9 @@ See:
 - [Architecture](docs/ARCHITECTURE.md)
 - [Capability contract](docs/CAPABILITY-CONTRACT.md)
 - [Security model](docs/SECURITY.md)
+- [Identity and authorization](docs/IDENTITY-AUTHORIZATION.md)
+- [Commerce and payments](docs/COMMERCE.md)
+- [Operations](docs/OPERATIONS.md)
 - [Revenue architecture](docs/REVENUE-ARCHITECTURE.md)
 - [Delivery roadmap](docs/ROADMAP.md)
 
