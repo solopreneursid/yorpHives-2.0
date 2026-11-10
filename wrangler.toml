@@ -1,0 +1,9 @@
+name = "yorphives-2-preview"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-11-10"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "yorphives-2-trust-preview"
+database_id = "a2dc8c82-8c77-4c76-8b19-aa3ff35245c4"
+migrations_dir = "migrations"
