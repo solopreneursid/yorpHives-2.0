@@ -19,3 +19,10 @@ test("OpenAPI contract is valid and exposes discovery, execution, and MCP", asyn
   assert.ok(openapi.paths["/api/v1/execute"]);
   assert.ok(openapi.paths["/api/mcp"]);
 });
+
+test("human discovery links resolve to published machine resources", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /href="\/\.well-known\/yorphives-capabilities\.json"/);
+  assert.match(html, /href="\/llms\.txt">Agent integration quickstart/);
+  assert.doesNotMatch(html, /agent-card\.json/);
+});
