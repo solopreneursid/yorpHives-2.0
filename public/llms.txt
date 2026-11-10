@@ -58,3 +58,5 @@ Early foundation. Capabilities marked available are implemented in the current d
 ## Operational status
 - Health: `GET /api/v1/health`.
 - The append-only usage, credit, payment-event, and audit ledgers are stored in the isolated preview D1 database.
+
+- Purchase history: `GET /api/v1/commerce/orders` (scope: `commerce:orders:read`).
