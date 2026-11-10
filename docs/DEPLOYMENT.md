@@ -14,7 +14,7 @@ The platform foundation has an isolated Cloudflare Pages project:
 - Preview D1 database: `yorphives-2-catalogue-preview`.
 - Pages Functions binding: `DB` in the preview environment only.
 
-The initial catalogue migration is applied to the preview D1 database. It contains schema only; no public listings are seeded. The database enforces that a listing cannot become available without a destination URL, publication timestamp, and review timestamp.
+Migrations `0001_catalogue.sql` and `0002_catalogue_integrity.sql` are applied to the preview D1 database. It contains schema and validation triggers only; no public listings are seeded. The database prevents publication without a destination URL, publication timestamp, and review timestamp. It also rejects unsafe destination schemes, malformed JSON arrays, and paid listings without a valid currency code. These constraints were exercised against the preview database, and temporary verification rows were removed.
 
 The Pages Git source is configured, but no preview deployment has been observed yet. Do not treat the preview origin as verified until Cloudflare reports a successful deployment. After the first deployment, verify the deployment URL and run browser and content-negotiation smoke tests.
 
