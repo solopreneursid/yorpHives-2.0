@@ -2,88 +2,69 @@
 
 ## North star
 
-YorpHives connects five groups through a shared discovery and capability layer:
+YorpHives is a build-led platform with five connected product surfaces:
+- **Home:** attract individuals, creators, startups and businesses who need digital products, platforms, automation or AI-enabled solutions built.
+- **Free Tools:** useful browser utilities that earn search traffic and repeat visits.
+- **Explore:** an app-store-style marketplace exclusively for applications built and released by YorpHives.
+- **Builder:** a paid membership application that discovers and organizes earning opportunities for developers, creators, bloggers, freelancers, designers and entrepreneurs, alongside projects posted by YorpHives.
+- **Connect:** project enquiries through connect@yorphives.com.
 
-- People discover tools that solve immediate problems.
-- Businesses discover ways to get solutions built.
-- Developers and creators discover legitimate earning opportunities.
-- Users discover and adopt applications.
-- AI agents discover capabilities and execute permitted actions.
+These surfaces share one platform foundation. The human website is not an agent directory; agent compatibility is built into the underlying service architecture.
 
-The product should feel like one platform, not five disconnected microsites.
+## Cloudflare Connect 2026 / Agentic Internet alignment
 
-## Platform layers
+The platform is designed around discoverable, callable and payable capabilities:
 
-### 1. Discovery
+1. **Discoverability:** publish `/.well-known/yorphives.json`, `llms.txt`, OpenAPI and capability manifests. Keep machine-readable metadata current and truthful.
+2. **Callable services:** expose stable API contracts and, when implemented, MCP tools backed by the same domain services used by the human UI.
+3. **Human + agent parity:** the same canonical data and business rules power HTML, JSON and Markdown representations.
+4. **Identity and authorization:** model humans, business workspaces, creators and agents as distinct principals. Enforce scopes and authorization server-side on every protected operation.
+5. **Persistent state:** use D1 for relational records and entitlements. Use Durable Objects only for strongly consistent coordination or per-entity serialization.
+6. **Reliable execution:** use Workers/Pages Functions for edge APIs and Workflows or Queues for durable asynchronous processing, retries and reconciliation.
+7. **Observability and auditability:** record security-relevant actions, provider event outcomes, execution status, quotas and errors without logging secrets or unnecessary personal data.
+8. **Secure transactions:** enforce idempotency, signed webhook verification, rate limits, explicit side-effect declarations, spending limits and fraud controls.
+9. **Interoperability:** keep business logic and contracts portable; Cloudflare is the infrastructure layer, not a requirement imposed on every client or agent.
 
-The canonical catalogue describes tools, applications, services, opportunities, and agent capabilities. Listings have stable identifiers and slugs, audience tags, lifecycle status, category, destination, access model, authentication requirements, required scopes, side effects, and publication/review timestamps.
+## Product data boundaries
 
-The initial D1 schema is in `migrations/0001_catalogue.sql`. Public discovery is exposed through:
+- Free Tools are YorpHives-operated browser utilities and must be genuinely functional before release.
+- Explore contains only YorpHives-owned applications. Each release needs screenshots/demos, pricing, supported platforms, installation/launch steps and a verified lifecycle state.
+- Builder opportunities are sourced, deduplicated, categorized, timestamped and reviewed. Listings should identify source, eligibility, location constraints, compensation, deadlines and application destination. Recommendations should be based on member skills and preferences, not unsupported earning guarantees.
+- Home trending metrics must derive from privacy-conscious measured usage. Never display invented view, launch or popularity numbers.
+- Recent releases are read from the canonical catalogue, not hard-coded marketing cards.
+- Project enquiries go to connect@yorphives.com until a verified request-management workflow is implemented.
 
-- `GET /api/v1/catalogue` — list and filter available listings.
-- `GET /api/v1/catalogue/{slug}` — retrieve one available listing.
+## Catalogue and API
 
-Both endpoints return JSON by default and Markdown when `Accept: text/markdown` or `?format=markdown` is supplied. Public APIs expose only `available` listings. The schema prevents a listing from becoming available without a destination, publication timestamp, and review timestamp.
+The canonical catalogue is stored in D1. Public discovery currently exposes:
+- `GET /api/v1/catalogue`
+- `GET /api/v1/catalogue/{slug}`
 
-No catalogue items are seeded by default. Empty results are preferable to invented tools, fabricated availability, or fake popularity. Search and category pages must be useful without authentication. Popularity labels require measured usage data; never fabricate trending rankings.
+Only reviewed and available records are public. JSON is the default representation; Markdown is supported through `Accept: text/markdown` or `?format=markdown`. The OpenAPI document describes only endpoints that currently exist.
 
-### 2. Identity and trust
+## Identity and trust
 
-Human accounts, business workspaces, creator profiles, and agent identities are distinct principals. Authorization is evaluated server-side for every protected action. Public discovery does not imply permission to execute or modify.
+Human accounts, business workspaces, creator profiles and agent identities are distinct principals. Authorization is evaluated server-side for every protected action. Public discovery does not imply permission to execute or modify. API credentials must be scoped, revocable and auditable.
 
-### 3. Builder and opportunities
+## Dodo Payments and entitlements
 
-Businesses can describe a problem and discover qualified builders. Creators can publish services, reusable solutions, and opportunities. The platform should make scope, deliverables, payment terms, ownership, and dispute paths explicit before a transaction.
-
-### 4. Applications
-
-Applications remain independently usable while benefiting from shared discovery, identity, billing, and entitlement services. Each app listing must accurately describe availability, supported platforms, access, pricing, and support.
-
-### 5. Agent interface
-
-Provide machine-readable catalogue data, OpenAPI descriptions, and MCP tools backed by the same canonical service contracts as the human interface. Agents receive structured errors, stable identifiers, explicit authorization requirements, and clear side-effect declarations.
-
-## Payments and entitlements
-
-Dodo Payments is the payment system for memberships and paid applications.
+Dodo Payments is the selected payment provider for Builder monthly/annual memberships and paid applications.
 
 Flow:
-
-1. Server creates a checkout session from a server-owned product/price mapping.
+1. Server creates checkout from a server-owned product/price mapping.
 2. Browser redirects to Dodo checkout.
-3. Dodo sends a signed webhook to the YorpHives webhook endpoint.
-4. Server verifies signature and event freshness, then persists the event idempotently.
-5. Subscription/order state is reconciled into YorpHives entitlements.
-6. Product APIs and UI read entitlements from YorpHives, never from client claims.
+3. Dodo sends a signed webhook.
+4. Server verifies the signature against the raw body and validates event freshness.
+5. The provider event is persisted idempotently.
+6. Subscription/order state is reconciled into YorpHives entitlements.
+7. Protected Builder and application services check entitlements server-side.
 
-Success redirects are informational only. Webhook processing must be idempotent and tolerate retries and out-of-order events. Cancellation, expiration, refunds, and chargebacks must revoke or adjust entitlements according to explicit policy.
+Redirects never grant access. Cancellation, expiration, refunds and chargebacks must revoke or adjust entitlements according to explicit policy. Provider secrets belong in Cloudflare secrets, never in source control.
 
-## Data and infrastructure
+## Content negotiation and agent safety
 
-Use Cloudflare-native components where they fit:
+Canonical public resources support HTML for people and JSON/Markdown for agents. Machine-readable output must be derived from the same source data. Agent execution requires authentication, least-privilege scopes, explicit permissions, side-effect declarations, quotas, rate limits and audit trails. Return stable structured errors and require idempotency keys for mutating operations.
 
-- Workers / Pages Functions for APIs and edge routing.
-- D1 for relational catalogue, identity references, transactions, and entitlements.
-- Durable Objects only where coordination, strongly consistent state, or per-entity serialization is required.
-- Queues or Workflows for reliable asynchronous processing where needed.
-- R2 for user-approved assets and application media.
+## Security and release discipline
 
-Keep personal data collection minimal. Separate public catalogue data from private account and payment records.
-
-## Content negotiation
-
-Canonical public resources should support HTML for people and JSON/Markdown for agents. Use Accept headers and explicit formats; do not make agents scrape presentation markup. Machine-readable output must be derived from the same source data as the human UI.
-
-## Security requirements
-
-- Verify webhook signatures against the raw request body.
-- Enforce idempotency for payment events and mutating APIs.
-- Keep provider secrets in Cloudflare secrets, never in repository files.
-- Validate input size, type, and schema.
-- Apply least-privilege scopes to API keys and agent principals.
-- Declare side effects and required permissions for each executable capability.
-- Log security-relevant actions without logging secrets or unnecessary personal data.
-
-## Delivery discipline
-
-Build in small, testable slices. Keep production isolated until preview smoke tests, accessibility checks, API contract tests, and deployment checks pass. No feature should be labelled available until it has been verified end to end.
+Validate input sizes and schemas; prevent SSRF and unsafe destinations; apply abuse controls; verify signatures; protect personal data; and test retries, replay and out-of-order events. Do not label features available until end-to-end evidence exists. Production remains isolated until preview browser QA, API smoke tests, accessibility checks and security review pass.
