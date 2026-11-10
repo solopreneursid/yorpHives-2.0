@@ -6,9 +6,9 @@
 - [x] Establish primary navigation: Home, Free Tools, Explore, Builder, Connect.
 - [x] Create dedicated Free Tools, Explore, Builder and Connect routes.
 - [x] Add privacy-preserving browser utilities: word counter, JSON formatter/validator and URL encoder/decoder.
-- [x] Load recently added YorpHives applications from the canonical catalogue.
+- [x] Load recently added tools and YorpHives applications from the canonical catalogue.
 - [x] Keep Explore scoped to YorpHives-built applications.
-- [x] Publish truthful empty states where product data or analytics are not yet available.
+- [x] Publish truthful empty states where product data or analytics are not yet available.\n- [x] Add first-party daily aggregate detail-view and outbound-launch event collection.\n- [x] Add a seven-day trending tools API and homepage ranking UI based on recorded activity.
 - [ ] Add project request intake with validation, spam protection and secure persistence.
 - [ ] Add more free tools based on search demand and user needs.
 - [ ] Add screenshots, demo recordings and release metadata for every YorpHives application.
