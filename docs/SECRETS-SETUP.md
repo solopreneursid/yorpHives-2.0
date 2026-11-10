@@ -60,7 +60,7 @@ Add \`YH_CREDIT_PACKS_JSON\` as a Preview variable (not a secret). It must be a 
   {
     "id": "your-pack-id",
     "credits": 100,
-    "amount_minor": 0,
+    "amount_minor": 100,
     "currency": "INR"
   }
 ]
