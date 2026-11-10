@@ -9,6 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="service-desc" href="/openapi.json" type="application/vnd.oai.openapi+json;version=3.1" />
+    <link rel="alternate" type="application/json" href="/.well-known/yorphives-capabilities.json" />
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"WebSite","name":"YorpHives","url":"https://yorphives-2-preview.pages.dev","description":"An open capability network for people and AI agents.","potentialAction":{"@type":"SearchAction","target":"https://yorphives-2-preview.pages.dev/?q={search_term_string}","query-input":"required name=search_term_string"}}
+    </script>
     <title>YorpHives — Useful things, connected.</title>
   </head>
   <body>
@@ -34,10 +39,10 @@
           <div class="eyebrow"><span class="pulse"></span> THE OPEN CAPABILITY NETWORK <span class="eyebrow-line"></span> BUILT FOR PEOPLE + AGENTS</div>
           <h1>Useful things.<br /><em>Connected.</em></h1>
           <p class="hero-lede">A new kind of internet workspace. Find the capability you need, put it to work, and connect it to what comes next.</p>
-          <form class="intent-search" id="intent-search" role="search">
+          <form class="intent-search" id="intent-search" role="search" data-agent-target="capability-search" data-agent-action="search-capabilities">
             <span class="search-icon" aria-hidden="true">⌕</span>
             <label class="sr-only" for="intent-input">What do you want to accomplish?</label>
-            <input id="intent-input" name="q" placeholder="What do you want to accomplish?" autocomplete="off" />
+            <input id="intent-input" name="q" data-agent-target="capability-search-query" placeholder="What do you want to accomplish?" autocomplete="off" />
             <button type="submit" aria-label="Search capabilities">↗</button>
           </form>
           <div class="quick-prompts"><span>TRY</span><button data-prompt="Analyze a block of text">Analyze text</button><button data-prompt="Find a useful document tool">Work with documents</button><button data-prompt="Build an automated workflow">Build a workflow</button></div>
@@ -68,8 +73,8 @@
           <p>Not another endless list of apps. A growing set of useful building blocks—with clear ways to use them as a person or an agent.</p>
         </div>
         <div class="filter-row"><div class="filter-label">EXPLORE BY INTENT</div><div class="filters" role="group" aria-label="Filter capabilities"><button class="filter active" data-filter="all">All capabilities <span>01</span></button><button class="filter" data-filter="transform">Transform</button><button class="filter" data-filter="understand">Understand</button><button class="filter" data-filter="create">Create</button><button class="filter" data-filter="automate">Automate</button></div></div>
-        <div class="capability-grid" id="capability-grid" aria-live="polite">
-          <article class="capability-card featured" data-category="understand">
+        <div class="capability-grid" id="capability-grid" aria-live="polite" data-agent-target="capability-catalog" data-state="available">
+          <article class="capability-card featured" data-category="understand" data-agent-target="capability-card:text.analyze" data-capability-id="text.analyze" data-capability-version="1.0.0" data-capability-status="available">
             <div class="card-top"><span class="card-index">CAP / 0001</span><span class="availability"><i></i> LIVE</span></div>
             <div class="cap-icon icon-lilac">Aa</div>
             <div class="card-content"><div class="card-category">UNDERSTAND · TEXT</div><h3>Text intelligence</h3><p>Turn a wall of words into a clear signal. Count, measure, and understand text in milliseconds.</p></div>
@@ -96,9 +101,9 @@
         <div class="demo-panel">
           <div class="demo-panel-head"><span><i class="live-dot"></i> TEXT INTELLIGENCE</span><span>v1.0.0 / FREE</span></div>
           <label for="sample-text">DROP IN A THOUGHT, A PARAGRAPH, OR A DRAFT.</label>
-          <textarea id="sample-text" maxlength="20000" placeholder="Paste or write something here...">The internet is becoming a place where software does more than display information. Capabilities can be discovered, called, combined, and verified by people and intelligent agents.</textarea>
-          <div class="demo-controls"><span id="char-count">0 / 20,000</span><button class="button button-dark" id="analyze-button">Analyze text <span>↗</span></button></div>
-          <div class="result-panel" id="result-panel" aria-live="polite"><div class="result-placeholder"><span>↳</span> Your result will appear here.</div></div>
+          <textarea id="sample-text" maxlength="20000" data-agent-target="text-analyze-input" aria-describedby="text-input-policy" placeholder="Paste or write something here...">The internet is becoming a place where software does more than display information. Capabilities can be discovered, called, combined, and verified by people and intelligent agents.</textarea>
+          <p id="text-input-policy" class="sr-only">Text is processed in memory and is not stored. Do not submit secrets or sensitive personal data.</p>\n          <div class="demo-controls"><span id="char-count">0 / 20,000</span><button class="button button-dark" id="analyze-button" data-agent-target="text-analyze-submit" data-agent-action="execute-capability" data-capability-id="text.analyze">Analyze text <span>↗</span></button></div>
+          <div class="result-panel" id="result-panel" aria-live="polite" data-agent-target="text-analyze-result" data-state="idle"><div class="result-placeholder"><span>↳</span> Your result will appear here.</div></div>
         </div>
       </section>
 
