@@ -70,7 +70,7 @@ await check("modern MCP tools/call and shared ledger", async () => {
     headers: { "Content-Type": "application/json", "MCP-Protocol-Version": protocolVersion, "Mcp-Method": "tools/call", "Mcp-Name": "text_analyze" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "text_analyze", arguments: { text: "One capability serves humans and agents." }, _meta: metadata } })
   });
-  return { ok: response.status === 200 && body.result?.isError === false && body.result?.structuredContent?.word_count === 7, status: response.status };
+  return { ok: response.status === 200 && body.result?.isError === false && body.result?.structuredContent?.word_count === 6, status: response.status };
 });
 
 await check("CORS permits Bearer credentials", async () => {
