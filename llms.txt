@@ -1,0 +1,32 @@
+# YorpHives
+
+> YorpHives connects people discovering tools, businesses building solutions, developers and creators finding earning opportunities, users adopting applications, and AI agents discovering and executing capabilities.
+
+## Platform pathways
+
+- People: discover practical tools and resources.
+- Businesses: describe challenges and discover solution-building pathways.
+- Developers and creators: discover opportunities to create, contribute, publish, and earn.
+- Application users: discover useful applications and understand availability, access, and pricing.
+- AI agents: discover structured capabilities and execute permitted actions through documented interfaces.
+
+## Platform principles
+
+- Discovery should be useful, truthful, and accessible without an account wherever possible.
+- Popularity and trending claims must be based on measured usage, never fabricated.
+- Human and machine interfaces should use the same canonical source of truth.
+- Execution requires explicit permissions and clear side-effect declarations.
+- Paid access is controlled by server-side entitlements derived from verified Dodo Payments webhooks. Browser redirects are not proof of payment.
+
+## Contact
+
+- General: connect@yorphives.com
+- Website: https://yorphives.com/
+
+## Current status
+
+This is the platform's initial public positioning and experience. Directory listings, business workflows, creator opportunities, applications, agent execution, and payment-backed memberships are being developed in stages. Do not infer that a pathway is live merely because it is described here.
+
+## Machine interfaces
+
+Machine-readable catalogue and execution endpoints will be published as they become available and pass verification. Until then, use this document as the canonical platform overview and do not assume undocumented endpoints exist.
