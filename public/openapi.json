@@ -38,8 +38,8 @@
       }
     },
     "/api/mcp": {
-      "get": { "summary": "MCP endpoint information", "responses": { "200": { "description": "MCP service metadata" } } },
-      "post": { "summary": "MCP Streamable HTTP JSON-RPC endpoint", "responses": { "200": { "description": "JSON-RPC response" }, "202": { "description": "Notification accepted" } } }
+      "get": { "summary": "MCP endpoint (POST only)", "responses": { "405": { "description": "Use POST for MCP Streamable HTTP" } } },
+      "post": { "summary": "MCP Streamable HTTP JSON-RPC endpoint", "description": "Supports modern stateless MCP 2026-07-28 and legacy handshake MCP 2025-11-25.", "responses": { "200": { "description": "JSON-RPC response" }, "202": { "description": "Notification accepted" }, "400": { "description": "Protocol version or routing header mismatch" }, "403": { "description": "Origin rejected" } } }
     }
   },
   "components": {
