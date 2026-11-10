@@ -29,7 +29,8 @@ export async function onRequestPost({ request, env }) {
   const order = await env.DB.prepare("SELECT * FROM orders WHERE principal_id = ? AND idempotency_key = ?").bind(auth.principal.id, idempotencyKey).first();
   if (!order || order.pack_id !== pack.id) return failure("IDEMPOTENCY_CONFLICT", "This idempotency key was already used for a different purchase.", 409, request);
   if (order.status === "paid") return success({ order_id: order.id, status: "paid", credits: order.credits });
-  if (order.checkout_url) return success({ order_id: order.id, status: order.status, checkout_url: order.checkout_url });
+  if (order.status !== "pending") return failure("ORDER_NOT_PAYABLE", "This order is no longer payable. Start a new checkout with a new idempotency key.", 409, request);
+  if (order.checkout_url) return success({ order_id: order.id, status: "pending", checkout_url: order.checkout_url });
   const origin = new URL(request.url).origin;
   const form = new URLSearchParams({
     mode: "payment",
@@ -53,7 +54,8 @@ export async function onRequestPost({ request, env }) {
   } catch {
     return failure("PAYMENT_PROVIDER_UNAVAILABLE", "The payment provider could not be reached. Retry using the same idempotency key.", 503, request);
   }
-  const session = await response.json();
+  let session;
+  try { session = await response.json(); } catch { return failure("CHECKOUT_CREATION_FAILED", "The payment provider returned an invalid response. Retry using the same idempotency key.", 502, request); }
   if (!response.ok || !session.id || !session.url) {
     console.error(JSON.stringify({ event: "checkout.session_create_failed", order_id: order.id, provider_status: response.status, provider_error: session.error?.type || "unknown" }));
     return failure("CHECKOUT_CREATION_FAILED", "The payment provider could not create checkout. Retry using the same idempotency key.", 502, request);
