@@ -90,3 +90,10 @@ test("paid execution uses one atomic debit-plus-usage transaction", async () => 
   assert.match(block, /INSERT OR IGNORE INTO usage_ledger/);
   assert.match(block, /idempotency_conflict/);
 });
+
+test("health endpoint fails closed when trust schema or migrations are incomplete", async () => {
+  const health = await read("../functions/api/v1/health.js");
+  assert.match(health, /schema\.table_count >= 12/);
+  assert.match(health, /migrations\.applied >= 2/);
+  assert.match(health, /status = checks\.schema === "ok" && checks\.migrations === "ok" \? 200 : 503/);
+});
