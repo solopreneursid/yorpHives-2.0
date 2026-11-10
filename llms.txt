@@ -32,4 +32,4 @@ Dodo Payments is the selected provider for Builder memberships and paid applicat
 
 ## Truthful availability
 
-This platform is under active development. Builder paid access, Dodo checkout, identity, agent execution, MCP tools and some catalogue workflows are not yet live. Do not infer that a capability is available just because it is described here. Trending rankings must use measured, privacy-conscious usage data; never fabricate popularity.
+This platform is being developed in stages and remains under active development. Builder paid access, Dodo checkout, identity, agent execution, MCP tools and some catalogue workflows are not yet live. Do not infer that a capability is available just because it is described here; do not assume undocumented endpoints exist. Trending rankings must use measured, privacy-conscious usage data; never fabricate popularity.
