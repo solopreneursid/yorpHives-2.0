@@ -1,9 +1,11 @@
-import { authenticate, failure, hasScope, success } from "../../_lib/platform.js";
+import { authenticate, failure, hasScope, success, rateLimit } from "../../_lib/platform.js";
 
 export async function onRequestGet({ request, env }) {
   const auth = await authenticate(request, env);
   if (!auth.ok) return auth.response;
   if (!auth.principal) return failure("AUTHENTICATION_REQUIRED", "Supply an API credential.", 401, request);
+  const limit = await rateLimit(request, env, auth.principal.id);
+  if (!limit.ok) return limit.response;
   if (!hasScope(auth.principal, "usage:read")) return failure("INSUFFICIENT_SCOPE", "This credential cannot read usage.", 403, request);
   const url = new URL(request.url);
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || 50)));
