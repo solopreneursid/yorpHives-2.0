@@ -37,7 +37,7 @@ async function loadDashboard() {
 }
 $("#connect-form").addEventListener("submit", async event => {
   event.preventDefault(); const token=$("#api-key").value.trim(); const status=$("#connect-status"); status.textContent="Verifying credential…";
-  if (!/^yh_[A-Za-z0-9_-]{24,}$/.test(token)) { status.textContent="That does not look like a YorpHives API key."; return; }
+  if (!/^yh_live_[A-Za-z0-9_-]{43}$/.test(token)) { status.textContent="That does not look like a YorpHives API key."; return; }
   state.token=token;
   try { await loadDashboard(); $("#api-key").value=""; status.textContent=""; }
   catch (error) { state.token=""; status.textContent=error.message + (error.code ? " ["+error.code+"]" : ""); }
