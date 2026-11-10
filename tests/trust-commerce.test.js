@@ -28,12 +28,13 @@ test("financial and audit ledgers are append-only at the database layer", async 
 test("commerce endpoints use server-controlled packs and verify provider webhooks", async () => {
   const checkout = await read("../functions/api/v1/commerce/checkout.js");
   const webhook = await read("../functions/api/webhooks/stripe.js");
+  const settlement = await read("../functions/_lib/stripe.js");
   assert.match(checkout, /YH_CREDIT_PACKS_JSON/);
   assert.match(checkout, /Idempotency-Key/);
   assert.doesNotMatch(checkout, /amount_minor.*request/i);
   assert.match(webhook, /verifyStripeSignature/);
-  assert.match(webhook, /payment_status !== "paid"/);
-  assert.match(webhook, /INSERT OR IGNORE INTO credits_ledger/);
+  assert.match(settlement, /payment_status !== "paid"/);
+  assert.match(settlement, /INSERT OR IGNORE INTO credits_ledger/);
 });
 
 test("production secrets are referenced only as runtime environment bindings", async () => {
