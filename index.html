@@ -102,7 +102,8 @@
           <div class="demo-panel-head"><span><i class="live-dot"></i> TEXT INTELLIGENCE</span><span>v1.0.0 / FREE</span></div>
           <label for="sample-text">DROP IN A THOUGHT, A PARAGRAPH, OR A DRAFT.</label>
           <textarea id="sample-text" maxlength="20000" data-agent-target="text-analyze-input" aria-describedby="text-input-policy" placeholder="Paste or write something here...">The internet is becoming a place where software does more than display information. Capabilities can be discovered, called, combined, and verified by people and intelligent agents.</textarea>
-          <p id="text-input-policy" class="sr-only">Text is processed in memory and is not stored. Do not submit secrets or sensitive personal data.</p>\n          <div class="demo-controls"><span id="char-count">0 / 20,000</span><button class="button button-dark" id="analyze-button" data-agent-target="text-analyze-submit" data-agent-action="execute-capability" data-capability-id="text.analyze">Analyze text <span>↗</span></button></div>
+          <p id="text-input-policy" class="sr-only">Text is processed in memory and is not stored. Do not submit secrets or sensitive personal data.</p>
+          <div class="demo-controls"><span id="char-count">0 / 20,000</span><button class="button button-dark" id="analyze-button" data-agent-target="text-analyze-submit" data-agent-action="execute-capability" data-capability-id="text.analyze">Analyze text <span>↗</span></button></div>
           <div class="result-panel" id="result-panel" aria-live="polite" data-agent-target="text-analyze-result" data-state="idle"><div class="result-placeholder"><span>↳</span> Your result will appear here.</div></div>
         </div>
       </section>
