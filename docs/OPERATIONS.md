@@ -59,3 +59,44 @@ The smoke test executes the free Text Intelligence capability over HTTP and MCP 
 ## Current operational gaps
 
 Cloudflare project-level observability, alert destinations, scheduled order reconciliation, and tested backup/restore remain to be verified. GitHub push-triggered preview deployment is verified for the trust-commerce branch; production deployment automation and cutover remain intentionally separate.
+
+
+## India-first customer identity and payments
+
+The customer console is available at `/account/`. Human sign-in is passwordless email OTP. It remains unavailable until the following secrets are configured in the **preview** environment:
+
+- `YH_EMAIL_API_KEY`: Resend API key for transactional email.
+- `YH_EMAIL_FROM`: sender address on a domain verified with the email provider.
+
+The email adapter is isolated from identity/session logic so another transactional email provider can be substituted without changing the account model. Verification codes expire after 10 minutes, are stored only as salted hashes, and have five verification attempts. Sessions use Secure, HttpOnly, SameSite cookies; state-changing browser requests require the session-bound CSRF token.
+
+### Razorpay test-mode setup (India)
+
+Stripe is not a launch dependency. For the first India checkout integration, use Razorpay **Test Mode** credentials from an approved Razorpay merchant account. Test Mode does not accept real money. Live acceptance requires Razorpay merchant KYC, product activation and separate live credentials.
+
+Preview-only configuration:
+
+- `YH_PAYMENT_PROVIDER=razorpay`
+- `RAZORPAY_KEY_ID`: Test Mode key ID.
+- `RAZORPAY_KEY_SECRET`: Test Mode key secret.
+- `RAZORPAY_WEBHOOK_SECRET`: separate webhook signing secret configured for the preview webhook.
+- `YH_CREDIT_PACKS_JSON`: server-owned pack catalogue, for example:
+  `[{"id":"starter","credits":1000,"amount_minor":10000,"currency":"INR"}]`
+
+Amounts are integer paise. The current Payment Links integration requires a minimum pack amount of INR 100. Do not place secrets in source control or client-side environment variables.
+
+Configure the Razorpay Test Mode webhook to call:
+
+`POST https://<preview-host>/api/v1/commerce/webhook`
+
+Subscribe to `payment_link.paid` and use the exact `RAZORPAY_WEBHOOK_SECRET` configured in the preview environment. The receiver validates `X-Razorpay-Signature` against the raw request body before parsing, deduplicates event IDs, verifies order amount/currency/ownership, and inserts purchase credits only once. A browser redirect is never treated as proof of payment.
+
+Before any live launch, complete successful, failed, cancelled, duplicate, forged-signature, mismatched-amount, delayed-webhook and refund scenarios. Refunds and disputes are not yet implemented in the current Razorpay adapter; do not activate live credit sales until those accounting workflows and reconciliation are reviewed.
+
+### New D1 migration
+
+Apply `0003_customer_identity.sql` to the dedicated preview D1 database using the normal Wrangler migration workflow before deploying the new account routes:
+
+`npx wrangler d1 migrations apply yorphives-2-trust-preview --remote`
+
+Confirm the migration is recorded in `d1_migrations` and verify account/session, application, agent authorization and checkout routes against the preview deployment. Never apply this migration to production without explicit release approval.
