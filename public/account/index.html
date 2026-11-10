@@ -1,33 +1,15 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f5f4ef"><meta name="robots" content="noindex,nofollow">
-<title>Account console — YorpHives</title><link rel="stylesheet" href="/account/styles.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"YorpHives Account Console","applicationCategory":"DeveloperApplication","description":"Manage YorpHives API identity, credentials, usage and credits."}</script>
-</head>
-<body>
-<header class="top"><a class="brand" href="/"><span class="mark">Y</span> yorphives <small>/ ACCOUNT</small></a><a href="/">Back to platform ↗</a></header>
-<main>
-<section class="intro"><p class="eyebrow">IDENTITY · ACCESS · ECONOMICS</p><h1>Your platform,<br><em>under control.</em></h1><p>Inspect your identity, manage scoped API credentials, understand usage and track credits from one place.</p></section>
-<section class="connect panel" id="connect-panel">
-<div><p class="eyebrow">SECURE CONNECTION</p><h2>Connect your account</h2><p>This console authenticates with an API credential issued to your principal. Your key stays in this browser tab's memory and is never saved to local storage.</p></div>
-<form id="connect-form"><label for="api-key">YorpHives API key</label><input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your yh_… credential" required><button class="primary" type="submit">Connect securely ↗</button><p class="hint">Need an account? Self-service registration is not enabled yet. Account provisioning currently requires an operator-issued credential; public sign-up will follow verified email identity and recovery.</p><p class="status" id="connect-status" role="status"></p></form>
-</section>
-<section id="dashboard" hidden>
-<div class="toolbar"><div><p class="eyebrow">ACCOUNT OVERVIEW</p><h2 id="welcome">Your workspace</h2><span id="principal-meta" class="muted"></span></div><button class="quiet" id="disconnect">Disconnect</button></div>
-<div class="metrics">
-<article class="metric"><span>CREDIT BALANCE</span><strong id="credit-balance">—</strong><small>Available platform credits</small></article>
-<article class="metric"><span>30-DAY EXECUTIONS</span><strong id="execution-count">—</strong><small id="execution-cost">Usage charges</small></article>
-<article class="metric"><span>ACTIVE API KEYS</span><strong id="key-count">—</strong><small>Revocable at any time</small></article>
-</div>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5f4ef"><meta name="robots" content="noindex,nofollow"><title>Account console — YorpHives</title><link rel="stylesheet" href="/account/styles.css"><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"YorpHives Account Console","applicationCategory":"DeveloperApplication","description":"Manage identity, applications, agents, credentials, usage and credits."}</script></head>
+<body><header class="top"><a class="brand" href="/"><span class="mark">Y</span> yorphives <small>/ ACCOUNT</small></a><a href="/">Back to platform ↗</a></header>
+<main><section class="intro"><p class="eyebrow">IDENTITY · ACCESS · ECONOMICS</p><h1>Your platform,<br><em>under control.</em></h1><p>One account for your products, applications and authorized agents.</p></section>
+<section class="connect panel" id="connect-panel"><div><p class="eyebrow">PASSWORDLESS ACCOUNT</p><h2>Sign in or create your account</h2><p>We’ll email a one-time verification code. No password to remember. Your account is created after you verify your email.</p></div>
+<form id="connect-form"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"><label for="display-name">Your name <span class="muted">(new accounts)</span></label><input id="display-name" autocomplete="name" maxlength="100" placeholder="Name"><button class="primary" type="submit">Send verification code ↗</button><div id="verify-box" hidden><label for="otp">Six-digit verification code</label><input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"><button class="primary" id="verify" type="button">Verify and continue</button></div><p class="hint">Email delivery must be configured before sign-in is enabled.</p><p class="status" id="connect-status" role="status"></p></form></section>
+<section id="dashboard" hidden><div class="toolbar"><div><p class="eyebrow">ACCOUNT OVERVIEW</p><h2 id="welcome">Your workspace</h2><span id="principal-meta" class="muted"></span></div><button class="quiet" id="disconnect">Sign out</button></div>
+<div class="metrics"><article class="metric"><span>CREDIT BALANCE</span><strong id="credit-balance">—</strong><small>Available platform credits</small></article><article class="metric"><span>30-DAY EXECUTIONS</span><strong id="execution-count">—</strong><small id="execution-cost">Recorded charges</small></article><article class="metric"><span>ACTIVE API KEYS</span><strong id="key-count">—</strong><small>Revoke access instantly</small></article></div>
 <div class="columns">
-<section class="panel"><div class="panel-head"><div><p class="eyebrow">DEVELOPER ACCESS</p><h2>API credentials</h2></div><button class="primary compact" id="new-key">Create key +</button></div><p class="muted">Keys inherit only scopes your current credential already has. New secrets are shown once.</p><div id="new-secret" class="secret" hidden><strong>Copy this key now</strong><code id="secret-value"></code><button id="copy-secret" class="quiet">Copy</button><p>It will not be shown again.</p></div><div id="keys-list" class="rows"></div></section>
-<section class="panel"><p class="eyebrow">ECONOMICS</p><h2>Credits & purchases</h2><div id="credit-history" class="rows"></div><h3 class="subhead">Purchase history</h3><div id="orders-list" class="rows"></div></section>
-</div>
-<section class="panel usage-panel"><div class="panel-head"><div><p class="eyebrow">OBSERVABILITY</p><h2>Recent execution history</h2></div><span class="muted">Last 30 days · latest 50</span></div><div class="table-wrap"><table><thead><tr><th>CAPABILITY</th><th>RESULT</th><th>UNITS</th><th>CHARGE</th><th>WHEN</th></tr></thead><tbody id="usage-rows"></tbody></table></div></section>
-<p class="footnote">Financial records and execution history are read from append-only platform ledgers. This console cannot alter past ledger entries.</p>
-</section>
-</main>
-<script type="module" src="/account/app.js"></script>
-</body></html>
+<section class="panel"><div class="panel-head"><div><p class="eyebrow">DEVELOPER ACCESS</p><h2>Applications</h2></div><button class="primary compact" id="new-app">Register app +</button></div><div id="apps-list" class="rows"></div>
+<div class="panel-head subhead-row"><div><p class="eyebrow">CREDENTIALS</p><h2>API keys</h2></div><button class="primary compact" id="new-key">Create key +</button></div><div id="keys-list" class="rows"></div>
+<div class="secret" id="new-secret" hidden><strong>Copy this secret now</strong><code id="secret-value"></code><button id="copy-secret" class="quiet">Copy</button><p>It will not be shown again.</p></div></section>
+<section class="panel"><div class="panel-head"><div><p class="eyebrow">AGENT ECONOMY</p><h2>Authorized agents</h2></div><button class="primary compact" id="new-agent">Authorize agent +</button></div><p class="muted">Every agent receives its own identity, limited scopes and explicit spending ceilings. Revocation suspends its principal and credentials.</p><div id="agents-list" class="rows"></div></section></div>
+<div class="columns"><section class="panel"><p class="eyebrow">CREDITS</p><h2>Credit activity</h2><div id="credit-history" class="rows"></div><h3 class="subhead">Purchase history</h3><div id="orders-list" class="rows"></div></section><section class="panel"><p class="eyebrow">OBSERVABILITY</p><h2>Recent execution history</h2><div id="usage-rows" class="rows"></div></section></div>
+<p class="footnote">Financial records and execution history are read from append-only platform ledgers. Agent authorization and API key changes are audited.</p></section></main><script type="module" src="/account/app.js"></script></body></html>
