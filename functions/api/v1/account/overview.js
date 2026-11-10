@@ -1,5 +1,5 @@
-import { requireSession } from "../../_lib/session.js";
-import { json } from "../../_lib/http.js";
+import { requireSession } from "../../../_lib/session.js";
+import { json } from "../../../_lib/http.js";
 export async function onRequestGet({ request, env }) {
   const auth=await requireSession(request,env);
   if(!auth.ok)return auth.response;
