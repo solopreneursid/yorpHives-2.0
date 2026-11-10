@@ -39,7 +39,6 @@ export function analyzeText(input) {
       estimated_reading_minutes: Math.max(1, Math.ceil(words.length / 225)),
       top_terms: topTerms,
       language_hint: "und",
-      processed_at: new Date().toISOString()
     }
   };
 }
