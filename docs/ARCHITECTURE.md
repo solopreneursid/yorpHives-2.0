@@ -30,7 +30,7 @@ The platform is designed around discoverable, callable and payable capabilities:
 - Free Tools are YorpHives-operated browser utilities and must be genuinely functional before release.
 - Explore contains only YorpHives-owned applications. Each release needs screenshots/demos, pricing, supported platforms, installation/launch steps and a verified lifecycle state.
 - Builder opportunities are sourced, deduplicated, categorized, timestamped and reviewed. Listings should identify source, eligibility, location constraints, compensation, deadlines and application destination. Recommendations should be based on member skills and preferences, not unsupported earning guarantees.
-- Home trending metrics must derive from privacy-conscious measured usage. Never display invented view, launch or popularity numbers.
+- Home trending metrics derive from first-party daily aggregate detail views and outbound launches over a rolling seven-day window. The current counts are interaction totals, not unique-human or bot-filtered analytics; apply rate limits and stronger abuse controls before using them as financial-grade metrics. Never display invented view, launch or popularity numbers.
 - Recent releases are read from the canonical catalogue, not hard-coded marketing cards.
 - Project enquiries go to connect@yorphives.com until a verified request-management workflow is implemented.
 
@@ -38,7 +38,7 @@ The platform is designed around discoverable, callable and payable capabilities:
 
 The canonical catalogue is stored in D1. Public discovery currently exposes:
 - `GET /api/v1/catalogue`
-- `GET /api/v1/catalogue/{slug}`
+- `GET /api/v1/catalogue/{slug}`\n- `GET /api/v1/trending` (seven-day tool rankings from recorded daily aggregates)\n- `POST /api/v1/catalogue/{slug}/usage` (same-origin detail-view and launch events)
 
 Only reviewed and available records are public. JSON is the default representation; Markdown is supported through `Accept: text/markdown` or `?format=markdown`. The OpenAPI document describes only endpoints that currently exist.
 
