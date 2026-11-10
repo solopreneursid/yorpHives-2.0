@@ -8,6 +8,6 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check app.js && node --check discover/app.js && node --check listing/app.js && node --check functions/_middleware.js && npm test"
+    "check": "node --check app.js && node --check discover/app.js && node --check listing/app.js && node --check free-tools/tools.js && node --check explore/explore.js && node --check functions/_middleware.js && npm test"
   }
 }
