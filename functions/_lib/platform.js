@@ -118,10 +118,12 @@ export async function chargeCreditsForExecution(env, { principalId, capabilityId
   const now = new Date().toISOString();
   const sourceRef = "usage:" + id;
   const result = await env.DB.batch([
-    env.DB.prepare("INSERT OR IGNORE INTO credits_ledger (id, principal_id, delta_credits, entry_type, source_ref, idempotency_key, description, created_at) SELECT ?, ?, ?, 'usage_debit', ?, ?, ?, ? WHERE COALESCE((SELECT SUM(delta_credits) FROM credits_ledger WHERE principal_id = ?), 0) >= ?").bind(crypto.randomUUID(), principalId, -credits, sourceRef, idempotencyKey, "Capability " + capabilityId + " execution", now, principalId, credits),
+    env.DB.prepare("INSERT OR IGNORE INTO credits_ledger (id, principal_id, delta_credits, entry_type, source_ref, idempotency_key, description, created_at) SELECT ?, ?, ?, 'usage_debit', ?, ?, ?, ? WHERE COALESCE((SELECT SUM(delta_credits) FROM credits_ledger WHERE principal_id = ?), 0) >= ? AND NOT EXISTS (SELECT 1 FROM usage_ledger WHERE request_id = ?)").bind(crypto.randomUUID(), principalId, -credits, sourceRef, idempotencyKey, "Capability " + capabilityId + " execution", now, principalId, credits, id),
     env.DB.prepare("INSERT OR IGNORE INTO usage_ledger (id, principal_id, capability_id, capability_version, request_id, idempotency_key, units, amount_minor, currency, outcome, metadata_json, created_at) SELECT ?, ?, ?, ?, ?, ?, 1, ?, ?, 'succeeded', '{}', ? WHERE EXISTS (SELECT 1 FROM credits_ledger WHERE principal_id = ? AND entry_type = 'usage_debit' AND source_ref = ?)").bind(crypto.randomUUID(), principalId, capabilityId, version, id, idempotencyKey, amountMinor, currency, now, principalId, sourceRef)
   ]);
   if (result[0]?.meta?.changes && result[1]?.meta?.changes) return { charged: true, duplicate: false };
+  const requestExisting = await env.DB.prepare("SELECT idempotency_key FROM usage_ledger WHERE request_id = ? LIMIT 1").bind(id).first();
+  if (requestExisting) return { charged: false, duplicate: true, idempotency_conflict: requestExisting.idempotency_key !== idempotencyKey };
   const existing = await env.DB.prepare("SELECT id FROM usage_ledger WHERE principal_id = ? AND idempotency_key = ? LIMIT 1").bind(principalId, idempotencyKey).first();
   if (existing) return { charged: false, duplicate: true };
   return { charged: false, insufficient_credits: true };
