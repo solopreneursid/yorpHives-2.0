@@ -35,9 +35,7 @@ export function analyzeText(input) {
       character_count: [...text].length,
       character_count_without_spaces: [...text].filter(char => !/\s/u.test(char)).length,
       sentence_count: sentences.length,
-      paragraph_count: text.split(/
-\s*
-/u).filter(part => part.trim()).length,
+      paragraph_count: text.split(/\n\s*\n/u).filter(part => part.trim()).length,
       estimated_reading_minutes: Math.max(1, Math.ceil(words.length / 225)),
       top_terms: topTerms,
       language_hint: "und",
