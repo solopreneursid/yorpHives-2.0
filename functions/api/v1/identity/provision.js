@@ -1,5 +1,5 @@
 import { createApiSecret, sha256Hex, constantTimeEqual } from "../../../_lib/security.js";
-import { failure, success } from "../../../_lib/platform.js";
+import { failure, success, rateLimit } from "../../../_lib/platform.js";
 import { readJson, requestId } from "../../../_lib/http.js";
 
 const ALLOWED_KINDS = new Set(["human", "developer", "agent", "service"]);
@@ -12,6 +12,8 @@ export async function onRequestPost({ request, env }) {
     return failure("BOOTSTRAP_UNAUTHORIZED", "A valid bootstrap credential is required.", 401, request);
   }
   if (!env.DB) return failure("IDENTITY_UNAVAILABLE", "Identity database binding is missing.", 503, request);
+  const limit = await rateLimit(request, env, null);
+  if (!limit.ok) return limit.response;
   const parsed = await readJson(request);
   if (!parsed.ok || !parsed.value || typeof parsed.value !== "object" || Array.isArray(parsed.value)) return failure("INVALID_REQUEST", "Send a valid JSON object.", 400, request);
   const { kind, display_name: displayName, email = null, label = "Initial API key", scopes = ["identity:read", "capability:execute", "usage:read", "credits:read"], daily_spending_limit_minor: dailyLimit = 0, monthly_spending_limit_minor: monthlyLimit = 0 } = parsed.value;
