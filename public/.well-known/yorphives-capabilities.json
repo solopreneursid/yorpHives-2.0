@@ -50,7 +50,8 @@
       "credits:read",
       "keys:manage",
       "commerce:checkout",
-      "capabilities:grant"
+      "capabilities:grant",
+      "commerce:orders:read"
     ]
   },
   "commerce": {
@@ -59,7 +60,8 @@
     "usage": "/api/v1/usage",
     "payment_webhook": "/api/webhooks/stripe",
     "provider_reconciliation": "/api/v1/commerce/reconcile",
-    "pricing": "server-configured-credit-packs"
+    "pricing": "server-configured-credit-packs",
+    "orders": "/api/v1/commerce/orders"
   },
   "trust": {
     "api_keys_hashed_at_rest": true,
