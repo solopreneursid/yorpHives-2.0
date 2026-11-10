@@ -38,6 +38,7 @@ See:
 - [Identity and authorization](docs/IDENTITY-AUTHORIZATION.md)
 - [Commerce and payments](docs/COMMERCE.md)
 - [Operations](docs/OPERATIONS.md)
+- [Preview secret setup](docs/SECRETS-SETUP.md)
 - [Revenue architecture](docs/REVENUE-ARCHITECTURE.md)
 - [Delivery roadmap](docs/ROADMAP.md)
 
