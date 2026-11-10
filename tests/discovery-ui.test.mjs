@@ -31,5 +31,5 @@ test("listing detail page loads by slug and validates external destinations", as
   assert.match(html, /id="listing-content"/);
   assert.match(script, /\/api\/v1\/catalogue\//);
   assert.match(script, /url\.protocol === "https:" \|\| url\.protocol === "http:"/);
-  assert.match(script, /rel.*noopener noreferrer|rel = "noopener noreferrer"/);
+  assert.match(html, /rel="noopener noreferrer"/);
 });
