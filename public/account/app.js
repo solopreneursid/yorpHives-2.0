@@ -1,54 +1,25 @@
-const $ = (s, r = document) => r.querySelector(s);
-const state = { token: "", principal: null };
-const headers = () => ({ Accept: "application/json", Authorization: "Bearer " + state.token });
-const money = (minor, currency = "INR") => new Intl.NumberFormat(undefined, { style: "currency", currency }).format((minor || 0) / 100);
-function node(tag, text, className) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; }
-async function api(path, options = {}) {
-  const response = await fetch(path, { ...options, headers: { ...headers(), ...(options.headers || {}) } });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) { const error = new Error(body.error?.message || "The request failed."); error.code = body.error?.code; error.status = response.status; throw error; }
-  return body.data;
-}
-function empty(target, message) { target.replaceChildren(node("p", message, "empty")); }
-function renderRows(target, items, renderer, fallback) { target.replaceChildren(); if (!items.length) return empty(target, fallback); items.forEach(item => target.append(renderer(item))); }
-function renderKey(key) {
-  const row = node("div", undefined, "row"), left = node("div"), title = node("strong", key.label), meta = node("small", key.prefix + " · " + key.scopes.join(", ") + (key.last_used_at ? " · used " + new Date(key.last_used_at).toLocaleDateString() : " · never used"));
-  left.append(title, meta); const right = node("div"); const badge = node("span", key.revoked_at ? "REVOKED" : "ACTIVE", "tag" + (key.revoked_at ? " revoked" : "")); right.append(badge);
-  if (!key.revoked_at && key.id !== state.currentKeyId) { const revoke = node("button", "Revoke", "quiet danger"); revoke.type = "button"; revoke.addEventListener("click", async () => { if (!confirm("Revoke this API key immediately? Any integration using it will stop working.")) return; try { await api("/api/v1/identity/keys?id=" + encodeURIComponent(key.id), { method: "DELETE" }); await loadDashboard(); } catch (e) { alert(e.message); } }); right.append(revoke); }
-  row.append(left, right); return row;
-}
-async function loadDashboard() {
-  const [me, credits, usage, keys, orders] = await Promise.all([
-    api("/api/v1/identity/me"), api("/api/v1/commerce/credits"), api("/api/v1/usage?limit=50"),
-    api("/api/v1/identity/keys"), api("/api/v1/commerce/orders?limit=50").catch(e => e.code === "INSUFFICIENT_SCOPE" ? { orders: [], unavailable: true } : Promise.reject(e))
-  ]);
-  state.principal = me;
-  $("#welcome").textContent = "Welcome, " + me.display_name;
-  $("#principal-meta").textContent = me.kind + " · " + me.id;
-  $("#credit-balance").textContent = Number(credits.balance).toLocaleString();
-  $("#execution-count").textContent = Number(usage.totals.executions).toLocaleString();
-  $("#execution-cost").textContent = "Recorded charges: " + money(usage.totals.amount_minor);
-  const active = keys.keys.filter(k => !k.revoked_at); $("#key-count").textContent = active.length.toLocaleString();
-  renderRows($("#keys-list"), keys.keys, renderKey, "No API credentials found.");
-  renderRows($("#credit-history"), credits.entries, entry => { const row=node("div",undefined,"row"), left=node("div"), title=node("strong",entry.description), meta=node("small",entry.entry_type+" · "+new Date(entry.created_at).toLocaleString()); left.append(title,meta); row.append(left,node("strong",(entry.delta_credits>0?"+":"")+entry.delta_credits.toLocaleString())); return row; }, "No credit activity yet.");
-  renderRows($("#orders-list"), orders.orders, order => { const row=node("div",undefined,"row"), left=node("div"); left.append(node("strong",order.pack_id+" · "+order.credits+" credits"),node("small",new Date(order.created_at).toLocaleDateString()+" · "+order.provider)); row.append(left,node("span",order.status.toUpperCase()+" · "+money(order.amount_minor,order.currency),"tag")); return row; }, orders.unavailable ? "Your credential does not include purchase-history access." : "No purchases yet.");
-  renderRows($("#usage-rows"), usage.events, event => { const tr=node("tr"), values=[event.capability_id,event.outcome,event.units,event.amount_minor ? money(event.amount_minor,event.currency || "INR") : "—",new Date(event.created_at).toLocaleString()]; values.forEach(v=>tr.append(node("td",String(v)))); return tr; }, "No executions recorded yet.");
-  $("#dashboard").hidden=false; $("#connect-panel").hidden=true;
-}
-$("#connect-form").addEventListener("submit", async event => {
-  event.preventDefault(); const token=$("#api-key").value.trim(); const status=$("#connect-status"); status.textContent="Verifying credential…";
-  if (!/^yh_live_[A-Za-z0-9_-]{43}$/.test(token)) { status.textContent="That does not look like a YorpHives API key."; return; }
-  state.token=token;
-  try { await loadDashboard(); $("#api-key").value=""; status.textContent=""; }
-  catch (error) { state.token=""; status.textContent=error.message + (error.code ? " ["+error.code+"]" : ""); }
-});
-$("#disconnect").addEventListener("click", () => { state.token=""; state.principal=null; state.currentKeyId=null; $("#dashboard").hidden=true; $("#connect-panel").hidden=false; $("#connect-status").textContent="Disconnected. Your credential was cleared from memory."; });
-$("#new-key").addEventListener("click", async () => {
-  const label=prompt("Name this API key (for example: Production integration):"); if (!label) return;
-  const scopes=state.principal.scopes.filter(s=>["identity:read","capability:execute","usage:read","credits:read","keys:manage","commerce:checkout","commerce:orders:read","capabilities:grant"].includes(s));
-  try {
-    const result=await api("/api/v1/identity/keys",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({label:label.trim(),scopes})});
-    state.currentKeyId=result.id; $("#secret-value").textContent=result.secret; $("#new-secret").hidden=false; await loadDashboard();
-  } catch(e) { alert(e.message); }
-});
-$("#copy-secret").addEventListener("click", async () => { try { await navigator.clipboard.writeText($("#secret-value").textContent); $("#copy-secret").textContent="Copied"; } catch { alert("Clipboard access unavailable. Select and copy the key manually."); } });
+const $=s=>document.querySelector(s);
+const state={csrf:"",principal:null,apps:[],overview:null};
+const money=(n,c="INR")=>new Intl.NumberFormat(undefined,{style:"currency",currency:c}).format((n||0)/100);
+function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
+async function api(path,{method="GET",body}={}){const headers={"Accept":"application/json"};if(body!==undefined)headers["Content-Type"]="application/json";if(method!=="GET"&&state.csrf)headers["X-YH-CSRF"]=state.csrf;const r=await fetch(path,{method,headers,credentials:"same-origin",body:body===undefined?undefined:JSON.stringify(body)});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error?.message||"Request failed.");e.code=j.error?.code;e.status=r.status;throw e;}return j.data;}
+function rows(target,items,render,empty){target.replaceChildren();if(!items.length){target.append(el("p",empty,"empty"));return;}items.forEach(x=>target.append(render(x)));}
+function row(title,meta,action){const n=el("div",undefined,"row"),left=el("div"),right=el("div");left.append(el("strong",title),el("small",meta));if(action)right.append(action);n.append(left,right);return n;}
+function button(text,fn,cls="quiet"){const b=el("button",text,cls);b.type="button";b.addEventListener("click",fn);return b;}
+async function refresh(){const data=await api("/api/v1/account/overview");state.overview=data;$("#welcome").textContent="Welcome, "+state.principal.display_name;$("#principal-meta").textContent=state.principal.email+" · "+state.principal.id;$("#credit-balance").textContent=Number(data.credits.balance).toLocaleString();$("#execution-count").textContent=Number(data.usage.executions).toLocaleString();$("#execution-cost").textContent="Recorded charges: "+money(data.usage.amount_minor);$("#key-count").textContent=data.keys.filter(k=>!k.revoked_at).length;
+rows($("#apps-list"),data.applications,a=>row(a.name,a.status+" · "+a.description), "No applications registered yet.");
+rows($("#keys-list"),data.keys,k=>{const revoke=!k.revoked_at?button("Revoke",async()=>{if(confirm("Revoke this API key?")){await api("/api/v1/account/keys?id="+encodeURIComponent(k.id),{method:"DELETE"});await refresh();}},"quiet danger"):el("span","REVOKED","tag revoked");return row(k.label,k.prefix+" · "+k.scopes.join(", ")+(k.application_id?" · app linked":""),revoke);},"No API keys yet.");
+rows($("#agents-list"),data.agents,a=>{const revoke=a.status==="active"?button("Revoke",async()=>{if(confirm("Revoke this agent and suspend its credentials?")){await api("/api/v1/agents?id="+encodeURIComponent(a.id),{method:"DELETE"});await refresh();}},"quiet danger"):el("span","REVOKED","tag revoked");return row(a.display_name,a.status+" · "+a.scopes.join(", ")+" · daily "+money(a.daily_spending_limit_minor)+" · monthly "+money(a.monthly_spending_limit_minor),revoke);},"No agents authorized yet.");
+rows($("#credit-history"),data.credits.entries||[],x=>row(x.description,x.entry_type+" · "+new Date(x.created_at).toLocaleString()),"No credit activity yet.");
+rows($("#orders-list"),data.orders,x=>row(x.pack_id+" · "+x.credits+" credits",new Date(x.created_at).toLocaleDateString()+" · "+x.provider+" · "+x.status.toUpperCase()),"No purchases yet.");
+rows($("#usage-rows"),data.usage.events,x=>row(x.capability_id,x.outcome+" · "+x.units+" units · "+(x.amount_minor?money(x.amount_minor,x.currency||"INR"):"—")+" · "+new Date(x.created_at).toLocaleString()),"No executions recorded yet.");
+$("#dashboard").hidden=false;$("#connect-panel").hidden=true;}
+async function signIn(){try{const d=await api("/api/v1/auth/session");state.csrf=d.csrf_token;state.principal=d.principal;await refresh();}catch(e){if(e.code!=="SESSION_REQUIRED"&&e.code!=="CSRF_COOKIE_INVALID")throw e;}}
+$("#connect-form").addEventListener("submit",async e=>{e.preventDefault();const status=$("#connect-status");status.textContent="Sending verification email…";try{await api("/api/v1/auth/request-code",{method:"POST",body:{email:$("#email").value.trim(),display_name:$("#display-name").value.trim()}});$("#verify-box").hidden=false;status.textContent="If this address can receive YorpHives sign-in codes, an email will arrive shortly.";}catch(err){status.textContent=err.message+(err.code?" ["+err.code+"]":"");}});
+$("#verify").addEventListener("click",async()=>{const status=$("#connect-status");status.textContent="Verifying…";try{const d=await api("/api/v1/auth/verify-code",{method:"POST",body:{email:$("#email").value.trim(),code:$("#otp").value.trim()}});state.csrf=d.csrf_token;state.principal=d.principal;await refresh();}catch(e){status.textContent=e.message;}});
+$("#disconnect").addEventListener("click",async()=>{try{await api("/api/v1/auth/logout",{method:"POST"});}finally{state.csrf="";state.principal=null;$("#dashboard").hidden=true;$("#connect-panel").hidden=false;$("#connect-status").textContent="Signed out."; }});
+$("#new-app").addEventListener("click",async()=>{const name=prompt("Application name:");if(!name)return;const description=prompt("What does this application do?")||"";try{await api("/api/v1/applications",{method:"POST",body:{name,description}});await refresh();}catch(e){alert(e.message);}});
+$("#new-key").addEventListener("click",async()=>{const label=prompt("Credential label:");if(!label)return;const scopes=["identity:read","capability:execute","usage:read","credits:read","keys:manage","commerce:orders:read"];try{const d=await api("/api/v1/account/keys",{method:"POST",body:{label,scopes}});$("#secret-value").textContent=d.api_key?.secret||d.secret;$("#new-secret").hidden=false;await refresh();}catch(e){alert(e.message);}});
+$("#new-agent").addEventListener("click",async()=>{const name=prompt("Agent identity name:");if(!name)return;const daily=Number(prompt("Maximum daily spend in INR (e.g. 100 for ₹100):","100"));if(!Number.isFinite(daily)||daily<0)return alert("Enter a valid non-negative amount.");const monthly=Number(prompt("Maximum monthly spend in INR (e.g. 1000 for ₹1,000):","1000"));if(!Number.isFinite(monthly)||monthly<daily)return alert("Monthly limit must be at least the daily limit.");const scopes=["identity:read","capability:execute","usage:read","credits:read"];try{const d=await api("/api/v1/agents",{method:"POST",body:{display_name:name,scopes,daily_spending_limit_minor:Math.round(daily*100),monthly_spending_limit_minor:Math.round(monthly*100)}});$("#secret-value").textContent=d.api_key.secret;$("#new-secret").hidden=false;await refresh();}catch(e){alert(e.message);}});
+$("#copy-secret").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("#secret-value").textContent);$("#copy-secret").textContent="Copied";}catch{alert("Select and copy the secret manually.");}});
+signIn().catch(e=>{$("#connect-status").textContent=e.message;});
