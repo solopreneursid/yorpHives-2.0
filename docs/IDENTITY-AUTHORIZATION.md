@@ -24,6 +24,7 @@ The first provisioning path is intentionally operator-controlled through `POST /
 - `keys:manage`
 - `commerce:checkout`
 - `commerce:orders:read`
+- `capabilities:grant`
 
 Never issue an ambient all-powerful key to an agent. Create separate keys for each agent, environment, and purpose. Do not expose a server-side key in a browser bundle.
 
