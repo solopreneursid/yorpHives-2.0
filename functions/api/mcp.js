@@ -129,6 +129,7 @@ async function callTool(id, params, modern, context) {
     if (modern) toolResult.resultType = "complete";
     return rpcResult(id, toolResult);
   }
+  await recordUsage(context.env, { principalId: policy.principal?.id || null, capabilityId: "text.analyze", version: "1.0.0", id: requestId(context.request) });
   const toolResult = {
     isError: false,
     content: [{ type: "text", text: JSON.stringify(result.data) }],
