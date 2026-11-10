@@ -35,6 +35,7 @@ export interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
   all<T>(): Promise<D1Result<T>>;
   first<T>(): Promise<T | null>;
+  run(): Promise<{ success: boolean; meta?: { changes?: number } }>;
 }
 export interface D1Database { prepare(query: string): D1PreparedStatement; }
 export interface CatalogueEnv { DB?: D1Database; }
