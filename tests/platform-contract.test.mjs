@@ -120,3 +120,37 @@ test("homepage remains HTML for ordinary browser requests", async () => {
   assert.equal(response.headers.get("content-type"), "text/html");
   assert.match(await response.text(), /human UI/);
 });
+
+test("Free Tools directory exposes substantial searchable browser-first catalogue", async () => {
+  const html = await read("../free-tools/index.html");
+  const manifest = JSON.parse(await read("../free-tools/manifest.json"));
+  const runtime = await read("../free-tools/tool-runtime.js");
+  const directory = await read("../free-tools/directory.js");
+  assert.ok(manifest.length >= 30, "Expected at least 30 published free tools");
+  assert.match(html, /tool-search/);
+  assert.match(html, /data-filter/);
+  assert.match(html, /canonical/);
+  assert.match(directory, /addEventListener\("input"/);
+  assert.match(runtime, /crypto\.subtle\.digest/);
+  assert.match(runtime, /crypto\.randomUUID/);
+  for (const item of manifest) {
+    assert.equal(item.processing, "browser");
+    assert.match(item.url, new RegExp(item.slug));
+    const page = await read("../free-tools/" + item.slug + "/index.html");
+    assert.match(page, new RegExp(item.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(page, /application\/ld\+json/);
+    assert.match(page, /tool-runtime\.js/);
+  }
+});
+
+test("Free Tools have an agent discovery API and machine-readable documentation", async () => {
+  const api = await read("../functions/api/v1/free-tools.ts");
+  const manifest = JSON.parse(await read("../.well-known/yorphives.json"));
+  const llms = await read("../llms.txt");
+  const openapi = await read("../openapi.yaml");
+  assert.match(api, /text\/markdown/);
+  assert.match(api, /FreeToolsResponse/);
+  assert.equal(manifest.machine_interfaces.free_tools, "/api/v1/free-tools");
+  assert.match(llms, /api\/v1\/free-tools/);
+  assert.match(openapi, /\/api\/v1\/free-tools/);
+});
