@@ -14,14 +14,14 @@
   <header class="site-header">
     <a class="brand" href="/" aria-label="YorpHives home"><span class="brand-mark">Y</span><span>yorphives<span class="brand-dot">.</span></span></a>
     <nav class="desktop-nav" aria-label="Main navigation">
-      <a href="/discover/" aria-current="page">Discover</a>
-      <a href="/#business">For business</a>
-      <a href="/discover/?type=opportunity">Earn</a>
-      <a href="/discover/?type=application">Applications</a>
-      <a href="/llms.txt">For agents</a>
+      <a href="/discover/" aria-current="page">Discover</a><a href="/#business">For business</a><a href="/discover/?type=opportunity">Earn</a><a href="/discover/?type=application">Applications</a><a href="/llms.txt">For agents</a>
     </nav>
     <a class="header-cta" href="mailto:connect@yorphives.com">Connect with us <span aria-hidden="true">↗</span></a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open navigation"><span></span><span></span></button>
   </header>
+  <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation" hidden>
+    <a href="/discover/">Discover tools</a><a href="/#business">Build solutions</a><a href="/discover/?type=opportunity">Earn with YorpHives</a><a href="/discover/?type=application">Explore applications</a><a href="/llms.txt">Agent capabilities</a>
+  </nav>
   <main class="discover-shell">
     <div class="discover-intro">
       <a class="back-link" href="/">← YorpHives home</a>
@@ -48,6 +48,7 @@
     </section>
   </main>
   <footer class="site-footer shell"><a class="brand" href="/"><span class="brand-mark">Y</span><span>yorphives<span class="brand-dot">.</span></span></a><p>Discover. Build. Earn. Adopt. Connect.</p><div><a href="/llms.txt">For AI agents</a><a href="mailto:connect@yorphives.com">connect@yorphives.com</a><span>© <span id="year"></span> YorpHives</span></div></footer>
+  <script src="/app.js" defer></script>
   <script src="/discover/app.js" defer></script>
 </body>
 </html>
