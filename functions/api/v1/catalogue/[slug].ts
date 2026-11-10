@@ -25,7 +25,7 @@ export async function onRequestGet({ request, env, params }: CatalogueRequestCon
     "l.side_effects_json, l.published_at, l.updated_at",
     "FROM catalogue_listings l",
     "LEFT JOIN catalogue_categories c ON c.id = l.category_id",
-    "WHERE l.slug = ? AND l.status = 'available'",
+    "WHERE l.slug = ? AND l.status = 'available' AND (l.listing_type != 'application' OR l.owner_type = 'yorphives')",
     "LIMIT 1",
   ].join(" ");
 
