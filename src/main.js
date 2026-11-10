@@ -144,6 +144,41 @@ $$(".main-nav a").forEach(link => link.addEventListener("click", () => {
   mobileMenu.setAttribute("aria-expanded", "false");
 }));
 
-fetch("/api/v1/capabilities").then(response => response.json()).then(data => {
-  document.documentElement.dataset.catalogStatus = data.status || "unavailable";
-}).catch(() => { document.documentElement.dataset.catalogStatus = "unavailable"; });
+async function hydrateCapabilityCatalog() {
+  const root = $("#capability-grid");
+  root.dataset.state = "loading";
+  try {
+    const response = await fetch("/api/v1/capabilities", { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error("Capability catalog is unavailable.");
+    const payload = await response.json();
+    const capabilities = payload.data?.capabilities || [];
+    const available = capabilities.filter(item => item.status === "available");
+    available.forEach(capability => {
+      const selector = '[data-capability-id="' + CSS.escape(capability.id) + '"]';
+      const card = root.querySelector(selector);
+      if (!card) return;
+      card.dataset.capabilityVersion = capability.version;
+      card.dataset.capabilityStatus = capability.status;
+      card.dataset.category = capability.category;
+      card.querySelector(".card-index").textContent = "CAP / " + capability.id;
+      card.querySelector(".card-category").textContent =
+        capability.category.toUpperCase() + " · " + (capability.tags?.[0] || "UTILITY").toUpperCase();
+      card.querySelector(".card-content h3").textContent = capability.name;
+      card.querySelector(".card-content p").textContent = capability.summary;
+      const price = capability.pricing?.model === "free"
+        ? "FREE · NO SIGN-UP"
+        : String(capability.pricing?.model || "PAID").toUpperCase() + " · SEE TERMS";
+      card.querySelector(".card-bottom span").textContent = price;
+      card.querySelector(".availability").setAttribute("aria-label", "Status: " + capability.status);
+      card.querySelector(".availability").lastChild.textContent = " LIVE";
+    });
+    root.dataset.state = "available";
+    document.documentElement.dataset.catalogStatus = "available";
+    root.dataset.catalogVersion = payload.data?.schema_version || "unknown";
+  } catch (error) {
+    root.dataset.state = "unavailable";
+    document.documentElement.dataset.catalogStatus = "unavailable";
+    announce(error.message || "Capability catalog is unavailable.");
+  }
+}
+hydrateCapabilityCatalog();
