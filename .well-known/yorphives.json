@@ -16,7 +16,9 @@
     "overview": "/llms.txt",
     "openapi": "/openapi.yaml",
     "catalogue": "/api/v1/catalogue",
-    "catalogue_format": "JSON by default; Markdown via Accept: text/markdown or ?format=markdown"
+    "catalogue_format": "JSON by default; Markdown via Accept: text/markdown or ?format=markdown",
+    "free_tools": "/api/v1/free-tools",
+    "free_tools_manifest": "/free-tools/manifest.json"
   },
   "capability_policy": {
     "agent_execution": "Only documented endpoints with explicit authorization may be executed.",
