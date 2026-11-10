@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "description": "Public, versioned capability discovery and execution API. Public capabilities disclose pricing and data handling before invocation."
   },
-  "servers": [{ "url": "https://yorphives.com" }],
+  "servers": [{ "url": "https://yorphives-2-preview.pages.dev" }],
   "paths": {
     "/api/v1/capabilities": {
       "get": {
