@@ -7,7 +7,7 @@ const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 test("Free Tools page provides functional browser-local utilities", async () => {
   const html = await read("../free-tools/index.html");
   const script = await read("../free-tools/tools.js");
-  assert.match(html, /word counter/i);
+  assert.match(html, /Word & character counter/i);
   assert.match(html, /JSON formatter/i);
   assert.match(html, /URL encoder/i);
   assert.match(html, /id="counter-input"/);
