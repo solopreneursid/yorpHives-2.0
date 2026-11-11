@@ -1,0 +1,81 @@
+name: YorpHives authenticated Admin staging smoke tests
+
+on:
+  push:
+    branches: ["build/**"]
+    paths:
+      - "admin/**"
+      - "functions/**"
+      - "admin-agent/**"
+      - "admin-monitor/**"
+      - "migrations/**"
+      - "package.json"
+      - "scripts/admin-smoke.mjs"
+      - ".github/workflows/admin-staging-quality.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-staging-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  authenticated-admin-smoke:
+    name: Authenticated Admin browser smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      ADMIN_BASE_URL: ${{ vars.ADMIN_STAGING_BASE_URL }}
+    steps:
+      - name: Check out the tested branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Resolve branch preview and verify Access secrets
+        shell: bash
+        run: |
+          if [ -z "$CF_ACCESS_CLIENT_ID" ] || [ -z "$CF_ACCESS_CLIENT_SECRET" ]; then
+            echo "::error::Add CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET to repository Actions secrets, then authorize the token with a Service Auth policy on the YorpHives Admin deployment aliases Access application."
+            exit 1
+          fi
+          if [ -z "$ADMIN_BASE_URL" ]; then
+            BRANCH="${GITHUB_REF_NAME}"
+            BRANCH_SLUG="$(printf '%s' "$BRANCH" | tr '[:upper:]_./' '[:lower:]---' | cut -c1-28)"
+            ADMIN_BASE_URL="https://${BRANCH_SLUG}.yorphives-admin-staging.pages.dev"
+          fi
+          echo "ADMIN_BASE_URL=$ADMIN_BASE_URL" >> "$GITHUB_ENV"
+          echo "Waiting for authenticated Admin preview: $ADMIN_BASE_URL"
+          for attempt in $(seq 1 30); do
+            STATUS="$(curl -sS -L -o /dev/null -w '%{http_code}' --max-time 15 \
+              -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+              -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+              "$ADMIN_BASE_URL/admin/" || true)"
+            if [ "$STATUS" = "200" ]; then
+              echo "Authenticated Admin preview is serving HTTP 200."
+              exit 0
+            fi
+            echo "Admin preview not ready (HTTP $STATUS), attempt $attempt/30."
+            sleep 10
+          done
+          echo "::error::Authenticated Admin preview did not become ready."
+          exit 1
+      - name: Install Playwright
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run read-only authenticated Admin browser tests
+        run: npm run test:admin-smoke
+      - name: Upload sanitized Admin smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yorphives-admin-smoke-${{ github.run_id }}
+          path: artifacts/admin-smoke.json
+          if-no-files-found: warn
+          retention-days: 30
