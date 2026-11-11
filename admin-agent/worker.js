@@ -81,6 +81,14 @@ async function checkGithubAccess(env) {
       throw new Error("The configured token resolved to an unexpected repository.");
     }
 
+    let authenticatedLogin = null;
+    try {
+      const identity = await github(env, "/user");
+      if (typeof identity.login === "string") authenticatedLogin = identity.login;
+    } catch {
+      authenticatedLogin = null;
+    }
+
     const hasAuthenticatedPermissions = Boolean(repository.permissions && typeof repository.permissions === "object");
     const repositoryWrite = repository.permissions?.push === true;
     let repositoryContextAccess = false;
@@ -167,6 +175,7 @@ async function checkGithubAccess(env) {
       ready,
       github: {
         authenticated: hasAuthenticatedPermissions,
+        login: authenticatedLogin,
         repository_access: true,
         repository: repository.full_name,
         repository_write: repositoryWrite,
