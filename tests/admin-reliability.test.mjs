@@ -206,6 +206,7 @@ test("Admin inventory discovers sitemap pages, manifest tools and published Yorp
   assert.match(scanner, /catalogueError/);
   assert.match(scanner, /openapi\.yaml/);
   assert.match(scanner, /openapiError/);
+  assert.match(scanner, /inventoryTruncated/);
   assert.match(scanner, /syncInventory\(db, trackedInventory, now, !manifestError && !sitemapError && !openapiError && !catalogueError\)/);
 });
 
