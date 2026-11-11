@@ -5,6 +5,7 @@ interface AgentService {
 }
 interface RepairEnv {
   ADMIN_AGENT_SERVICE?: AgentService;
+  ADMIN_AGENT_SERVICE_TOKEN?: string;
 }
 interface RepairJobRow {
   id: string;
@@ -87,7 +88,7 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
   try {
     const dispatch = await agent.fetch(new Request("https://admin-agent.internal/instances", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", authorization: "Bearer " + (context.env.ADMIN_AGENT_SERVICE_TOKEN || "") },
       body: JSON.stringify({
         job_id: jobId,
         finding_id: findingId,
