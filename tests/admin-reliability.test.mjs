@@ -17,17 +17,21 @@ test("admin reliability migration creates isolated monitoring and findings table
   assert.equal(new URL(productionUrl).hostname, ["yorphives", "com"].join("."));
 });
 
-test("admin routes require a signed Cloudflare Access identity and explicit email allowlist", async () => {
+test("admin routes verify user and CI service identities while keeping CI access read-only", async () => {
   const auth = await read("../functions/_lib/admin-auth.ts");
   const route = await read("../functions/admin/[[path]].ts");
   assert.match(auth, /cf-access-jwt-assertion/);
   assert.match(auth, /RSASSA-PKCS1-v1_5/);
   assert.match(auth, /CF_ACCESS_AUD/);
   assert.match(auth, /expectedAudiences/);
-  assert.match(auth, /tokenAudiences\.some/);
+  assert.match(auth, /tokenAudiences\\.some/);
   assert.match(auth, /ADMIN_ALLOWED_EMAILS/);
-  assert.match(auth, /claims\.exp/);
-  assert.match(auth, /claims\.iss/);
+  assert.match(auth, /ADMIN_CI_SERVICE_TOKEN_IDS/);
+  assert.match(auth, /claims\\.common_name/);
+  assert.match(auth, /claims\\.exp/);
+  assert.match(auth, /claims\\.iss/);
+  assert.match(auth, /identity\\.serviceToken && !\\["GET", "HEAD"\\]/);
+  assert.match(auth, /ADMIN_CI_READ_ONLY/);
   assert.match(route, /requireAdmin/);
 });
 
