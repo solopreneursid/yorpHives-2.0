@@ -172,7 +172,7 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(worker, /ready: Boolean\(env\.GITHUB_TOKEN\)/);
   assert.match(worker, /@cf\/qwen\/qwen3\.8-27b/);
   assert.match(worker, /build\/agent\/repair-/);
-  assert.match(worker, /yorphives platform checks/);
+  assert.match(worker, /yorphives platform checks/);\n  assert.match(worker, /triggerPlatformChecks/);\n  assert.match(worker, /ci-trigger-/);
   assert.match(worker, /needs_review/);
   assert.match(worker, /draft: true/);
   assert.doesNotMatch(worker, /mergePullRequest|productionDeploy|wrangler deploy/);
