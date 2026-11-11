@@ -3,6 +3,7 @@ import { adminJson, isAdminResponse, requireAdmin, type AdminRequestContext } fr
 interface RepairEnv {
   ADMIN_AGENT_WEBHOOK_URL?: string;
   ADMIN_AGENT_WEBHOOK_TOKEN?: string;
+  ADMIN_AGENT_CALLBACK_TOKEN?: string;
 }
 interface RepairJobRow {
   id: string; finding_id: string | null; requested_by: string; request_text: string; status: string;
@@ -23,7 +24,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   const result = await context.env.DB!.prepare(
     "SELECT id,finding_id,requested_by,request_text,status,agent_name,branch_name,pull_request_url,result_summary,created_at,updated_at FROM admin_repair_jobs ORDER BY created_at DESC LIMIT 50"
   ).all<RepairJobRow>();
-  return adminJson({ data: result.results, agentConfigured: Boolean((context.env as RepairEnv).ADMIN_AGENT_WEBHOOK_URL && (context.env as RepairEnv).ADMIN_AGENT_WEBHOOK_TOKEN) });
+  return adminJson({ data: result.results, agentConfigured: Boolean((context.env as RepairEnv).ADMIN_AGENT_WEBHOOK_TOKEN && (context.env as RepairEnv).ADMIN_AGENT_CALLBACK_TOKEN) });
 }
 export async function onRequestPost(context: AdminRequestContext & { env: AdminRequestContext["env"] & RepairEnv }): Promise<Response> {
   const identity = await requireAdmin(context);
@@ -45,19 +46,24 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
     "INSERT INTO admin_repair_jobs (id,finding_id,requested_by,request_text,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)"
   ).bind(jobId, findingId, identity.email, requestText, "queued", timestamp, timestamp).run();
   await audit(context, identity.email, "repair_requested", jobId, { finding_id: findingId, request_text: requestText });
-  const webhook = context.env.ADMIN_AGENT_WEBHOOK_URL;
   const secret = context.env.ADMIN_AGENT_WEBHOOK_TOKEN;
-  if (!webhook || !secret) return adminJson({ job: { id: jobId, status: "queued" }, dispatched: false, message: "Repair request safely queued. Configure an agent webhook to enable autonomous execution." }, 202);
+  const callbackSecret = context.env.ADMIN_AGENT_CALLBACK_TOKEN;
+  const webhook = context.env.ADMIN_AGENT_WEBHOOK_URL || "https://api.github.com/repos/solopreneursid/yorpHives-2.0/dispatches";
+  if (!secret || !callbackSecret) return adminJson({ job: { id: jobId, status: "queued" }, dispatched: false, message: "Repair request safely queued. Configure the GitHub dispatch token and callback secret to enable agent execution." }, 202);
+  if (webhook !== "https://api.github.com/repos/solopreneursid/yorpHives-2.0/dispatches") return adminJson({ error: { code: "INVALID_AGENT_ENDPOINT", message: "Only the approved YorpHives GitHub Actions dispatch endpoint is allowed." } }, 500);
   try {
     const dispatch = await fetch(webhook, {
       method: "POST",
-      headers: { authorization: "Bearer " + secret, "content-type": "application/json" },
+      headers: { authorization: "Bearer " + secret, accept: "application/vnd.github+json", "content-type": "application/json", "X-GitHub-Api-Version": "2022-11-28" },
       body: JSON.stringify({
-        event: "yorphives.admin.repair.requested", job_id: jobId, finding_id: findingId,
-        callback_url: new URL("/api/admin/agent-callback", context.request.url).toString(),
-        requested_by: identity.email, request_text: requestText,
-        repository: "solopreneursid/yorpHives-2.0", base_branch: "build/yorphives-admin-reliability",
-        required_controls: ["isolated_branch", "tests", "security_scan", "preview_deployment", "pull_request_only", "no_production_deploy"]
+        event_type: "admin_repair_requested",
+        client_payload: {
+          job_id: jobId, finding_id: findingId,
+          callback_url: new URL("/api/admin/agent-callback", context.request.url).toString(),
+          requested_by: identity.email, request_text: requestText,
+          repository: "solopreneursid/yorpHives-2.0", base_branch: "build/yorphives-admin-reliability",
+          required_controls: ["isolated_branch", "tests", "security_scan", "preview_deployment", "pull_request_only", "no_production_deploy"]
+        }
       }),
       signal: AbortSignal.timeout(8000)
     });
