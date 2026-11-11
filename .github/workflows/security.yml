@@ -1,0 +1,57 @@
+name: YorpHives dependency, secret and passive security checks
+
+on:
+  push:
+    branches: [main, "build/**"]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Repository secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan repository for exposed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-review:
+    name: Dependency and action supply-chain review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Review dependency changes
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+      - name: Validate package manifest
+        run: node -e "const p=require('./package.json'); if(!p.private) process.exit(1); console.log('Package manifest parsed; runtime dependencies are browser/CDN based and no npm lockfile is present.')"
+
+  zap-passive-baseline:
+    name: OWASP ZAP passive baseline (production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Passive baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: https://yorphives.com/
+          rules_file_name: .zap/rules.tsv
+          cmd_options: "-m 2 -T 10 -I"
