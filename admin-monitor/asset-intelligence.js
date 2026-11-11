@@ -130,7 +130,7 @@ async function upsertFinding(db, assetId, finding, now) {
 }
 
 async function resolveMissingFindings(db, assetId, activeKeys, now) {
-  const rows = await db.prepare("SELECT finding_key FROM admin_asset_findings WHERE asset_id=? AND status IN ('open','investigating','awaiting_approval')").bind(assetId).all();
+  const rows = await db.prepare("SELECT finding_key FROM admin_asset_findings WHERE asset_id=? AND category != 'dependency' AND status IN ('open','investigating','awaiting_approval')").bind(assetId).all();
   for (const row of rows.results || []) {
     if (!activeKeys.has(row.finding_key)) {
       await db.prepare("UPDATE admin_asset_findings SET status='fixed', resolved_at=?, last_verified=? WHERE asset_id=? AND finding_key=?")
@@ -283,11 +283,9 @@ async function checkNpmDependency(db, dependency, now) {
   }
 }
 
-async function recordDependencyFinding(db, dependency, now) {
-  const rows = await db.prepare("SELECT id FROM admin_assets WHERE url LIKE '%' || ? || '%' LIMIT 1")
-    .bind(dependency.packageName).all();
-  const assetId = rows.results?.[0]?.id;
-  if (!assetId) return;
+async function recordDependencyFinding(db, assetKey, dependency, now) {
+  const asset = await db.prepare("SELECT id, title FROM admin_assets WHERE asset_key=?").bind(assetKey).first();
+  if (!asset) return;
   let finding = null;
   if (dependency.deprecated) finding = {
     key: "dependency-deprecated:" + dependency.key, severity: "high", category: "dependency",
@@ -307,7 +305,14 @@ async function recordDependencyFinding(db, dependency, now) {
     details: "Current CDN pin: " + dependency.currentVersion + ". Latest: " + dependency.latest + ".",
     recommendation: "Review the changelog and security advisories, then test the newer version before adopting it."
   };
-  if (finding) await upsertFinding(db, assetId, finding, now);
+  if (finding) await upsertFinding(db, asset.id, finding, now);
+  else {
+    const staleKeys = ["dependency-deprecated:", "dependency-major-update:", "dependency-update:"].map(prefix => prefix + dependency.key);
+    for (const key of staleKeys) {
+      await db.prepare("UPDATE admin_asset_findings SET status='fixed', resolved_at=?, last_verified=? WHERE asset_id=? AND finding_key=? AND status IN ('open','investigating','awaiting_approval')")
+        .bind(now, now, asset.id, key).run();
+    }
+  }
 }
 
 async function mapLimit(items, limit, mapper) {
@@ -369,7 +374,7 @@ export async function runAssetIntelligence(db) {
   }
   const dependencyResults = await mapLimit([...dependencies.values()].slice(0, MAX_DEPENDENCIES), 5,
     dependency => checkNpmDependency(db, dependency, now));
-  for (const dependency of dependencyResults) await recordDependencyFinding(db, dependency, now);
+  for (const result of checked) {\n    for (const dependency of result.dependencies || []) {\n      const observed = dependencyResults.find(item => item.key === dependency.key);\n      if (observed) await recordDependencyFinding(db, result.asset_key, observed, now);\n    }\n  }
 
   return {
     checked_at: now,
