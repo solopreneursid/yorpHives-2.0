@@ -493,5 +493,167 @@
     "url": "/free-tools/social-image-sizes/",
     "processing": "browser",
     "agent_execution": "not_available"
+  },
+  {
+    "slug": "compound-interest-calculator",
+    "title": "Compound Interest Calculator",
+    "category": "Finance",
+    "description": "Calculate compound growth with an initial deposit, monthly contributions and annual return.",
+    "url": "/free-tools/compound-interest-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "timezone-converter",
+    "title": "Time Zone Converter",
+    "category": "Productivity",
+    "description": "Convert a date and time between IANA time zones, including daylight-saving transitions.",
+    "url": "/free-tools/timezone-converter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "bmr-calculator",
+    "title": "BMR Calculator",
+    "category": "Health",
+    "description": "Estimate basal metabolic rate and maintenance calories using the Mifflin–St Jeor equation. Informational only.",
+    "url": "/free-tools/bmr-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "sample-size-calculator",
+    "title": "Sample Size Calculator",
+    "category": "Calculators",
+    "description": "Estimate survey sample size from population, confidence level, margin of error and expected proportion.",
+    "url": "/free-tools/sample-size-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "yaml-validator",
+    "title": "YAML Validator & Formatter",
+    "category": "Developer",
+    "description": "Parse, validate and format YAML locally using a browser-loaded open-source parser.",
+    "url": "/free-tools/yaml-validator/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "xml-formatter",
+    "title": "XML Formatter & Validator",
+    "category": "Developer",
+    "description": "Validate XML syntax and format a readable, indented XML document in your browser.",
+    "url": "/free-tools/xml-formatter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "json-to-csv",
+    "title": "JSON to CSV Converter",
+    "category": "Developer",
+    "description": "Convert an array of JSON objects into CSV with consistent columns and correctly escaped values.",
+    "url": "/free-tools/json-to-csv/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "json-ld-generator",
+    "title": "JSON-LD Schema Generator",
+    "category": "Developer",
+    "description": "Generate starter JSON-LD for Article, Product and FAQPage structured data.",
+    "url": "/free-tools/json-ld-generator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "cron-expression-helper",
+    "title": "Cron Expression Helper",
+    "category": "Developer",
+    "description": "Validate five-field cron expressions and calculate the next ten matching local execution times.",
+    "url": "/free-tools/cron-expression-helper/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "html-to-markdown",
+    "title": "HTML to Markdown Converter",
+    "category": "Developer",
+    "description": "Convert pasted HTML into cleaner Markdown while ignoring scripts, styles and hidden content.",
+    "url": "/free-tools/html-to-markdown/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "csv-to-markdown",
+    "title": "CSV to Markdown Table Converter",
+    "category": "Developer",
+    "description": "Convert CSV data into a properly escaped Markdown table for documentation and AI prompts.",
+    "url": "/free-tools/csv-to-markdown/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "llms-txt-generator",
+    "title": "llms.txt Generator",
+    "category": "Developer",
+    "description": "Create an llms.txt directory from a site's name, summary and pasted public page URLs.",
+    "url": "/free-tools/llms-txt-generator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "macro-calculator",
+    "title": "Macro Calculator",
+    "category": "Health",
+    "description": "Estimate daily calories and protein, carbohydrate and fat targets from your body metrics, activity and goal.",
+    "url": "/free-tools/macro-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "saas-unit-economics-calculator",
+    "title": "SaaS Unit Economics Calculator",
+    "category": "Business",
+    "description": "Model SaaS customer lifetime value, LTV:CAC, CAC payback, gross profit and break-even customer count.",
+    "url": "/free-tools/saas-unit-economics-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "pdf-metadata-remover",
+    "title": "PDF Metadata Remover",
+    "category": "Productivity",
+    "description": "Remove common document information fields and embedded XMP metadata from a PDF locally in your browser.",
+    "url": "/free-tools/pdf-metadata-remover/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "color-palette-extractor",
+    "title": "Color Palette Extractor",
+    "category": "Design",
+    "description": "Extract a dominant color palette from an image, preview swatches and copy HEX values.",
+    "url": "/free-tools/color-palette-extractor/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "robots-ai-crawler-checker",
+    "title": "Robots.txt & AI Crawler Checker",
+    "category": "Developer",
+    "description": "Inspect robots.txt rules for major search and AI crawlers, including allow, disallow, sitemap and crawl-delay directives.",
+    "url": "/free-tools/robots-ai-crawler-checker/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "ai-agent-readiness-checker",
+    "title": "AI Agent Readiness Checker",
+    "category": "Developer",
+    "description": "Audit pasted page HTML for machine-readable signals such as semantic structure, metadata, JSON-LD, canonical URLs and agent discovery links.",
+    "url": "/free-tools/ai-agent-readiness-checker/",
+    "processing": "browser",
+    "agent_execution": "not_available"
   }
 ]
