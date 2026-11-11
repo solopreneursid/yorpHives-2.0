@@ -67,7 +67,7 @@ async function run() {
     ];
     for (const endpoint of readEndpoints) {
       try {
-        const apiResponse = await page.request.get(baseUrl + endpoint, { timeout: 20000 });
+        const apiResponse = await page.request.get(baseUrl + endpoint, { headers: accessHeaders, timeout: 20000 });
         const contentType = apiResponse.headers()["content-type"] || "";
         record(
           "read_api_" + endpoint.split("/").pop().replace(/[^a-z0-9-]/gi, "-"),
@@ -80,6 +80,7 @@ async function run() {
     }
 
     const deniedWrite = await page.request.post(baseUrl + "/api/admin/repair-jobs", {
+      headers: accessHeaders,
       data: { permission_probe: true, confirm: true },
       timeout: 15000
     });
