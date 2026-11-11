@@ -71,7 +71,7 @@ test("production change tracking is bounded, fixed-target and persists hash diff
   const migration = await read("../migrations/0006_admin_change_tracking.sql");
   const monitor = await read("../admin-monitor/change-monitor.js");
   const worker = await read("../admin-monitor/worker.js");
-  const route = await read("../functions/api/admin/changes.ts");
+  const route = await read("../functions/api/admin/changes.ts");\n  const trigger = await read("../functions/api/admin/run-snapshots.ts");
   for (const table of ["admin_page_snapshots", "admin_change_events"]) assert.match(migration, new RegExp("CREATE TABLE IF NOT EXISTS " + table));
   assert.match(monitor, /SNAPSHOT_TARGETS/);
   assert.match(monitor, /SNAPSHOT_HOSTS/);
@@ -80,7 +80,7 @@ test("production change tracking is bounded, fixed-target and persists hash diff
   assert.match(monitor, /crypto\.subtle\.digest\("SHA-256"/);
   assert.match(worker, /captureProductionSnapshots\(env\.DB\)/);
   assert.match(route, /requireAdmin/);
-  assert.match(route, /admin_change_events/);
+  assert.match(route, /admin_change_events/);\n  assert.match(trigger, /requireAdmin/);\n  assert.match(trigger, /captureProductionSnapshots/);
 });
 
 test("quality workflows include browser, SEO, Lighthouse and passive security coverage", async () => {
