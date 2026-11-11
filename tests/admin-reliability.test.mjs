@@ -179,11 +179,11 @@ test("repair agent workflow is dispatch-only, least-privilege and cannot edit pr
   assert.match(agent, /MAX_PATCH_CHARS/);
   assert.match(agent, /isAllowedPath/);
   assert.match(agent, /"--check"/);
-  assert.match(agent, /npm.*run.*check/);
+  assert.match(agent, /"npm", \["run", "check"\]/);
   assert.match(agent, /--draft/);
   assert.match(agent, /needs_review/);
-  assert.match(agent, /admin-staging\\.yorphives\\.com/);
-  assert.match(ci, /agent\\/\\*\\*/);
-  assert.match(ci, /repair\\/\\*\\*/);
+  assert.match(agent, /admin-staging\.yorphives\.com/);
+  assert.match(ci, /agent\/\*\*/);
+  assert.match(ci, /repair\/\*\*/);
   assert.doesNotMatch(agent, /gh.*pr.*merge/);
 });
