@@ -27,7 +27,7 @@ export async function onRequestGet(context: AdminRequestContext & { env: AdminRe
   const identity = await requireAdmin(context);
   if (isAdminResponse(identity)) return identity;
   const token = context.env.CF_ANALYTICS_API_TOKEN;
-  const zoneId = context.env.CF_ANALYTICS_ZONE_ID;
+  const zoneId = context.env.CF_ANALYTICS_ZONE_ID || "1ce6b0c59175928a8687797c3cdbff2f";
   if (!token || !zoneId) {
     return adminJson({ configured: false, message: "Analytics is not connected yet. Add CF_ANALYTICS_API_TOKEN (Zone Analytics:Read) and CF_ANALYTICS_ZONE_ID to the Admin Pages environment." });
   }
