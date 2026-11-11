@@ -54,6 +54,7 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
       headers: { authorization: "Bearer " + secret, "content-type": "application/json" },
       body: JSON.stringify({
         event: "yorphives.admin.repair.requested", job_id: jobId, finding_id: findingId,
+        callback_url: new URL("/api/admin/agent-callback", context.request.url).toString(),
         requested_by: identity.email, request_text: requestText,
         repository: "solopreneursid/yorpHives-2.0", base_branch: "build/yorphives-admin-reliability",
         required_controls: ["isolated_branch", "tests", "security_scan", "preview_deployment", "pull_request_only", "no_production_deploy"]
