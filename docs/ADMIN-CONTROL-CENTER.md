@@ -22,8 +22,9 @@ Configure these in the dedicated `yorphives-admin-staging` Pages project. Never 
 | --- | --- | --- |
 | `CF_ANALYTICS_API_TOKEN` | Secret | Read-only Cloudflare GraphQL Analytics API token. |
 | `CF_ANALYTICS_ZONE_ID` | Plain text, optional | Defaults to the YorpHives zone ID in the server route. |
-| `ADMIN_AGENT_WEBHOOK_URL` | Secret or protected variable | HTTPS endpoint for the external code-repair agent. |
-| `ADMIN_AGENT_WEBHOOK_TOKEN` | Secret | High-entropy shared bearer token for dispatch and callbacks. |
+| `ADMIN_AGENT_WEBHOOK_URL` | Plain text, optional | Defaults to the fixed YorpHives GitHub repository-dispatch endpoint. |
+| `ADMIN_AGENT_WEBHOOK_TOKEN` | Secret | Fine-grained GitHub token with Contents: Read and write on this repository, used only to trigger the workflow. |
+| `ADMIN_AGENT_CALLBACK_TOKEN` | Secret | High-entropy random bearer token shared by the staging Pages project and the GitHub Actions secret. |
 
 For analytics, create a custom Cloudflare API token with Account Analytics:Read and restrict its Zone Resources to the YorpHives zone. Do not use a Global API Key.
 
@@ -52,9 +53,11 @@ Admin sends a POST request with a Bearer token and JSON payload:
 }
 ```
 
-The agent calls the callback URL with the same Bearer token. Accepted statuses are `running`, `needs_review`, `completed`, and `failed`. Branches must use `agent/` or `repair/`; pull-request URLs must belong to this repository. Callback events are audited.
+The staging Pages route sends a GitHub `repository_dispatch` event. The `Admin repair agent` workflow runs on GitHub-hosted runners, uses Cloudflare Workers AI (`@cf/qwen/qwen3.8-27b`) for one bounded patch-generation request, validates every changed path against an allowlist, runs `npm run check`, pushes an `agent/` branch, and opens a draft PR against the Admin staging branch. The workflow reports status using `ADMIN_AGENT_CALLBACK_TOKEN`. Callback events are audited.
 
-The webhook is an adapter, not an agent runtime. Until an external agent endpoint and token are configured, requests are stored as `queued` and no code is changed. A webhook service must independently enforce the required branch, test, review, and preview controls.
+The workflow cannot change `.github/`, migrations, deployment configuration, Access/authentication code, monitoring infrastructure, secrets, or production release controls. It does not merge or deploy. Local checks must pass before a PR is created; GitHub CI also runs on `agent/**` and `repair/**` branch pushes. Review the PR and CI before merging it manually.
+
+Configure GitHub repository Actions secrets `CF_AI_API_TOKEN` (Cloudflare token with Workers AI:Run only) and `ADMIN_AGENT_CALLBACK_TOKEN` (same random value configured in Pages). The Cloudflare account ID is set in the workflow. Configure the Pages project with `ADMIN_AGENT_WEBHOOK_TOKEN` (fine-grained GitHub token with Contents:Read and write for this repository) and `ADMIN_AGENT_CALLBACK_TOKEN`. Never paste any token into chat.
 
 ### Release safety
 
@@ -69,5 +72,5 @@ The webhook is an adapter, not an agent runtime. Until an external agent endpoin
 - Keep the Admin UI on the existing dedicated Pages project.
 - Reuse the existing D1 database; do not create another database.
 - Use Cloudflare GraphQL Analytics rather than a paid third-party analytics product.
-- Prefer a small external agent service only when needed. Use free GitHub Actions minutes and a free/low-cost inference allowance where eligible; enforce a daily job limit.
+- Use GitHub-hosted Actions for on-demand isolated execution and Cloudflare Workers AI's included daily allowance where eligible. Jobs run sequentially and each uses one bounded inference call; usage beyond the free allowance can incur charges.
 - Do not enable always-on browser automation, paid model APIs, or scheduled high-frequency scans by default.
