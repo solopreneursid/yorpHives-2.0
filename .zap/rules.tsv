@@ -1,2 +1,1 @@
-# Rule ID\tAction\tDescription
-10011\tIGNORE\tStrict-Transport-Security is evaluated by the CDN and browser policy.
+10011	IGNORE	Strict-Transport-Security is evaluated by the CDN and browser policy.
