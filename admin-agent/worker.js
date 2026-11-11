@@ -163,6 +163,28 @@ async function createBranchCommit(env, jobId, base, changes) {
   return { branch, commitSha: commit.sha };
 }
 
+async function triggerPlatformChecks(env, branch, jobId) {
+  const path = `/repos/${REPOSITORY}/contents/admin-agent/.ci-trigger-${jobId}.json`;
+  const query = `?ref=${encodeURIComponent(branch)}`;
+  let file = await githubMaybe(env, path + query);
+  if (!file) {
+    const created = await github(env, path, "PUT", {
+      message: `ci: trigger platform checks for repair ${jobId.slice(0, 8)}`,
+      content: btoa(JSON.stringify({ job_id: jobId, purpose: "temporary CI trigger" })),
+      branch
+    });
+    file = created.content;
+  }
+  if (!file?.sha) throw new Error("Could not create a temporary CI trigger file.");
+  const removed = await github(env, path, "DELETE", {
+    message: `chore: remove temporary CI trigger for repair ${jobId.slice(0, 8)}`,
+    sha: file.sha,
+    branch
+  });
+  if (!removed?.commit?.sha) throw new Error("Could not finalize the CI trigger commit.");
+  return { commitSha: removed.commit.sha };
+}
+
 async function waitForChecks(env, step, commitSha) {
   for (let attempt = 1; attempt <= 12; attempt += 1) {
     const result = await step.do(`read-platform-checks-${attempt}`, async () =>
@@ -274,7 +296,7 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
       );
 
       attemptedBranch = branchCommit.branch;
-      const verification = await waitForChecks(this.env, step, branchCommit.commitSha);
+      const ciTrigger = await step.do("trigger-platform-checks-on-agent-branch", async () =>\n        triggerPlatformChecks(this.env, branchCommit.branch, jobId)\n      );\n      const verification = await waitForChecks(this.env, step, ciTrigger.commitSha);
       const pullRequest = await step.do("open-draft-pull-request", async () =>
         createDraftPullRequest(this.env, branchCommit.branch, jobId, requestedBy, requestText, proposal.summary, verification.checks)
       );
