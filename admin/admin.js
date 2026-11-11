@@ -97,6 +97,10 @@ async function load() {
     }
     const counts = assetData.counts || {};
     $("asset-count").textContent = counts.assets ?? 0;
+    $("website-count").textContent = counts.website_pages ?? 0;
+    $("tools-count").textContent = counts.free_tools ?? 0;
+    $("products-count").textContent = counts.products ?? 0;
+    $("discovery-count").textContent = counts.api_discovery ?? 0;
     $("asset-down").textContent = (counts.unavailable ?? 0) + (counts.degraded ?? 0);
     $("deprecated-count").textContent = counts.deprecated_dependencies ?? 0;
     $("updates-count").textContent = counts.updates_available ?? 0;
