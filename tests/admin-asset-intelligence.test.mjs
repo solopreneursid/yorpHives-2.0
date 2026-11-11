@@ -15,7 +15,9 @@ test("asset intelligence inventories core site routes and the Free Tools manifes
 });
 
 test("asset intelligence is bounded and restricts requests to the production origin", () => {
-  assert.match(source, /MAX_ASSETS = 250/);\n  assert.match(source, /MAX_ASSETS_PER_RUN = 60/);\n  assert.match(source, /last_checked_at/);
+  assert.match(source, /MAX_ASSETS = 250/);
+  assert.match(source, /MAX_ASSETS_PER_RUN = 60/);
+  assert.match(source, /last_checked_at/);
   assert.match(source, /MAX_BODY_BYTES/);
   assert.match(source, /CONCURRENCY = 8/);
   assert.match(source, /url\.origin !== SITE_ORIGIN/);
