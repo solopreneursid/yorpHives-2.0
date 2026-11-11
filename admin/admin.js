@@ -279,8 +279,9 @@ function renderFindings() {
     (tr,item)=>{
       const td=document.createElement("td");
       const button=document.createElement("button");button.className="button";
-      const next=item.status==="accepted_risk"?"open":item.status==="investigating"?"accepted_risk":"investigating";
-      button.textContent=next==="open"?"Reopen":next==="accepted_risk"?"Accept risk":"Investigate";
+      const closed=["accepted_risk","fixed","verified"].includes(item.status);
+      const next=closed?"open":item.status==="investigating"?"accepted_risk":"investigating";
+      button.textContent=closed?"Reopen":next==="accepted_risk"?"Accept risk":"Investigate";
       button.addEventListener("click",async()=>{
         if(next==="accepted_risk"&&!confirm("Record this finding as an accepted risk? The decision will be audited."))return;
         button.disabled=true;
