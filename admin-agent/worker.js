@@ -94,7 +94,7 @@ async function checkGithubAccess(env) {
     let repositoryContextAccess = false;
     try {
       const [baseRef, sourceFile] = await Promise.all([
-        github(env, `/repos/${REPOSITORY}/git/ref/heads/${encodeURIComponent(BASE_BRANCH)}`),
+        github(env, `/repos/${REPOSITORY}/git/ref/heads/${BASE_BRANCH}`),
         github(env, `/repos/${REPOSITORY}/contents/admin-agent/worker.js?ref=${encodeURIComponent(BASE_BRANCH)}`)
       ]);
       repositoryContextAccess = Boolean(
