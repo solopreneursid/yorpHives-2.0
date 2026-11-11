@@ -90,6 +90,7 @@ async function getAssets(force = false) {
   const result = await api("/api/admin/assets");
   state.assets = result.assets || [];
   state.dependencies = result.dependencies || [];
+  state.catalogue = result.catalogue || [];
   state.assetCounts = result.counts || {};
   state.assetFindings = result.findings || [];
   updateNavigationCounts();
@@ -148,6 +149,18 @@ function renderAssets() {
     (tr,item)=>cell(tr,date(item.last_checked_at))
   ], "No assets match this filter. Run an inventory scan to discover platform assets.", 6);
 }
+function renderCatalogue() {
+  const target=$("catalogue-list");
+  if(!target)return;
+  $("catalogue-count").textContent=number(state.catalogue.length)+" applications";
+  renderTable(target,state.catalogue,[
+    (tr,item)=>cell(tr,item.title+" · "+item.slug),
+    (tr,item)=>{const td=cell(tr,"");td.append(badge(item.status));},
+    (tr,item)=>cell(tr,item.access_model),
+    (tr,item)=>cell(tr,item.destination_url || "Not published"),
+    (tr,item)=>cell(tr,date(item.updated_at))
+  ],"No YorpHives applications are registered in the shared catalogue.",5);
+}
 function renderDependencies() {
   const target = $("dependencies-list");
   if (!target) return;
@@ -180,6 +193,7 @@ async function loadOverview() {
   state.overviewData = overview;
   state.assets = assetsResult.assets || [];
   state.dependencies = assetsResult.dependencies || [];
+  state.catalogue = assetsResult.catalogue || [];
   state.assetCounts = assetsResult.counts || {};
   state.assetFindings = assetsResult.findings || [];
   state.findings = findings.data || [];
@@ -188,7 +202,7 @@ async function loadOverview() {
   $("identity").textContent = overview.identity || "Administrator";
   $("sidebar-identity").textContent = overview.identity || "Authorized owner";
   $("asset-count").textContent = number(ac.assets);
-  $("asset-breakdown").textContent = number(ac.website_pages) + " pages · " + number(ac.free_tools) + " tools · " + number(ac.products) + " products";
+  $("asset-breakdown").textContent = number(ac.website_pages) + " pages · " + number(ac.free_tools) + " tools · " + number(ac.catalogue_applications ?? ac.products) + " applications";
   $("findings").textContent = number(counts.open_findings);
   $("critical-label").textContent = number(counts.critical_findings) + " critical findings";
   $("updates-count").textContent = number(ac.updates_available);
@@ -203,7 +217,7 @@ async function loadOverview() {
     ["Admin Control Center", 1, "Authenticated · Admin API responding"],
     ["Public website", ac.website_pages, "Discovered through sitemap"],
     ["Free Tools", ac.free_tools, "Discovered through manifest"],
-    ["Products & apps", ac.products, "Discovered through product catalogue"],
+    ["Products & apps", ac.catalogue_applications ?? ac.products, "Shared catalogue · all lifecycle states"],
     ["APIs & discovery", ac.api_discovery, "Registered platform endpoints"],
     ["Dependencies", state.dependencies.length, "Observed pinned packages"]
   ];
@@ -234,11 +248,12 @@ async function loadOverview() {
 }
 async function loadMonitoring() {
   const [assets,overview,changes]=await Promise.all([getAssets(true),getOverview(),api("/api/admin/changes")]);
-  renderAssets();renderRuns($("runs"),overview.recent_runs || []);renderChanges($("changes-list"),changes.data || []);
+  renderAssets();renderCatalogue();renderRuns($("runs"),overview.recent_runs || []);renderChanges($("changes-list"),changes.data || []);
   const c=state.assetCounts;
   $("website-count").textContent=number(c.website_pages);
   $("tools-count").textContent=number(c.free_tools);
-  $("products-count").textContent=number(c.products);
+  $("products-count").textContent=number(c.catalogue_applications ?? c.products);
+  renderCatalogue();
   $("asset-down").textContent=number((c.unavailable||0)+(c.degraded||0));
 }
 async function loadIssues() {
