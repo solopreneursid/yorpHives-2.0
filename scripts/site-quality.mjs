@@ -157,7 +157,8 @@ async function run() {
     base_url: baseUrl,
     summary: { total: checks.length, passed: checks.filter(item => item.ok).length, failed: failures.length },
     checks,
-    sitemap_pages: sitemapResults,\n    tool_pages: toolResults,
+    sitemap_pages: sitemapResults,
+    tool_pages: toolResults,
     broken_internal_links: linkResults,
     failures
   };
