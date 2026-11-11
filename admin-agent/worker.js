@@ -250,31 +250,58 @@ async function triggerPlatformChecks(env, branch, jobId, baseCommitSha) {
 
 async function waitForChecks(env, step, commitSha) {
   const required = [
-    "contract-tests",
-    "browser smoke tests and seo crawl",
-    "code review",
-    "lighthouse performance budgets"
+    { key: "contract-tests", workflow: "YorpHives platform checks", job: "contract-tests" },
+    { key: "browser-and-seo", workflow: "YorpHives browser, SEO and performance quality", job: "browser smoke tests and seo crawl" },
+    { key: "code-review", workflow: "YorpHives browser, SEO and performance quality", job: "code review" },
+    { key: "lighthouse", workflow: "YorpHives browser, SEO and performance quality", job: "lighthouse performance budgets" }
   ];
+
   for (let attempt = 1; attempt <= 30; attempt += 1) {
-    const result = await step.do(`read-platform-checks-${attempt}`, async () =>
-      github(env, `/repos/${REPOSITORY}/commits/${commitSha}/check-runs?per_page=100`)
+    const runList = await step.do(`read-github-actions-runs-${attempt}`, async () =>
+      github(env, `/repos/${REPOSITORY}/actions/runs?head_sha=${encodeURIComponent(commitSha)}&per_page=100`)
     );
-    const checkRuns = result.check_runs || [];
-    const relevant = checkRuns.filter((check) => required.some(name => check.name.toLowerCase().includes(name)));
-    const completedNames = new Set(relevant.filter(check => check.status === "completed").map(check => {
-      const name = check.name.toLowerCase();
-      return required.find(expected => name.includes(expected));
-    }));
-    const failed = relevant.filter((check) => check.status === "completed" && !["success", "neutral", "skipped"].includes(check.conclusion));
+    const runs = (runList.workflow_runs || []).filter(run =>
+      required.some(item => item.workflow === run.name)
+    );
+    const jobsByKey = new Map();
+
+    for (const workflowRun of runs) {
+      const jobResult = await step.do(`read-github-actions-jobs-${attempt}-${workflowRun.id}`, async () =>
+        github(env, `/repos/${REPOSITORY}/actions/runs/${workflowRun.id}/jobs?per_page=100`)
+      );
+      for (const job of jobResult.jobs || []) {
+        for (const expected of required) {
+          if (expected.workflow === workflowRun.name && job.name.toLowerCase().includes(expected.job)) {
+            const previous = jobsByKey.get(expected.key);
+            if (!previous || Date.parse(job.started_at || workflowRun.created_at) >= Date.parse(previous.started_at || previous.created_at)) {
+              jobsByKey.set(expected.key, { ...job, created_at: workflowRun.created_at });
+            }
+          }
+        }
+      }
+    }
+
+    const failed = required
+      .map(item => ({ expected: item, job: jobsByKey.get(item.key) }))
+      .filter(item => item.job?.status === "completed" && !["success", "neutral", "skipped"].includes(item.job.conclusion));
     if (failed.length) {
-      throw new Error("Repository verification failed: " + failed.map(check => `${check.name}=${check.conclusion}`).join(", "));
+      throw new Error("Repository verification failed: " + failed.map(item => `${item.expected.key}=${item.job.conclusion}`).join(", "));
     }
-    if (required.every(name => completedNames.has(name))) {
-      return { passed: true, checks: relevant.map(check => ({ name: check.name, conclusion: check.conclusion })) };
+
+    if (required.every(item => jobsByKey.get(item.key)?.status === "completed")) {
+      return {
+        passed: true,
+        checks: required.map(item => ({
+          name: item.key,
+          conclusion: jobsByKey.get(item.key).conclusion
+        }))
+      };
     }
-    if (attempt < 30) await step.sleep(`wait-for-platform-checks-${attempt}`, "30 seconds");
+
+    if (attempt < 30) await step.sleep(`wait-for-github-actions-${attempt}`, "30 seconds");
   }
-  throw new Error("Timed out waiting for contract tests, browser QA, code review and Lighthouse performance checks on the isolated repair branch.");
+
+  throw new Error("Timed out waiting for contract tests, branch-preview browser QA, automated code review and Lighthouse performance checks.");
 }
 
 async function createDraftPullRequest(env, branch, jobId, requestedBy, requestText, summary, checks) {
