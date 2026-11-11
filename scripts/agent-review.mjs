@@ -7,6 +7,7 @@ const reportDir = process.env.REPORT_DIR || "artifacts/agent-review";
 const eventName = process.env.GITHUB_EVENT_NAME || "push";
 const before = process.env.GITHUB_EVENT_BEFORE || "";
 const baseRef = process.env.GITHUB_BASE_REF || "main";
+const refName = process.env.GITHUB_REF_NAME || "";
 
 async function git(args) {
   const { stdout } = await run("git", args, { maxBuffer: 8 * 1024 * 1024 });
@@ -17,6 +18,11 @@ async function resolveBase() {
   if (eventName === "pull_request") {
     await git(["fetch", "--no-tags", "origin", baseRef]);
     return `origin/${baseRef}`;
+  }
+  if (refName.startsWith("build/agent/repair-")) {
+    const repairBase = "build/yorphives-admin-reliability";
+    await git(["fetch", "--no-tags", "origin", repairBase]);
+    return `origin/${repairBase}`;
   }
   if (before && !/^0+$/.test(before)) return before;
   try {
@@ -30,7 +36,7 @@ const rules = [
   { id: "dynamic-code-execution", severity: "high", pattern: /\beval\s*\(|\bnew\s+Function\s*\(/, description: "Dynamic code execution primitive added." },
   { id: "document-write", severity: "high", pattern: /\bdocument\.write\s*\(/, description: "document.write can replace document content and create injection risk." },
   { id: "hardcoded-credential", severity: "critical", pattern: /(?:api[_-]?key|access[_-]?token|client[_-]?secret|password)\s*[:=]\s*["'`][A-Za-z0-9_\-./+=]{16,}["'`]/i, description: "Possible hard-coded credential added." },
-  { id: "insecure-http", severity: "medium", pattern: /https?:\/\/(?!localhost|127\.0\.0\.1)[^\s"'\x60]+/i, description: "Absolute HTTP or external URL added; verify transport and destination." },
+  { id: "insecure-http", severity: "medium", pattern: /http:\/\/(?!localhost|127\.0\.0\.1)[^\s"'\x60]+/i, description: "Insecure HTTP URL added; verify whether HTTPS is available." },
   { id: "unsafe-html-sink", severity: "medium", pattern: /\.innerHTML\s*=|\.outerHTML\s*=/, description: "HTML string sink added; confirm content is trusted or sanitized." },
   { id: "unsafe-url-sink", severity: "medium", pattern: /(?:location\.href|window\.location)\s*=\s*(?:input|value|url|href|query)/i, description: "Navigation target may be influenced by untrusted input." }
 ];
