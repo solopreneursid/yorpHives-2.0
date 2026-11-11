@@ -218,7 +218,7 @@ load();
 
 $("assets-run").addEventListener("click", async () => {
   const button = $("assets-run");
-  if (!confirm("Scan all approved YorpHives website routes, Free Tools and available internal products, and check pinned npm CDN dependency versions? This is read-only.")) return;
+  if (!confirm("Run the next bounded batch of approved YorpHives website, Free Tools and available internal product checks, including pinned npm CDN dependency versions? This is read-only.")) return;
   button.disabled = true;
   button.textContent = "Scanning…";
   try {
@@ -226,5 +226,5 @@ $("assets-run").addEventListener("click", async () => {
     $("run-state").textContent = result.assets + " assets · " + result.unavailable + " unavailable · " + result.dependencies + " dependencies";
     await load();
   } catch (error) { alert(error.message); }
-  finally { button.disabled = false; button.textContent = "Scan tools & products"; }
+  finally { button.disabled = false; button.textContent = "Run next asset scan"; }
 });
