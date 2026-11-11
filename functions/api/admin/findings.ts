@@ -20,3 +20,25 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   `).all<FindingRow>();
   return adminJson({ data: result.results });
 }
+
+
+interface FindingActionRequest { id?: string; status?: "open" | "investigating" | "accepted_risk"; }
+export async function onRequestPatch(context: AdminRequestContext): Promise<Response> {
+  const identity = await requireAdmin(context);
+  if (isAdminResponse(identity)) return identity;
+  const origin = context.request.headers.get("origin");
+  if (!origin || origin !== new URL(context.request.url).origin) return adminJson({ error: { code: "INVALID_ORIGIN", message: "Admin actions must originate from this site." } }, 403);
+  if (!context.request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return adminJson({ error: { code: "INVALID_CONTENT_TYPE", message: "A JSON request body is required." } }, 415);
+  const body = await context.request.json().catch(() => null) as FindingActionRequest | null;
+  if (!body?.id || !["open","investigating","accepted_risk"].includes(body.status || "")) return adminJson({ error: { code: "INVALID_ACTION", message: "Provide a finding id and an allowed triage status." } }, 400);
+  const existing = await context.env.DB!.prepare("SELECT id,status FROM admin_findings WHERE id=?").bind(body.id).first<{id:string;status:string}>();
+  if (!existing) return adminJson({ error: { code: "FINDING_NOT_FOUND", message: "Finding was not found." } }, 404);
+  const timestamp = new Date().toISOString();
+  const resolvedAt = body.status === "accepted_risk" ? timestamp : null;
+  await context.env.DB!.prepare("UPDATE admin_findings SET status=?,resolved_at=? WHERE id=?")
+    .bind(body.status, resolvedAt, body.id).run();
+  await context.env.DB!.prepare("INSERT INTO admin_audit_events (id,actor,action,resource_type,resource_id,details_json,created_at) VALUES (?,?,?,?,?,?,?)")
+    .bind(crypto.randomUUID(),identity.email,"finding_status_changed","finding",body.id,
+      JSON.stringify({from:existing.status,to:body.status}),timestamp).run();
+  return adminJson({ success: true, id: body.id, status: body.status });
+}
