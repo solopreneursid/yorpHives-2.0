@@ -11,7 +11,8 @@ test("asset intelligence inventories core site routes and the Free Tools manifes
     assert.ok(source.includes(route), "missing monitored route " + route);
   }
   assert.match(source, /free-tools\/manifest\.json/);
-  assert.match(source, /catalogue_listings WHERE status='available' AND listing_type='application' AND owner_type='yorphives'/);
+  assert.match(source, /api\/v1\/catalogue/);
+  assert.match(source, /catalogue_error/);
 });
 
 test("asset intelligence is bounded and restricts requests to the production origin", () => {
