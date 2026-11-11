@@ -125,6 +125,10 @@ test("Control Center adds bounded repair jobs, owner audit history and optional 
   const script = await read("../admin/admin.js");
   const assets = await read("../functions/api/admin/assets.ts");
   assert.match(assets, /catalogue_listings/);
+  assert.match(assets, /api\/v1\/catalogue/);
+  assert.match(assets, /api\/v1\/free-tools/);
+  assert.match(assets, /sitemap\.xml/);
+  assert.match(assets, /source_errors/);
   assert.match(html, /id="analytics-export"/);
   assert.match(migration, /admin_repair_jobs/);
   assert.match(migration, /admin_audit_events/);
@@ -195,10 +199,10 @@ test("Admin inventory discovers sitemap pages, manifest tools and published Yorp
   const scanner = await read("../admin-monitor/asset-intelligence.js");
   assert.match(scanner, /SITE_ORIGIN \+ "\/sitemap\.xml"/);
   assert.match(scanner, /free-tools\/manifest\.json/);
-  assert.match(scanner, /catalogue_listings/);
+  assert.match(scanner, /api\/v1\/catalogue/);
   assert.match(scanner, /knownPaths/);
   assert.match(scanner, /sitemapError/);
-  assert.match(scanner, /syncInventory\(db, trackedInventory, now, !manifestError && !sitemapError\)/);
+  assert.match(scanner, /syncInventory\(db, trackedInventory, now, !manifestError && !sitemapError && !catalogueError\)/);
 });
 
 test("Admin findings API unifies monitor and asset findings with audited triage", async () => {
