@@ -39,8 +39,20 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   const result = await context.env.DB!.prepare(
     "SELECT id,finding_id,requested_by,request_text,status,agent_name,branch_name,pull_request_url,result_summary,created_at,updated_at FROM admin_repair_jobs ORDER BY created_at DESC LIMIT 50"
   ).all<RepairJobRow>();
-  const configured = Boolean((context.env as RepairEnv).ADMIN_AGENT_SERVICE);
-  return adminJson({ data: result.results, agentConfigured: configured });
+  const env = context.env as RepairEnv;
+  let agentConfigured = false;
+  if (env.ADMIN_AGENT_SERVICE && env.ADMIN_AGENT_SERVICE_TOKEN) {
+    try {
+      const health = await env.ADMIN_AGENT_SERVICE.fetch(new Request("https://admin-agent.internal/health", {
+        headers: { authorization: "Bearer " + env.ADMIN_AGENT_SERVICE_TOKEN }
+      }));
+      const status = await health.json().catch(() => null) as { ready?: boolean } | null;
+      agentConfigured = health.ok && status?.ready === true;
+    } catch {
+      agentConfigured = false;
+    }
+  }
+  return adminJson({ data: result.results, agentConfigured });
 }
 
 export async function onRequestPost(context: AdminRequestContext & { env: AdminRequestContext["env"] & RepairEnv }): Promise<Response> {
