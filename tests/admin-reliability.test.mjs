@@ -201,6 +201,10 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(worker, /"user-agent": "YorpHives-Agentic-Operations\/1\.0"/);
   assert.match(worker, /repositoryWrite/);
   assert.match(worker, /jobs_access/);
+  assert.match(worker, /workers_ai: Boolean\(env\.AI\)/);
+  assert.match(worker, /durable_workflow: Boolean\(env\.ADMIN_REPAIR_WORKFLOW\)/);
+  assert.match(worker, /missingDependencies/);
+  assert.match(route, /workers_ai\?: boolean/);
   assert.doesNotMatch(worker, /github\(env, "\/user"\)/);
   assert.match(worker, /job\.conclusion !== "success"/);
   assert.doesNotMatch(worker, /"success", "neutral", "skipped"/);
