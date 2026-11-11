@@ -378,6 +378,30 @@ function renderTraffic(daily) {
 }
 async function loadAgents(refresh=true) {
   try {
+    const registry=await api("/api/admin/agents");
+    const summary=registry.summary||{};
+    setText("agent-active-count",number(summary.active));
+    setText("agent-blocked-count",number(summary.blocked));
+    setText("agent-planned-count",number(summary.planned));
+    setText("agent-security-count",number(summary.open_security_findings));
+    const roster=$("agent-roster");
+    if(roster){
+      roster.replaceChildren();
+      for(const agent of registry.agents||[]){
+        const card=document.createElement("article");card.className="agent-card";
+        const head=document.createElement("div");head.className="agent-card-head";
+        const titleWrap=document.createElement("div");
+        const title=document.createElement("h3");title.textContent=agent.name;
+        const role=document.createElement("div");role.className="agent-role";role.textContent=agent.role;
+        titleWrap.append(title,role);
+        const stateBadge=document.createElement("span");stateBadge.className="agent-state "+agent.status;stateBadge.textContent=agent.status;
+        head.append(titleWrap,stateBadge);
+        const description=document.createElement("p");description.textContent=agent.description;
+        const detail=document.createElement("small");detail.textContent=agent.detail;
+        const last=document.createElement("small");last.textContent=agent.last_run_at?"Last run · "+date(agent.last_run_at):"No run recorded";
+        card.append(head,description,detail,last);roster.append(card);
+      }
+    }
     const jobs=await api("/api/admin/repair-jobs");
     repairAgentReady=jobs.agentConfigured===true;
     const status=$("agent-state");
@@ -498,6 +522,7 @@ document.querySelectorAll("[data-finding-filter]").forEach(button=>button.addEve
   state.findingFilter=button.dataset.findingFilter;document.querySelectorAll("[data-finding-filter]").forEach(item=>item.classList.toggle("active",item===button));state.loaded.delete("issues");loadIssues();
 }));
 $("refresh-agents").addEventListener("click",()=>loadAgents());
+$("refresh-agent-registry").addEventListener("click",()=>loadAgents());
 setInterval(()=>{
   if(document.visibilityState==="visible"){
     if(state.view==="agents")loadAgents();
