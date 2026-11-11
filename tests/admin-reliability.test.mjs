@@ -111,3 +111,27 @@ test("quality workflows include browser, SEO, Lighthouse and passive security co
   assert.doesNotMatch(security, /rules_file_name/);
   assert.match(security, /target: https:\/\/yorphives\.com/);
 });
+
+
+test("Control Center adds bounded repair jobs, owner audit history and optional analytics", async () => {
+  const migration = await read("../migrations/0008_admin_control_center.sql");
+  const analytics = await read("../functions/api/admin/analytics.ts");
+  const repairs = await read("../functions/api/admin/repair-jobs.ts");
+  const html = await read("../admin/index.html");
+  const script = await read("../admin/admin.js");
+  assert.match(migration, /admin_repair_jobs/);
+  assert.match(migration, /admin_audit_events/);
+  assert.match(analytics, /CF_ANALYTICS_API_TOKEN/);
+  assert.match(analytics, /CF_ANALYTICS_ZONE_ID/);
+  assert.match(analytics, /api\.cloudflare\.com\/client\/v4\/graphql/);
+  assert.match(repairs, /requireAdmin/);
+  assert.match(repairs, /INVALID_ORIGIN/);
+  assert.match(repairs, /ADMIN_AGENT_WEBHOOK_URL/);
+  assert.match(repairs, /pull_request_only/);
+  assert.match(repairs, /no_production_deploy/);
+  assert.match(html, /id="analytics"/);
+  assert.match(html, /id="repair-desk"/);
+  assert.match(html, /id="release-control"/);
+  assert.match(script, /loadAnalytics\(\)/);
+  assert.match(script, /loadRepairDesk\(\)/);
+});
