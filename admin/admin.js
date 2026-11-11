@@ -1,429 +1,437 @@
 const $ = (id) => document.getElementById(id);
 const date = (value) => value ? new Date(value).toLocaleString() : "—";
-const safe = (value) => String(value ?? "");
+const number = (value) => new Intl.NumberFormat().format(Number(value || 0));
+const text = (value) => String(value ?? "—");
+const state = { view: "overview", loaded: new Set(), assets: [], findings: [], dependencies: [], range: "7d", findingFilter: "active", assetFilter: "all", assetQuery: "", dependencyQuery: "" };
 let repairAgentReady = false;
-if (document.getElementById("repair-submit")) document.getElementById("repair-submit").disabled = true;
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
     ...options,
     headers: { "content-type": "application/json", ...(options.headers || {}) },
-    cache: "no-store"
+    cache: "no-store",
+    credentials: "same-origin"
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error?.message || "Admin request failed (" + response.status + ")");
+  if (!response.ok) throw new Error(data.error?.message || data.message || "Admin request failed (" + response.status + ")");
   return data;
 }
-
 function cell(row, value) {
   const td = document.createElement("td");
-  td.textContent = safe(value);
+  td.textContent = text(value);
   row.append(td);
   return td;
 }
-
 function emptyRow(target, message, colspan) {
+  if (!target) return;
   const tr = document.createElement("tr");
   const td = cell(tr, message);
   td.colSpan = colspan;
-  td.className = "empty";
-  target.append(tr);
+  td.className = "empty-state";
+  target.replaceChildren(tr);
 }
-
-async function load() {
-  $("run-state").textContent = "Refreshing…";
-  try {
-    const [overview, findings, changes, assetData] = await Promise.all([
-      api("/api/admin/overview"),
-      api("/api/admin/findings"),
-      api("/api/admin/changes"),
-      api("/api/admin/assets")
-    ]);
-
-    $("identity").textContent = "Signed in: " + overview.identity;
-    $("monitors").textContent = overview.counts?.active_monitors ?? 0;
-    $("findings").textContent = overview.counts?.open_findings ?? 0;
-    $("critical").textContent = overview.counts?.critical_findings ?? 0;
-    $("last-run").textContent = date(overview.counts?.last_run_at);
-
-    const runs = $("runs");
-    runs.replaceChildren();
-    if (!overview.recent_runs?.length) {
-      emptyRow(runs, "No monitoring runs yet.", 5);
-    } else {
-      for (const item of overview.recent_runs) {
-        const tr = document.createElement("tr");
-        cell(tr, date(item.started_at));
-        cell(tr, item.status);
-        cell(tr, item.monitor_count);
-        cell(tr, item.passed_count);
-        cell(tr, item.failed_count);
-        runs.append(tr);
-      }
-    }
-
-    const list = $("findings-list");
-    list.replaceChildren();
-    if (!findings.data?.length) {
-      emptyRow(list, "No active findings. Run checks to establish a baseline.", 5);
-    } else {
-      for (const item of findings.data) {
-        const tr = document.createElement("tr");
-        const severity = cell(tr, item.severity);
-        severity.replaceChildren();
-        const badge = document.createElement("span");
-        badge.className = "pill " + item.severity;
-        badge.textContent = item.severity;
-        severity.append(badge);
-        cell(tr, item.title + " — " + item.details);
-        cell(tr, item.environment || "—");
-        cell(tr, item.status);
-        cell(tr, date(item.last_verified));
-        const actions = document.createElement("td");
-        const actionButton = document.createElement("button");
-        actionButton.className = "button";
-        actionButton.textContent = item.status === "accepted_risk" ? "Reopen" : item.status === "investigating" ? "Accept risk" : "Investigate";
-        actionButton.addEventListener("click", async () => {
-          const nextStatus = item.status === "accepted_risk" ? "open" : item.status === "investigating" ? "accepted_risk" : "investigating";
-          if (nextStatus === "accepted_risk" && !confirm("Record this finding as an accepted risk? It will remain in the audit history.")) return;
-          actionButton.disabled = true;
-          try {
-            await api("/api/admin/findings", { method: "PATCH", body: JSON.stringify({ id: item.id, status: nextStatus }) });
-            await load();
-            await loadAudit();
-          } catch (error) { alert(error.message); }
-          finally { actionButton.disabled = false; }
-        });
-        actions.append(actionButton);
-        tr.append(actions);
-        list.append(tr);
-      }
-    }
-
-    const changeList = $("changes-list");
-    changeList.replaceChildren();
-    if (!changes.data?.length) {
-      emptyRow(changeList, "No production changes detected yet. Initial snapshots are being established.", 4);
-    } else {
-      for (const item of changes.data) {
-        const tr = document.createElement("tr");
-        cell(tr, date(item.detected_at));
-        cell(tr, item.title);
-        cell(tr, item.details);
-        cell(tr, item.status);
-        changeList.append(tr);
-      }
-    }
-    const counts = assetData.counts || {};
-    $("asset-count").textContent = counts.assets ?? 0;
-    $("website-count").textContent = counts.website_pages ?? 0;
-    $("tools-count").textContent = counts.free_tools ?? 0;
-    $("products-count").textContent = counts.products ?? 0;
-    $("discovery-count").textContent = counts.api_discovery ?? 0;
-    $("asset-down").textContent = (counts.unavailable ?? 0) + (counts.degraded ?? 0);
-    $("deprecated-count").textContent = counts.deprecated_dependencies ?? 0;
-    $("updates-count").textContent = counts.updates_available ?? 0;
-
-    const assetsList = $("assets-list");
-    assetsList.replaceChildren();
-    if (!assetData.assets?.length) emptyRow(assetsList, "No assets have been scanned yet. Run the asset scan or wait for the scheduled cycle.", 6);
-    else for (const item of assetData.assets) {
-      const tr = document.createElement("tr");
-      cell(tr, item.asset_type.replace("_", " "));
-      cell(tr, item.title);
-      const statusCell = cell(tr, item.last_status || "pending");
-      const badge = document.createElement("span");
-      badge.className = "pill " + (item.last_status === "healthy" ? "low" : item.last_status === "unavailable" ? "critical" : item.last_status === "degraded" ? "medium" : "info");
-      badge.textContent = item.last_status || "pending";
-      statusCell.replaceChildren(badge);
-      cell(tr, item.last_http_status ?? "—");
-      cell(tr, item.last_duration_ms == null ? "—" : item.last_duration_ms + " ms");
-      cell(tr, date(item.last_checked_at));
-      assetsList.append(tr);
-    }
-
-    const recommendationList = $("asset-findings-list");
-    recommendationList.replaceChildren();
-    if (!assetData.findings?.length) emptyRow(recommendationList, "No active asset recommendations. Run a scan to establish the baseline.", 5);
-    else for (const item of assetData.findings) {
-      const tr = document.createElement("tr");
-      const severityCell = cell(tr, "");
-      const badge = document.createElement("span");
-      badge.className = "pill " + item.severity;
-      badge.textContent = item.severity;
-      severityCell.append(badge);
-      cell(tr, item.asset_title + " · " + item.category);
-      cell(tr, item.title + " — " + item.details);
-      cell(tr, date(item.last_verified));
-      cell(tr, item.recommendation);
-      recommendationList.append(tr);
-    }
-
-    const dependencyList = $("dependencies-list");
-    dependencyList.replaceChildren();
-    if (!assetData.dependencies?.length) emptyRow(dependencyList, "No version-pinned npm CDN dependencies have been observed yet.", 5);
-    else for (const item of assetData.dependencies) {
-      const tr = document.createElement("tr");
-      cell(tr, item.package_name);
-      cell(tr, item.current_version);
-      cell(tr, item.latest_version || "—");
-      const stateCell = cell(tr, "");
-      const badge = document.createElement("span");
-      badge.className = "pill " + (item.status === "deprecated" ? "high" : item.status === "major_update" ? "medium" : item.status === "update_available" || item.status === "unknown" ? "info" : "low");
-      badge.textContent = item.status;
-      stateCell.append(badge);
-      cell(tr, item.details);
-      dependencyList.append(tr);
-    }
-    $("run-state").textContent = "Updated " + new Date().toLocaleTimeString();
-  } catch (error) {
-    $("run-state").textContent = "Error";
-    $("identity").textContent = error.message;
-    for (const [id, message, colspan] of [
-      ["runs", "Unable to load monitoring history: " + error.message, 5],
-      ["findings-list", "Unable to load findings: " + error.message, 5],
-      ["changes-list", "Unable to load change history: " + error.message, 4],
-      ["assets-list", "Unable to load asset inventory: " + error.message, 6],
-      ["asset-findings-list", "Unable to load recommendations: " + error.message, 5],
-      ["dependencies-list", "Unable to load dependency observations: " + error.message, 5]
-    ]) {
-      const target = $(id);
-      target.replaceChildren();
-      emptyRow(target, message, colspan);
-    }
-  }
+function badge(value, fallback = "pending") {
+  const span = document.createElement("span");
+  const status = String(value || fallback).toLowerCase();
+  span.className = "pill " + (["critical","high","medium","low","info","healthy","pending","warning"].includes(status) ? status : "pending");
+  span.textContent = value || fallback;
+  return span;
 }
-
-$("logout").addEventListener("click", (event) => {
-  const confirmed = confirm(
-    "Sign out of Cloudflare Access? This ends your Access session across all Cloudflare Access-protected applications in this browser, not only YorpHives Admin."
-  );
-  if (!confirmed) event.preventDefault();
-});
-
-$("refresh").addEventListener("click", load);
-$("run").addEventListener("click", async () => {
-  const button = $("run");
-  if (!confirm("Run read-only HTTPS checks against the configured YorpHives production and preview URLs?")) return;
-  button.disabled = true;
-  button.textContent = "Checking…";
-  try {
-    const result = await api("/api/admin/run-checks", {
-      method: "POST",
-      body: JSON.stringify({ confirm: true })
-    });
-    $("run-state").textContent = result.run.failed_count + " failed / " + result.run.passed_count + " passed";
-    await load();
-  } catch (error) {
-    alert(error.message);
-  } finally {
-    button.disabled = !repairAgentReady;
-    button.textContent = "Run health checks";
-  }
-});
-
-
-$("snapshot").addEventListener("click", async () => {
-  const button = $("snapshot");
-  if (!confirm("Capture read-only SHA-256 snapshots of the four approved public production pages?")) return;
-  button.disabled = true;
-  button.textContent = "Checking…";
-  try {
-    const result = await api("/api/admin/run-snapshots", {
-      method: "POST",
-      body: JSON.stringify({ confirm: true })
-    });
-    $("run-state").textContent = result.changed + " changed / " + result.targets + " snapshots checked";
-    await load();
-  } catch (error) {
-    alert(error.message);
-  } finally {
-    button.disabled = !repairAgentReady;
-    button.textContent = "Check production changes";
-  }
-});
-
-load();
-
-
-$("assets-run").addEventListener("click", async () => {
-  const button = $("assets-run");
-  if (!confirm("Run the next bounded batch of approved YorpHives website, Free Tools and available internal product checks, including pinned npm CDN dependency versions? This is read-only.")) return;
-  button.disabled = true;
-  button.textContent = "Scanning…";
-  try {
-    const result = await api("/api/admin/run-assets", { method: "POST", body: JSON.stringify({ confirm: true }) });
-    $("run-state").textContent = result.assets + " assets · " + result.unavailable + " unavailable · " + result.dependencies + " dependencies";
-    await load();
-  } catch (error) { alert(error.message); }
-  finally { button.disabled = !repairAgentReady; button.textContent = "Run next asset scan"; }
-});
-
-
-let analyticsRange = "7d";
-const numberFormat = (value) => new Intl.NumberFormat().format(Number(value || 0));
-async function loadAnalytics() {
-  const status = $("analytics-status");
-  status.textContent = "Loading Cloudflare traffic analytics…";
-  try {
-    const result = await api("/api/admin/analytics?range=" + analyticsRange);
-    if (!result.configured) {
-      status.textContent = result.message;
-      $("metric-views").textContent = "—";
-      $("metric-requests").textContent = "—";
-      $("metric-bandwidth").textContent = "—";
-      $("top-paths").replaceChildren();
-      emptyRow($("top-paths"), "Connect Cloudflare Analytics to view popular pages.", 2);
-      return;
-    }
-    if (result.error) throw new Error(result.error);
-    status.textContent = "Cloudflare edge analytics · " + result.range;
-    $("metric-views").textContent = numberFormat(result.totals.pageViews);
-    $("metric-requests").textContent = numberFormat(result.totals.requests);
-    $("metric-bandwidth").textContent = (Number(result.totals.bytes || 0) / 1073741824).toFixed(2) + " GB";
-    const target = $("top-paths");
-    target.replaceChildren();
-    if (!result.topPaths?.length) emptyRow(target, "No path data returned for this range.", 2);
-    else for (const item of result.topPaths) {
-      const tr = document.createElement("tr");
-      cell(tr, item.path || "/");
-      cell(tr, numberFormat(item.requests));
-      target.append(tr);
-    }
-  } catch (error) {
-    status.textContent = "Analytics unavailable: " + error.message;
-  }
-}
-
-async function loadRepairDesk() {
-  try {
-    const [jobs, findings] = await Promise.all([
-      api("/api/admin/repair-jobs"),
-      api("/api/admin/findings")
-    ]);
-    repairAgentReady = jobs.agentConfigured === true;
-    $("agent-state").textContent = repairAgentReady ? "Cloudflare repair agent ready" : "Agent setup required · add GITHUB_TOKEN to Worker secrets";
-    $("repair-submit").disabled = !repairAgentReady;
-    const select = $("repair-finding");
-    const selected = select.value;
-    select.replaceChildren();
-    const general = document.createElement("option");
-    general.value = "";
-    general.textContent = "General investigation";
-    select.append(general);
-    for (const finding of findings.data || []) {
-      const option = document.createElement("option");
-      option.value = finding.id;
-      option.textContent = "[" + finding.severity + "] " + finding.title;
-      select.append(option);
-    }
-    select.value = selected;
-    const target = $("repair-jobs");
-    target.replaceChildren();
-    if (!jobs.data?.length) {
-      const empty = document.createElement("div");
-      empty.className = "empty";
-      empty.textContent = "No repair requests yet.";
-      target.append(empty);
-      return;
-    }
-    for (const job of jobs.data) {
-      const article = document.createElement("article");
-      article.className = "job";
-      const head = document.createElement("div");
-      head.className = "job-head";
-      const title = document.createElement("strong");
-      title.textContent = "Repair " + job.id.slice(0, 8);
-      const status = document.createElement("span");
-      status.className = "pill " + (job.status === "failed" ? "high" : job.status === "completed" ? "low" : "medium");
-      status.textContent = job.status;
-      head.append(title, status);
-      const request = document.createElement("p");
-      request.textContent = job.request_text;
-      const meta = document.createElement("p");
-      meta.textContent = "Requested " + date(job.created_at) + " by " + job.requested_by;
-      article.append(head, request, meta);
-      if (job.branch_name) {
-        const branchLink = document.createElement("a");
-        branchLink.href = "https://github.com/solopreneursid/yorpHives-2.0/tree/" + job.branch_name.split("/").map(encodeURIComponent).join("/");
-        branchLink.target = "_blank";
-        branchLink.rel = "noopener noreferrer";
-        branchLink.textContent = "Inspect agent branch ↗";
-        article.append(branchLink);
-      }
-      if (job.pull_request_url) {
-        const link = document.createElement("a");
-        link.href = job.pull_request_url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = "Review pull request ↗";
-        article.append(link);
-      }
-      if (job.result_summary) {
-        const summary = document.createElement("p");
-        summary.textContent = job.result_summary;
-        article.append(summary);
-      }
-      target.append(article);
-    }
-  } catch (error) {
-    repairAgentReady = false;
-    $("repair-submit").disabled = true;
-    $("agent-state").textContent = "Repair desk unavailable: " + error.message;
-  }
-}
-$("analytics-7d").addEventListener("click", () => { analyticsRange = "7d"; loadAnalytics(); });
-$("analytics-30d").addEventListener("click", () => { analyticsRange = "30d"; loadAnalytics(); });
-$("repair-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const button = $("repair-submit");
-  const requestText = $("repair-request").value.trim();
-  if (!requestText) return;
-  if (!repairAgentReady) { $("repair-message").textContent = "Configure the GITHUB_TOKEN Worker secret before starting an agent job."; return; }
-  button.disabled = true;
-  button.textContent = "Submitting…";
-  $("repair-message").textContent = "";
-  try {
-    const result = await api("/api/admin/repair-jobs", {
-      method: "POST",
-      body: JSON.stringify({ finding_id: $("repair-finding").value || null, request_text: requestText })
-    });
-    $("repair-message").textContent = result.dispatched
-      ? "Repair dispatched to the agent. Changes must return through a pull request."
-      : result.message || "Repair request saved.";
-    $("repair-request").value = "";
-    await loadRepairDesk();
-  } catch (error) {
-    $("repair-message").textContent = "Could not submit repair: " + error.message;
-  } finally {
-    button.disabled = !repairAgentReady;
-    button.textContent = "Request repair";
-  }
-});
-loadAnalytics();
-loadRepairDesk();
-setInterval(loadRepairDesk, 30000);
-
-
-async function loadAudit() {
-  const target = $("audit-list");
+function renderTable(target, items, columns, emptyMessage, colspan) {
   if (!target) return;
-  try {
-    const result = await api("/api/admin/audit");
-    target.replaceChildren();
-    if (!result.data?.length) { emptyRow(target, "No recorded admin actions yet.", 5); return; }
-    for (const item of result.data) {
-      const tr = document.createElement("tr");
-      cell(tr, date(item.created_at));
-      cell(tr, item.actor);
-      cell(tr, item.action);
-      cell(tr, item.resource_type + (item.resource_id ? " · " + item.resource_id.slice(0, 10) : ""));
-      cell(tr, item.details_json);
-      target.append(tr);
+  target.replaceChildren();
+  if (!items?.length) return emptyRow(target, emptyMessage, colspan);
+  for (const item of items) {
+    const tr = document.createElement("tr");
+    for (const column of columns) {
+      if (typeof column === "function") column(tr, item);
+      else cell(tr, item[column] ?? "—");
     }
-  } catch (error) {
-    target.replaceChildren();
-    emptyRow(target, "Audit history unavailable: " + error.message, 5);
+    target.append(tr);
   }
 }
-loadAudit();
+function showView(name) {
+  const view = document.getElementById("view-" + name);
+  if (!view) return;
+  state.view = name;
+  document.querySelectorAll(".view").forEach(item => item.classList.toggle("active", item === view));
+  document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === name));
+  $("breadcrumb").textContent = view.dataset.title || name;
+  $("sidebar").classList.remove("open");
+  $("mobile-scrim").classList.remove("show");
+  $("mobile-menu").setAttribute("aria-expanded", "false");
+  if (!state.loaded.has(name)) loadView(name);
+}
+async function loadView(name) {
+  const loaders = {
+    overview: loadOverview,
+    monitoring: loadMonitoring,
+    analytics: loadAnalytics,
+    issues: loadIssues,
+    agents: loadAgents,
+    updates: loadUpdates,
+    releases: async () => {},
+    activity: loadActivity
+  };
+  const loader = loaders[name];
+  if (!loader) return;
+  try {
+    await loader();
+    state.loaded.add(name);
+  } catch (error) {
+    console.error("Admin workspace failed:", name, error);
+    const status = $("run-state");
+    if (status) status.textContent = name + " unavailable: " + error.message;
+  }
+}
+async function getAssets(force = false) {
+  if (!force && state.assets.length) return state.assets;
+  const result = await api("/api/admin/assets");
+  state.assets = result.assets || [];
+  state.dependencies = result.dependencies || [];
+  state.assetCounts = result.counts || {};
+  state.assetFindings = result.findings || [];
+  updateNavigationCounts();
+  return state.assets;
+}
+async function getOverview() {
+  if (state.overviewData) return state.overviewData;
+  state.overviewData = await api("/api/admin/overview");
+  return state.overviewData;
+}
+function updateNavigationCounts() {
+  if ($("nav-issues")) $("nav-issues").textContent = state.findings.filter(item => ["open","investigating","awaiting_approval"].includes(item.status)).length || "";
+  if ($("nav-updates")) $("nav-updates").textContent = state.dependencies.filter(item => ["deprecated","major_update","update_available"].includes(item.status)).length || "";
+}
+function renderRuns(target, runs) {
+  renderTable(target, runs, [
+    (tr,item)=>cell(tr,date(item.started_at)),
+    (tr,item)=>{const td=cell(tr,"");td.append(badge(item.status));},
+    (tr,item)=>cell(tr,item.monitor_count),
+    (tr,item)=>cell(tr,item.passed_count),
+    (tr,item)=>cell(tr,item.failed_count)
+  ], "No monitoring runs have been recorded yet.", 5);
+}
+function renderChanges(target, changes) {
+  renderTable(target, changes, [
+    (tr,item)=>cell(tr,date(item.detected_at)),
+    (tr,item)=>cell(tr,item.title),
+    (tr,item)=>cell(tr,item.details),
+    (tr,item)=>cell(tr,item.status)
+  ], "No production changes have been detected.", 4);
+}
+function renderAudit(target, events) {
+  renderTable(target, events, [
+    (tr,item)=>cell(tr,date(item.created_at)),
+    (tr,item)=>cell(tr,item.actor),
+    (tr,item)=>cell(tr,item.action),
+    (tr,item)=>cell(tr,item.resource_type + (item.resource_id ? " · " + item.resource_id.slice(0,10) : "")),
+    (tr,item)=>cell(tr,item.details_json)
+  ], "No audit events have been recorded yet.", 5);
+}
+function renderAssets() {
+  const target = $("assets-list");
+  if (!target) return;
+  const query = state.assetQuery.toLowerCase();
+  const filtered = state.assets.filter(item => {
+    const typeMatch = state.assetFilter === "all" || item.asset_type === state.assetFilter || (state.assetFilter === "api" && ["api","discovery"].includes(item.asset_type));
+    const searchMatch = !query || [item.title,item.url,item.asset_type,item.asset_key].some(value => String(value || "").toLowerCase().includes(query));
+    return typeMatch && searchMatch;
+  });
+  renderTable(target, filtered, [
+    (tr,item)=>cell(tr,item.asset_type.replaceAll("_"," ")),
+    (tr,item)=>cell(tr,item.title + (item.url ? " · " + item.url : "")),
+    (tr,item)=>{const td=cell(tr,"");td.append(badge(item.last_status,item.last_status || "pending"));},
+    (tr,item)=>cell(tr,item.last_http_status ?? "—"),
+    (tr,item)=>cell(tr,item.last_duration_ms == null ? "—" : item.last_duration_ms + " ms"),
+    (tr,item)=>cell(tr,date(item.last_checked_at))
+  ], "No assets match this filter. Run an inventory scan to discover platform assets.", 6);
+}
+function renderDependencies() {
+  const target = $("dependencies-list");
+  if (!target) return;
+  const query = state.dependencyQuery.toLowerCase();
+  const filtered = state.dependencies.filter(item => !query || [item.package_name,item.current_version,item.latest_version,item.status,item.details].some(value => String(value || "").toLowerCase().includes(query)));
+  renderTable(target, filtered, [
+    (tr,item)=>cell(tr,item.package_name),
+    (tr,item)=>cell(tr,item.current_version),
+    (tr,item)=>cell(tr,item.latest_version || "—"),
+    (tr,item)=>{const td=cell(tr,"");td.append(badge(item.status));},
+    (tr,item)=>cell(tr,item.details)
+  ], "No dependency observations match this filter.", 5);
+}
+function renderRecommendations() {
+  renderTable($("asset-findings-list"), state.assetFindings || [], [
+    (tr,item)=>{const td=cell(tr,"");td.append(badge(item.severity));},
+    (tr,item)=>cell(tr,item.asset_title + " · " + item.category),
+    (tr,item)=>cell(tr,item.title + " — " + item.details),
+    (tr,item)=>cell(tr,date(item.last_verified)),
+    (tr,item)=>cell(tr,item.recommendation)
+  ], "No active asset recommendations. Run a scan to establish the baseline.", 5);
+}
+async function loadOverview() {
+  const [overview, assetsResult, findings, audit] = await Promise.all([
+    api("/api/admin/overview"),
+    api("/api/admin/assets"),
+    api("/api/admin/findings"),
+    api("/api/admin/audit")
+  ]);
+  state.overviewData = overview;
+  state.assets = assetsResult.assets || [];
+  state.dependencies = assetsResult.dependencies || [];
+  state.assetCounts = assetsResult.counts || {};
+  state.assetFindings = assetsResult.findings || [];
+  state.findings = findings.data || [];
+  const counts = overview.counts || {};
+  const ac = state.assetCounts;
+  $("identity").textContent = overview.identity || "Administrator";
+  $("sidebar-identity").textContent = overview.identity || "Authorized owner";
+  $("asset-count").textContent = number(ac.assets);
+  $("asset-breakdown").textContent = number(ac.website_pages) + " pages · " + number(ac.free_tools) + " tools · " + number(ac.products) + " products";
+  $("findings").textContent = number(counts.open_findings);
+  $("critical-label").textContent = number(counts.critical_findings) + " critical findings";
+  $("updates-count").textContent = number(ac.updates_available);
+  $("agent-count").textContent = "—";
+  $("agent-summary").textContent = "Open AI Operations for live readiness";
+  $("last-run").textContent = "Last check " + date(counts.last_run_at);
+  const down = (ac.unavailable || 0) + (ac.degraded || 0);
+  $("platform-status").textContent = down ? down + " asset" + (down === 1 ? "" : "s") + " need attention" : "Monitoring signals are available";
+  $("platform-summary").textContent = number(ac.assets) + " discovered assets · " + number(ac.healthy) + " healthy · " + down + " degraded or unavailable. A successful scan is required to confirm health.";
+  $("run-state").textContent = "Updated " + new Date().toLocaleTimeString();
+  const components = [
+    ["Public website", ac.website_pages, "Discovered through sitemap"],
+    ["Free Tools", ac.free_tools, "Discovered through manifest"],
+    ["Products & apps", ac.products, "Discovered through product catalogue"],
+    ["APIs & discovery", ac.api_discovery, "Registered platform endpoints"],
+    ["Dependencies", state.dependencies.length, "Observed pinned packages"]
+  ];
+  const componentTarget = $("component-list");
+  componentTarget.replaceChildren();
+  for (const [name,count,description] of components) {
+    const row=document.createElement("div");row.className="component-row";
+    const left=document.createElement("span");left.className="component-name";
+    const dot=document.createElement("i");dot.className="status-dot";
+    const label=document.createElement("span");label.textContent=name;
+    left.append(dot,label);
+    const right=document.createElement("span");right.className="component-status";right.textContent=number(count)+" · "+description;
+    row.append(left,right);componentTarget.append(row);
+  }
+  const attention = [...state.findings].sort((a,b)=>({critical:0,high:1,medium:2,low:3,info:4}[a.severity]??5)-({critical:0,high:1,medium:2,low:3,info:4}[b.severity]??5)).slice(0,5);
+  const attentionTarget=$("attention-list");attentionTarget.replaceChildren();
+  if (!attention.length) {
+    const item=document.createElement("div");item.className="empty-state";item.textContent="No active findings. Keep monitoring to maintain a verified baseline.";attentionTarget.append(item);
+  } else for(const finding of attention) {
+    const item=document.createElement("div");item.className="signal-item";
+    const copy=document.createElement("div");const title=document.createElement("strong");title.textContent=finding.title;
+    const meta=document.createElement("small");meta.textContent=(finding.monitor_name || finding.environment || "Platform") + " · "+finding.status;
+    copy.append(title,meta);item.append(copy,badge(finding.severity));attentionTarget.append(item);
+  }
+  renderAudit($("overview-activity"), (audit.data || []).slice(0,6));
+  updateNavigationCounts();
+  await loadAgents(false);
+}
+async function loadMonitoring() {
+  const [assets,overview,changes]=await Promise.all([getAssets(true),getOverview(),api("/api/admin/changes")]);
+  renderAssets();renderRuns($("runs"),overview.recent_runs || []);renderChanges($("changes-list"),changes.data || []);
+  const c=state.assetCounts;
+  $("website-count").textContent=number(c.website_pages);
+  $("tools-count").textContent=number(c.free_tools);
+  $("products-count").textContent=number(c.products);
+  $("asset-down").textContent=number((c.unavailable||0)+(c.degraded||0));
+}
+async function loadIssues() {
+  const status=state.findingFilter;
+  const [findings,assets]=await Promise.all([
+    api("/api/admin/findings?status="+(status==="all"?"all":status==="resolved"?"resolved":"active")),
+    getAssets(true)
+  ]);
+  state.findings=findings.data || [];
+  state.assetFindings=state.assetFindings || assets;
+  renderFindings();
+  renderRecommendations();
+  updateNavigationCounts();
+}
+function renderFindings() {
+  const target=$("findings-list");
+  renderTable(target,state.findings,[
+    (tr,item)=>{const td=cell(tr,"");td.append(badge(item.severity));},
+    (tr,item)=>cell(tr,item.title+" — "+item.details),
+    (tr,item)=>cell(tr,item.environment || item.monitor_name || "—"),
+    (tr,item)=>{const td=cell(tr,"");td.append(badge(item.status));},
+    (tr,item)=>cell(tr,date(item.last_verified)),
+    (tr,item)=>{
+      const td=document.createElement("td");
+      const button=document.createElement("button");button.className="button";
+      const next=item.status==="accepted_risk"?"open":item.status==="investigating"?"accepted_risk":"investigating";
+      button.textContent=next==="open"?"Reopen":next==="accepted_risk"?"Accept risk":"Investigate";
+      button.addEventListener("click",async()=>{
+        if(next==="accepted_risk"&&!confirm("Record this finding as an accepted risk? The decision will be audited."))return;
+        button.disabled=true;
+        try{await api("/api/admin/findings",{method:"PATCH",body:JSON.stringify({id:item.id,status:next})});state.loaded.delete("overview");await loadIssues();await loadOverview();}
+        catch(error){alert(error.message);}finally{button.disabled=false;}
+      });
+      td.append(button);tr.append(td);
+    }
+  ],"No findings in this view.",6);
+}
+async function loadAnalytics() {
+  $("analytics-status").textContent="Loading Cloudflare zone analytics · "+state.range+"…";
+  try {
+    const result=await api("/api/admin/analytics?range="+state.range);
+    if(!result.configured){$("analytics-status").textContent=result.message;resetAnalytics();return;}
+    if(result.error)throw new Error(result.error);
+    $("analytics-status").textContent="Cloudflare edge analytics · "+result.range+" · refreshed "+new Date().toLocaleTimeString();
+    $("metric-views").textContent=number(result.totals?.pageViews);
+    $("metric-requests").textContent=number(result.totals?.requests);
+    $("metric-bandwidth").textContent=(Number(result.totals?.bytes||0)/1073741824).toFixed(2)+" GB";
+    renderTraffic(result.daily || []);
+    renderTable($("top-paths"),result.topPaths || [],[
+      (tr,item)=>cell(tr,item.path || "/"),
+      (tr,item)=>cell(tr,number(item.requests))
+    ],"No path data returned for this period.",2);
+  } catch(error) {
+    $("analytics-status").textContent="Analytics unavailable: "+error.message;
+    resetAnalytics();
+  }
+}
+function resetAnalytics(){
+  ["metric-views","metric-requests","metric-bandwidth"].forEach(id=>$(id).textContent="—");
+  emptyRow($("top-paths"),"Analytics data is not available.",2);
+  $("traffic-chart").textContent="Daily traffic is unavailable until the analytics connection responds.";
+}
+function renderTraffic(daily) {
+  const target=$("traffic-chart");target.replaceChildren();
+  if(!daily.length){const p=document.createElement("div");p.className="empty-state";p.textContent="No daily traffic groups returned for this period.";target.append(p);return;}
+  const max=Math.max(1,...daily.map(item=>Number(item.pageViews || item.requests || 0)));
+  for(const item of daily){
+    const value=Number(item.pageViews || item.requests || 0);
+    const column=document.createElement("div");column.className="bar-column";column.title=item.date+": "+number(value);
+    const bar=document.createElement("div");bar.className="bar";bar.style.height=Math.max(2,value/max*100)+"%";
+    const label=document.createElement("small");label.textContent=String(item.date||"").slice(5);
+    column.append(bar,label);target.append(column);
+  }
+}
+async function loadAgents(refresh=true) {
+  try {
+    const jobs=await api("/api/admin/repair-jobs");
+    repairAgentReady=jobs.agentConfigured===true;
+    const status=$("agent-state");
+    if(status){status.textContent=repairAgentReady?"Cloudflare repair agent ready":"Agent setup required · configure GITHUB_TOKEN on the private Worker";status.classList.toggle("ready",repairAgentReady);}
+    if($("repair-submit"))$("repair-submit").disabled=!repairAgentReady;
+    if($("agent-count"))$("agent-count").textContent=repairAgentReady?"Ready": "Setup";
+    if($("agent-summary"))$("agent-summary").textContent=(jobs.data||[]).length+" recorded repair jobs";
+    if($("repair-finding")){
+      const selected=$("repair-finding").value;
+      const findings=await api("/api/admin/findings");
+      const select=$("repair-finding");select.replaceChildren();
+      const general=document.createElement("option");general.value="";general.textContent="General investigation";select.append(general);
+      for(const finding of findings.data||[]){const option=document.createElement("option");option.value=finding.id;option.textContent="["+finding.severity+"] "+finding.title;select.append(option);}
+      select.value=selected;
+    }
+    const target=$("repair-jobs");
+    if(target){
+      target.replaceChildren();
+      if(!jobs.data?.length){const empty=document.createElement("div");empty.className="empty-state";empty.textContent="No agent jobs yet. Submit an investigation to start the workflow.";target.append(empty);}
+      else for(const job of jobs.data){
+        const article=document.createElement("article");article.className="job";
+        const head=document.createElement("div");head.className="job-head";
+        const title=document.createElement("strong");title.textContent="Repair "+job.id.slice(0,8);
+        const status=badge(job.status);head.append(title,status);
+        const request=document.createElement("p");request.textContent=job.request_text;
+        const meta=document.createElement("p");meta.textContent="Requested "+date(job.created_at)+" by "+job.requested_by;
+        article.append(head,request,meta);
+        if(job.branch_name){const link=document.createElement("a");link.href="https://github.com/solopreneursid/yorpHives-2.0/tree/"+job.branch_name.split("/").map(encodeURIComponent).join("/");link.target="_blank";link.rel="noopener noreferrer";link.textContent="Inspect agent branch ↗";article.append(link);}
+        if(job.pull_request_url){const link=document.createElement("a");link.href=job.pull_request_url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Review draft pull request ↗";article.append(link);}
+        if(job.result_summary){const summary=document.createElement("p");summary.textContent=job.result_summary;article.append(summary);}
+        target.append(article);
+      }
+    }
+  }catch(error){
+    repairAgentReady=false;
+    if($("repair-submit"))$("repair-submit").disabled=true;
+    if($("agent-state"))$("agent-state").textContent="Agent service unavailable: "+error.message;
+  }
+}
+async function loadUpdates() {
+  await getAssets(true);
+  const c=state.assetCounts;
+  $("deprecated-count").textContent=number(c.deprecated_dependencies);
+  $("updates-count-panel").textContent=number(c.updates_available);
+  $("dependency-count").textContent=number(state.dependencies.length);
+  renderDependencies();
+}
+async function loadActivity() {
+  const [audit,runs,changes]=await Promise.all([api("/api/admin/audit"),getOverview(),api("/api/admin/changes")]);
+  renderAudit($("audit-list"),audit.data || []);
+  renderRuns($("activity-runs"),runs.recent_runs || []);
+  renderChanges($("activity-changes"),changes.data || []);
+}
+async function refreshCurrent() {
+  state.loaded.delete(state.view);
+  state.overviewData=null;
+  state.assets=[];
+  await loadView(state.view);
+  if(state.view!=="overview"){state.loaded.delete("overview");}
+  $("run-state").textContent="Refreshed "+new Date().toLocaleTimeString();
+}
+document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>showView(button.dataset.view)));
+document.querySelectorAll("[data-go]").forEach(button=>button.addEventListener("click",()=>showView(button.dataset.go)));
+$("mobile-menu").addEventListener("click",()=>{$("sidebar").classList.toggle("open");$("mobile-scrim").classList.toggle("show");$("mobile-menu").setAttribute("aria-expanded",$("sidebar").classList.contains("open")?"true":"false");});
+$("mobile-scrim").addEventListener("click",()=>{$("sidebar").classList.remove("open");$("mobile-scrim").classList.remove("show");$("mobile-menu").setAttribute("aria-expanded","false");});
+$("logout").addEventListener("click",event=>{if(!confirm("Sign out of Cloudflare Access? This ends your Access session across all protected apps in this browser."))event.preventDefault();});
+$("refresh").addEventListener("click",refreshCurrent);
+$("run").addEventListener("click",async()=>{
+  if(!confirm("Run read-only HTTPS checks against configured YorpHives production and preview URLs?"))return;
+  const button=$("run");button.disabled=true;button.textContent="Checking…";
+  try{const result=await api("/api/admin/run-checks",{method:"POST",body:JSON.stringify({confirm:true})});$("run-state").textContent=result.run.failed_count+" failed · "+result.run.passed_count+" passed";state.loaded.clear();state.overviewData=null;await loadOverview();}
+  catch(error){alert(error.message);}finally{button.disabled=false;button.textContent="Run health checks";}
+});
+$("snapshot").addEventListener("click",async()=>{
+  if(!confirm("Capture read-only SHA-256 snapshots of the approved public production pages?"))return;
+  const button=$("snapshot");button.disabled=true;button.textContent="Checking…";
+  try{const result=await api("/api/admin/run-snapshots",{method:"POST",body:JSON.stringify({confirm:true})});$("run-state").textContent=result.changed+" changed · "+result.targets+" checked";state.loaded.delete("monitoring");await loadMonitoring();}
+  catch(error){alert(error.message);}finally{button.disabled=false;button.textContent="Check production changes";}
+});
+async function runAssetScan(button){
+  if(!confirm("Run the next bounded, read-only inventory and dependency scan? This discovers current website pages, Free Tools and catalogue products."))return;
+  button.disabled=true;const label=button.textContent;button.textContent="Scanning…";
+  try{
+    const result=await api("/api/admin/run-assets",{method:"POST",body:JSON.stringify({confirm:true})});
+    $("run-state").textContent=result.assets+" assets checked · "+result.unavailable+" unavailable";
+    state.assets=[];state.loaded.delete("overview");state.loaded.delete("monitoring");state.loaded.delete("updates");state.loaded.delete("issues");state.overviewData=null;
+    if(state.view==="overview")await loadOverview();else await loadView(state.view);
+  }catch(error){alert(error.message);}finally{button.disabled=false;button.textContent=label;}
+}
+$("assets-run").addEventListener("click",event=>runAssetScan(event.currentTarget));
+$("updates-scan").addEventListener("click",event=>runAssetScan(event.currentTarget));
+$("analytics-7d").addEventListener("click",()=>{state.range="7d";$("analytics-7d").classList.add("active");$("analytics-30d").classList.remove("active");loadAnalytics();});
+$("analytics-30d").addEventListener("click",()=>{state.range="30d";$("analytics-30d").classList.add("active");$("analytics-7d").classList.remove("active");loadAnalytics();});
+$("repair-form").addEventListener("submit",async event=>{
+  event.preventDefault();
+  const button=$("repair-submit");const requestText=$("repair-request").value.trim();
+  if(!requestText)return;
+  if(!repairAgentReady){$("repair-message").textContent="Configure the private Worker GITHUB_TOKEN secret before starting an agent job.";return;}
+  button.disabled=true;button.textContent="Submitting…";$("repair-message").textContent="";
+  try{
+    const result=await api("/api/admin/repair-jobs",{method:"POST",body:JSON.stringify({finding_id:$("repair-finding").value||null,request_text:"[Scope: "+$("repair-scope").value+"] "+requestText})});
+    $("repair-message").textContent=result.dispatched?"Investigation dispatched. Proposed changes must return through a draft pull request.":result.message||"Request saved.";
+    $("repair-request").value="";state.loaded.delete("agents");await loadAgents();
+  }catch(error){$("repair-message").textContent="Could not submit request: "+error.message;}
+  finally{button.disabled=!repairAgentReady;button.textContent="Request investigation ↗";}
+});
+document.querySelectorAll("[data-asset-filter]").forEach(button=>button.addEventListener("click",()=>{
+  state.assetFilter=button.dataset.assetFilter;document.querySelectorAll("[data-asset-filter]").forEach(item=>item.classList.toggle("active",item===button));renderAssets();
+}));
+$("asset-search").addEventListener("input",event=>{state.assetQuery=event.target.value;renderAssets();});
+$("dependency-search").addEventListener("input",event=>{state.dependencyQuery=event.target.value;renderDependencies();});
+document.querySelectorAll("[data-finding-filter]").forEach(button=>button.addEventListener("click",()=>{
+  state.findingFilter=button.dataset.findingFilter;document.querySelectorAll("[data-finding-filter]").forEach(item=>item.classList.toggle("active",item===button));state.loaded.delete("issues");loadIssues();
+}));
+$("refresh-agents").addEventListener("click",()=>loadAgents());
+setInterval(()=>{
+  if(document.visibilityState==="visible"){
+    if(state.view==="agents")loadAgents();
+    if(state.view==="overview"){state.overviewData=null;state.loaded.delete("overview");loadOverview();}
+  }
+},60000);
+loadView("overview");
