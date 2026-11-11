@@ -22,6 +22,7 @@ export default {
         assets_healthy: assets.healthy,
         assets_degraded: assets.degraded,
         assets_unavailable: assets.unavailable,
+        discovered_assets: assets.discovered,
         dependency_observations: assets.dependencies
       }));
       if (health.run.failed_count > 0 || changes.results.some(result => !result.ok) || assets.unavailable > 0 || assets.degraded > 0 || assets.manifest_error || assets.sitemap_error || assets.catalogue_error) {
