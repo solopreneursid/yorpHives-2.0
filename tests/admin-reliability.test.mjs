@@ -126,9 +126,9 @@ test("Control Center adds bounded repair jobs, owner audit history and optional 
   assert.match(analytics, /api\.cloudflare\.com\/client\/v4\/graphql/);
   assert.match(repairs, /requireAdmin/);
   assert.match(repairs, /INVALID_ORIGIN/);
-  assert.match(repairs, /ADMIN_AGENT_WEBHOOK_URL/);
-  assert.match(repairs, /pull_request_only/);
-  assert.match(repairs, /no_production_deploy/);
+  assert.match(repairs, /ADMIN_AGENT_SERVICE/);
+  assert.match(repairs, /AGENT_DAILY_LIMIT/);
+  assert.match(repairs, /admin-agent\\.internal\\/instances/);
   assert.match(html, /id="analytics"/);
   assert.match(html, /id="repair-desk"/);
   assert.match(html, /id="release-control"/);
