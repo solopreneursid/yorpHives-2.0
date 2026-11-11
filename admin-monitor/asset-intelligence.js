@@ -130,7 +130,7 @@ async function upsertFinding(db, assetId, finding, now) {
 }
 
 async function resolveMissingFindings(db, assetId, activeKeys, now) {
-  const rows = await db.prepare("SELECT finding_key FROM admin_asset_findings WHERE asset_id=? AND category != 'dependency' AND status IN ('open','investigating','awaiting_approval')").bind(assetId).all();
+  const rows = await db.prepare("SELECT finding_key FROM admin_asset_findings WHERE asset_id=? AND category NOT IN ('dependency','change') AND status IN ('open','investigating','awaiting_approval')").bind(assetId).all();
   for (const row of rows.results || []) {
     if (!activeKeys.has(row.finding_key)) {
       await db.prepare("UPDATE admin_asset_findings SET status='fixed', resolved_at=?, last_verified=? WHERE asset_id=? AND finding_key=?")
@@ -279,7 +279,17 @@ async function checkNpmDependency(db, dependency, now) {
       dependency.sourceUrl, status, now, details).run();
     return { ...dependency, latest, status, deprecated: Boolean(deprecatedMessage), details };
   } catch (error) {
-    return { ...dependency, status: "unknown", details: error instanceof Error ? error.message : "Registry lookup failed" };
+    const details = error instanceof Error ? error.message.slice(0, 500) : "Registry lookup failed";
+    await db.prepare(`
+      INSERT INTO admin_dependency_observations
+        (id, dependency_key, package_name, current_version, latest_version, deprecated_message, source_url, status, checked_at, details)
+      VALUES (?, ?, ?, ?, NULL, NULL, ?, 'unknown', ?, ?)
+      ON CONFLICT(dependency_key) DO UPDATE SET
+        latest_version=NULL, deprecated_message=NULL, status='unknown',
+        checked_at=excluded.checked_at, details=excluded.details
+    `).bind(crypto.randomUUID(), dependency.key, dependency.packageName, dependency.currentVersion,
+      dependency.sourceUrl, now, details).run();
+    return { ...dependency, status: "unknown", details };
   }
 }
 
