@@ -468,8 +468,9 @@ export async function runAssetIntelligence(db) {
     catalogueError = error instanceof Error ? error.message : "Public catalogue fetch failed";
   }
 
+  const inventoryTruncated = inventory.length > MAX_ASSETS;
   const trackedInventory = inventory.slice(0, MAX_ASSETS);
-  await syncInventory(db, trackedInventory, now, !manifestError && !sitemapError && !openapiError && !catalogueError);
+  await syncInventory(db, trackedInventory, now, !manifestError && !sitemapError && !openapiError && !catalogueError && !inventoryTruncated);
   const checkState = await db.prepare("SELECT asset_key, last_checked_at FROM admin_assets WHERE active=1").all();
   const lastChecked = new Map((checkState.results || []).map(row => [row.asset_key, row.last_checked_at || ""]));
   const coreAssets = trackedInventory.filter(asset => asset.source === "site");
@@ -507,6 +508,7 @@ export async function runAssetIntelligence(db) {
     sitemap_error: sitemapError,
     catalogue_error: catalogueError,
     openapi_error: openapiError,
+    inventory_truncated: inventoryTruncated,
     discovered: { website_pages: trackedInventory.filter(item => item.type === "website_page").length, free_tools: trackedInventory.filter(item => item.type === "free_tool").length, products: trackedInventory.filter(item => item.type === "product").length },
     results: checked
   };
