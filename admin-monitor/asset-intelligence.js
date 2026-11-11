@@ -395,6 +395,39 @@ export async function runAssetIntelligence(db) {
     sitemapError = error instanceof Error ? error.message : "Sitemap fetch failed";
   }
 
+  let openapiError = null;
+  try {
+    const response = await fetch(SITE_ORIGIN + "/openapi.yaml", {
+      headers: { "accept": "application/yaml,text/yaml,text/plain", "user-agent": "YorpHives-AssetMonitor/1.0" },
+      redirect: "manual",
+      signal: AbortSignal.timeout(7000)
+    });
+    if (!response.ok) throw new Error("OpenAPI document returned HTTP " + response.status);
+    const spec = await response.text();
+    if (spec.length > 2_000_000) throw new Error("OpenAPI document exceeded the 2 MB inventory limit.");
+    const lines = spec.split(/\r?\n/);
+    for (let index = 0; index < lines.length; index++) {
+      const match = lines[index].match(/^  (\/[^:]+):\s*$/);
+      if (!match) continue;
+      const path = match[1];
+      if (!path.startsWith("/api/") || path.includes("{") || path.includes("}") || inventory.some(item => item.url === path)) continue;
+      let hasGet = false;
+      for (let next = index + 1; next < lines.length && !/^  \S/.test(lines[next]); next++) {
+        if (/^    get:\s*$/.test(lines[next])) { hasGet = true; break; }
+      }
+      const url = safeInternalUrl(path);
+      if (hasGet && url) inventory.push({
+        key: "api:" + path,
+        type: "api",
+        title: "API " + path,
+        url: url.pathname,
+        source: "openapi.yaml"
+      });
+    }
+  } catch (error) {
+    openapiError = error instanceof Error ? error.message : "OpenAPI discovery failed";
+  }
+
   let catalogueError = null;
   try {
     let offset = 0;
@@ -436,7 +469,7 @@ export async function runAssetIntelligence(db) {
   }
 
   const trackedInventory = inventory.slice(0, MAX_ASSETS);
-  await syncInventory(db, trackedInventory, now, !manifestError && !sitemapError && !catalogueError);
+  await syncInventory(db, trackedInventory, now, !manifestError && !sitemapError && !openapiError && !catalogueError);
   const checkState = await db.prepare("SELECT asset_key, last_checked_at FROM admin_assets WHERE active=1").all();
   const lastChecked = new Map((checkState.results || []).map(row => [row.asset_key, row.last_checked_at || ""]));
   const coreAssets = trackedInventory.filter(asset => asset.source === "site");
@@ -473,6 +506,7 @@ export async function runAssetIntelligence(db) {
     manifest_error: manifestError,
     sitemap_error: sitemapError,
     catalogue_error: catalogueError,
+    openapi_error: openapiError,
     discovered: { website_pages: trackedInventory.filter(item => item.type === "website_page").length, free_tools: trackedInventory.filter(item => item.type === "free_tool").length, products: trackedInventory.filter(item => item.type === "product").length },
     results: checked
   };
