@@ -5,7 +5,7 @@
 ## Human-facing sections
 
 - Home: https://yorphives.com/ — custom build requests, measured product activity, recent releases, and platform pathways.
-- Free Tools: https://yorphives.com/free-tools/ — 55 browser-based utilities, searchable by category.\n- Free Tools machine-readable catalogue: https://yorphives.com/api/v1/free-tools (JSON by default; Markdown via Accept: text/markdown).\n- Free Tools static manifest: https://yorphives.com/free-tools/manifest.json
+- Free Tools: https://yorphives.com/free-tools/ — 55 browser-first utilities, searchable by category.\n- Free Tools machine-readable catalogue: https://yorphives.com/api/v1/free-tools (JSON by default; Markdown via Accept: text/markdown).\n- Free Tools static manifest: https://yorphives.com/free-tools/manifest.json
 - Explore: https://yorphives.com/explore/ — applications built and released by YorpHives only.
 - Builder: https://yorphives.com/builder/ — planned paid membership workspace for developers, creators, bloggers, freelancers, designers and entrepreneurs to discover earning opportunities.
 - Connect: https://yorphives.com/connect/ — project enquiries.
@@ -36,4 +36,8 @@ This platform is being developed in stages and remains under active development.
 
 ## Additional Free Tools
 
-The Free Tools catalogue includes QR generation, PDF operations, image conversion, invoice and finance calculators, SEO helpers, sitemap generation, YouTube thumbnail links, and social image size guidance. Some tools load open-source libraries from public CDNs; Currency Converter and YouTube thumbnails contact their public providers. Background removal is listed as planned and is not yet implemented. PDF compression currently re-saves PDF object streams and does not recompress embedded images.
+The Free Tools catalogue includes QR generation, PDF operations, image conversion, invoice and finance calculators, SEO helpers, sitemap generation, YouTube thumbnail links, and social image size guidance. Some tools load open-source libraries from public CDNs; Currency Converter and YouTube thumbnails contact their public providers. Background Remover runs MODNet portrait matting in the browser after downloading the open-source model. PDF Compressor rasterizes pages and recompresses them as JPEG images; resulting pages are not text-selectable. SEO Analyzer can fetch one live page only when the target permits browser CORS, or analyze pasted HTML. Currency conversion uses public indicative reference rates and is not a transaction quote. QR/PDF libraries and the background-removal model currently load from pinned public CDNs/model hosting; user files are processed in the browser and are not sent to YorpHives.
+
+## Agent execution status
+
+Free Tools are currently human-operated browser interfaces. The JSON/Markdown catalogue is discovery metadata only. It does not expose remote execution endpoints or MCP tools for QR generation, PDF processing, image segmentation, currency conversion, or SEO analysis. Each Free Tool descriptor declares `agent_execution: not_available`; do not treat a browser page URL as an executable tool. Public catalogue APIs are read-only discovery interfaces. Authenticated agent identity, scoped execution, consent, rate limits, audit records and MCP server tools remain future work.
