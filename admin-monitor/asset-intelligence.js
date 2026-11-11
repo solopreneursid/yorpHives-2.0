@@ -410,7 +410,7 @@ export async function runAssetIntelligence(db) {
       const match = lines[index].match(/^  (\/[^:]+):\s*$/);
       if (!match) continue;
       const path = match[1];
-      if (!path.startsWith("/api/") || path.includes("{") || path.includes("}") || inventory.some(item => item.url === path)) continue;
+      if (!path.startsWith("/api/") || path.startsWith("/api/admin/") || path.includes("{") || path.includes("}") || inventory.some(item => item.url === path)) continue;
       let hasGet = false;
       for (let next = index + 1; next < lines.length && !/^  \S/.test(lines[next]); next++) {
         if (/^    get:\s*$/.test(lines[next])) { hasGet = true; break; }
