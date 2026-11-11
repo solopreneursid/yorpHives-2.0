@@ -17,7 +17,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  deploy-preview:
+    name: Deploy isolated Cloudflare Pages preview
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.preview.outputs.url }}
+    env:
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      PAGES_PROJECT_NAME: yorphives-2-preview
+      PAGES_BRANCH: ${{ github.head_ref || github.ref_name }}
+      PAGES_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PAGES_COMMIT_MESSAGE: ${{ github.event.pull_request.title || github.event.head_commit.message || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy the feature branch to the preview project
+        id: preview
+        if: github.event_name == 'pull_request' || github.ref_name != 'main'
+        run: npm run deploy:pages-preview
+      - name: Use the public production site for main-branch audits
+        if: github.event_name != 'pull_request' && github.ref_name == 'main'
+        run: echo "url=https://yorphives.com" >> "$GITHUB_OUTPUT"
+
   browser-and-seo:
+    needs: deploy-preview
+    env:
+      SITE_BASE_URL: ${{ needs.deploy-preview.outputs.url }}
     name: Browser smoke tests and SEO crawl
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -28,31 +53,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Resolve and wait for the isolated Pages preview
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          REF_NAME: ${{ github.ref_name }}
-          HEAD_REF: ${{ github.head_ref }}
+      - name: Wait for the exact isolated Pages deployment
         run: |
-          BRANCH="${HEAD_REF:-$REF_NAME}"
-          if [ "$BRANCH" = "main" ]; then
-            TARGET_URL="https://yorphives.com"
-          else
-            BRANCH_SLUG="$(printf '%s' "$BRANCH" | tr '[:upper:]_./' '[:lower:]---' | cut -c1-28)"
-            TARGET_URL="https://${BRANCH_SLUG}.yorphives-2-preview.pages.dev"
+          TARGET_URL="$SITE_BASE_URL"
+          if [ -z "$TARGET_URL" ]; then
+            echo "::error::Preview deployment job did not return a target URL."
+            exit 1
           fi
-          echo "SITE_BASE_URL=$TARGET_URL" >> "$GITHUB_ENV"
-          echo "Waiting for branch preview: $TARGET_URL"
+          echo "Waiting for Pages deployment: $TARGET_URL"
           for attempt in $(seq 1 30); do
             STATUS="$(curl -sS -L -o /dev/null -w '%{http_code}' --max-time 15 "$TARGET_URL/" || true)"
             if [ "$STATUS" = "200" ]; then
-              echo "Preview is serving HTTP 200."
+              echo "Pages deployment is serving HTTP 200."
               exit 0
             fi
             echo "Preview not ready yet (HTTP $STATUS), attempt $attempt/30."
             sleep 10
           done
-          echo "The isolated Pages preview did not become ready within five minutes."
+          echo "The isolated Pages deployment did not become ready within five minutes."
           exit 1
       - name: Install browser test runtime
         run: npm install --no-save --no-package-lock playwright@1.56.1
@@ -92,6 +110,9 @@ jobs:
           retention-days: 30
 
   lighthouse:
+    needs: deploy-preview
+    env:
+      SITE_BASE_URL: ${{ needs.deploy-preview.outputs.url }}
     name: Lighthouse performance audit
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -100,30 +121,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Resolve and wait for the isolated Pages preview
-        env:
-          REF_NAME: ${{ github.ref_name }}
-          HEAD_REF: ${{ github.head_ref }}
+      - name: Wait for the exact isolated Pages deployment
         run: |
-          BRANCH="${HEAD_REF:-$REF_NAME}"
-          if [ "$BRANCH" = "main" ]; then
-            TARGET_URL="https://yorphives.com"
-          else
-            BRANCH_SLUG="$(printf '%s' "$BRANCH" | tr '[:upper:]_./' '[:lower:]---' | cut -c1-28)"
-            TARGET_URL="https://${BRANCH_SLUG}.yorphives-2-preview.pages.dev"
+          TARGET_URL="$SITE_BASE_URL"
+          if [ -z "$TARGET_URL" ]; then
+            echo "::error::Preview deployment job did not return a target URL."
+            exit 1
           fi
-          echo "SITE_BASE_URL=$TARGET_URL" >> "$GITHUB_ENV"
-          echo "Waiting for branch preview: $TARGET_URL"
+          echo "Waiting for Pages deployment: $TARGET_URL"
           for attempt in $(seq 1 30); do
             STATUS="$(curl -sS -L -o /dev/null -w '%{http_code}' --max-time 15 "$TARGET_URL/" || true)"
             if [ "$STATUS" = "200" ]; then
-              echo "Preview is serving HTTP 200."
+              echo "Pages deployment is serving HTTP 200."
               exit 0
             fi
             echo "Preview not ready yet (HTTP $STATUS), attempt $attempt/30."
             sleep 10
           done
-          echo "The isolated Pages preview did not become ready within five minutes."
+          echo "The isolated Pages deployment did not become ready within five minutes."
           exit 1
       - name: Install Lighthouse and Chromium
         run: |
