@@ -128,6 +128,7 @@ test("Control Center adds bounded repair jobs, owner audit history and optional 
   assert.match(assets, /api\/v1\/catalogue/);
   assert.match(assets, /api\/v1\/free-tools/);
   assert.match(assets, /sitemap\.xml/);
+  assert.match(assets, /openapi\.yaml/);
   assert.match(assets, /source_errors/);
   assert.match(html, /id="analytics-export"/);
   assert.match(migration, /admin_repair_jobs/);
@@ -203,7 +204,9 @@ test("Admin inventory discovers sitemap pages, manifest tools and published Yorp
   assert.match(scanner, /knownPaths/);
   assert.match(scanner, /sitemapError/);
   assert.match(scanner, /catalogueError/);
-  assert.match(scanner, /syncInventory\(db, trackedInventory, now, !manifestError && !sitemapError && !catalogueError\)/);
+  assert.match(scanner, /openapi\.yaml/);
+  assert.match(scanner, /openapiError/);
+  assert.match(scanner, /syncInventory\(db, trackedInventory, now, !manifestError && !sitemapError && !openapiError && !catalogueError\)/);
 });
 
 test("Admin findings API unifies monitor and asset findings with audited triage", async () => {
