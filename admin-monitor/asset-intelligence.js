@@ -317,8 +317,9 @@ async function recordDependencyFinding(db, assetKey, dependency, now) {
     details: "Current CDN pin: " + dependency.currentVersion + ". Latest: " + dependency.latest + ".",
     recommendation: "Review the changelog and security advisories, then test the newer version before adopting it."
   };
-  if (finding) await upsertFinding(db, asset.id, finding, now);
-  else {
+  if (finding) {
+    await upsertFinding(db, asset.id, finding, now);
+  } else if (dependency.status === "current") {
     const staleKeys = ["dependency-deprecated:", "dependency-major-update:", "dependency-update:"].map(prefix => prefix + dependency.key);
     for (const key of staleKeys) {
       await db.prepare("UPDATE admin_asset_findings SET status='fixed', resolved_at=?, last_verified=? WHERE asset_id=? AND finding_key=? AND status IN ('open','investigating','awaiting_approval')")
