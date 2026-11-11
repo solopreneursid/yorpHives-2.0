@@ -131,4 +131,26 @@ $("run").addEventListener("click", async () => {
   }
 });
 
+
+$("snapshot").addEventListener("click", async () => {
+  const button = $("snapshot");
+  if (!confirm("Capture read-only SHA-256 snapshots of the four approved public production pages?")) return;
+  button.disabled = true;
+  button.textContent = "Checking…";
+  try {
+    const result = await api("/api/admin/run-snapshots", {
+      method: "POST",
+      body: JSON.stringify({ confirm: true })
+    });
+    $("run-state").textContent = result.changed + " changed / " + result.targets + " snapshots checked";
+    await load();
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Check production changes";
+  }
+});
+
 load();
+
