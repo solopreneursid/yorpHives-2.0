@@ -24,14 +24,28 @@ test("admin routes require a signed Cloudflare Access identity and explicit emai
 
 test("admin health checks are read-only, same-origin and reject arbitrary targets and redirects", async () => {
   const runner = await read("../functions/api/admin/run-checks.ts");
-  assert.match(runner, /allowedMonitorUrl/);
-  assert.match(runner, /yorphives\.com/);
-  assert.match(runner, /yorphives-2-preview\.pages\.dev/);
-  assert.match(runner, /AbortSignal\.timeout\(8000\)/);
-  assert.match(runner, /redirect: "manual"/);
+  const shared = await read("../admin-monitor/admin-health.js");
   assert.match(runner, /origin !== new URL\(context\.request\.url\)\.origin/);
   assert.match(runner, /confirm !== true/);
-  assert.match(runner, /admin_findings/);
+  assert.match(runner, /runAdminHealthChecks/);
+  assert.match(shared, /APPROVED_HOSTS/);
+  assert.match(shared, /yorphives\.com/);
+  assert.match(shared, /yorphives-2-preview\.pages\.dev/);
+  assert.match(shared, /AbortSignal\.timeout\(8000\)/);
+  assert.match(shared, /redirect: "manual"/);
+  assert.match(shared, /admin_findings/);
+});
+
+test("scheduled monitor uses the existing D1 binding and a single six-hour cron", async () => {
+  const worker = await read("../admin-monitor/worker.js");
+  const config = JSON.parse((await read("../admin-monitor/wrangler.jsonc")).replace(/\/\/.*$/gm, ""));
+  assert.match(worker, /scheduled\(controller, env\)/);
+  assert.match(worker, /runAdminHealthChecks\(env\.DB, "scheduled"\)/);
+  assert.equal(config.name, "yorphives-admin-monitor");
+  assert.equal(config.workers_dev, false);
+  assert.equal(config.preview_urls, false);
+  assert.deepEqual(config.triggers.crons, ["0 */6 * * *"]);
+  assert.equal(config.d1_databases[0].binding, "DB");
 });
 
 test("admin dashboard is private, responsive and does not expose public navigation", async () => {

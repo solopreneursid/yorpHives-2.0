@@ -2,7 +2,7 @@
 
 ## Scope
 
-This is a separate, private operations surface. It does not add links to public navigation and does not change production deployment configuration.
+This is a separate, private operations surface. It does not add links to public navigation and does not change production Cloudflare configuration.
 
 The first slice provides:
 - Cloudflare Access JWT verification with a strict email allowlist.
@@ -10,35 +10,38 @@ The first slice provides:
 - D1 monitor, run, check, and finding records.
 - Read-only HTTPS checks for a fixed YorpHives host allowlist.
 - Deduplicated findings with recovery verification.
-- Scheduled CodeQL analysis for JavaScript and TypeScript.
+- A separate scheduled Worker that runs the same health-check logic every six hours.
+- Weekly GitHub CodeQL analysis for JavaScript and TypeScript.
 
 ## Zero-cost operating model
 
-The implementation uses the existing Cloudflare Pages Functions and D1 binding plus GitHub Actions. It does not add a paid AI API, Cloudflare Workflows, a paid uptime vendor, paid browser testing, or a new Cloudflare Worker. Usage remains subject to existing service free quotas and account entitlements.
+The implementation uses the existing Cloudflare Pages Functions and D1 binding, one lightweight Cron Worker, and GitHub Actions. It does not add a paid AI API, Cloudflare Workflows, a paid uptime vendor, paid browser testing, or a new D1 database.
 
-The HTTP check endpoint is manual in this first slice. Do not add a scheduled caller until an authenticated automation credential can be provisioned without exposing a long-lived admin token. GitHub Actions runs scheduled repository security analysis.
+The Cron Worker uses one trigger and checks at most five fixed HTTPS URLs every six hours. It writes compact run/check/finding records to the existing preview D1 database. This is designed to remain within Cloudflare Workers and D1 free quotas at the current monitor count and cadence; usage is still subject to the account's actual plan and aggregate usage. No cost guarantee applies if account-wide free quotas are exceeded.
 
-## Required environment setup
+## Preview setup
 
-On the preview Pages project only:
+The preview Pages project and preview D1 database are the only deployment targets for this initial implementation.
 
-1. Apply migrations/0004_admin_reliability.sql to the preview D1 database.
-2. Confirm the Pages project has the existing DB D1 binding.
-3. Configure these Pages environment variables for preview:
+1. The preview D1 database already has the admin tables from migration 0004 and the preview monitor target from migration 0005.
+2. The Pages project uses the existing DB binding.
+3. The Cron Worker is deployed as yorphives-admin-monitor, with workers.dev and preview URLs disabled. Its only trigger is 0 */6 * * *.
+4. Configure these Pages environment variables for preview:
    - CF_ACCESS_TEAM_DOMAIN: Cloudflare Access team domain, without scheme.
    - CF_ACCESS_AUD: the Access application's exact audience tag.
    - ADMIN_ALLOWED_EMAILS: comma-separated, lowercase email addresses allowed into this admin surface.
-4. Create a Cloudflare Access self-hosted application protecting /admin/* and /api/admin/*.
-5. Permit only the intended administrator identities in the Access policy.
+5. Enable Cloudflare Access for the Pages project's preview deployments and restrict its policy to the intended administrator.
 6. Test a permitted identity, a non-allowlisted identity, and an unauthenticated request.
 
-Never set these values on production until preview is verified and production deployment is explicitly approved. Do not commit Access tokens, API tokens, account IDs, or secrets.
+Never set these values on production until preview is verified and production deployment is explicitly approved. Do not commit Access tokens, API tokens, account IDs, or secrets. The Pages admin endpoints fail closed while Access configuration is absent.
 
 ## Current checks
 
-The initial monitor list checks the production homepage, Free Tools directory, discovery API, llms.txt, and preview homepage. The runner rejects hosts outside the explicit HTTPS allowlist. It uses bounded requests and does not accept caller-supplied URLs.
+The monitor list checks the production homepage, Free Tools directory, discovery API, llms.txt, and the feature-branch preview alias. The runner rejects hosts outside the explicit HTTPS allowlist, refuses redirects, uses bounded requests, and does not accept caller-supplied URLs.
 
 A 2xx or 3xx response is considered reachable. This is HTTP reachability only, not browser testing, functional testing, SEO auditing, vulnerability scanning, or proof that client-side tools work.
+
+The dashboard's manual run button and the scheduled Cron Worker call the same shared health-check module. Scheduled runs are persisted with trigger source scheduled.
 
 ## Permission boundary
 
@@ -52,5 +55,5 @@ A 2xx or 3xx response is considered reachable. This is HTTP reachability only, n
 2. Dependency and secret scanning with free GitHub security features where available.
 3. Preview-only passive OWASP ZAP baseline scan.
 4. SEO and agent-discovery contract checks.
-5. Safe scheduled health-check trigger after authenticated automation is configured.
+5. Agentic investigation and recommendations using deterministic rules first.
 6. Approval queue and pull-request preparation; no autonomous merge or deployment.
