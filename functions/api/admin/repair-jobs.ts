@@ -111,8 +111,8 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
     const result = await dispatch.json().catch(() => null) as { id?: string; status?: string; error?: string } | null;
     if (!dispatch.ok || !result?.id) throw new Error(result?.error || "The repair workflow could not be started.");
 
-    await context.env.DB!.prepare("UPDATE admin_repair_jobs SET status='dispatched',result_summary=?,updated_at=? WHERE id=?")
-      .bind("Durable Cloudflare repair workflow accepted. The agent is preparing an isolated branch and CI-verified draft PR.", now(), jobId).run();
+    await context.env.DB!.prepare("UPDATE admin_repair_jobs SET status='dispatched',result_summary=?,updated_at=?,dispatched_at=? WHERE id=?")
+      .bind("Durable Cloudflare repair workflow accepted. The agent is preparing an isolated branch and CI-verified draft PR.", now(), now(), jobId).run();
     await audit(context, identity.email, "repair_dispatched", jobId, { workflow_instance_id: result.id });
     return adminJson({ job: { id: jobId, status: "dispatched" }, dispatched: true }, 202);
   } catch (error) {
