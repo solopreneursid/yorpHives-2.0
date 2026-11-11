@@ -50,9 +50,9 @@ export async function verifyAdminAccess(request: Request, env: AdminEnv): Promis
   if (teamDomain.startsWith("https://")) teamDomain = teamDomain.slice(8);
   if (teamDomain.startsWith("http://")) teamDomain = teamDomain.slice(7);
   teamDomain = teamDomain.replace(/\/$/, "");
-  const audience = (env.CF_ACCESS_AUD || "").trim();
+  const expectedAudiences = new Set((env.CF_ACCESS_AUD || "").split(",").map((value) => value.trim()).filter(Boolean));
   const allowedEmails = new Set((env.ADMIN_ALLOWED_EMAILS || "").split(",").map((email) => email.trim().toLowerCase()).filter(Boolean));
-  if (!teamDomain || !audience || allowedEmails.size === 0) return null;
+  if (!teamDomain || expectedAudiences.size === 0 || allowedEmails.size === 0) return null;
   const token = request.headers.get("cf-access-jwt-assertion");
   if (!token) return null;
   try {
@@ -62,8 +62,8 @@ export async function verifyAdminAccess(request: Request, env: AdminEnv): Promis
     const claims = decodeJsonPart<AccessClaims>(parts[1]);
     if (header.alg !== "RS256" || !header.kid) return null;
     if (claims.iss !== "https://" + teamDomain || claims.exp <= Math.floor(Date.now() / 1000)) return null;
-    const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-    if (!audiences.includes(audience)) return null;
+    const tokenAudiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+    if (!tokenAudiences.some((audience) => expectedAudiences.has(audience))) return null;
     const email = (claims.email || "").trim().toLowerCase();
     if (!email || !allowedEmails.has(email)) return null;
     const keys = await getAccessKeys(teamDomain);
