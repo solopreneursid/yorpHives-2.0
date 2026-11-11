@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "yorphives-admin-agent",
+  "main": "./worker.js",
+  "compatibility_date": "2026-11-11",
+  "workers_dev": false,
+  "ai": {
+    "binding": "AI"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "yorphives-2-catalogue-preview",
+      "database_id": "e8690813-b139-44a2-a1c7-bea2d2777ead"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "yorphives-admin-repair",
+      "binding": "ADMIN_REPAIR_WORKFLOW",
+      "class_name": "AdminRepairWorkflow"
+    }
+  ]
+}
