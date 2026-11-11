@@ -7,6 +7,7 @@ const MAX_CONTEXT_CHARS = 32000;
 const MAX_CHANGED_FILES = 8;
 const MAX_CHANGED_CONTENT_CHARS = 24000;
 const STOP_WORDS = new Set(["the","and","for","with","from","that","this","into","when","where","what","your","you","are","can","not","how","why","please","need","want","issue","fix","repair","page","site"]);
+let githubHealthCache = null;
 
 function allowedPath(path) {
   if (!path || path.startsWith("/") || path.includes("..") || path.includes("\\") || path.startsWith(".github/")) return false;
@@ -53,6 +54,68 @@ async function githubMaybe(env, path) {
   return payload;
 }
 
+async function checkGithubAccess(env) {
+  if (!env.GITHUB_TOKEN) return { ready: false, error: "GITHUB_TOKEN secret is not configured." };
+  if (githubHealthCache && Date.now() - githubHealthCache.checkedAt < 120000) return githubHealthCache.value;
+
+  try {
+    const [user, repository] = await Promise.all([
+      github(env, "/user"),
+      github(env, `/repos/${REPOSITORY}`)
+    ]);
+    if (repository.full_name?.toLowerCase() !== REPOSITORY.toLowerCase()) {
+      throw new Error("The configured token resolved to an unexpected repository.");
+    }
+
+    let workflow = { access: false, latest_run: null, jobs: [], detail: "Actions read permission is unavailable or no workflow run exists." };
+    try {
+      const runs = await github(env, `/repos/${REPOSITORY}/actions/workflows/site-quality.yml/runs?per_page=1`);
+      const latest = runs.workflow_runs?.[0] || null;
+      if (latest) {
+        const jobResult = await github(env, `/repos/${REPOSITORY}/actions/runs/${latest.id}/jobs?per_page=30`);
+        workflow = {
+          access: true,
+          latest_run: {
+            id: latest.id,
+            status: latest.status,
+            conclusion: latest.conclusion,
+            created_at: latest.created_at,
+            updated_at: latest.updated_at,
+            html_url: latest.html_url
+          },
+          jobs: (jobResult.jobs || []).map(job => ({
+            name: job.name,
+            status: job.status,
+            conclusion: job.conclusion,
+            started_at: job.started_at,
+            completed_at: job.completed_at
+          })),
+          detail: "GitHub Actions run metadata is readable."
+        };
+      } else {
+        workflow = { ...workflow, access: true, detail: "Actions access is available; the specialist workflow has not run yet." };
+      }
+    } catch {
+      workflow = { ...workflow, access: false, detail: "Actions run metadata is unavailable; repository authentication still works." };
+    }
+
+    const value = {
+      ready: true,
+      github: { authenticated: true, login: user.login, repository_access: true, repository: repository.full_name },
+      workflow
+    };
+    githubHealthCache = { checkedAt: Date.now(), value };
+    return value;
+  } catch (error) {
+    const value = {
+      ready: false,
+      github: { authenticated: false, repository_access: false },
+      error: error instanceof Error ? error.message.slice(0, 300) : "GitHub authentication check failed."
+    };
+    githubHealthCache = { checkedAt: Date.now(), value };
+    return value;
+  }
+}
 
 function decodeBase64Utf8(value) {
   const binary = atob(value.replace(/\s/g, ""));
@@ -186,22 +249,32 @@ async function triggerPlatformChecks(env, branch, jobId, baseCommitSha) {
 }
 
 async function waitForChecks(env, step, commitSha) {
-  for (let attempt = 1; attempt <= 12; attempt += 1) {
+  const required = [
+    "contract-tests",
+    "browser smoke tests and seo crawl",
+    "code review",
+    "lighthouse performance budgets"
+  ];
+  for (let attempt = 1; attempt <= 30; attempt += 1) {
     const result = await step.do(`read-platform-checks-${attempt}`, async () =>
       github(env, `/repos/${REPOSITORY}/commits/${commitSha}/check-runs?per_page=100`)
     );
-    const relevant = (result.check_runs || []).filter((check) =>
-      check.name.toLowerCase().includes("yorphives platform checks") ||
-      check.name.toLowerCase().includes("contract-tests")
-    );
-    if (relevant.length > 0 && relevant.every((check) => check.status === "completed")) {
-      const failed = relevant.filter((check) => !["success", "neutral", "skipped"].includes(check.conclusion));
-      if (failed.length) throw new Error("Repository CI failed: " + failed.map((check) => `${check.name}=${check.conclusion}`).join(", "));
-      return { passed: true, checks: relevant.map((check) => ({ name: check.name, conclusion: check.conclusion })) };
+    const checkRuns = result.check_runs || [];
+    const relevant = checkRuns.filter((check) => required.some(name => check.name.toLowerCase().includes(name)));
+    const completedNames = new Set(relevant.filter(check => check.status === "completed").map(check => {
+      const name = check.name.toLowerCase();
+      return required.find(expected => name.includes(expected));
+    }));
+    const failed = relevant.filter((check) => check.status === "completed" && !["success", "neutral", "skipped"].includes(check.conclusion));
+    if (failed.length) {
+      throw new Error("Repository verification failed: " + failed.map(check => `${check.name}=${check.conclusion}`).join(", "));
     }
-    if (attempt < 12) await step.sleep(`wait-for-platform-checks-${attempt}`, "30 seconds");
+    if (required.every(name => completedNames.has(name))) {
+      return { passed: true, checks: relevant.map(check => ({ name: check.name, conclusion: check.conclusion })) };
+    }
+    if (attempt < 30) await step.sleep(`wait-for-platform-checks-${attempt}`, "30 seconds");
   }
-  throw new Error("Timed out waiting for the YorpHives platform contract checks on the isolated repair branch.");
+  throw new Error("Timed out waiting for contract tests, browser QA, code review and Lighthouse performance checks on the isolated repair branch.");
 }
 
 async function createDraftPullRequest(env, branch, jobId, requestedBy, requestText, summary, checks) {
@@ -227,7 +300,7 @@ async function createDraftPullRequest(env, branch, jobId, requestedBy, requestTe
       "",
       "### Verification",
       "- The patch was restricted to the agent's source-file allowlist.",
-      "- The repository's GitHub Actions platform contract checks passed on the isolated branch.",
+      "- Contract tests, real-browser journeys, automated code-risk review and Lighthouse performance checks completed successfully on the isolated branch.",
       "- No production deployment or merge was performed.",
       "",
       checkLines,
@@ -306,7 +379,7 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
       );
 
       await step.do("record-human-review-required", async () => {
-        const summary = `Draft PR created after platform checks passed. ${proposal.summary}`;
+        const summary = `Draft PR created after platform, browser, code review and performance checks passed. ${proposal.summary}`;
         await updateJob(this.env.DB, jobId, "needs_review", {
           agentName: "yorphives-cloudflare-agent",
           branchName: branchCommit.branch,
@@ -338,7 +411,13 @@ export default {
     if (!((request.method === "GET" && url.pathname === "/health") || (request.method === "POST" && url.pathname === "/instances"))) {
       return new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } });
     }
-    if (request.method === "GET") return Response.json({ ready: Boolean(env.GITHUB_TOKEN) }, { headers: { "cache-control": "no-store" } });
+    if (request.method === "GET") {
+      const health = await checkGithubAccess(env);
+      return Response.json(health, {
+        status: health.ready ? 200 : 503,
+        headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" }
+      });
+    }
     if (!env.GITHUB_TOKEN) return Response.json({ error: "GITHUB_TOKEN Worker secret is not configured." }, { status: 503 });
     const payload = await request.json().catch(() => null);
     if (!payload || !/^[0-9a-f-]{36}$/i.test(String(payload.job_id || "")) ||
