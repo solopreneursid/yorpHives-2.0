@@ -107,7 +107,7 @@ async function syncInventory(db, assets, now, deactivateMissing = true) {
     `).bind(assetId, asset.key, asset.type, asset.title, asset.url, asset.source, now).run();
     ids.push(asset.key);
   }
-  if (ids.length) {
+  if (ids.length && deactivateMissing) {
     const placeholders = ids.map(() => "?").join(",");
     await db.prepare("UPDATE admin_assets SET active=0, updated_at=? WHERE asset_key NOT IN (" + placeholders + ")")
       .bind(now, ...ids).run();
