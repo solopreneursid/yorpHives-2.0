@@ -6,6 +6,11 @@ interface AgentService {
 }
 interface AgentHealth {
   ready?: boolean;
+  dependencies?: {
+    database?: boolean;
+    workers_ai?: boolean;
+    durable_workflow?: boolean;
+  };
   error?: string;
   github?: {
     authenticated?: boolean;
@@ -147,7 +152,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     {id:"qa-engineer",name:"QA Engineer",role:"Browser & journey testing",description:"Playwright Chromium checks navigation, search, tool execution, mobile navigation, sitemap pages and internal links.",...qa},
     {id:"code-reviewer",name:"Code Reviewer",role:"Change & regression review",description:"Independent Workers AI review for repair proposals plus changed-line risk checks for dynamic execution, HTML sinks, hard-coded credentials, insecure URLs and sensitive configuration.",...review},
     {id:"performance-engineer",name:"Performance Engineer",role:"Performance & Core Web Vitals",description:"Scheduled and change-triggered Lighthouse measurements for homepage and Free Tools.",...performance},
-    {id:"repair-engineer",name:"Repair Engineer",role:"Isolated code repair",description:"Workers AI repair proposals, isolated branches and CI-gated draft PRs.",status:agentConfigured?"active":"blocked",last_run_at:null,detail:agentConfigured?"Repository write permission and GitHub Actions workflow/job read access are verified. Actual token write scopes are exercised by isolated branch and draft-PR creation; repairs remain CI-gated.":(agentHealth?.error||"GitHub repository write or Actions read capability is not verified.")}
+    {id:"repair-engineer",name:"Repair Engineer",role:"Isolated code repair",description:"Workers AI repair proposals, isolated branches and CI-gated draft PRs.",status:agentConfigured?"active":"blocked",last_run_at:null,detail:agentConfigured?"Repository write permission, Actions workflow/job reads, and the repair Worker D1, Workers AI, and Workflow bindings are verified. Actual token write scopes are exercised by isolated branch and draft-PR creation; repairs remain CI-gated.":(agentHealth?.error||"GitHub repository write or Actions read capability is not verified.")}
   ];
   return adminJson({
     data: result.results,
