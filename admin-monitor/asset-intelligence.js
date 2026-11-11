@@ -374,7 +374,9 @@ export async function runAssetIntelligence(db) {
     const xml = await response.text();
     const knownPaths = new Set(inventory.map(item => item.url));
     const discovered = new Map();
-    for (const match of xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)) {
+    let sitemapEntries = 0;
+    for (const match of xml.matchAll(/<loc(?:\s[^>]*)?>\s*([^<]+?)\s*<\/loc>/gi)) {
+      sitemapEntries++;
       const url = safeInternalUrl(match[1].replace(/&amp;/g, "&").trim());
       if (!url || url.pathname === "/sitemap.xml" || url.pathname === "/free-tools/manifest.json" || knownPaths.has(url.pathname)) continue;
       const path = url.pathname || "/";
@@ -390,6 +392,7 @@ export async function runAssetIntelligence(db) {
       });
       knownPaths.add(path);
     }
+    if (sitemapEntries === 0) throw new Error("Sitemap returned HTTP 200 but contained no <loc> entries.");
     for (const asset of discovered.values()) inventory.push(asset);
   } catch (error) {
     sitemapError = error instanceof Error ? error.message : "Sitemap fetch failed";
