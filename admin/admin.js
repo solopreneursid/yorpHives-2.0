@@ -159,7 +159,10 @@ async function load() {
     for (const [id, message, colspan] of [
       ["runs", "Unable to load monitoring history: " + error.message, 5],
       ["findings-list", "Unable to load findings: " + error.message, 5],
-      ["changes-list", "Unable to load change history: " + error.message, 4],\n      ["assets-list", "Unable to load asset inventory: " + error.message, 6],\n      ["asset-findings-list", "Unable to load recommendations: " + error.message, 5],\n      ["dependencies-list", "Unable to load dependency observations: " + error.message, 5]
+      ["changes-list", "Unable to load change history: " + error.message, 4],
+      ["assets-list", "Unable to load asset inventory: " + error.message, 6],
+      ["asset-findings-list", "Unable to load recommendations: " + error.message, 5],
+      ["dependencies-list", "Unable to load dependency observations: " + error.message, 5]
     ]) {
       const target = $(id);
       target.replaceChildren();
