@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { checkMonitor } from "../admin-monitor/admin-health.js";
+import { runSecurityAudit } from "../admin-monitor/security-auditor.js";
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 const extractApprovedHosts = (source) => {
   const block = source.match(/const APPROVED_HOSTS = new Set\(\[([\s\S]*?)\]\)/)?.[1] || "";
@@ -262,6 +263,111 @@ test("private Admin gate monitors treat Cloudflare Access 401 and 403 denials as
     globalThis.fetch = async () => new Response(null, { status: 401 });
     const unverifiedDenial = await checkMonitor({ id: "admin-staging-api", name: "Admin API", url: "https://admin-staging.yorphives.com/api/admin/overview", environment: "preview" });
     assert.equal(unverifiedDenial.ok, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+
+function createSecurityAuditDb(events = []) {
+  return {
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            first: async () => sql.includes("SELECT id FROM admin_assets")
+              ? { id: "asset-" + values[0] }
+              : null,
+            all: async () => ({ results: [] }),
+            run: async () => {
+              if (sql.includes("INSERT INTO admin_audit_events")) {
+                events.push({ action: values[2], details: JSON.parse(values[5]) });
+              }
+              return { success: true };
+            }
+          };
+        }
+      };
+    }
+  };
+}
+
+test("Security Auditor marks a run complete only when every configured target returns 2xx", async () => {
+  const originalFetch = globalThis.fetch;
+  const events = [];
+  try {
+    globalThis.fetch = async (url) => new Response(null, {
+      status: 200,
+      headers: {
+        "content-type": String(url).endsWith("/") ? "text/html; charset=utf-8" : "application/json",
+        "strict-transport-security": "max-age=31536000",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "default-src 'self'; frame-ancestors 'none'"
+      }
+    });
+    const result = await runSecurityAudit(createSecurityAuditDb(events));
+    assert.equal(result.status, "complete");
+    assert.equal(result.checked, 7);
+    assert.equal(result.target_count, 7);
+    assert.equal(result.errors, 0);
+    assert.equal(result.skipped, 0);
+    assert.equal(events.at(-1).action, "security_audit_completed");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Security Auditor records partial evidence when targets fail instead of reporting a clean audit", async () => {
+  const originalFetch = globalThis.fetch;
+  const events = [];
+  try {
+    globalThis.fetch = async () => {
+      throw new Error("simulated network failure");
+    };
+    const result = await runSecurityAudit(createSecurityAuditDb(events));
+    assert.equal(result.status, "partial");
+    assert.equal(result.checked, 0);
+    assert.equal(result.errors, 7);
+    assert.equal(result.skipped, 0);
+    assert.equal(events.at(-1).action, "security_audit_partial");
+    assert.equal(events.at(-1).details.status, "partial");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Security Auditor does not resolve prior findings from redirects or failed HTTP responses", async () => {
+  const originalFetch = globalThis.fetch;
+  const events = [];
+  let resolutionQueries = 0;
+  const db = createSecurityAuditDb(events);
+  const originalPrepare = db.prepare;
+  db.prepare = (sql) => {
+    if (sql.includes("SELECT finding_key FROM admin_asset_findings")) resolutionQueries += 1;
+    return originalPrepare(sql);
+  };
+  try {
+    let request = 0;
+    globalThis.fetch = async () => {
+      request += 1;
+      if (request === 1) return new Response(null, { status: 302, headers: { location: "https://yorphives.com/redirected" } });
+      if (request === 2) return new Response(null, { status: 503 });
+      return new Response(null, {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "strict-transport-security": "max-age=31536000",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "strict-origin-when-cross-origin"
+        }
+      });
+    };
+    const result = await runSecurityAudit(db);
+    assert.equal(result.status, "partial");
+    assert.equal(result.skipped, 1);
+    assert.equal(result.errors, 1);
+    assert.equal(resolutionQueries, 5);
   } finally {
     globalThis.fetch = originalFetch;
   }
