@@ -1,6 +1,6 @@
 import { adminJson, type AdminRequestContext } from "../../_lib/admin-auth";
 
-interface AgentCallbackEnv { ADMIN_AGENT_WEBHOOK_TOKEN?: string; }
+interface AgentCallbackEnv { ADMIN_AGENT_CALLBACK_TOKEN?: string; ADMIN_AGENT_WEBHOOK_TOKEN?: string; }
 interface AgentCallbackPayload {
   job_id?: string;
   status?: "running" | "needs_review" | "completed" | "failed";
@@ -14,7 +14,7 @@ const validBranch = (value: string) => /^(agent|repair)\/[a-z0-9._/-]{1,180}$/.t
 const validPullRequest = (value: string) => /^https:\/\/github\.com\/solopreneursid\/yorpHives-2\.0\/pull\/[1-9][0-9]*$/.test(value);
 
 export async function onRequestPost(context: AdminRequestContext & { env: AdminRequestContext["env"] & AgentCallbackEnv }): Promise<Response> {
-  const expected = context.env.ADMIN_AGENT_WEBHOOK_TOKEN;
+  const expected = context.env.ADMIN_AGENT_CALLBACK_TOKEN || context.env.ADMIN_AGENT_WEBHOOK_TOKEN;
   const supplied = (context.request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
   if (!expected || !supplied || supplied !== expected) return adminJson({ error: { code: "UNAUTHORIZED_AGENT", message: "A valid agent callback token is required." } }, 401);
   if (!context.request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return adminJson({ error: { code: "INVALID_CONTENT_TYPE", message: "A JSON request body is required." } }, 415);
