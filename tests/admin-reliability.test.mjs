@@ -142,7 +142,7 @@ test("agent callbacks require the configured bearer secret and constrain branche
   const dispatch = await read("../functions/api/admin/repair-jobs.ts");
   assert.match(callback, /UNAUTHORIZED_AGENT/);
   assert.match(callback, /ADMIN_AGENT_WEBHOOK_TOKEN/);
-  assert.match(callback, /agent\\|repair/);
+  assert.ok(callback.includes("agent|repair"));
   assert.match(callback, /github\\.com\\/solopreneursid\\/yorpHives-2\\.0\\/pull/);
   assert.match(callback, /admin_audit_events/);
   assert.match(dispatch, /callback_url/);
