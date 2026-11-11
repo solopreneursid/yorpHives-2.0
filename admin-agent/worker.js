@@ -500,6 +500,89 @@ async function createDraftPullRequest(env, branch, jobId, requestedBy, requestTe
   });
 }
 
+async function probeGithubWritePermissions(env) {
+  const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 12);
+  const branch = "tmp/agentic-ops-permission-probe-" + suffix;
+  const markerPath = ".github/agentic-ops-permission-probes/" + suffix + ".json";
+  let branchCreated = false;
+  let pullRequestNumber = null;
+  let contentsWrite = false;
+  let pullRequestsWrite = false;
+  let pullRequestClosed = true;
+  let branchDeleted = true;
+  const cleanupErrors = [];
+  let error = null;
+
+  try {
+    const sourceRef = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${BASE_BRANCH}`);
+    await github(env, `/repos/${REPOSITORY}/git/refs`, "POST", {
+      ref: "refs/heads/" + branch,
+      sha: sourceRef.object.sha
+    });
+    branchCreated = true;
+
+    const marker = {
+      purpose: "temporary GitHub token permission verification",
+      created_at: new Date().toISOString(),
+      probe_id: suffix
+    };
+    await github(env, `/repos/${REPOSITORY}/contents/${markerPath}?branch=${encodeURIComponent(branch)}`, "PUT", {
+      message: "chore: temporary Agentic Operations permission probe",
+      content: btoa(JSON.stringify(marker) + "\n"),
+      branch
+    });
+    contentsWrite = true;
+
+    try {
+      const pullRequest = await github(env, `/repos/${REPOSITORY}/pulls`, "POST", {
+        title: "[temporary] Agentic Operations permission probe " + suffix,
+        head: branch,
+        base: BASE_BRANCH,
+        body: "Temporary draft PR used to verify the Agent Worker's Pull requests:write permission. It will be closed and its branch deleted automatically. No changes will be merged.",
+        draft: true
+      });
+      pullRequestNumber = Number(pullRequest.number);
+      pullRequestsWrite = Number.isInteger(pullRequestNumber) && pullRequestNumber > 0;
+      if (!pullRequestsWrite) throw new Error("GitHub did not return a valid temporary pull request number.");
+    } catch (probeError) {
+      error = probeError instanceof Error ? probeError.message.slice(0, 300) : "Pull request permission probe failed.";
+    }
+  } catch (probeError) {
+    error = probeError instanceof Error ? probeError.message.slice(0, 300) : "Contents permission probe failed.";
+  } finally {
+    if (pullRequestNumber) {
+      try {
+        await github(env, `/repos/${REPOSITORY}/pulls/${pullRequestNumber}`, "PATCH", { state: "closed" });
+        pullRequestClosed = true;
+      } catch (cleanupError) {
+        pullRequestClosed = false;
+        cleanupErrors.push(cleanupError instanceof Error ? cleanupError.message.slice(0, 240) : "Could not close temporary pull request.");
+      }
+    }
+    if (branchCreated) {
+      try {
+        await github(env, `/repos/${REPOSITORY}/git/refs/heads/${branch}`, "DELETE");
+        branchDeleted = true;
+      } catch (cleanupError) {
+        branchDeleted = false;
+        cleanupErrors.push(cleanupError instanceof Error ? cleanupError.message.slice(0, 240) : "Could not delete temporary branch.");
+      }
+    }
+  }
+
+  const ready = contentsWrite && pullRequestsWrite && pullRequestClosed && branchDeleted;
+  return {
+    ready,
+    contents_write: contentsWrite,
+    pull_requests_write: pullRequestsWrite,
+    cleanup: { pull_request_closed: pullRequestClosed, branch_deleted: branchDeleted },
+    ...(error ? { error } : {}),
+    ...(cleanupErrors.length ? { cleanup_errors: cleanupErrors } : {}),
+    ...(!branchDeleted ? { remaining_branch: branch } : {}),
+    ...(!pullRequestClosed && pullRequestNumber ? { remaining_pull_request: pullRequestNumber } : {})
+  };
+}
+
 export class AdminRepairWorkflow extends WorkflowEntrypoint {
   async run(event, step) {
     const payload = event.payload || {};
@@ -602,7 +685,7 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (!((request.method === "GET" && url.pathname === "/health") || (request.method === "POST" && url.pathname === "/instances"))) {
+    if (!((request.method === "GET" && url.pathname === "/health") || (request.method === "POST" && (url.pathname === "/instances" || url.pathname === "/permission-probe")))) {
       return new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } });
     }
     if (request.method === "GET") {
@@ -625,6 +708,23 @@ export default {
         } : {})
       }, {
         status: ready ? 200 : 503,
+        headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" }
+      });
+    }
+    if (request.method === "POST" && url.pathname === "/permission-probe") {
+      if (request.headers.get("x-yorphives-internal-probe") !== "1") {
+        return new Response("Forbidden", { status: 403, headers: { "cache-control": "no-store" } });
+      }
+      if (!env.GITHUB_TOKEN) {
+        return Response.json({ ready: false, contents_write: false, pull_requests_write: false, error: "GITHUB_TOKEN Worker secret is not configured." }, { status: 503 });
+      }
+      const confirmation = await request.json().catch(() => null);
+      if (confirmation?.confirm !== true) {
+        return Response.json({ error: "Explicit confirmation is required." }, { status: 400 });
+      }
+      const result = await probeGithubWritePermissions(env);
+      return Response.json(result, {
+        status: 200,
         headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" }
       });
     }
