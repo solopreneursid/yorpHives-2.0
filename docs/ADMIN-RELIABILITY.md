@@ -57,3 +57,32 @@ The dashboard's manual run button and the scheduled Cron Worker call the same sh
 4. SEO and agent-discovery contract checks.
 5. Agentic investigation and recommendations using deterministic rules first.
 6. Approval queue and pull-request preparation; no autonomous merge or deployment.
+
+
+## Asset intelligence and improvement recommendations
+
+The asset-intelligence monitor expands coverage from a handful of uptime URLs to the public website, the Free Tools catalogue and available first-party product destinations.
+
+- It discovers all tool routes from the production `/free-tools/manifest.json` instead of maintaining a second hand-written tool list.
+- It discovers available first-party product destinations from the preview D1 catalogue. Only destinations resolving to the approved `https://yorphives.com` origin are fetched; external destinations are not crawled.
+- It checks the homepage, Free Tools, Explore, Builder, Connect, sitemap, robots.txt, llms.txt, OpenAPI, the well-known agent manifest and Free Tools API.
+- For each route it records HTTP status, response time, page title, meta description, canonical URL and a SHA-256 content fingerprint.
+- It records missing metadata, unavailable routes, invalid JSON and content changes as deduplicated findings with evidence and suggested actions.
+- It extracts version-pinned npm package references from script tags served by npm-compatible CDNs, checks npm registry deprecation metadata and latest stable tags, and surfaces deprecated versions, same-major updates and major upgrades separately.
+- Upgrade recommendations are advisory. A newer version is not installed automatically; major releases require compatibility and regression review.
+- Manual scans are protected by Cloudflare Access, same-origin checks and explicit confirmation. The scheduled Worker runs the same scan every six hours and writes only to the preview D1 database.
+
+The monitor intentionally does not fetch arbitrary catalogue URLs, follow redirects, execute third-party code, or modify production. Browser-level Free Tools smoke checks are run by GitHub Actions against the public production website. The Playwright job opens every manifest-listed tool and verifies its page, tool mount point, at least one interactive control and absence of uncaught page errors. This is a smoke test, not a claim that every possible input/output combination has been exhaustively tested.
+
+The npm registry comparison currently covers version-pinned npm CDN references found in HTML script tags. It does not yet establish compatibility, security status or upgrade availability for every arbitrary CDN, model file, browser API, external SaaS integration or unpinned remote asset. Retire.js and the passive security workflow provide a complementary browser-library vulnerability inventory.
+
+## Admin dashboard additions
+
+The dashboard now includes:
+- Asset inventory grouped by website page, discovery/API route, Free Tool and first-party product.
+- Current availability, HTTP status, response time and last-check timestamp.
+- Prioritized recommendations with category, evidence and suggested action.
+- Dependency observations showing current version, latest npm stable version, deprecation status and last registry check.
+- Summary counts for monitored assets, degraded/unavailable routes, deprecated packages and updates worth reviewing.
+
+Findings are signals for investigation, not automatic approval to change the site. Keep updates in a branch, run the browser/SEO/security suites, review the diff and obtain approval before merging or deploying to production.
