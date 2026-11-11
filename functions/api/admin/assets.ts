@@ -180,7 +180,17 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     const destination = sameOriginUrl(tool.url);
     if (!destination) continue;
     const key = "tool:" + tool.slug;
-    if (!discovered.has(key)) discovered.set(key, virtualAsset(key, "free_tool", tool.title, destination.pathname, "public Free Tools API"));
+    const existing = discovered.get(key);
+    if (tool.processing === "planned") {
+      if (existing) existing.last_status = "planned";
+      else {
+        const planned = virtualAsset(key, "free_tool", tool.title, destination.pathname, "public Free Tools API");
+        planned.last_status = "planned";
+        discovered.set(key, planned);
+      }
+    } else if (!existing) {
+      discovered.set(key, virtualAsset(key, "free_tool", tool.title, destination.pathname, "public Free Tools API"));
+    }
   }
   for (const product of publicCatalogue.data) {
     if (!product.destination_url) continue;
