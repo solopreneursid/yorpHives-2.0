@@ -128,7 +128,7 @@ test("Control Center adds bounded repair jobs, owner audit history and optional 
   assert.match(repairs, /INVALID_ORIGIN/);
   assert.match(repairs, /ADMIN_AGENT_SERVICE/);
   assert.match(repairs, /AGENT_DAILY_LIMIT/);
-  assert.match(repairs, /admin-agent\\.internal\\/instances/);
+  assert.match(repairs, /admin-agent\.internal\/instances/);
   assert.match(html, /id="analytics"/);
   assert.match(html, /id="repair-desk"/);
   assert.match(html, /id="release-control"/);
