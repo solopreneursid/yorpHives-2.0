@@ -31,10 +31,11 @@ function emptyRow(target, message, colspan) {
 async function load() {
   $("run-state").textContent = "Refreshing…";
   try {
-    const [overview, findings, changes] = await Promise.all([
+    const [overview, findings, changes, assetData] = await Promise.all([
       api("/api/admin/overview"),
       api("/api/admin/findings"),
-      api("/api/admin/changes")
+      api("/api/admin/changes"),
+      api("/api/admin/assets")
     ]);
 
     $("identity").textContent = "Signed in: " + overview.identity;
@@ -94,6 +95,63 @@ async function load() {
         changeList.append(tr);
       }
     }
+    const counts = assetData.counts || {};
+    $("asset-count").textContent = counts.assets ?? 0;
+    $("asset-down").textContent = (counts.unavailable ?? 0) + (counts.degraded ?? 0);
+    $("deprecated-count").textContent = counts.deprecated_dependencies ?? 0;
+    $("updates-count").textContent = counts.updates_available ?? 0;
+
+    const assetsList = $("assets-list");
+    assetsList.replaceChildren();
+    if (!assetData.assets?.length) emptyRow(assetsList, "No assets have been scanned yet. Run the asset scan or wait for the scheduled cycle.", 6);
+    else for (const item of assetData.assets) {
+      const tr = document.createElement("tr");
+      cell(tr, item.asset_type.replace("_", " "));
+      cell(tr, item.title);
+      const statusCell = cell(tr, item.last_status || "pending");
+      const badge = document.createElement("span");
+      badge.className = "pill " + (item.last_status === "healthy" ? "low" : item.last_status === "unavailable" ? "critical" : item.last_status === "degraded" ? "medium" : "info");
+      badge.textContent = item.last_status || "pending";
+      statusCell.replaceChildren(badge);
+      cell(tr, item.last_http_status ?? "—");
+      cell(tr, item.last_duration_ms == null ? "—" : item.last_duration_ms + " ms");
+      cell(tr, date(item.last_checked_at));
+      assetsList.append(tr);
+    }
+
+    const recommendationList = $("asset-findings-list");
+    recommendationList.replaceChildren();
+    if (!assetData.findings?.length) emptyRow(recommendationList, "No active asset recommendations. Run a scan to establish the baseline.", 5);
+    else for (const item of assetData.findings) {
+      const tr = document.createElement("tr");
+      const severityCell = cell(tr, "");
+      const badge = document.createElement("span");
+      badge.className = "pill " + item.severity;
+      badge.textContent = item.severity;
+      severityCell.append(badge);
+      cell(tr, item.asset_title + " · " + item.category);
+      cell(tr, item.title + " — " + item.details);
+      cell(tr, date(item.last_verified));
+      cell(tr, item.recommendation);
+      recommendationList.append(tr);
+    }
+
+    const dependencyList = $("dependencies-list");
+    dependencyList.replaceChildren();
+    if (!assetData.dependencies?.length) emptyRow(dependencyList, "No version-pinned npm CDN dependencies have been observed yet.", 5);
+    else for (const item of assetData.dependencies) {
+      const tr = document.createElement("tr");
+      cell(tr, item.package_name);
+      cell(tr, item.current_version);
+      cell(tr, item.latest_version || "—");
+      const stateCell = cell(tr, "");
+      const badge = document.createElement("span");
+      badge.className = "pill " + (item.status === "deprecated" ? "high" : item.status === "major_update" ? "medium" : item.status === "update_available" ? "info" : "low");
+      badge.textContent = item.status;
+      stateCell.append(badge);
+      cell(tr, item.details);
+      dependencyList.append(tr);
+    }
     $("run-state").textContent = "Updated " + new Date().toLocaleTimeString();
   } catch (error) {
     $("run-state").textContent = "Error";
@@ -101,7 +159,7 @@ async function load() {
     for (const [id, message, colspan] of [
       ["runs", "Unable to load monitoring history: " + error.message, 5],
       ["findings-list", "Unable to load findings: " + error.message, 5],
-      ["changes-list", "Unable to load change history: " + error.message, 4]
+      ["changes-list", "Unable to load change history: " + error.message, 4],\n      ["assets-list", "Unable to load asset inventory: " + error.message, 6],\n      ["asset-findings-list", "Unable to load recommendations: " + error.message, 5],\n      ["dependencies-list", "Unable to load dependency observations: " + error.message, 5]
     ]) {
       const target = $(id);
       target.replaceChildren();
@@ -154,3 +212,16 @@ $("snapshot").addEventListener("click", async () => {
 
 load();
 
+
+$("assets-run").addEventListener("click", async () => {
+  const button = $("assets-run");
+  if (!confirm("Scan all approved YorpHives website routes, Free Tools and available internal products, and check pinned npm CDN dependency versions? This is read-only.")) return;
+  button.disabled = true;
+  button.textContent = "Scanning…";
+  try {
+    const result = await api("/api/admin/run-assets", { method: "POST", body: JSON.stringify({ confirm: true }) });
+    $("run-state").textContent = result.assets + " assets · " + result.unavailable + " unavailable · " + result.dependencies + " dependencies";
+    await load();
+  } catch (error) { alert(error.message); }
+  finally { button.disabled = false; button.textContent = "Scan tools & products"; }
+});
