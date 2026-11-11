@@ -5,7 +5,7 @@
 ## Human-facing sections
 
 - Home: https://yorphives.com/ — custom build requests, measured product activity, recent releases, and platform pathways.
-- Free Tools: https://yorphives.com/free-tools/ — 55 browser-first utilities, searchable by category.\n- Free Tools machine-readable catalogue: https://yorphives.com/api/v1/free-tools (JSON by default; Markdown via Accept: text/markdown).\n- Free Tools static manifest: https://yorphives.com/free-tools/manifest.json
+- Free Tools: https://yorphives.com/free-tools/ — 67 browser-first utilities, searchable by category.\n- Free Tools machine-readable catalogue: https://yorphives.com/api/v1/free-tools (JSON by default; Markdown via Accept: text/markdown).\n- Free Tools static manifest: https://yorphives.com/free-tools/manifest.json
 - Explore: https://yorphives.com/explore/ — applications built and released by YorpHives only.
 - Builder: https://yorphives.com/builder/ — planned paid membership workspace for developers, creators, bloggers, freelancers, designers and entrepreneurs to discover earning opportunities.
 - Connect: https://yorphives.com/connect/ — project enquiries.
@@ -41,3 +41,18 @@ The Free Tools catalogue includes QR generation, PDF operations, image conversio
 ## Agent execution status
 
 Free Tools are currently human-operated browser interfaces. The JSON/Markdown catalogue is discovery metadata only. It does not expose remote execution endpoints or MCP tools for QR generation, PDF processing, image segmentation, currency conversion, or SEO analysis. Each Free Tool descriptor declares `agent_execution: not_available`; do not treat a browser page URL as an executable tool. Public catalogue APIs are read-only discovery interfaces. Authenticated agent identity, scoped execution, consent, rate limits, audit records and MCP server tools remain future work.
+
+## Newly added Free Tools
+
+- Compound Interest Calculator: https://yorphives.com/free-tools/compound-interest-calculator/ — Calculate compound growth with an initial deposit, monthly contributions and annual return.
+- Time Zone Converter: https://yorphives.com/free-tools/timezone-converter/ — Convert a date and time between IANA time zones, including daylight-saving transitions.
+- BMR Calculator: https://yorphives.com/free-tools/bmr-calculator/ — Estimate basal metabolic rate and maintenance calories using the Mifflin–St Jeor equation. Informational only.
+- Sample Size Calculator: https://yorphives.com/free-tools/sample-size-calculator/ — Estimate survey sample size from population, confidence level, margin of error and expected proportion.
+- YAML Validator & Formatter: https://yorphives.com/free-tools/yaml-validator/ — Parse, validate and format YAML locally using a browser-loaded open-source parser.
+- XML Formatter & Validator: https://yorphives.com/free-tools/xml-formatter/ — Validate XML syntax and format a readable, indented XML document in your browser.
+- JSON to CSV Converter: https://yorphives.com/free-tools/json-to-csv/ — Convert an array of JSON objects into CSV with consistent columns and correctly escaped values.
+- JSON-LD Schema Generator: https://yorphives.com/free-tools/json-ld-generator/ — Generate starter JSON-LD for Article, Product and FAQPage structured data.
+- Cron Expression Helper: https://yorphives.com/free-tools/cron-expression-helper/ — Validate five-field cron expressions and calculate the next ten matching local execution times.
+- HTML to Markdown Converter: https://yorphives.com/free-tools/html-to-markdown/ — Convert pasted HTML into cleaner Markdown while ignoring scripts, styles and hidden content.
+- CSV to Markdown Table Converter: https://yorphives.com/free-tools/csv-to-markdown/ — Convert CSV data into a properly escaped Markdown table for documentation and AI prompts.
+- llms.txt Generator: https://yorphives.com/free-tools/llms-txt-generator/ — Create an llms.txt directory from a site's name, summary and pasted public page URLs.
