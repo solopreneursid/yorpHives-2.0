@@ -175,5 +175,7 @@ test("advanced Free Tools expose dedicated browser interfaces and disclosed proc
   assert.match(runtime, /background-removal/);
   assert.match(runtime, /pdfjs-dist/);
   assert.match(runtime, /quality/);
-  assert.match(runtime, /Cross-origin access depends on the target website CORS policy/);
+  assert.match(runtime, /Cross-origin fetch requires the target server to permit CORS/);
+  assert.match(runtime, /maxPages/);
+  assert.match(runtime, /same-origin crawl/i);
 });
