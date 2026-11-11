@@ -118,7 +118,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   const securityFresh = Boolean(security?.last_run_at && Date.now()-Date.parse(security.last_run_at)<8*60*60*1000);
   const qa = specialistState(agentHealth, "browser smoke tests and seo crawl");
   const review = specialistState(agentHealth, "code review");
-  const performance = specialistState(agentHealth, "lighthouse performance budgets");
+  const performance = specialistState(agentHealth, "lighthouse performance audit");
   const agents = [
     {id:"sentinel",name:"Sentinel",role:"Availability & monitoring",description:"Scheduled HTTP health checks and production change snapshots.",status:scheduledFresh?"active":"degraded",last_run_at:scheduled?.last_run_at||null,detail:scheduledFresh?"Scheduled reliability cycle is recent.":"No successful scheduled health cycle in the last eight hours."},
     {id:"asset-intelligence",name:"Asset Intelligence",role:"Inventory & discovery",description:"Discovers pages, tools, catalogue entries, APIs and dependencies.",status:scheduledFresh?"active":"degraded",last_run_at:scheduled?.last_run_at||null,detail:scheduledFresh?"Runs with the scheduled monitoring cycle.":"Waiting for the next successful inventory cycle."},
