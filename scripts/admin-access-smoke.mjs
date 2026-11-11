@@ -29,10 +29,22 @@ async function assertDenied(origin, path, label) {
   });
 
   const location = response.headers.get("location") || "";
-  const accessRedirect =
-    response.status === 302 &&
-    (location.includes("/cdn-cgi/access/login") ||
-      location.includes("cloudflareaccess.com"));
+  let accessRedirect = false;
+  if (response.status === 302 && location) {
+    try {
+      const redirectUrl = new URL(location, url);
+      const redirectHost = redirectUrl.hostname.toLowerCase();
+      const isCloudflareAccessHost =
+        redirectHost === "cloudflareaccess.com" ||
+        redirectHost.endsWith(".cloudflareaccess.com");
+      const isSameOriginAccessLogin =
+        redirectUrl.origin === url.origin &&
+        redirectUrl.pathname.startsWith("/cdn-cgi/access/login");
+      accessRedirect = isCloudflareAccessHost || isSameOriginAccessLogin;
+    } catch {
+      accessRedirect = false;
+    }
+  }
   const edgeDenied =
     (response.status === 401 || response.status === 403) &&
     Boolean(response.headers.get("cf-ray"));
