@@ -25,8 +25,8 @@ export default {
         discovered_assets: assets.discovered,
         dependency_observations: assets.dependencies
       }));
-      if (health.run.failed_count > 0 || changes.results.some(result => !result.ok) || assets.unavailable > 0 || assets.degraded > 0 || assets.manifest_error || assets.sitemap_error || assets.catalogue_error) {
-        console.warn(JSON.stringify({ event: "reliability_cycle_warnings", health_failures: health.run.failed_count, snapshot_results: changes.results, asset_results: assets.results, manifest_error: assets.manifest_error, sitemap_error: assets.sitemap_error, catalogue_error: assets.catalogue_error }));
+      if (health.run.failed_count > 0 || changes.results.some(result => !result.ok) || assets.unavailable > 0 || assets.degraded > 0 || assets.manifest_error || assets.sitemap_error || assets.catalogue_error || assets.openapi_error) {
+        console.warn(JSON.stringify({ event: "reliability_cycle_warnings", health_failures: health.run.failed_count, snapshot_results: changes.results, asset_results: assets.results, manifest_error: assets.manifest_error, sitemap_error: assets.sitemap_error, catalogue_error: assets.catalogue_error, openapi_error: assets.openapi_error }));
       }
     } catch (error) {
       console.error(JSON.stringify({
