@@ -253,7 +253,7 @@ async function waitForChecks(env, step, commitSha) {
     { key: "contract-tests", workflow: "YorpHives platform checks", job: "contract-tests" },
     { key: "browser-and-seo", workflow: "YorpHives browser, SEO and performance quality", job: "browser smoke tests and seo crawl" },
     { key: "code-review", workflow: "YorpHives browser, SEO and performance quality", job: "code review" },
-    { key: "lighthouse", workflow: "YorpHives browser, SEO and performance quality", job: "lighthouse performance budgets" }
+    { key: "lighthouse", workflow: "YorpHives browser, SEO and performance quality", job: "lighthouse performance audit" }
   ];
 
   for (let attempt = 1; attempt <= 30; attempt += 1) {
