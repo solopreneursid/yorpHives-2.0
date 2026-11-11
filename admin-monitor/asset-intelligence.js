@@ -472,6 +472,7 @@ export async function runAssetIntelligence(db) {
     dependencies: dependencyResults.length,
     manifest_error: manifestError,
     sitemap_error: sitemapError,
+    catalogue_error: catalogueError,
     discovered: { website_pages: trackedInventory.filter(item => item.type === "website_page").length, free_tools: trackedInventory.filter(item => item.type === "free_tool").length, products: trackedInventory.filter(item => item.type === "product").length },
     results: checked
   };
