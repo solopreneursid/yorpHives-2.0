@@ -1,5 +1,5 @@
 const SITE_ORIGIN = "https://yorphives.com";
-const MAX_ASSETS = 100;
+const MAX_ASSETS = 250;
 const MAX_BODY_BYTES = 384 * 1024;
 const MAX_DEPENDENCIES = 30;
 const CONCURRENCY = 8;
@@ -94,7 +94,7 @@ function compareVersions(a, b) {
   return 0;
 }
 
-async function syncInventory(db, assets, now) {
+async function syncInventory(db, assets, now, deactivateMissing = true) {
   const ids = [];
   for (const asset of assets.slice(0, MAX_ASSETS)) {
     const id = await db.prepare("SELECT id FROM admin_assets WHERE asset_key = ?").bind(asset.key).first();
@@ -366,7 +366,7 @@ export async function runAssetIntelligence(db) {
     });
   }
 
-  await syncInventory(db, inventory, now);
+  await syncInventory(db, inventory, now, !manifestError);
   const checked = await mapLimit(inventory.slice(0, MAX_ASSETS), CONCURRENCY, asset => checkAsset(db, asset, now));
   const dependencies = new Map();
   for (const result of checked) {
