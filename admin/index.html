@@ -32,8 +32,13 @@
   </nav>
   <div class="sidebar-bottom">
     <div class="access-card"><span class="status-dot"></span><div><strong>Private workspace</strong><small>Cloudflare Access protected</small></div></div>
-    <div class="sidebar-user"><span class="avatar">A</span><div><strong>Administrator</strong><small id="sidebar-identity">Verifying session…</small></div></div>
-    <a class="signout" id="logout" href="/cdn-cgi/access/logout">↗ Sign out</a>
+    <section class="account-card" aria-label="Administrator account">
+      <div class="account-heading"><span class="avatar" aria-hidden="true">A</span><div><strong>Administrator account</strong><small id="sidebar-identity">Verifying Cloudflare Access…</small></div></div>
+      <div class="account-actions">
+        <a class="account-action sign-in" id="login" href="/admin/" title="Re-check your Cloudflare Access session">↗ Sign in / refresh</a>
+        <a class="account-action signout" id="logout" href="/cdn-cgi/access/logout?returnTo=https%3A%2F%2Fadmin-staging.yorphives.com%2Fadmin%2F">↗ Sign out</a>
+      </div>
+    </section>
   </div>
 </aside>
 <div class="mobile-scrim" id="mobile-scrim"></div>
@@ -44,6 +49,7 @@
     <div class="topbar-actions"><span class="live-indicator"><i></i> PRIVATE ENVIRONMENT</span><span class="identity" id="identity">Verifying admin session…</span><button class="icon-button" id="refresh" title="Refresh current workspace" aria-label="Refresh">↻</button></div>
   </header>
   <div class="content">
+    <div class="system-message" id="system-message" role="status" aria-live="polite" hidden><span class="system-message-text" id="system-message-text"></span><a id="system-message-action" href="/admin/" hidden>Re-authenticate ↗</a><button id="system-message-dismiss" type="button" aria-label="Dismiss message">×</button></div>
     <div class="global-notice"><span>◆</span><p><strong>Owner-controlled operations.</strong> Agents can investigate, prepare isolated changes and verify them. Production changes remain subject to your explicit approval.</p></div>
 
     <section class="view active" id="view-overview" data-title="Overview">
@@ -139,6 +145,41 @@
   </div>
 </main>
 </div>
+<script>
+(() => {
+  const closeMobile = () => {
+    const sidebar = document.getElementById("sidebar");
+    const scrim = document.getElementById("mobile-scrim");
+    const menu = document.getElementById("mobile-menu");
+    sidebar?.classList.remove("open");
+    scrim?.classList.remove("show");
+    menu?.setAttribute("aria-expanded", "false");
+  };
+  document.addEventListener("click", (event) => {
+    const nav = event.target.closest("[data-view], [data-go]");
+    if (nav) {
+      const name = nav.dataset.view || nav.dataset.go;
+      const target = document.getElementById("view-" + name);
+      if (!target) return;
+      document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view === target));
+      document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
+      const breadcrumb = document.getElementById("breadcrumb");
+      if (breadcrumb) breadcrumb.textContent = target.dataset.title || name;
+      closeMobile();
+    }
+    if (event.target.closest("#mobile-menu")) {
+      const sidebar = document.getElementById("sidebar");
+      const scrim = document.getElementById("mobile-scrim");
+      const menu = document.getElementById("mobile-menu");
+      const open = !sidebar?.classList.contains("open");
+      sidebar?.classList.toggle("open", open);
+      scrim?.classList.toggle("show", open);
+      menu?.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    if (event.target.closest("#mobile-scrim")) closeMobile();
+  });
+})();
+</script>
 <script src="/admin/admin.js" defer></script>
 </body>
 </html>
