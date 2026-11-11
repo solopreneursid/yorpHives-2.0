@@ -175,6 +175,13 @@ async function load() {
   }
 }
 
+$("logout").addEventListener("click", (event) => {
+  const confirmed = confirm(
+    "Sign out of Cloudflare Access? This ends your Access session across all Cloudflare Access-protected applications in this browser, not only YorpHives Admin."
+  );
+  if (!confirmed) event.preventDefault();
+});
+
 $("refresh").addEventListener("click", load);
 $("run").addEventListener("click", async () => {
   const button = $("run");
