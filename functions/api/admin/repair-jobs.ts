@@ -72,7 +72,8 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
   const findingId = body?.finding_id || null;
   if (findingId) {
     const finding = await context.env.DB!.prepare("SELECT id FROM admin_findings WHERE id = ?").bind(findingId).first<{ id: string }>();
-    if (!finding) return adminJson({ error: { code: "FINDING_NOT_FOUND", message: "The selected finding does not exist." } }, 404);
+    const assetFinding = finding ? null : await context.env.DB!.prepare("SELECT id FROM admin_asset_findings WHERE id = ?").bind(findingId).first<{ id: string }>();
+    if (!finding && !assetFinding) return adminJson({ error: { code: "FINDING_NOT_FOUND", message: "The selected finding does not exist." } }, 404);
   }
 
   const agent = context.env.ADMIN_AGENT_SERVICE;
