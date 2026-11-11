@@ -175,6 +175,7 @@ test("advanced Free Tools expose dedicated browser interfaces and disclosed proc
   assert.match(runtime, /background-removal/);
   assert.match(runtime, /<meta name="description" content=/);
   assert.match(runtime, /pdfjs-dist/);
+  assert.match(runtime, /16-megapixel render limit/);
   assert.match(runtime, /quality/);
   assert.match(runtime, /Cross-origin fetch requires the target server to permit CORS/);
   assert.match(runtime, /maxPages/);
