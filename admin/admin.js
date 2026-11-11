@@ -438,6 +438,10 @@ document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener
 document.querySelectorAll("[data-go]").forEach(button=>button.addEventListener("click",()=>showView(button.dataset.go)));
 $("mobile-menu").addEventListener("click",()=>{$("sidebar").classList.toggle("open");$("mobile-scrim").classList.toggle("show");$("mobile-menu").setAttribute("aria-expanded",$("sidebar").classList.contains("open")?"true":"false");});
 $("mobile-scrim").addEventListener("click",()=>{$("sidebar").classList.remove("open");$("mobile-scrim").classList.remove("show");$("mobile-menu").setAttribute("aria-expanded","false");});
+$("system-message-dismiss").addEventListener("click", () => {
+  const panel = $("system-message");
+  if (panel) panel.hidden = true;
+});
 $("logout").addEventListener("click",event=>{if(!confirm("Sign out of Cloudflare Access? This ends your Access session across all protected apps in this browser."))event.preventDefault();});
 $("refresh").addEventListener("click",refreshCurrent);
 $("run").addEventListener("click",async()=>{
