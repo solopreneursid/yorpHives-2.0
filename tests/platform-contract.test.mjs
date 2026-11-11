@@ -194,7 +194,7 @@ test("new researched Free Tools have unique manifest entries and dedicated pages
   assert.equal(item.agent_execution, "not_available");
   const page = await read("../free-tools/" + slug + "/index.html");
   assert.match(page, /id="research-tool"/);
-  assert.match(page, /research-runtime\\.js/);
+  assert.match(page, /research-runtime\.js/);
   assert.match(runtime, new RegExp(slug));
   assert.ok(page.includes(item.title));
  }
