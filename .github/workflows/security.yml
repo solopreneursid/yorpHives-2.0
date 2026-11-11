@@ -53,5 +53,4 @@ jobs:
         uses: zaproxy/action-baseline@v0.14.0
         with:
           target: https://yorphives.com/
-          rules_file_name: .zap/rules.tsv
           cmd_options: "-m 2 -T 10 -I"
