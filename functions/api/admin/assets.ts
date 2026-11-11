@@ -126,11 +126,14 @@ async function loadSitemap(): Promise<PublicSourceResult<string[]>> {
     const xml = await response.text();
     if (xml.length > 2_000_000) throw new Error("Sitemap exceeded the 2 MB inventory limit.");
     const paths = new Set<string>();
-    for (const match of xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/gi)) {
+    let sitemapEntries = 0;
+    for (const match of xml.matchAll(/<loc(?:\s[^>]*)?>\s*([^<]+?)\s*<\/loc>/gi)) {
+      sitemapEntries++;
       const url = sameOriginUrl(match[1].replace(/&amp;/g, "&").trim());
       if (!url || url.pathname === "/sitemap.xml" || url.pathname === "/free-tools/manifest.json") continue;
       paths.add(url.pathname);
     }
+    if (sitemapEntries === 0) throw new Error("Sitemap returned HTTP 200 but contained no <loc> entries.");
     return { data: [...paths], error: null };
   } catch (cause) {
     return { data: [], error: cause instanceof Error ? cause.message : "Sitemap could not be loaded." };
