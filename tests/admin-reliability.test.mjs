@@ -57,7 +57,7 @@ test("admin dashboard is private, responsive and loads all protected APIs", asyn
   assert.match(html, /changes-list/);
   assert.match(html, /assets-list/);
   assert.match(html, /asset-findings-list/);
-  assert.match(html, /dependencies-list/);
+  assert.match(html, /dependencies-list/);\n  assert.match(html, /products-count/);\n  assert.match(html, /tools-count/);\n  assert.match(html, /website-count/);
   assert.match(html, /@media\(max-width:760px\)/);
   assert.match(html, /Read-only monitoring/);
   for (const route of ["overview", "findings", "changes", "assets", "run-checks", "run-assets"]) assert.ok(script.includes("/api/admin/" + route));
