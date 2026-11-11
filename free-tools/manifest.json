@@ -1,0 +1,497 @@
+[
+  {
+    "slug": "word-counter",
+    "title": "Word Counter",
+    "category": "Writing",
+    "description": "Count words, characters, sentences, paragraphs and estimated reading time in your text.",
+    "url": "/free-tools/word-counter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "character-counter",
+    "title": "Character Counter",
+    "category": "Writing",
+    "description": "Count characters with and without spaces, words and lines for social posts and writing limits.",
+    "url": "/free-tools/character-counter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "case-converter",
+    "title": "Text Case Converter",
+    "category": "Writing",
+    "description": "Convert text to uppercase, lowercase, title case, sentence case and alternating case.",
+    "url": "/free-tools/case-converter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "duplicate-line-remover",
+    "title": "Remove Duplicate Lines",
+    "category": "Writing",
+    "description": "Remove repeated lines from text while preserving the original order.",
+    "url": "/free-tools/duplicate-line-remover/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "text-diff-checker",
+    "title": "Text Diff Checker",
+    "category": "Writing",
+    "description": "Compare two text blocks and identify added, removed and unchanged lines.",
+    "url": "/free-tools/text-diff-checker/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "lorem-ipsum-generator",
+    "title": "Lorem Ipsum Generator",
+    "category": "Writing",
+    "description": "Generate placeholder paragraphs, sentences or words for layouts and prototypes.",
+    "url": "/free-tools/lorem-ipsum-generator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "json-formatter",
+    "title": "JSON Formatter",
+    "category": "Developer",
+    "description": "Format and inspect JSON with readable indentation and validation.",
+    "url": "/free-tools/json-formatter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "json-validator",
+    "title": "JSON Validator",
+    "category": "Developer",
+    "description": "Validate JSON syntax and locate parsing errors without uploading your data.",
+    "url": "/free-tools/json-validator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "json-minifier",
+    "title": "JSON Minifier",
+    "category": "Developer",
+    "description": "Minify JSON by removing unnecessary whitespace while preserving data.",
+    "url": "/free-tools/json-minifier/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "base64-encoder-decoder",
+    "title": "Base64 Encoder & Decoder",
+    "category": "Developer",
+    "description": "Encode text to Base64 or decode Base64 content locally in your browser.",
+    "url": "/free-tools/base64-encoder-decoder/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "url-encoder-decoder",
+    "title": "URL Encoder & Decoder",
+    "category": "Developer",
+    "description": "Encode or decode URL components safely.",
+    "url": "/free-tools/url-encoder-decoder/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "uuid-generator",
+    "title": "UUID Generator",
+    "category": "Developer",
+    "description": "Generate cryptographically random UUID version 4 identifiers.",
+    "url": "/free-tools/uuid-generator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "password-generator",
+    "title": "Password Generator",
+    "category": "Security",
+    "description": "Generate strong random passwords locally with adjustable length and character sets.",
+    "url": "/free-tools/password-generator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "sha256-generator",
+    "title": "SHA-256 Hash Generator",
+    "category": "Security",
+    "description": "Generate a SHA-256 digest from text using the browser Web Crypto API.",
+    "url": "/free-tools/sha256-generator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "jwt-decoder",
+    "title": "JWT Decoder",
+    "category": "Developer",
+    "description": "Decode JWT header and payload locally. Signature verification is not performed.",
+    "url": "/free-tools/jwt-decoder/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "timestamp-converter",
+    "title": "Unix Timestamp Converter",
+    "category": "Developer",
+    "description": "Convert Unix timestamps to readable dates and dates back to timestamps.",
+    "url": "/free-tools/timestamp-converter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "regex-tester",
+    "title": "Regex Tester",
+    "category": "Developer",
+    "description": "Test JavaScript regular expressions against sample text and inspect matches.",
+    "url": "/free-tools/regex-tester/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "html-entity-encoder",
+    "title": "HTML Entity Encoder & Decoder",
+    "category": "Developer",
+    "description": "Encode special characters as HTML entities or decode HTML entities.",
+    "url": "/free-tools/html-entity-encoder/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "age-calculator",
+    "title": "Age Calculator",
+    "category": "Calculators",
+    "description": "Calculate age in years, months and days from a date of birth.",
+    "url": "/free-tools/age-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "date-difference-calculator",
+    "title": "Date Difference Calculator",
+    "category": "Calculators",
+    "description": "Calculate the exact difference between two dates in days, weeks and months.",
+    "url": "/free-tools/date-difference-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "percentage-calculator",
+    "title": "Percentage Calculator",
+    "category": "Calculators",
+    "description": "Calculate percentages, percentage changes and what percentage one number is of another.",
+    "url": "/free-tools/percentage-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "discount-calculator",
+    "title": "Discount Calculator",
+    "category": "Business",
+    "description": "Calculate sale prices, savings and stacked discounts.",
+    "url": "/free-tools/discount-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "tip-calculator",
+    "title": "Tip Calculator",
+    "category": "Calculators",
+    "description": "Calculate a tip and split a bill between people.",
+    "url": "/free-tools/tip-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "emi-calculator",
+    "title": "EMI Calculator",
+    "category": "Finance",
+    "description": "Estimate monthly loan payments, total interest and repayment amount.",
+    "url": "/free-tools/emi-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "gst-calculator",
+    "title": "GST Calculator",
+    "category": "Business",
+    "description": "Add or remove GST and calculate the tax component using Indian GST rates.",
+    "url": "/free-tools/gst-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "bmi-calculator",
+    "title": "BMI Calculator",
+    "category": "Health",
+    "description": "Calculate body mass index from height and weight. This is an informational calculation, not medical advice.",
+    "url": "/free-tools/bmi-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "unit-converter",
+    "title": "Unit Converter",
+    "category": "Calculators",
+    "description": "Convert common length, mass, volume and data storage units.",
+    "url": "/free-tools/unit-converter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "temperature-converter",
+    "title": "Temperature Converter",
+    "category": "Calculators",
+    "description": "Convert Celsius, Fahrenheit and Kelvin temperatures.",
+    "url": "/free-tools/temperature-converter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "random-number-generator",
+    "title": "Random Number Generator",
+    "category": "Productivity",
+    "description": "Generate cryptographically random integers within a chosen range.",
+    "url": "/free-tools/random-number-generator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "pomodoro-timer",
+    "title": "Pomodoro Timer",
+    "category": "Productivity",
+    "description": "Run focused work and break sessions with a simple browser timer.",
+    "url": "/free-tools/pomodoro-timer/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "color-converter",
+    "title": "HEX RGB HSL Color Converter",
+    "category": "Design",
+    "description": "Convert colors between HEX, RGB and HSL formats.",
+    "url": "/free-tools/color-converter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "image-compressor",
+    "title": "Image Compressor",
+    "category": "Images",
+    "description": "Compress JPG, PNG and WebP images in your browser. Adjust quality and download the smaller image without uploading it.",
+    "url": "/free-tools/image-compressor/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "image-resizer",
+    "title": "Image Resizer",
+    "category": "Images",
+    "description": "Resize images to exact pixel dimensions or scale them proportionally in your browser.",
+    "url": "/free-tools/image-resizer/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "image-converter",
+    "title": "Image Converter",
+    "category": "Images",
+    "description": "Convert images between PNG, JPEG and WebP formats using browser canvas.",
+    "url": "/free-tools/image-converter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "image-cropper",
+    "title": "Image Cropper",
+    "category": "Images",
+    "description": "Crop an image to custom dimensions in your browser and download the result.",
+    "url": "/free-tools/image-cropper/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "image-to-base64",
+    "title": "Image to Base64 Converter",
+    "category": "Images",
+    "description": "Convert an image to a Base64 data URL locally in your browser.",
+    "url": "/free-tools/image-to-base64/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "qr-code-generator",
+    "title": "QR Code Generator",
+    "category": "Design",
+    "description": "Create downloadable QR codes for text and URLs. QR rendering uses an open-source browser library loaded from jsDelivr.",
+    "url": "/free-tools/qr-code-generator/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "wifi-qr",
+    "title": "Wi-Fi QR Code Generator",
+    "category": "Design",
+    "description": "Create a QR code that lets guests join a Wi-Fi network. QR rendering uses an open-source browser library loaded from jsDelivr.",
+    "url": "/free-tools/wifi-qr/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "vcard-qr",
+    "title": "vCard QR Code Generator",
+    "category": "Business",
+    "description": "Create a contact-card QR code with name, phone, email and website. QR rendering uses an open-source browser library loaded from jsDelivr.",
+    "url": "/free-tools/vcard-qr/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "pdf-merger",
+    "title": "PDF Merger",
+    "category": "Productivity",
+    "description": "Combine multiple PDF files in the selected order in your browser.",
+    "url": "/free-tools/pdf-merger/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "pdf-splitter",
+    "title": "PDF Splitter",
+    "category": "Productivity",
+    "description": "Extract selected pages or page ranges from a PDF in your browser.",
+    "url": "/free-tools/pdf-splitter/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "pdf-compressor",
+    "title": "PDF Compressor",
+    "category": "Productivity",
+    "description": "Reduce PDF size by rasterizing pages and recompressing them as JPEG images. Text and interactive PDF elements are flattened.",
+    "url": "/free-tools/pdf-compressor/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "jpg-to-pdf",
+    "title": "JPG to PDF Converter",
+    "category": "Images",
+    "description": "Convert JPG, PNG and WebP images into a downloadable PDF.",
+    "url": "/free-tools/jpg-to-pdf/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "pdf-to-jpg",
+    "title": "PDF to JPG Converter",
+    "category": "Images",
+    "description": "Render a selected PDF page as a downloadable JPG in your browser.",
+    "url": "/free-tools/pdf-to-jpg/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "heic-to-jpg",
+    "title": "HEIC to JPG Converter",
+    "category": "Images",
+    "description": "Convert HEIC and HEIF photos to JPEG in your browser using an open-source library.",
+    "url": "/free-tools/heic-to-jpg/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "webp-converter",
+    "title": "WebP Converter",
+    "category": "Images",
+    "description": "Convert images between WebP, JPEG and PNG formats in your browser.",
+    "url": "/free-tools/webp-converter/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "background-remover",
+    "title": "Background Remover",
+    "category": "Images",
+    "description": "Remove photo backgrounds locally with the MODNet AI portrait-matting model. The model is downloaded on first use; images are not uploaded.",
+    "url": "/free-tools/background-remover/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "invoice-generator",
+    "title": "Invoice Generator",
+    "category": "Business",
+    "description": "Create a simple itemized invoice with GST and download it as an HTML document for printing.",
+    "url": "/free-tools/invoice-generator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "sip-calculator",
+    "title": "SIP Calculator",
+    "category": "Finance",
+    "description": "Estimate the future value of monthly SIP investments using a standard compounding formula.",
+    "url": "/free-tools/sip-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "currency-converter",
+    "title": "Currency Converter",
+    "category": "Finance",
+    "description": "Convert currencies using live reference rates from the Frankfurter public API. Rates are indicative, not transaction quotes.",
+    "url": "/free-tools/currency-converter/",
+    "processing": "network",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "seo-analyzer",
+    "title": "SEO Analyzer",
+    "category": "Business",
+    "description": "Audit a live page when browser CORS permits, or pasted HTML, for titles, descriptions, headings, canonical tags, image alt text and other on-page signals.",
+    "url": "/free-tools/seo-analyzer/",
+    "processing": "network",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "meta-tag-generator",
+    "title": "Meta Tag Generator",
+    "category": "Developer",
+    "description": "Generate SEO, canonical, Open Graph and social metadata tags for a web page.",
+    "url": "/free-tools/meta-tag-generator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "sitemap-generator",
+    "title": "XML Sitemap Generator",
+    "category": "Developer",
+    "description": "Validate a list of HTTP(S) URLs and download a basic XML sitemap.",
+    "url": "/free-tools/sitemap-generator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "youtube-thumbnail-downloader",
+    "title": "YouTube Thumbnail Downloader",
+    "category": "Images",
+    "description": "Open available YouTube thumbnail image variants using the public YouTube thumbnail endpoint.",
+    "url": "/free-tools/youtube-thumbnail-downloader/",
+    "processing": "network",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "social-image-sizes",
+    "title": "Social Media Image Size Guide",
+    "category": "Design",
+    "description": "Look up common image dimensions for Instagram, YouTube, Facebook, LinkedIn, X and TikTok.",
+    "url": "/free-tools/social-image-sizes/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  }
+]

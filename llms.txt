@@ -1,0 +1,43 @@
+# YorpHives
+
+> YorpHives is a build-led digital platform: people and businesses bring ideas and challenges to build; visitors use free browser tools; users discover applications built by YorpHives; members use Builder to discover earning opportunities; AI agents discover documented platform capabilities.
+
+## Human-facing sections
+
+- Home: https://yorphives.com/ — custom build requests, measured product activity, recent releases, and platform pathways.
+- Free Tools: https://yorphives.com/free-tools/ — 55 browser-first utilities, searchable by category.\n- Free Tools machine-readable catalogue: https://yorphives.com/api/v1/free-tools (JSON by default; Markdown via Accept: text/markdown).\n- Free Tools static manifest: https://yorphives.com/free-tools/manifest.json
+- Explore: https://yorphives.com/explore/ — applications built and released by YorpHives only.
+- Builder: https://yorphives.com/builder/ — planned paid membership workspace for developers, creators, bloggers, freelancers, designers and entrepreneurs to discover earning opportunities.
+- Connect: https://yorphives.com/connect/ — project enquiries.
+- Contact: connect@yorphives.com
+
+## Machine-readable discovery
+
+- Platform manifest: https://yorphives.com/.well-known/yorphives.json
+- OpenAPI: https://yorphives.com/openapi.yaml
+- Public catalogue: https://yorphives.com/api/v1/catalogue
+- Catalogue detail: https://yorphives.com/api/v1/catalogue/{slug}\n- Trending tools: https://yorphives.com/api/v1/trending (seven-day measured detail views + launches)\n- First-party usage events: POST https://yorphives.com/api/v1/catalogue/{slug}/usage (same-origin browser events)
+
+The catalogue returns JSON by default and Markdown when requested with Accept: text/markdown or ?format=markdown. Only reviewed and available listings are public.
+
+## Agentic Internet principles
+
+YorpHives is being developed for both people and autonomous agents. The same canonical service contracts should power human interfaces and machine interfaces. Agent execution must be authenticated, authorized, rate-limited, auditable, and explicit about side effects. Discovery does not imply permission to execute.
+
+Cloudflare Workers/Pages Functions provide edge routing and API execution; D1 stores relational platform state; Durable Objects are reserved for coordination requiring strong consistency; Workflows or Queues handle reliable asynchronous work where appropriate. Business logic and API contracts should remain portable.
+
+## Payments and trust
+
+Dodo Payments is the selected provider for Builder memberships and paid applications. Entitlements must be created or changed only after signed provider webhooks are verified server-side and processed idempotently. Browser success redirects are not proof of payment. Cancellation, expiration, refunds and chargebacks must reconcile access.
+
+## Truthful availability
+
+This platform is being developed in stages and remains under active development. Builder paid access, Dodo checkout, identity and agent execution are not yet live. MCP tools are not yet live; some catalogue workflows are also still in development. Do not infer that a capability is available just because it is described here; do not assume undocumented endpoints exist. Trending rankings must use measured, privacy-conscious usage data; never fabricate popularity.
+
+## Additional Free Tools
+
+The Free Tools catalogue includes QR generation, PDF operations, image conversion, invoice and finance calculators, SEO helpers, sitemap generation, YouTube thumbnail links, and social image size guidance. Some tools load open-source libraries from public CDNs; Currency Converter and YouTube thumbnails contact their public providers. Background Remover runs MODNet portrait matting in the browser after downloading the open-source model. PDF Compressor rasterizes pages and recompresses them as JPEG images; resulting pages are not text-selectable. SEO Analyzer can fetch one live page only when the target permits browser CORS, or analyze pasted HTML. Currency conversion uses public indicative reference rates and is not a transaction quote. QR/PDF libraries and the background-removal model currently load from pinned public CDNs/model hosting; user files are processed in the browser and are not sent to YorpHives.
+
+## Agent execution status
+
+Free Tools are currently human-operated browser interfaces. The JSON/Markdown catalogue is discovery metadata only. It does not expose remote execution endpoints or MCP tools for QR generation, PDF processing, image segmentation, currency conversion, or SEO analysis. Each Free Tool descriptor declares `agent_execution: not_available`; do not treat a browser page URL as an executable tool. Public catalogue APIs are read-only discovery interfaces. Authenticated agent identity, scoped execution, consent, rate limits, audit records and MCP server tools remain future work.

@@ -1,0 +1,34 @@
+name: YorpHives platform checks
+
+on:
+  push:
+    branches:
+      - main
+      - "build/**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run platform contract tests
+        run: npm test
+      - name: Check browser script syntax
+        run: node --check app.js && node --check discover/app.js && node --check listing/app.js && node --check free-tools/tools.js && node --check free-tools/tool-runtime.js && node --check free-tools/directory.js && node --check free-tools/image-runtime.js && node --check explore/explore.js
+      - name: Check Pages middleware syntax
+        run: node --check functions/_middleware.js

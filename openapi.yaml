@@ -1,0 +1,169 @@
+openapi: 3.1.0
+info:
+  title: YorpHives Public Catalogue API
+  version: 1.0.0
+  description: Public, read-only discovery of reviewed and available YorpHives catalogue listings. This API does not execute third-party or agent actions.
+servers:
+  - url: https://yorphives.com
+paths:
+  /api/v1/free-tools:
+    get:
+      operationId: listFreeTools
+      summary: List browser-first Free Tools
+      description: Returns the static Free Tools manifest as JSON by default or Markdown when requested with Accept: text/markdown or format=markdown. Processing describes browser runtime dependencies. agent_execution is not_available for every current tool; this is discovery metadata, not a remote execution contract.
+      parameters:
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [markdown]
+      responses:
+        '200':
+          description: Free Tools manifest.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, count]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [slug, title, category, description, url, processing, agent_execution]
+                      properties:
+                        slug: { type: string }
+                        title: { type: string }
+                        category: { type: string }
+                        description: { type: string }
+                        url: { type: string }
+                        processing: { type: string, enum: [browser, library, network, planned] }
+                        agent_execution: { type: string, enum: [not_available] }
+                  count: { type: integer }
+            text/markdown:
+              schema: { type: string }
+  /api/v1/catalogue:
+    get:
+      operationId: listCatalogueListings
+      summary: List available catalogue listings
+      description: Returns only listings whose lifecycle status is available. Supports JSON by default and Markdown using Accept: text/markdown or format=markdown.
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [tool, application, service, opportunity, capability]
+        - in: query
+          name: audience
+          schema:
+            type: string
+            enum: [people, businesses, creators, application_users, ai_agents]
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: q
+          schema:
+            type: string
+            maxLength: 120
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10000
+            default: 0
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [markdown]
+      responses:
+        '200':
+          description: Catalogue listings and pagination.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogueListing'
+                  pagination:
+                    type: object
+                    required: [limit, offset, count]
+                    properties:
+                      limit: { type: integer }
+                      offset: { type: integer }
+                      count: { type: integer }
+            text/markdown:
+              schema:
+                type: string
+        '400':
+          description: Invalid query parameter.
+        '503':
+          description: Catalogue database is unavailable.
+  /api/v1/catalogue/{slug}:
+    get:
+      operationId: getCatalogueListing
+      summary: Get one available catalogue listing
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Listing detail.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogueListing'
+            text/markdown:
+              schema: { type: string }
+        '404':
+          description: Listing not found or not publicly available.
+components:
+  schemas:
+    CatalogueListing:
+      type: object
+      required: [id, slug, title, summary, description, listing_type, audiences, access, destination_url, requires_auth, required_scopes, side_effects, published_at, updated_at]
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        description: { type: string }
+        listing_type:
+          type: string
+          enum: [tool, application, service, opportunity, capability]
+        audiences:
+          type: array
+          items: { type: string }
+        access:
+          type: object
+          properties:
+            model: { type: string, enum: [free, paid, freemium, contact, unknown] }
+            price_minor: { type: [integer, 'null'] }
+            currency: { type: [string, 'null'] }
+        destination_url: { type: string, format: uri }
+        machine_readable_url: { type: [string, 'null'], format: uri }
+        requires_auth: { type: boolean }
+        required_scopes:
+          type: array
+          items: { type: string }
+        side_effects:
+          type: array
+          items: { type: string }
+        published_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }

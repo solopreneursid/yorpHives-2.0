@@ -1,0 +1,13 @@
+{
+  "name": "yorphives-platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check app.js && node --check discover/app.js && node --check listing/app.js && node --check free-tools/tools.js && node --check free-tools/tool-runtime.js && node --check free-tools/directory.js && node --check free-tools/image-runtime.js && node --check free-tools/advanced-runtime.js && node --check explore/explore.js && node --check functions/_middleware.js && npm test"
+  }
+}
