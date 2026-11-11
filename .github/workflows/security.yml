@@ -77,3 +77,4 @@ jobs:
         with:
           target: https://yorphives.com/
           cmd_options: "-m 2 -T 10 -I"
+          allow_issue_writing: false
