@@ -218,3 +218,12 @@ test("Admin findings API unifies monitor and asset findings with audited triage"
   assert.match(findings, /finding_status_changed/);
   assert.match(findings, /UPDATE " \+ table/);
 });
+
+test("scheduled health checks include the private Admin UI and API access gates", async () => {
+  const health = await read("../admin-monitor/admin-health.js");
+  const migration = await read("../migrations/0009_admin_control_center_monitors.sql");
+  assert.match(health, /admin-staging\.yorphives\.com/);
+  assert.match(migration, /admin-staging-ui/);
+  assert.match(migration, /admin-staging-api/);
+  assert.match(migration, /environment\)/);
+});
