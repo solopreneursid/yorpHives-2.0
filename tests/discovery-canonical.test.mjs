@@ -6,6 +6,7 @@ const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
 test("machine-readable discovery documents declare stable canonical URLs", async () => {
   const headers = await read("../_headers");
+  const lines = headers.split(/\r?\n/);
   const expected = [
     ["/free-tools/manifest.json", "https://yorphives.com/free-tools/manifest.json"],
     ["/.well-known/yorphives.json", "https://yorphives.com/.well-known/yorphives.json"],
@@ -13,10 +14,13 @@ test("machine-readable discovery documents declare stable canonical URLs", async
   ];
 
   for (const [route, canonical] of expected) {
-    const escapedRoute = route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const block = headers.match(new RegExp(`^${escapedRoute}\\r?\\n([\\s\\S]*?)(?=^\\S|$)`, "m"));
-    assert.ok(block, `Missing Cloudflare Pages header block for ${route}`);
-    assert.match(block[1], new RegExp(`Link: <${canonical.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}>; rel="canonical"`));
+    const routeIndex = lines.indexOf(route);
+    assert.notEqual(routeIndex, -1, `Missing Cloudflare Pages header block for ${route}`);
+    assert.equal(
+      lines[routeIndex + 1]?.trim(),
+      `Link: <${canonical}>; rel="canonical"`,
+      `Incorrect canonical Link header for ${route}`,
+    );
   }
 });
 
