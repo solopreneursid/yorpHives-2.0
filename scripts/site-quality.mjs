@@ -55,6 +55,49 @@ async function run() {
     } else {
       record("mobile_navigation", false, "Mobile menu button not found");
     }
+    const manifestResponse = await request("/free-tools/manifest.json");
+    record("tool_manifest_http", manifestResponse.status === 200, String(manifestResponse.status));
+    const toolManifest = await manifestResponse.json();
+    record("tool_manifest_valid", Array.isArray(toolManifest) && toolManifest.length >= 1, Array.isArray(toolManifest) ? toolManifest.length + " tools listed" : "Manifest was not an array");
+
+    let toolCursor = 0;
+    const toolResults = [];
+    async function checkToolPage() {
+      while (toolCursor < toolManifest.length) {
+        const tool = toolManifest[toolCursor++];
+        const toolPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+        const errors = [];
+        toolPage.on("pageerror", error => errors.push(error.message));
+        try {
+          const response = await toolPage.goto(absolute(tool.url), { waitUntil: "domcontentloaded", timeout: 25000 });
+          const root = toolPage.locator("#tool-app, #advanced-tool").first();
+          await root.waitFor({ state: "visible", timeout: 12000 });
+          await root.locator("input, textarea, select, button").first().waitFor({ state: "attached", timeout: 12000 });
+          const controls = await root.locator("input, textarea, select, button").count();
+          const heading = await toolPage.locator("main h1").first().textContent().catch(() => "");
+          toolResults.push({
+            slug: tool.slug,
+            title: tool.title,
+            status: response?.status() || 0,
+            root: await root.count() > 0,
+            controls,
+            heading: Boolean(heading?.trim()),
+            page_errors: errors,
+            ok: response?.status() === 200 && controls > 0 && Boolean(heading?.trim()) && errors.length === 0
+          });
+        } catch (error) {
+          toolResults.push({ slug: tool.slug, title: tool.title, status: 0, controls: 0, ok: false, error: error instanceof Error ? error.message : String(error), page_errors: errors });
+        } finally {
+          await toolPage.close();
+        }
+      }
+    }
+    await Promise.all(Array.from({ length: 4 }, checkToolPage));
+    const failedTools = toolResults.filter(item => !item.ok);
+    record("all_free_tools_render_and_controls", failedTools.length === 0,
+      failedTools.slice(0, 20).map(item => item.slug + ": " + (item.error || "HTTP " + item.status + ", controls " + item.controls + ", JS errors " + item.page_errors.join("|"))).join("; ") ||
+      toolResults.length + " tools loaded with an interactive control and no page errors");
+
     record("browser_console_errors", pageErrors.length === 0, pageErrors.join(" | "));
   } catch (error) {
     record("browser_flow_unhandled_error", false, error instanceof Error ? error.message : String(error));
@@ -114,7 +157,7 @@ async function run() {
     base_url: baseUrl,
     summary: { total: checks.length, passed: checks.filter(item => item.ok).length, failed: failures.length },
     checks,
-    sitemap_pages: sitemapResults,
+    sitemap_pages: sitemapResults,\n    tool_pages: toolResults,
     broken_internal_links: linkResults,
     failures
   };
