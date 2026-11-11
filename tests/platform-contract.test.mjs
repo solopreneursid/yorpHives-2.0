@@ -188,7 +188,7 @@ test("new researched Free Tools have unique manifest entries and dedicated pages
  const slugs = manifest.map(item => item.slug);
  assert.equal(new Set(slugs).size, slugs.length, "Free Tool slugs must be unique");
  const runtime = await read("../free-tools/research-runtime.js");
- for (const slug of ["compound-interest-calculator","timezone-converter","bmr-calculator","sample-size-calculator","yaml-validator","xml-formatter","json-to-csv","json-ld-generator","cron-expression-helper","html-to-markdown","csv-to-markdown","llms-txt-generator"]) {
+ for (const slug of ["compound-interest-calculator","timezone-converter","bmr-calculator","sample-size-calculator","yaml-validator","xml-formatter","json-to-csv","json-ld-generator","cron-expression-helper","html-to-markdown","csv-to-markdown","llms-txt-generator","macro-calculator","saas-unit-economics-calculator","pdf-metadata-remover","color-palette-extractor","robots-ai-crawler-checker","ai-agent-readiness-checker"]) {
   const item = manifest.find(entry => entry.slug === slug);
   assert.ok(item, "Missing manifest entry: " + slug);
   assert.equal(item.agent_execution, "not_available");
@@ -198,4 +198,22 @@ test("new researched Free Tools have unique manifest entries and dedicated pages
   assert.match(runtime, new RegExp(slug));
   assert.ok(page.includes(item.title));
  }
+});
+
+test("second researched Free Tools batch has dedicated browser interfaces and truthful execution modes", async () => {
+ const manifest = JSON.parse(await read("../free-tools/manifest.json"));
+ const runtime = await read("../free-tools/next-tools-runtime.js");
+ const slugs = ["macro-calculator","saas-unit-economics-calculator","pdf-metadata-remover","color-palette-extractor","robots-ai-crawler-checker","ai-agent-readiness-checker"];
+ for (const slug of slugs) {
+  const item = manifest.find(entry => entry.slug === slug);
+  assert.ok(item, "Missing manifest entry: " + slug);
+  assert.equal(item.agent_execution, "not_available");
+  const page = await read("../free-tools/" + slug + "/index.html");
+  assert.match(page, /id="next-tool"/);
+  assert.match(page, /next-tools-runtime\.js/);
+  assert.ok(page.includes(item.title));
+  assert.match(runtime, new RegExp(slug));
+ }
+ assert.equal(new Set(manifest.map(item => item.slug)).size, manifest.length);
+ assert.equal(manifest.length, 73);
 });
