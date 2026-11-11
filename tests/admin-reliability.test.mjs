@@ -55,6 +55,8 @@ test("scheduled monitor uses the existing D1 binding and a single six-hour cron"
   assert.match(worker, /runAdminHealthChecks\(env\.DB, "scheduled"\)/);
   assert.match(worker, /captureProductionSnapshots\(env\.DB\)/);
   assert.match(worker, /runAssetIntelligence\(env\.DB\)/);
+  assert.match(worker, /security\.status !== "complete"/);
+  assert.match(worker, /security_errors: security\.errors/);
   assert.equal(config.name, "yorphives-admin-monitor");
   assert.equal(config.workers_dev, false);
   assert.equal(config.preview_urls, false);
