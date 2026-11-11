@@ -45,7 +45,7 @@ The dashboard's manual run button and the scheduled Cron Worker call the same sh
 
 ## Permission boundary
 
-- Automated: read-only HTTP checks, browser smoke tests, SEO/link checks, Lighthouse reports, Gitleaks, Dependabot proposals, dependency review, CodeQL, passive ZAP, and production content-hash change history.
+- Automated: read-only HTTP checks, browser smoke tests, SEO/link checks, Lighthouse reports, Gitleaks, Retire.js browser-library vulnerability inventory, Dependabot proposals, dependency review, CodeQL, passive ZAP, and production content-hash change history.
 - Not automated: code changes, merges, production deploys, DNS, secrets, Cloudflare configuration, data deletion, or active vulnerability scans.
 - Active security testing belongs on preview/test only and must be explicitly approved.
 
