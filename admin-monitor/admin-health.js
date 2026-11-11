@@ -6,6 +6,8 @@
  * @typedef {{ monitor_id:string; ok:boolean; status_code:number|null; duration_ms:number; error_message:string|null }} CheckResult
  */
 
+const ACCESS_GATE_MONITORS = new Set(["admin-staging-ui", "admin-staging-api"]);
+
 const APPROVED_HOSTS = new Set([
   "yorphives.com",
   "www.yorphives.com",
@@ -24,7 +26,7 @@ function approvedUrl(value) {
   }
 }
 
-async function checkMonitor(monitor) {
+export async function checkMonitor(monitor) {
   const url = approvedUrl(monitor.url);
   if (!url) {
     return { monitor_id: monitor.id, ok: false, status_code: null, duration_ms: 0, error_message: "Monitor URL is outside the approved HTTPS host allowlist." };
@@ -38,9 +40,19 @@ async function checkMonitor(monitor) {
       signal: AbortSignal.timeout(8000),
     });
     const duration = Date.now() - started;
-    const ok = response.status >= 200 && response.status < 400;
+    const ordinarySuccess = response.status >= 200 && response.status < 400;
+    const expectedAccessDenial = ACCESS_GATE_MONITORS.has(monitor.id) &&
+      (response.status === 401 || response.status === 403) &&
+      Boolean(response.headers.get("cf-ray"));
+    const ok = ordinarySuccess || expectedAccessDenial;
     await response.body?.cancel();
-    return { monitor_id: monitor.id, ok, status_code: response.status, duration_ms: duration, error_message: ok ? null : "HTTP " + response.status };
+    return {
+      monitor_id: monitor.id,
+      ok,
+      status_code: response.status,
+      duration_ms: duration,
+      error_message: ok ? null : "HTTP " + response.status,
+    };
   } catch (error) {
     return {
       monitor_id: monitor.id,
