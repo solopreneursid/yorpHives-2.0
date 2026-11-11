@@ -224,6 +224,7 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
     if (!/^[0-9a-f-]{36}$/i.test(jobId) || !requestText || requestText.length > 4000) {
       throw new Error("Invalid Admin repair workflow payload.");
     }
+    let attemptedBranch = null;
     try {
       if (!this.env.GITHUB_TOKEN) throw new Error("The GITHUB_TOKEN Worker secret is not configured.");
       await step.do("mark-repair-running", async () => {
@@ -272,6 +273,7 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
         createBranchCommit(this.env, jobId, base, proposal.changes)
       );
 
+      attemptedBranch = branchCommit.branch;
       const verification = await waitForChecks(this.env, step, branchCommit.commitSha);
       const pullRequest = await step.do("open-draft-pull-request", async () =>
         createDraftPullRequest(this.env, branchCommit.branch, jobId, requestedBy, requestText, proposal.summary, verification.checks)
@@ -294,6 +296,7 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
       await step.do("record-repair-failure", async () => {
         await updateJob(this.env.DB, jobId, "failed", {
           agentName: "yorphives-cloudflare-agent",
+          branchName: attemptedBranch,
           summary: message.slice(0, 3500)
         });
         return { status: "failed" };
