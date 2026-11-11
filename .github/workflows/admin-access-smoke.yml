@@ -1,0 +1,33 @@
+name: YorpHives Admin access boundary
+
+on:
+  push:
+    branches: ["build/yorphives-admin-reliability"]
+    paths:
+      - "admin/**"
+      - "functions/**"
+      - "admin-monitor/**"
+      - "migrations/**"
+      - "scripts/admin-access-smoke.mjs"
+      - ".github/workflows/admin-access-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-access-smoke
+  cancel-in-progress: true
+
+jobs:
+  anonymous-denial:
+    name: Verify anonymous denial on every Admin origin
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check custom, canonical Pages and deployment alias hosts
+        run: node scripts/admin-access-smoke.mjs

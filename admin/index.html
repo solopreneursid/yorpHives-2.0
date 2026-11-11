@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#090d16">
+<title>YorpHives Admin — Control Center</title>
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<div class="app-shell">
+<aside class="sidebar" id="sidebar">
+  <a class="brand" href="/admin/" aria-label="YorpHives Admin home"><span class="brand-mark">Y</span><span><strong>yorphives</strong><small>CONTROL CENTER</small></span></a>
+  <div class="workspace-label">WORKSPACE</div>
+  <nav class="side-nav" aria-label="Admin workspaces">
+    <button class="nav-item active" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
+    <button class="nav-item" data-view="monitoring"><span class="nav-icon">⌁</span>Monitoring</button>
+    <button class="nav-item" data-view="analytics"><span class="nav-icon">▥</span>Analytics</button>
+  </nav>
+  <div class="workspace-label">OPERATIONS</div>
+  <nav class="side-nav" aria-label="Operations">
+    <button class="nav-item" data-view="issues"><span class="nav-icon">⚑</span>Issues &amp; risks<span class="nav-count" id="nav-issues">—</span></button>
+    <button class="nav-item" data-view="agents"><span class="nav-icon">✳</span>AI operations</button>
+    <button class="nav-item" data-view="updates"><span class="nav-icon">↻</span>Updates &amp; maintenance<span class="nav-count" id="nav-updates">—</span></button>
+    <button class="nav-item" data-view="releases"><span class="nav-icon">⇧</span>Releases</button>
+  </nav>
+  <div class="workspace-label">HISTORY</div>
+  <nav class="side-nav" aria-label="History">
+    <button class="nav-item" data-view="activity"><span class="nav-icon">◷</span>Activity &amp; audit</button>
+  </nav>
+  <div class="sidebar-bottom">
+    <section class="account-card" aria-label="Administrator account">
+      <div class="account-heading"><span class="avatar" aria-hidden="true">A</span><div><strong>Administrator account</strong><small id="sidebar-identity">Verifying Cloudflare Access…</small></div></div>
+      <div class="account-actions">
+        <a class="account-action signout" id="logout" href="/cdn-cgi/access/logout?returnTo=https%3A%2F%2Fadmin-staging.yorphives.com%2Fadmin%2F" aria-label="Sign out of the Admin Control Center">Sign out <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+    <div class="access-card"><span class="status-dot"></span><div><strong>Private workspace</strong><small>Cloudflare Access protected</small></div></div>
+  </div>
+</aside>
+<div class="mobile-scrim" id="mobile-scrim"></div>
+<main class="main-area">
+  <header class="topbar">
+    <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation" aria-expanded="false">☰</button>
+    <div class="breadcrumbs"><span>YorpHives</span><b>/</b><strong id="breadcrumb">Overview</strong></div>
+    <div class="topbar-actions"><span class="live-indicator"><i></i> PRIVATE ENVIRONMENT</span><span class="identity" id="identity">Verifying admin session…</span><button class="icon-button" id="refresh" title="Refresh current workspace" aria-label="Refresh">↻</button></div>
+  </header>
+  <div class="content">
+    <div class="system-message" id="system-message" role="status" aria-live="polite" hidden><span class="system-message-text" id="system-message-text"></span><a id="system-message-action" href="/admin/" hidden>Re-authenticate ↗</a><button id="system-message-dismiss" type="button" aria-label="Dismiss message">×</button></div>
+    <div class="global-notice"><span>◆</span><p><strong>Owner-controlled operations.</strong> Agents can investigate, prepare isolated changes and verify them. Production changes remain subject to your explicit approval.</p></div>
+
+    <section class="view active" id="view-overview" data-title="Overview">
+      <div class="page-heading"><div><span class="eyebrow">PLATFORM PULSE</span><h1>Good to see you.</h1><p>Your YorpHives ecosystem at a glance.</p></div><div class="heading-actions"><span class="updated-label" id="run-state">Loading platform status…</span><button class="button primary" id="run">Run health checks</button></div></div>
+      <div class="status-banner"><div class="status-emblem">✳</div><div class="status-copy"><span class="eyebrow">OPERATIONS OVERVIEW</span><h2 id="platform-status">Connecting to platform signals</h2><p id="platform-summary">Loading monitoring, inventory and agent readiness.</p></div><div class="status-meta"><span class="status-dot"></span><span id="last-run">Last check —</span></div></div>
+      <div class="metric-grid">
+        <article class="metric-card"><div class="metric-top"><span>Discovered assets</span><span class="metric-icon">⌁</span></div><strong id="asset-count">—</strong><small id="asset-breakdown">Pages, tools, products &amp; APIs</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Open issues</span><span class="metric-icon">⚑</span></div><strong id="findings">—</strong><small id="critical-label">Including critical findings</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Updates to review</span><span class="metric-icon">↻</span></div><strong id="updates-count">—</strong><small>Dependencies and maintenance</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Agent operations</span><span class="metric-icon">✳</span></div><strong id="agent-count">—</strong><small id="agent-summary">Repair agent readiness</small></article>
+      </div>
+      <div class="overview-grid">
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">NEEDS ATTENTION</span><h2>Priority signals</h2></div><button class="text-button" data-go="issues">View all issues ↗</button></div><div id="attention-list" class="signal-list"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></section>
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">SYSTEM STATUS</span><h2>Platform components</h2></div></div><div class="component-list" id="component-list"><div class="empty-state">Checking platform components…</div></div></section>
+      </div>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">LATEST EVENTS</span><h2>Recent activity</h2></div><button class="text-button" data-go="activity">Open activity log ↗</button></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Details</th></tr></thead><tbody id="overview-activity"><tr><td colspan="5" class="empty-state">Loading activity…</td></tr></tbody></table></div></section>
+    </section>
+
+    <section class="view" id="view-monitoring" data-title="Monitoring">
+      <div class="page-heading"><div><span class="eyebrow">OBSERVABILITY</span><h1>Monitoring</h1><p>Live inventory and health signals across your website, tools, products and platform endpoints.</p></div><div class="heading-actions"><button class="button" id="snapshot">Check production changes</button><button class="button primary" id="assets-run">Run inventory scan</button></div></div>
+      <div class="metric-grid compact">
+        <article class="metric-card"><div class="metric-top"><span>Website pages</span><span class="metric-icon">⌂</span></div><strong id="website-count">—</strong><small>Discovered from sitemap</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Free Tools</span><span class="metric-icon">▦</span></div><strong id="tools-count">—</strong><small>Discovered from tool manifest</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Products &amp; apps</span><span class="metric-icon">◇</span></div><strong id="products-count">—</strong><small>From product catalogue</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Unavailable / degraded</span><span class="metric-icon">!</span></div><strong id="asset-down">—</strong><small>Requires investigation</small></article>
+      </div>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">PRODUCT LIFECYCLE</span><h2>YorpHives applications catalogue</h2><p>Published applications are read from the live public catalogue. Staging-only lifecycle records are included when present; unpublished production drafts are not exposed by the public catalogue API.</p></div><span class="muted" id="catalogue-count">— applications</span></div><div class="table-wrap"><table><thead><tr><th>Application</th><th>Catalogue status</th><th>Access</th><th>Destination</th><th>Source</th><th>Updated</th></tr></thead><tbody id="catalogue-list"><tr><td colspan="6" class="empty-state">Loading catalogue…</td></tr></tbody></table></div></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">DISCOVERED INVENTORY</span><h2>Platform assets</h2><p>Assets are discovered from the live sitemap, Free Tools API, public catalogue, and OpenAPI registry. Items marked not_checked are discovered but have not yet completed a health check.</p></div><input class="field search-field" id="asset-search" type="search" placeholder="Filter assets…"></div><p class="source-status" id="inventory-source-status" role="status">Inventory sources: checking…</p><div class="filter-row"><button class="filter-chip active" data-asset-filter="all">All</button><button class="filter-chip" data-asset-filter="website_page">Website</button><button class="filter-chip" data-asset-filter="free_tool">Free Tools</button><button class="filter-chip" data-asset-filter="product">Products</button><button class="filter-chip" data-asset-filter="api">APIs &amp; discovery</button></div><div class="table-wrap"><table><thead><tr><th>Type</th><th>Asset</th><th>Status</th><th>HTTP</th><th>Response</th><th>Last checked</th></tr></thead><tbody id="assets-list"><tr><td colspan="6" class="empty-state">Loading inventory…</td></tr></tbody></table></div></section>
+      <div class="overview-grid">
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">CHECK HISTORY</span><h2>Recent monitoring runs</h2></div></div><div class="table-wrap"><table><thead><tr><th>Started</th><th>Status</th><th>Checked</th><th>Passed</th><th>Failed</th></tr></thead><tbody id="runs"><tr><td colspan="5" class="empty-state">Loading runs…</td></tr></tbody></table></div></section>
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">CHANGE DETECTION</span><h2>Production changes</h2></div></div><div class="table-wrap"><table><thead><tr><th>Detected</th><th>Page</th><th>Change</th><th>Status</th></tr></thead><tbody id="changes-list"><tr><td colspan="4" class="empty-state">Loading changes…</td></tr></tbody></table></div></section>
+      </div>
+    </section>
+
+    <section class="view" id="view-analytics" data-title="Analytics">
+      <div class="page-heading"><div><span class="eyebrow">TRAFFIC &amp; ENGAGEMENT</span><h1>Analytics</h1><p>Understand how people discover and use YorpHives.</p></div><div class="heading-actions"><button class="button range-button active" id="analytics-7d">7 days</button><button class="button range-button" id="analytics-30d">30 days</button><button class="button" id="analytics-export">Download report</button></div></div>
+      <div class="analytics-source" id="analytics-status">Connecting to Cloudflare Analytics…</div>
+      <div class="metric-grid three">
+        <article class="metric-card"><div class="metric-top"><span>Page views</span><span class="metric-icon">◉</span></div><strong id="metric-views">—</strong><small>Cloudflare edge analytics</small></article>
+        <article class="metric-card"><div class="metric-top"><span>HTTP requests</span><span class="metric-icon">↗</span></div><strong id="metric-requests">—</strong><small>All recorded requests</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Bandwidth</span><span class="metric-icon">⇅</span></div><strong id="metric-bandwidth">—</strong><small>Delivered data</small></article>
+      </div>
+      <div class="overview-grid analytics-layout">
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">TRAFFIC TREND</span><h2>Daily activity</h2></div></div><div id="traffic-chart" class="traffic-chart"><div class="empty-state">Daily traffic will appear when analytics is available.</div></div></section>
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">TOP CONTENT</span><h2>Most requested paths</h2></div></div><div class="table-wrap"><table><thead><tr><th>Page / path</th><th>Requests</th></tr></thead><tbody id="top-paths"><tr><td colspan="2" class="empty-state">Loading popular paths…</td></tr></tbody></table></div></section>
+      </div>
+      <p class="footnote">Traffic metrics are supplied by Cloudflare zone analytics. Geographic, device, referral and per-tool usage reports will appear only when their corresponding data sources are connected; this dashboard does not fabricate missing metrics.</p>
+    </section>
+
+    <section class="view" id="view-issues" data-title="Issues & risks">
+      <div class="page-heading"><div><span class="eyebrow">TRIAGE &amp; RESOLUTION</span><h1>Issues &amp; risks</h1><p>Prioritize real findings, inspect evidence and track risk decisions.</p></div><div class="heading-actions"><button class="button" data-go="monitoring">Open monitoring ↗</button></div></div>
+      <div class="filter-row"><button class="filter-chip active" data-finding-filter="active">Active</button><button class="filter-chip" data-finding-filter="all">All history</button><button class="filter-chip" data-finding-filter="resolved">Resolved / accepted</button></div>
+      <section class="panel"><div class="table-wrap"><table><thead><tr><th>Severity</th><th>Finding</th><th>Environment</th><th>Status</th><th>Last verified</th><th>Action</th></tr></thead><tbody id="findings-list"><tr><td colspan="6" class="empty-state">Loading findings…</td></tr></tbody></table></div></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">RECOMMENDATIONS</span><h2>Improvement opportunities</h2><p>Recommendations are kept separate from confirmed failures.</p></div></div><div class="table-wrap"><table><thead><tr><th>Priority</th><th>Area</th><th>Observation</th><th>Evidence</th><th>Suggested action</th></tr></thead><tbody id="asset-findings-list"><tr><td colspan="5" class="empty-state">Loading recommendations…</td></tr></tbody></table></div></section>
+    </section>
+
+    <section class="view" id="view-agents" data-title="AI operations">
+      <div class="page-heading"><div><span class="eyebrow">AGENTIC OPERATIONS</span><h1>AI operations</h1><p>Delegate investigations and controlled repairs to your private agent workflow.</p></div><span class="agent-readiness" id="agent-state"><i></i> Checking agent…</span></div>
+      <div class="agent-banner"><div class="agent-orb">✳</div><div><span class="eyebrow">AGENT ORCHESTRATION</span><h2>Your engineering operations team</h2><p>Specialist roles share monitoring evidence and findings. Repair and production actions remain gated by owner approval.</p></div></div>
+      <section class="agent-summary-grid" id="agent-summary-grid" aria-label="Agent team summary"><article><strong id="agent-active-count">—</strong><span>Active</span></article><article><strong id="agent-blocked-count">—</strong><span>Blocked</span></article><article><strong id="agent-planned-count">—</strong><span>Planned</span></article><article><strong id="agent-security-count">—</strong><span>Open security findings</span></article></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">SPECIALIST REGISTRY</span><h2>Agent team</h2><p>Live status comes from deployed Workers and recent audit records; planned roles are not presented as running bots.</p></div><button class="text-button" id="refresh-agent-registry">Refresh agents ↻</button></div><div class="agent-roster" id="agent-roster"><div class="empty-state">Loading agent registry…</div></div></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">NEW INVESTIGATION</span><h2>Ask an agent to investigate</h2></div></div><form id="repair-form" class="repair-form"><div class="form-row"><label>Related finding<select class="field" id="repair-finding"><option value="">General investigation</option></select></label><label>Target area<select class="field" id="repair-scope"><option value="auto">Determine from request / finding</option><option value="website">Public website</option><option value="admin">Admin Control Center</option><option value="tools">Free Tools</option><option value="products">Products &amp; applications</option><option value="api">APIs &amp; agent endpoints</option><option value="dependencies">Dependencies &amp; updates</option></select></label></div><label>What should the agent investigate or fix?<textarea class="field" id="repair-request" rows="4" maxlength="4000" required placeholder="Describe the issue, expected behaviour, and any evidence you have…"></textarea></label><div class="form-footer"><span id="repair-message" role="status">Agent requests are rate-limited and audited.</span><button class="button primary" id="repair-submit" type="submit" disabled>Request investigation ↗</button></div></form></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">WORKFLOW QUEUE</span><h2>Agent jobs</h2></div><button class="text-button" id="refresh-agents">Refresh jobs ↻</button></div><div id="repair-jobs"><div class="empty-state">Loading repair jobs…</div></div></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">AGENT SAFETY</span><h2>Permission boundaries</h2></div></div><div class="permission-grid"><div><strong>Allowed</strong><p>Read repository files, inspect findings, create isolated branches, prepare changes, open draft PRs and inspect CI results.</p></div><div><strong>Not allowed</strong><p>Merge pull requests, deploy production, modify DNS, change Cloudflare account settings, or perform destructive actions.</p></div></div></section>
+    </section>
+
+    <section class="view" id="view-updates" data-title="Updates & maintenance">
+      <div class="page-heading"><div><span class="eyebrow">LIFECYCLE MANAGEMENT</span><h1>Updates &amp; maintenance</h1><p>Review dependency health and prepare safe upgrades before release.</p></div><div class="heading-actions"><button class="button primary" id="updates-scan">Scan dependencies &amp; assets</button></div></div>
+      <div class="metric-grid three">
+        <article class="metric-card"><div class="metric-top"><span>Deprecated</span><span class="metric-icon">!</span></div><strong id="deprecated-count">—</strong><small>Requires replacement review</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Updates available</span><span class="metric-icon">↻</span></div><strong id="updates-count-panel">—</strong><small>Minor and major versions</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Observed dependencies</span><span class="metric-icon">◇</span></div><strong id="dependency-count">—</strong><small>Detected from platform assets</small></article>
+      </div>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">DEPENDENCY INTELLIGENCE</span><h2>Available updates</h2></div><input class="field search-field" id="dependency-search" type="search" placeholder="Search packages…"></div><div class="table-wrap"><table><thead><tr><th>Package</th><th>Current</th><th>Latest</th><th>Status</th><th>Details</th></tr></thead><tbody id="dependencies-list"><tr><td colspan="5" class="empty-state">Loading dependencies…</td></tr></tbody></table></div></section>
+      <div class="notice-card">Updates are recommendations, not automatic upgrades. Ask the repair agent to prepare an update in an isolated branch, review the compatibility impact, and verify staging before approving any release.</div>
+    </section>
+
+    <section class="view" id="view-releases" data-title="Releases">
+      <div class="page-heading"><div><span class="eyebrow">OWNER APPROVAL GATE</span><h1>Releases</h1><p>Review proposed changes before anything reaches production.</p></div><span class="pill warning">Production locked</span></div>
+      <div class="release-state"><div class="release-lock">▣</div><div><h2>Production deployment is disabled</h2><p>This Admin workspace can prepare and verify changes, but it does not have an enabled production deployment action. Keep release execution in your existing reviewed deployment process until the full approval gate is implemented and tested.</p></div></div>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">RELEASE CHECKLIST</span><h2>Required evidence</h2></div></div><div class="checklist"><div><span>01</span><div><strong>Reviewed pull request</strong><small>Changes and affected components inspected</small></div><b>Required</b></div><div><span>02</span><div><strong>CI and security checks</strong><small>Automated tests and dependency checks pass</small></div><b>Required</b></div><div><span>03</span><div><strong>Staging verification</strong><small>Preview tested on desktop and mobile</small></div><b>Required</b></div><div><span>04</span><div><strong>Owner approval</strong><small>Explicit release authorization</small></div><b>Required</b></div></div></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">SOURCE CONTROL</span><h2>Review changes</h2></div></div><div class="link-grid"><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/pulls" target="_blank" rel="noopener noreferrer">Open pull requests ↗</a><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/actions" target="_blank" rel="noopener noreferrer">CI &amp; security runs ↗</a><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/commits/build/yorphives-admin-reliability" target="_blank" rel="noopener noreferrer">Staging branch history ↗</a></div></section>
+    </section>
+
+    <section class="view" id="view-activity" data-title="Activity & audit">
+      <div class="page-heading"><div><span class="eyebrow">TRACEABILITY</span><h1>Activity &amp; audit</h1><p>Owner actions, agent operations, monitoring runs and detected production changes.</p></div></div>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">IMMUTABLE OPERATIONAL TRAIL</span><h2>Admin activity log</h2></div></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Details</th></tr></thead><tbody id="audit-list"><tr><td colspan="5" class="empty-state">Loading audit history…</td></tr></tbody></table></div></section>
+      <div class="overview-grid">
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">MONITORING</span><h2>Recent runs</h2></div></div><div class="table-wrap"><table><thead><tr><th>Started</th><th>Status</th><th>Checked</th><th>Passed</th><th>Failed</th></tr></thead><tbody id="activity-runs"><tr><td colspan="5" class="empty-state">Loading…</td></tr></tbody></table></div></section>
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">CHANGE HISTORY</span><h2>Production snapshots</h2></div></div><div class="table-wrap"><table><thead><tr><th>Detected</th><th>Page</th><th>Change</th><th>Status</th></tr></thead><tbody id="activity-changes"><tr><td colspan="4" class="empty-state">Loading…</td></tr></table></div></section>
+      </div>
+    </section>
+
+    <footer class="app-footer"><span>YorpHives Admin · Private operations</span><span>Cloudflare Access · D1 audit trail · Owner approval required</span></footer>
+  </div>
+</main>
+</div>
+<script>
+(() => {
+  const closeMobile = () => {
+    const sidebar = document.getElementById("sidebar");
+    const scrim = document.getElementById("mobile-scrim");
+    const menu = document.getElementById("mobile-menu");
+    sidebar?.classList.remove("open");
+    scrim?.classList.remove("show");
+    menu?.setAttribute("aria-expanded", "false");
+  };
+  document.addEventListener("click", (event) => {
+    const nav = event.target.closest("[data-view], [data-go]");
+    if (nav) {
+      const name = nav.dataset.view || nav.dataset.go;
+      const target = document.getElementById("view-" + name);
+      if (!target) return;
+      document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view === target));
+      document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
+      const breadcrumb = document.getElementById("breadcrumb");
+      if (breadcrumb) breadcrumb.textContent = target.dataset.title || name;
+      closeMobile();
+    }
+    if (event.target.closest("#mobile-menu")) {
+      const sidebar = document.getElementById("sidebar");
+      const scrim = document.getElementById("mobile-scrim");
+      const menu = document.getElementById("mobile-menu");
+      const open = !sidebar?.classList.contains("open");
+      sidebar?.classList.toggle("open", open);
+      scrim?.classList.toggle("show", open);
+      menu?.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    if (event.target.closest("#mobile-scrim")) closeMobile();
+  });
+})();
+</script>
+<script src="/admin/admin.js" defer></script>
+</body>
+</html>

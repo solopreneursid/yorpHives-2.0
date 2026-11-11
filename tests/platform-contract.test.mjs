@@ -140,7 +140,7 @@ test("Free Tools directory exposes substantial searchable browser-first catalogu
     const page = await read("../free-tools/" + item.slug + "/index.html");
     assert.match(page, new RegExp(item.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(page, /application\/ld\+json/);
-    assert.match(page, /(?:tool-runtime|image-runtime|advanced-runtime|research-runtime)\.js/);
+    assert.match(page, /(?:tool-runtime|image-runtime|advanced-runtime|research-runtime|next-tools-runtime)\.js/);
   }
 });
 
@@ -187,15 +187,19 @@ test("new researched Free Tools have unique manifest entries and dedicated pages
  const manifest = JSON.parse(await read("../free-tools/manifest.json"));
  const slugs = manifest.map(item => item.slug);
  assert.equal(new Set(slugs).size, slugs.length, "Free Tool slugs must be unique");
- const runtime = await read("../free-tools/research-runtime.js");
+ const runtimes = await Promise.all([
+  read("../free-tools/advanced-runtime.js"),
+  read("../free-tools/research-runtime.js"),
+  read("../free-tools/next-tools-runtime.js")
+ ]);
  for (const slug of ["compound-interest-calculator","timezone-converter","bmr-calculator","sample-size-calculator","yaml-validator","xml-formatter","json-to-csv","json-ld-generator","cron-expression-helper","html-to-markdown","csv-to-markdown","llms-txt-generator","macro-calculator","saas-unit-economics-calculator","pdf-metadata-remover","color-palette-extractor","robots-ai-crawler-checker","ai-agent-readiness-checker"]) {
   const item = manifest.find(entry => entry.slug === slug);
   assert.ok(item, "Missing manifest entry: " + slug);
   assert.equal(item.agent_execution, "not_available");
   const page = await read("../free-tools/" + slug + "/index.html");
-  assert.match(page, /id="research-tool"/);
-  assert.match(page, /research-runtime\.js/);
-  assert.match(runtime, new RegExp(slug));
+  assert.match(page, /id="(?:advanced-tool|research-tool|next-tool)"/);
+  assert.match(page, /(?:advanced-runtime|research-runtime|next-tools-runtime)\.js/);
+  assert.ok(runtimes.some(runtime => runtime.includes(slug)), "No dedicated runtime handler for " + slug);
   assert.ok(page.includes(item.title));
  }
 });
