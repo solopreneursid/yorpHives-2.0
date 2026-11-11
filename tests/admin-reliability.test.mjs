@@ -123,6 +123,9 @@ test("Control Center adds bounded repair jobs, owner audit history and optional 
   const repairs = await read("../functions/api/admin/repair-jobs.ts");
   const html = await read("../admin/index.html");
   const script = await read("../admin/admin.js");
+  const assets = await read("../functions/api/admin/assets.ts");
+  assert.match(assets, /catalogue_listings/);
+  assert.match(html, /id="analytics-export"/);
   assert.match(migration, /admin_repair_jobs/);
   assert.match(migration, /admin_audit_events/);
   assert.match(analytics, /CF_ANALYTICS_API_TOKEN/);
@@ -133,6 +136,7 @@ test("Control Center adds bounded repair jobs, owner audit history and optional 
   assert.match(repairs, /ADMIN_AGENT_SERVICE/);
   assert.match(repairs, /AGENT_DAILY_LIMIT/);
   assert.match(repairs, /admin-agent\.internal\/instances/);
+  assert.match(repairs, /admin_asset_findings/);
   assert.match(html, /id="view-analytics"/);
   assert.match(html, /id="view-agents"/);
   assert.match(html, /id="view-releases"/);
