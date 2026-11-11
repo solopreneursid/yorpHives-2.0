@@ -126,7 +126,7 @@ test("Free Tools directory exposes substantial searchable browser-first catalogu
   const manifest = JSON.parse(await read("../free-tools/manifest.json"));
   const runtime = await read("../free-tools/tool-runtime.js");
   const directory = await read("../free-tools/directory.js");\n  const imageRuntime = await read("../free-tools/image-runtime.js");
-  assert.ok(manifest.length >= 36, "Expected at least 36 published free tools");
+  assert.ok(manifest.length >= 55, "Expected at least 55 published free tools");
   assert.match(html, /tool-search/);
   assert.match(html, /data-filter/);
   assert.match(html, /canonical/);
@@ -134,7 +134,7 @@ test("Free Tools directory exposes substantial searchable browser-first catalogu
   assert.match(runtime, /crypto\.subtle\.digest/);
   assert.match(runtime, /crypto\.randomUUID/);
   for (const item of manifest) {
-    assert.equal(item.processing, "browser");
+    assert.ok(["browser","library","network","planned"].includes(item.processing));
     assert.match(item.url, new RegExp(item.slug));
     const page = await read("../free-tools/" + item.slug + "/index.html");
     assert.match(page, new RegExp(item.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
@@ -153,4 +153,19 @@ test("Free Tools have an agent discovery API and machine-readable documentation"
   assert.equal(manifest.machine_interfaces.free_tools, "/api/v1/free-tools");
   assert.match(llms, /api\/v1\/free-tools/);
   assert.match(openapi, /\/api\/v1\/free-tools/);
+});
+
+test("advanced Free Tools expose dedicated browser interfaces and disclosed processing modes", async () => {
+  const manifest = JSON.parse(await read("../free-tools/manifest.json"));
+  const runtime = await read("../free-tools/advanced-runtime.js");
+  for (const slug of ["qr-code-generator","wifi-qr","vcard-qr","pdf-merger","pdf-splitter","pdf-compressor","jpg-to-pdf","pdf-to-jpg","heic-to-jpg","webp-converter","invoice-generator","sip-calculator","currency-converter","seo-analyzer","meta-tag-generator","sitemap-generator","youtube-thumbnail-downloader","social-image-sizes"]) {
+    const item = manifest.find(entry => entry.slug === slug);
+    assert.ok(item, "Missing manifest entry: " + slug);
+    assert.ok(["browser","library","network"].includes(item.processing));
+    const page = await read("../free-tools/" + slug + "/index.html");
+    assert.match(page, /id="advanced-tool"/);
+    assert.match(page, /advanced-runtime\.js/);
+    assert.match(runtime, new RegExp(slug));
+  }
+  assert.equal(manifest.find(entry => entry.slug === "background-remover").processing, "planned");
 });
