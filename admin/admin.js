@@ -437,7 +437,7 @@ async function refreshCurrent() {
   state.assets=[];
   await loadView(state.view);
   if(state.view!=="overview"){state.loaded.delete("overview");}
-  $("run-state").textContent="Refreshed "+new Date().toLocaleTimeString();
+  setText("run-state", "Refreshed " + new Date().toLocaleTimeString());
 }
 document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>showView(button.dataset.view)));
 document.querySelectorAll("[data-go]").forEach(button=>button.addEventListener("click",()=>showView(button.dataset.go)));
@@ -452,13 +452,13 @@ $("refresh").addEventListener("click",refreshCurrent);
 $("run").addEventListener("click",async()=>{
   if(!confirm("Run read-only HTTPS checks against configured YorpHives production and preview URLs?"))return;
   const button=$("run");button.disabled=true;button.textContent="Checking…";
-  try{const result=await api("/api/admin/run-checks",{method:"POST",body:JSON.stringify({confirm:true})});$("run-state").textContent=result.run.failed_count+" failed · "+result.run.passed_count+" passed";state.loaded.clear();state.overviewData=null;await loadOverview();}
+  try{const result=await api("/api/admin/run-checks",{method:"POST",body:JSON.stringify({confirm:true})});setText("run-state", result.run.failed_count+" failed · "+result.run.passed_count+" passed");state.loaded.clear();state.overviewData=null;await loadOverview();}
   catch(error){showSystemMessage(error.message, { kind: "error", reauthenticate: /Cloudflare Access/i.test(error.message) });}finally{button.disabled=false;button.textContent="Run health checks";}
 });
 $("snapshot").addEventListener("click",async()=>{
   if(!confirm("Capture read-only SHA-256 snapshots of the approved public production pages?"))return;
   const button=$("snapshot");button.disabled=true;button.textContent="Checking…";
-  try{const result=await api("/api/admin/run-snapshots",{method:"POST",body:JSON.stringify({confirm:true})});$("run-state").textContent=result.changed+" changed · "+result.targets+" checked";state.loaded.delete("monitoring");await loadMonitoring();}
+  try{const result=await api("/api/admin/run-snapshots",{method:"POST",body:JSON.stringify({confirm:true})});setText("run-state", result.changed+" changed · "+result.targets+" checked");state.loaded.delete("monitoring");await loadMonitoring();}
   catch(error){showSystemMessage(error.message, { kind: "error", reauthenticate: /Cloudflare Access/i.test(error.message) });}finally{button.disabled=false;button.textContent="Check production changes";}
 });
 async function runAssetScan(button){
@@ -466,7 +466,7 @@ async function runAssetScan(button){
   button.disabled=true;const label=button.textContent;button.textContent="Scanning…";
   try{
     const result=await api("/api/admin/run-assets",{method:"POST",body:JSON.stringify({confirm:true})});
-    $("run-state").textContent=result.assets+" assets checked · "+result.unavailable+" unavailable";
+    setText("run-state", result.assets+" assets checked · "+result.unavailable+" unavailable");
     state.assets=[];state.loaded.delete("overview");state.loaded.delete("monitoring");state.loaded.delete("updates");state.loaded.delete("issues");state.overviewData=null;
     if(state.view==="overview")await loadOverview();else await loadView(state.view);
   }catch(error){showSystemMessage(error.message, { kind: "error", reauthenticate: /Cloudflare Access/i.test(error.message) });}finally{button.disabled=false;button.textContent=label;}
@@ -480,13 +480,13 @@ $("repair-form").addEventListener("submit",async event=>{
   event.preventDefault();
   const button=$("repair-submit");const requestText=$("repair-request").value.trim();
   if(!requestText)return;
-  if(!repairAgentReady){$("repair-message").textContent="Configure the private Worker GITHUB_TOKEN secret before starting an agent job.";return;}
-  button.disabled=true;button.textContent="Submitting…";$("repair-message").textContent="";
+  if(!repairAgentReady){setText("repair-message", "Configure the private Worker GITHUB_TOKEN secret before starting an agent job.");return;}
+  button.disabled=true;button.textContent="Submitting…";setText("repair-message", "");
   try{
     const result=await api("/api/admin/repair-jobs",{method:"POST",body:JSON.stringify({finding_id:$("repair-finding").value||null,request_text:"[Scope: "+$("repair-scope").value+"] "+requestText})});
-    $("repair-message").textContent=result.dispatched?"Investigation dispatched. Proposed changes must return through a draft pull request.":result.message||"Request saved.";
+    setText("repair-message", result.dispatched?"Investigation dispatched. Proposed changes must return through a draft pull request.":result.message||"Request saved.");
     $("repair-request").value="";state.loaded.delete("agents");await loadAgents();
-  }catch(error){$("repair-message").textContent="Could not submit request: "+error.message;}
+  }catch(error){setText("repair-message", "Could not submit request: " + error.message);}
   finally{button.disabled=!repairAgentReady;button.textContent="Request investigation ↗";}
 });
 document.querySelectorAll("[data-asset-filter]").forEach(button=>button.addEventListener("click",()=>{
