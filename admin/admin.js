@@ -378,7 +378,8 @@ function renderTraffic(daily) {
 }
 async function loadAgents(refresh=true) {
   try {
-    const registry=await api("/api/admin/agents");
+    const jobs=await api("/api/admin/repair-jobs");
+    const registry=jobs;
     const summary=registry.summary||{};
     setText("agent-active-count",number(summary.active));
     setText("agent-blocked-count",number(summary.blocked));
@@ -402,7 +403,6 @@ async function loadAgents(refresh=true) {
         card.append(head,description,detail,last);roster.append(card);
       }
     }
-    const jobs=await api("/api/admin/repair-jobs");
     repairAgentReady=jobs.agentConfigured===true;
     const status=$("agent-state");
     if(status){status.textContent=repairAgentReady?"Cloudflare repair agent ready":"Agent setup required · configure GITHUB_TOKEN on the private Worker";status.classList.toggle("ready",repairAgentReady);}
