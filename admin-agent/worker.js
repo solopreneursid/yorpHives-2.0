@@ -232,7 +232,8 @@ async function createDraftPullRequest(env, branch, jobId, requestedBy, requestTe
       "",
       checkLines,
       "",
-      `A verification receipt is stored at `admin-agent/repair-receipts/${jobId}.json`.`,\n      "This is a draft PR. Review the diff before accepting or merging."
+      "A verification receipt is stored at admin-agent/repair-receipts/" + jobId + ".json.",
+      "This is a draft PR. Review the diff before accepting or merging."
     ].join("\n")
   });
 }
