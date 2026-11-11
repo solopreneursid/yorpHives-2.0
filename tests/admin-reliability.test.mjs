@@ -7,7 +7,7 @@ test("admin reliability migration creates isolated monitoring and findings table
   const sql = await read("../migrations/0004_admin_reliability.sql");
   for (const table of ["admin_monitors", "admin_runs", "admin_checks", "admin_findings"]) assert.match(sql, new RegExp("CREATE TABLE IF NOT EXISTS " + table));
   assert.match(sql, /INSERT OR IGNORE INTO admin_monitors/);
-  assert.match(sql, /yorphives\.com/);
+  assert.ok(sql.includes("yorphives.com"));
 });
 
 test("admin routes require a signed Cloudflare Access identity and explicit email allowlist", async () => {
@@ -31,8 +31,8 @@ test("admin health checks are read-only, same-origin and reject arbitrary target
   assert.match(runner, /confirm !== true/);
   assert.match(runner, /runAdminHealthChecks/);
   assert.match(shared, /APPROVED_HOSTS/);
-  assert.match(shared, /yorphives\.com/);
-  assert.match(shared, /yorphives-2-preview\.pages\.dev/);
+  assert.ok(shared.includes("yorphives.com"));
+  assert.ok(shared.includes("yorphives-2-preview.pages.dev"));
   assert.match(shared, /AbortSignal\.timeout\(8000\)/);
   assert.match(shared, /redirect: "manual"/);
   assert.match(shared, /admin_findings/);
@@ -113,7 +113,7 @@ test("quality workflows include browser, SEO, Lighthouse and passive security co
   assert.match(security, /retire/);
   assert.match(security, /action-baseline/);
   assert.doesNotMatch(security, /rules_file_name/);
-  assert.match(security, /target: https:\/\/yorphives\.com/);
+  assert.ok(security.includes("target: https://yorphives.com"));
 });
 
 
@@ -135,7 +135,7 @@ test("Control Center adds bounded repair jobs, owner audit history and optional 
   assert.match(migration, /admin_audit_events/);
   assert.match(analytics, /CF_ANALYTICS_API_TOKEN/);
   assert.match(analytics, /CF_ANALYTICS_ZONE_ID/);
-  assert.match(analytics, /api\.cloudflare\.com\/client\/v4\/graphql/);
+  assert.ok(analytics.includes("api.cloudflare.com/client/v4/graphql"));
   assert.match(repairs, /requireAdmin/);
   assert.match(repairs, /INVALID_ORIGIN/);
   assert.match(repairs, /ADMIN_AGENT_SERVICE/);
@@ -224,7 +224,7 @@ test("Admin findings API unifies monitor and asset findings with audited triage"
 test("scheduled health checks include the private Admin UI and API access gates", async () => {
   const health = await read("../admin-monitor/admin-health.js");
   const migration = await read("../migrations/0009_admin_control_center_monitors.sql");
-  assert.match(health, /admin-staging\.yorphives\.com/);
+  assert.ok(health.includes("admin-staging.yorphives.com"));
   assert.match(migration, /admin-staging-ui/);
   assert.match(migration, /admin-staging-api/);
   assert.match(migration, /environment\)/);
