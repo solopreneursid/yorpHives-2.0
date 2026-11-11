@@ -83,6 +83,22 @@ async function checkGithubAccess(env) {
 
     const hasAuthenticatedPermissions = Boolean(repository.permissions && typeof repository.permissions === "object");
     const repositoryWrite = repository.permissions?.push === true;
+    let repositoryContextAccess = false;
+    try {
+      const [baseRef, sourceFile] = await Promise.all([
+        github(env, `/repos/${REPOSITORY}/git/ref/heads/${encodeURIComponent(BASE_BRANCH)}`),
+        github(env, `/repos/${REPOSITORY}/contents/admin-agent/worker.js?ref=${encodeURIComponent(BASE_BRANCH)}`)
+      ]);
+      repositoryContextAccess = Boolean(
+        baseRef.object?.sha &&
+        sourceFile.type === "file" &&
+        sourceFile.encoding === "base64" &&
+        typeof sourceFile.content === "string"
+      );
+    } catch {
+      repositoryContextAccess = false;
+    }
+
     let workflow = {
       access: false,
       jobs_access: false,
@@ -136,12 +152,14 @@ async function checkGithubAccess(env) {
       };
     }
 
-    const ready = hasAuthenticatedPermissions && repositoryWrite && workflow.access && workflow.jobs_access;
+    const ready = hasAuthenticatedPermissions && repositoryWrite && repositoryContextAccess && workflow.access && workflow.jobs_access;
     const error = !hasAuthenticatedPermissions
       ? "GitHub authenticated repository permissions were not returned; token identity and write access are unverified."
       : !repositoryWrite
         ? "The token can read the repository, but GitHub does not report repository push permission."
-        : !workflow.access || !workflow.jobs_access
+        : !repositoryContextAccess
+          ? "The repair base branch or source-file read access could not be verified."
+          : !workflow.access || !workflow.jobs_access
           ? workflow.detail
           : undefined;
 
@@ -151,7 +169,8 @@ async function checkGithubAccess(env) {
         authenticated: hasAuthenticatedPermissions,
         repository_access: true,
         repository: repository.full_name,
-        repository_write: repositoryWrite
+        repository_write: repositoryWrite,
+        repository_context_access: repositoryContextAccess
       },
       workflow,
       ...(error ? { error } : {})
