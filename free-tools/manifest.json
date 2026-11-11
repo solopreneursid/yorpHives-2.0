@@ -601,5 +601,59 @@
     "url": "/free-tools/llms-txt-generator/",
     "processing": "browser",
     "agent_execution": "not_available"
+  },
+  {
+    "slug": "macro-calculator",
+    "title": "Macro Calculator",
+    "category": "Health",
+    "description": "Estimate daily calories and protein, carbohydrate and fat targets from your body metrics, activity and goal.",
+    "url": "/free-tools/macro-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "saas-unit-economics-calculator",
+    "title": "SaaS Unit Economics Calculator",
+    "category": "Business",
+    "description": "Model SaaS customer lifetime value, LTV:CAC, CAC payback, gross profit and break-even customer count.",
+    "url": "/free-tools/saas-unit-economics-calculator/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "pdf-metadata-remover",
+    "title": "PDF Metadata Remover",
+    "category": "Productivity",
+    "description": "Remove common document information fields and embedded XMP metadata from a PDF locally in your browser.",
+    "url": "/free-tools/pdf-metadata-remover/",
+    "processing": "library",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "color-palette-extractor",
+    "title": "Color Palette Extractor",
+    "category": "Design",
+    "description": "Extract a dominant color palette from an image, preview swatches and copy HEX values.",
+    "url": "/free-tools/color-palette-extractor/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "robots-ai-crawler-checker",
+    "title": "Robots.txt & AI Crawler Checker",
+    "category": "Developer",
+    "description": "Inspect robots.txt rules for major search and AI crawlers, including allow, disallow, sitemap and crawl-delay directives.",
+    "url": "/free-tools/robots-ai-crawler-checker/",
+    "processing": "browser",
+    "agent_execution": "not_available"
+  },
+  {
+    "slug": "ai-agent-readiness-checker",
+    "title": "AI Agent Readiness Checker",
+    "category": "Developer",
+    "description": "Audit pasted page HTML for machine-readable signals such as semantic structure, metadata, JSON-LD, canonical URLs and agent discovery links.",
+    "url": "/free-tools/ai-agent-readiness-checker/",
+    "processing": "browser",
+    "agent_execution": "not_available"
   }
 ]
