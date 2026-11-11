@@ -322,7 +322,7 @@ function renderFindings() {
         if(next==="accepted_risk"&&!confirm("Record this finding as an accepted risk? The decision will be audited."))return;
         button.disabled=true;
         try{await api("/api/admin/findings",{method:"PATCH",body:JSON.stringify({id:item.id,status:next})});state.loaded.delete("overview");await loadIssues();await loadOverview();}
-        catch(error){alert(error.message);}finally{button.disabled=false;}
+        catch(error){showSystemMessage(error.message, { kind: "error", reauthenticate: /Cloudflare Access/i.test(error.message) });}finally{button.disabled=false;}
       });
       td.append(button);tr.append(td);
     }
@@ -448,13 +448,13 @@ $("run").addEventListener("click",async()=>{
   if(!confirm("Run read-only HTTPS checks against configured YorpHives production and preview URLs?"))return;
   const button=$("run");button.disabled=true;button.textContent="Checking…";
   try{const result=await api("/api/admin/run-checks",{method:"POST",body:JSON.stringify({confirm:true})});$("run-state").textContent=result.run.failed_count+" failed · "+result.run.passed_count+" passed";state.loaded.clear();state.overviewData=null;await loadOverview();}
-  catch(error){alert(error.message);}finally{button.disabled=false;button.textContent="Run health checks";}
+  catch(error){showSystemMessage(error.message, { kind: "error", reauthenticate: /Cloudflare Access/i.test(error.message) });}finally{button.disabled=false;button.textContent="Run health checks";}
 });
 $("snapshot").addEventListener("click",async()=>{
   if(!confirm("Capture read-only SHA-256 snapshots of the approved public production pages?"))return;
   const button=$("snapshot");button.disabled=true;button.textContent="Checking…";
   try{const result=await api("/api/admin/run-snapshots",{method:"POST",body:JSON.stringify({confirm:true})});$("run-state").textContent=result.changed+" changed · "+result.targets+" checked";state.loaded.delete("monitoring");await loadMonitoring();}
-  catch(error){alert(error.message);}finally{button.disabled=false;button.textContent="Check production changes";}
+  catch(error){showSystemMessage(error.message, { kind: "error", reauthenticate: /Cloudflare Access/i.test(error.message) });}finally{button.disabled=false;button.textContent="Check production changes";}
 });
 async function runAssetScan(button){
   if(!confirm("Run the next bounded, read-only inventory and dependency scan? This discovers current website pages, Free Tools and catalogue products."))return;
@@ -464,7 +464,7 @@ async function runAssetScan(button){
     $("run-state").textContent=result.assets+" assets checked · "+result.unavailable+" unavailable";
     state.assets=[];state.loaded.delete("overview");state.loaded.delete("monitoring");state.loaded.delete("updates");state.loaded.delete("issues");state.overviewData=null;
     if(state.view==="overview")await loadOverview();else await loadView(state.view);
-  }catch(error){alert(error.message);}finally{button.disabled=false;button.textContent=label;}
+  }catch(error){showSystemMessage(error.message, { kind: "error", reauthenticate: /Cloudflare Access/i.test(error.message) });}finally{button.disabled=false;button.textContent=label;}
 }
 $("assets-run").addEventListener("click",event=>runAssetScan(event.currentTarget));
 $("updates-scan").addEventListener("click",event=>runAssetScan(event.currentTarget));
