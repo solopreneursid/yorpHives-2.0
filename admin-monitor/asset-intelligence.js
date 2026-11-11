@@ -365,7 +365,7 @@ export async function runAssetIntelligence(db) {
 
   const products = await db.prepare(`
     SELECT id, slug, title, listing_type, status, destination_url
-    FROM catalogue_listings WHERE status='available' ORDER BY updated_at DESC LIMIT 100
+    FROM catalogue_listings WHERE status='available' AND listing_type='application' AND owner_type='yorphives' ORDER BY updated_at DESC LIMIT 100
   `).all();
   for (const product of products.results || []) {
     const destination = safeInternalUrl(product.destination_url);
