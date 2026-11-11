@@ -1,5 +1,5 @@
 import { adminJson, isAdminResponse, requireAdmin, type AdminRequestContext } from "../../_lib/admin-auth";
-interface OverviewCounts { active_monitors: number; open_findings: number; critical_findings: number; last_run_at: string | null; }
+interface OverviewCounts { active_monitors: number; open_findings: number; critical_findings: number; open_asset_findings: number; critical_asset_findings: number; last_run_at: string | null; }
 interface RecentRun { id: string; status: string; started_at: string; completed_at: string | null; monitor_count: number; passed_count: number; failed_count: number; }
 export async function onRequestGet(context: AdminRequestContext): Promise<Response> {
   const identity = await requireAdmin(context);
