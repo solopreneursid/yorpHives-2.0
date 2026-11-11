@@ -2,6 +2,7 @@ const $ = (id) => document.getElementById(id);
 const date = (value) => value ? new Date(value).toLocaleString() : "—";
 const safe = (value) => String(value ?? "");
 let repairAgentReady = false;
+if (document.getElementById("repair-submit")) document.getElementById("repair-submit").disabled = true;
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -255,7 +256,7 @@ $("assets-run").addEventListener("click", async () => {
     $("run-state").textContent = result.assets + " assets · " + result.unavailable + " unavailable · " + result.dependencies + " dependencies";
     await load();
   } catch (error) { alert(error.message); }
-  finally { button.disabled = false; button.textContent = "Run next asset scan"; }
+  finally { button.disabled = !repairAgentReady; button.textContent = "Run next asset scan"; }
 });
 
 
@@ -358,6 +359,8 @@ async function loadRepairDesk() {
       target.append(article);
     }
   } catch (error) {
+    repairAgentReady = false;
+    $("repair-submit").disabled = true;
     $("agent-state").textContent = "Repair desk unavailable: " + error.message;
   }
 }
@@ -385,7 +388,7 @@ $("repair-form").addEventListener("submit", async (event) => {
   } catch (error) {
     $("repair-message").textContent = "Could not submit repair: " + error.message;
   } finally {
-    button.disabled = false;
+    button.disabled = !repairAgentReady;
     button.textContent = "Request repair";
   }
 });
