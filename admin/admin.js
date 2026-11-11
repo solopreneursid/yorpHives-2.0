@@ -6,15 +6,45 @@ const state = { view: "overview", loaded: new Set(), assets: [], findings: [], d
 let repairAgentReady = false;
 let analyticsSnapshot = null;
 
+function showSystemMessage(message, options = {}) {
+  const panel = $("system-message");
+  const content = $("system-message-text");
+  const action = $("system-message-action");
+  if (!panel || !content) return;
+  content.textContent = message;
+  panel.hidden = false;
+  panel.classList.toggle("is-error", options.kind === "error");
+  panel.classList.toggle("is-success", options.kind === "success");
+  if (action) {
+    action.hidden = !options.reauthenticate;
+    action.href = "/admin/";
+  }
+}
 async function api(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: { "content-type": "application/json", ...(options.headers || {}) },
-    cache: "no-store",
-    credentials: "same-origin"
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error?.message || data.message || "Admin request failed (" + response.status + ")");
+  let response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers: { "content-type": "application/json", ...(options.headers || {}) },
+      cache: "no-store",
+      credentials: "same-origin",
+      redirect: "follow"
+    });
+  } catch (error) {
+    showSystemMessage("The Admin API could not be reached. Check your connection and use Refresh to retry.", { kind: "error" });
+    throw error;
+  }
+  if (response.redirected || response.status === 401 || response.status === 403) {
+    showSystemMessage("Your Cloudflare Access session may have expired or this browser is not authorized. Sign in again, then reload the Admin.", { kind: "error", reauthenticate: true });
+    throw new Error("Cloudflare Access authorization is required. Use Sign in / refresh.");
+  }
+  const contentType = response.headers.get("content-type") || "";
+  const data = contentType.includes("application/json") ? await response.json().catch(() => ({})) : {};
+  if (!response.ok) {
+    const message = data.error?.message || data.message || "Admin request failed (" + response.status + ")";
+    showSystemMessage(message, { kind: "error" });
+    throw new Error(message);
+  }
   return data;
 }
 function cell(row, value) {
@@ -83,6 +113,7 @@ async function loadView(name) {
     console.error("Admin workspace failed:", name, error);
     const status = $("run-state");
     if (status) status.textContent = name + " unavailable: " + error.message;
+    showSystemMessage(name + " could not load: " + error.message, { kind: "error", reauthenticate: /Cloudflare Access/i.test(error.message) });
   }
 }
 async function getAssets(force = false) {
