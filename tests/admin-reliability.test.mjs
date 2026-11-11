@@ -53,10 +53,10 @@ test("admin dashboard is private, responsive and loads all protected APIs", asyn
   const html = await read("../admin/index.html");
   const script = await read("../admin/admin.js");
   assert.match(html, /noindex,nofollow,noarchive/);
-  assert.match(html, /changes-list/);
+  assert.match(html, /changes-list/);\n  assert.match(html, /assets-list/);\n  assert.match(html, /asset-findings-list/);\n  assert.match(html, /dependencies-list/);
   assert.match(html, /@media\(max-width:760px\)/);
   assert.match(html, /Read-only monitoring/);
-  for (const route of ["overview", "findings", "changes", "run-checks"]) assert.ok(script.includes("/api/admin/" + route));
+  for (const route of ["overview", "findings", "changes", "assets", "run-checks", "run-assets"]) assert.ok(script.includes("/api/admin/" + route));
 });
 
 test("CodeQL security workflow runs weekly and on branch changes", async () => {
