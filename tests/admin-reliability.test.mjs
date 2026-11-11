@@ -204,7 +204,7 @@ test("Admin inventory discovers sitemap pages, manifest tools and published Yorp
   assert.match(scanner, /knownPaths/);
   assert.match(scanner, /sitemapError/);
   assert.match(scanner, /sitemapEntries === 0/);
-  assert.match(scanner, /<loc\\(\?:\\s\[\^>\]\*\)\?>/);
+  assert.ok(scanner.includes('/<loc(?:\\s[^>]*)?>'));
   assert.match(scanner, /catalogueError/);
   assert.match(scanner, /openapi\.yaml/);
   assert.match(scanner, /openapiError/);
