@@ -56,3 +56,13 @@ Free Tools are currently human-operated browser interfaces. The JSON/Markdown ca
 - HTML to Markdown Converter: https://yorphives.com/free-tools/html-to-markdown/ — Convert pasted HTML into cleaner Markdown while ignoring scripts, styles and hidden content.
 - CSV to Markdown Table Converter: https://yorphives.com/free-tools/csv-to-markdown/ — Convert CSV data into a properly escaped Markdown table for documentation and AI prompts.
 - llms.txt Generator: https://yorphives.com/free-tools/llms-txt-generator/ — Create an llms.txt directory from a site's name, summary and pasted public page URLs.
+
+
+## Additional Free Tools
+
+- [Macro Calculator](https://yorphives.com/free-tools/macro-calculator/) — Estimate daily calorie and macro targets.
+- [SaaS Unit Economics Calculator](https://yorphives.com/free-tools/saas-unit-economics-calculator/) — Model LTV, CAC, payback and break-even.
+- [PDF Metadata Remover](https://yorphives.com/free-tools/pdf-metadata-remover/) — Clear common PDF document metadata locally.
+- [Color Palette Extractor](https://yorphives.com/free-tools/color-palette-extractor/) — Extract dominant colors from an image.
+- [Robots.txt & AI Crawler Checker](https://yorphives.com/free-tools/robots-ai-crawler-checker/) — Evaluate robots.txt rules for search and AI crawlers.
+- [AI Agent Readiness Checker](https://yorphives.com/free-tools/ai-agent-readiness-checker/) — Audit pasted HTML for machine-readable discovery signals.
