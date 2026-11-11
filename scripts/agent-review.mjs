@@ -19,7 +19,7 @@ async function resolveBase() {
     await git(["fetch", "--no-tags", "origin", baseRef]);
     return `origin/${baseRef}`;
   }
-  if (refName.startsWith("build/agent/repair-")) {
+  if (refName.startsWith("build/agent/repair-") || refName.startsWith("build/agentic-ops-")) {
     const repairBase = "build/yorphives-admin-reliability";
     await git(["fetch", "--no-tags", "origin", repairBase]);
     return `origin/${repairBase}`;
