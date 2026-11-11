@@ -16,11 +16,13 @@ The Admin Control Center and its repair agent run only in the dedicated staging 
 
 ## Analytics setup
 
-Add `CF_ANALYTICS_API_TOKEN` as an encrypted secret in the `yorphives-admin-staging` Pages project. Create a custom Cloudflare API token with Account Analytics:Read and restrict its Zone Resources to the YorpHives zone. Do not use a Global API Key.
+Create a custom Cloudflare API token with **Account Analytics:Read** and restrict Zone Resources to the single YorpHives zone. Do not use a Global API Key. In Cloudflare Pages → `yorphives-admin-staging` → Settings → Variables and Secrets, add `CF_ANALYTICS_API_TOKEN` as an encrypted secret in both Production and Preview. Redeploy the staging Pages project after saving the secret. The analytics route already knows the YorpHives Zone ID.
 
 ## Repair agent setup
 
 The repair agent uses a dedicated Worker named `yorphives-admin-agent`, Cloudflare Workflows, the existing staging D1 database, and a Workers AI binding. The Admin Pages project calls it through a private Service binding; the agent Worker has no public route or `workers.dev` hostname.
+
+Create a GitHub fine-grained personal access token for resource owner `solopreneursid`, selecting only repository `yorpHives-2.0`. Grant only these repository permissions: **Contents: Read and write**, **Pull requests: Read and write**, and **Checks: Read**. Do not grant Actions write, workflow, administration, or organization permissions. Add that token as the encrypted Worker secret `GITHUB_TOKEN` in Cloudflare Workers & Pages → `yorphives-admin-agent` → Settings → Variables and Secrets. Do not paste the token into chat. The Admin repair desk checks Worker readiness every 30 seconds and enables the Request repair button when this secret is available.
 
 Add one encrypted Worker secret:
 
