@@ -20,12 +20,21 @@ function cell(row, value) {
   return td;
 }
 
+function emptyRow(target, message, colspan) {
+  const tr = document.createElement("tr");
+  const td = cell(tr, message);
+  td.colSpan = colspan;
+  td.className = "empty";
+  target.append(tr);
+}
+
 async function load() {
   $("run-state").textContent = "Refreshing…";
   try {
-    const [overview, findings] = await Promise.all([
+    const [overview, findings, changes] = await Promise.all([
       api("/api/admin/overview"),
-      api("/api/admin/findings")
+      api("/api/admin/findings"),
+      api("/api/admin/changes")
     ]);
 
     $("identity").textContent = "Signed in: " + overview.identity;
@@ -37,11 +46,7 @@ async function load() {
     const runs = $("runs");
     runs.replaceChildren();
     if (!overview.recent_runs?.length) {
-      const tr = document.createElement("tr");
-      const td = cell(tr, "No monitoring runs yet.");
-      td.colSpan = colspan;
-      td.className = "empty";
-      runs.append(tr);
+      emptyRow(runs, "No monitoring runs yet.", 5);
     } else {
       for (const item of overview.recent_runs) {
         const tr = document.createElement("tr");
@@ -57,11 +62,7 @@ async function load() {
     const list = $("findings-list");
     list.replaceChildren();
     if (!findings.data?.length) {
-      const tr = document.createElement("tr");
-      const td = cell(tr, "No active findings. Run checks to establish a baseline.");
-      td.colSpan = 5;
-      td.className = "empty";
-      list.append(tr);
+      emptyRow(list, "No active findings. Run checks to establish a baseline.", 5);
     } else {
       for (const item of findings.data) {
         const tr = document.createElement("tr");
@@ -78,21 +79,33 @@ async function load() {
         list.append(tr);
       }
     }
-    const changeList = $("changes-list");\n    changeList.replaceChildren();\n    if (!changes.data?.length) {\n      const tr = document.createElement("tr");\n      const td = cell(tr, "No production changes detected yet. Initial snapshots are being established.");\n      td.colSpan = 4;\n      td.className = "empty";\n      changeList.append(tr);\n    } else {\n      for (const item of changes.data) {\n        const tr = document.createElement("tr");\n        cell(tr, date(item.detected_at));\n        cell(tr, item.title);\n        cell(tr, item.details);\n        cell(tr, item.status);\n        changeList.append(tr);\n      }\n    }\n    $("run-state").textContent = "Updated " + new Date().toLocaleTimeString();
+
+    const changeList = $("changes-list");
+    changeList.replaceChildren();
+    if (!changes.data?.length) {
+      emptyRow(changeList, "No production changes detected yet. Initial snapshots are being established.", 4);
+    } else {
+      for (const item of changes.data) {
+        const tr = document.createElement("tr");
+        cell(tr, date(item.detected_at));
+        cell(tr, item.title);
+        cell(tr, item.details);
+        cell(tr, item.status);
+        changeList.append(tr);
+      }
+    }
+    $("run-state").textContent = "Updated " + new Date().toLocaleTimeString();
   } catch (error) {
     $("run-state").textContent = "Error";
     $("identity").textContent = error.message;
-    $("runs").replaceChildren();
-    $("findings-list").replaceChildren();
-    for (const [target, message] of [
-      ["runs", "Unable to load monitoring history: " + error.message],
-      ["findings-list", "Unable to load findings: " + error.message]
+    for (const [id, message, colspan] of [
+      ["runs", "Unable to load monitoring history: " + error.message, 5],
+      ["findings-list", "Unable to load findings: " + error.message, 5],
+      ["changes-list", "Unable to load change history: " + error.message, 4]
     ]) {
-      const tr = document.createElement("tr");
-      const td = cell(tr, message);
-      td.colSpan = 5;
-      td.className = "empty";
-      $(target).append(tr);
+      const target = $(id);
+      target.replaceChildren();
+      emptyRow(target, message, colspan);
     }
   }
 }
