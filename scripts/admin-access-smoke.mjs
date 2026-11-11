@@ -8,7 +8,7 @@ const targets = [
     label: "Pages project hostname"
   },
   {
-    origin: "https://bf8d6c67.yorphives-admin-staging.pages.dev",
+    origin: "https://18cb9ac4.yorphives-admin-staging.pages.dev",
     label: "deployment-specific Pages hostname"
   }
 ];
