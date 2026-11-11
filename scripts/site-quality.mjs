@@ -21,6 +21,7 @@ async function run() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const pageErrors = [];
+  const toolResults = [];
   page.on("pageerror", error => pageErrors.push(error.message));
 
   try {
@@ -61,7 +62,6 @@ async function run() {
     record("tool_manifest_valid", Array.isArray(toolManifest) && toolManifest.length >= 1, Array.isArray(toolManifest) ? toolManifest.length + " tools listed" : "Manifest was not an array");
 
     let toolCursor = 0;
-    const toolResults = [];
     async function checkToolPage() {
       while (toolCursor < toolManifest.length) {
         const tool = toolManifest[toolCursor++];
