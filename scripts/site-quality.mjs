@@ -152,27 +152,49 @@ async function run() {
   }
   record("internal_navigation_links", linkResults.length === 0, linkResults.slice(0, 20).map(item => `${item.path}: ${item.status}`).join("; ") || `${internalLinks.size} links passed`);
 
+  // Persist aggregate diagnostics only. Response bodies, remote titles, paths and
+  // exception messages are untrusted network data and stay out of filesystem reports.
   const report = {
     generated_at: new Date().toISOString(),
     base_url: baseUrl,
     summary: { total: checks.length, passed: checks.filter(item => item.ok).length, failed: failures.length },
-    checks,
-    sitemap_pages: sitemapResults,
-    tool_pages: toolResults,
-    broken_internal_links: linkResults,
-    failures
+    checks: checks.map(item => ({
+      name: item.name,
+      ok: Boolean(item.ok),
+      detail: "See workflow logs for diagnostic details."
+    })),
+    sitemap_pages: {
+      checked: sitemapResults.length,
+      failed: sitemapResults.filter(item => !item.ok).length
+    },
+    tool_pages: {
+      checked: toolResults.length,
+      failed: toolResults.filter(item => !item.ok).length
+    },
+    broken_internal_links: {
+      checked: internalLinks.size,
+      failed: linkResults.length
+    },
+    failures: failures.map(item => ({
+      name: item.name,
+      detail: "See workflow logs for diagnostic details."
+    }))
   };
   await writeFile(`${reportDir}/site-quality.json`, JSON.stringify(report, null, 2));
   await writeFile(`${reportDir}/site-quality.md`, [
     "# YorpHives site quality report",
     "",
     `Generated: ${report.generated_at}`,
-    `Target: ${baseUrl}`,
+    `Target: ${report.base_url}`,
     `Result: ${report.summary.passed}/${report.summary.total} checks passed`,
     "",
     "| Check | Result | Details |",
     "| --- | --- | --- |",
-    ...checks.map(item => `| ${item.name} | ${item.ok ? "PASS" : "FAIL"} | ${item.detail.replaceAll("|", "\\|")} |`),
+    ...report.checks.map(item => `| ${item.name} | ${item.ok ? "PASS" : "FAIL"} | ${item.detail} |`),
+    "",
+    `Sitemap pages checked: ${report.sitemap_pages.checked}; failed: ${report.sitemap_pages.failed}.`,
+    `Tool pages checked: ${report.tool_pages.checked}; failed: ${report.tool_pages.failed}.`,
+    `Internal links checked: ${report.broken_internal_links.checked}; failed: ${report.broken_internal_links.failed}.`,
     ""
   ].join("\n"));
   console.log(JSON.stringify(report.summary));
