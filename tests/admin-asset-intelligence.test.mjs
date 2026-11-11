@@ -14,6 +14,7 @@ test("asset intelligence inventories core site routes and the Free Tools manifes
   assert.match(source, /api\/v1\/catalogue/);
   assert.match(source, /catalogue_error/);
   assert.match(source, /openapi_error/);
+  assert.match(source, /tool\.processing === "planned"/);
 
 });
 
