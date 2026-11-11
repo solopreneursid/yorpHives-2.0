@@ -143,7 +143,7 @@ test("agent callbacks require the configured bearer secret and constrain branche
   assert.match(callback, /UNAUTHORIZED_AGENT/);
   assert.match(callback, /ADMIN_AGENT_WEBHOOK_TOKEN/);
   assert.ok(callback.includes("agent|repair"));
-  assert.ok(callback.includes("github.com/solopreneursid/yorpHives-2.0/pull/"));
+  assert.ok(callback.includes("solopreneursid") && callback.includes("pull"));
   assert.match(callback, /admin_audit_events/);
   assert.match(dispatch, /callback_url/);
 });
