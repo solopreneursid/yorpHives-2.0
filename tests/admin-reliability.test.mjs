@@ -38,7 +38,7 @@ test("admin health checks are read-only, same-origin and reject arbitrary target
 
 test("scheduled monitor uses the existing D1 binding and a single six-hour cron", async () => {
   const worker = await read("../admin-monitor/worker.js");
-  const config = JSON.parse((await read("../admin-monitor/wrangler.jsonc")).replace(/\/\/.*$/gm, ""));
+  const config = JSON.parse(await read("../admin-monitor/wrangler.jsonc"));
   assert.match(worker, /scheduled\(controller, env\)/);
   assert.match(worker, /runAdminHealthChecks\(env\.DB, "scheduled"\)/);
   assert.equal(config.name, "yorphives-admin-monitor");
