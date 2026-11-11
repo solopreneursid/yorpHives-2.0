@@ -2,7 +2,7 @@ name: YorpHives browser, SEO and performance quality
 
 on:
   push:
-    branches: [main, "build/**"]
+    branches: [main]
   pull_request:
     branches: [main]
   schedule:
