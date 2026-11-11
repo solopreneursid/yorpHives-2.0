@@ -152,7 +152,7 @@ test("Admin findings support audited triage while fixed status remains verificat
   assert.match(findings, /INVALID_ORIGIN/);
   assert.match(audit, /requireAdmin/);
   assert.match(audit, /ORDER BY created_at DESC/);
-  assert.match(script, /method:\\s*"PATCH"/);
+  assert.match(script, /method:\s*"PATCH"/);
   assert.match(script, /loadActivity\(\)/);
   assert.match(html, /id="audit-list"/);
 });
