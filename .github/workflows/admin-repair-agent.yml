@@ -1,0 +1,48 @@
+name: Admin repair agent
+
+on:
+  repository_dispatch:
+    types:
+      - admin_repair_requested
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: admin-repair-global
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: >-
+      github.event.client_payload.repository == github.repository &&
+      github.event.client_payload.base_branch == 'build/yorphives-admin-reliability'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out protected Admin staging branch
+        uses: actions/checkout@v4
+        with:
+          ref: build/yorphives-admin-reliability
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Execute bounded repair agent
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CF_AI_API_TOKEN: ${{ secrets.CF_AI_API_TOKEN }}
+          CF_ACCOUNT_ID: "69234e51e08d8013980a7ff869746609"
+          ADMIN_AGENT_CALLBACK_TOKEN: ${{ secrets.ADMIN_AGENT_CALLBACK_TOKEN }}
+          ADMIN_AGENT_CALLBACK_URL: ${{ github.event.client_payload.callback_url }}
+          ADMIN_AGENT_JOB_ID: ${{ github.event.client_payload.job_id }}
+          ADMIN_AGENT_REQUEST_TEXT: ${{ github.event.client_payload.request_text }}
+          ADMIN_AGENT_FINDING_ID: ${{ github.event.client_payload.finding_id }}
+          ADMIN_AGENT_BASE_BRANCH: build/yorphives-admin-reliability
+          ADMIN_AGENT_REQUESTED_BY: ${{ github.event.client_payload.requested_by }}
+        run: node scripts/admin-repair-agent.mjs
