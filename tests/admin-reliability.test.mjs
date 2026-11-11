@@ -41,6 +41,7 @@ test("scheduled monitor uses the existing D1 binding and a single six-hour cron"
   const config = JSON.parse(await read("../admin-monitor/wrangler.jsonc"));
   assert.match(worker, /scheduled\(controller, env\)/);
   assert.match(worker, /runAdminHealthChecks\(env\.DB, "scheduled"\)/);
+  assert.match(worker, /captureProductionSnapshots\(env\.DB\)/);
   assert.equal(config.name, "yorphives-admin-monitor");
   assert.equal(config.workers_dev, false);
   assert.equal(config.preview_urls, false);
@@ -48,14 +49,14 @@ test("scheduled monitor uses the existing D1 binding and a single six-hour cron"
   assert.equal(config.d1_databases[0].binding, "DB");
 });
 
-test("admin dashboard is private, responsive and does not expose public navigation", async () => {
+test("admin dashboard is private, responsive and loads all protected APIs", async () => {
   const html = await read("../admin/index.html");
+  const script = await read("../admin/admin.js");
   assert.match(html, /noindex,nofollow,noarchive/);
-  assert.match(html, /api\/admin\/overview/);
-  assert.match(html, /api\/admin\/findings/);
-  assert.match(html, /api\/admin\/run-checks/);
+  assert.match(html, /changes-list/);
   assert.match(html, /@media\(max-width:760px\)/);
   assert.match(html, /Read-only monitoring/);
+  for (const route of ["overview", "findings", "changes", "run-checks"]) assert.ok(script.includes("/api/admin/" + route));
 });
 
 test("CodeQL security workflow runs weekly and on branch changes", async () => {
