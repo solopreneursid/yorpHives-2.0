@@ -92,7 +92,7 @@ jobs:
           retention-days: 30
 
   lighthouse:
-    name: Lighthouse performance budgets
+    name: Lighthouse performance audit
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
