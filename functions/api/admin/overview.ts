@@ -10,8 +10,10 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
       (SELECT COUNT(*) FROM admin_monitors WHERE enabled = 1) AS active_monitors,
       (SELECT COUNT(*) FROM admin_findings WHERE status IN ('open', 'investigating', 'awaiting_approval')) AS open_findings,
       (SELECT COUNT(*) FROM admin_findings WHERE severity = 'critical' AND status IN ('open', 'investigating', 'awaiting_approval')) AS critical_findings,
+      (SELECT COUNT(*) FROM admin_asset_findings WHERE status IN ('open', 'investigating', 'awaiting_approval')) AS open_asset_findings,
+      (SELECT COUNT(*) FROM admin_asset_findings WHERE severity = 'critical' AND status IN ('open', 'investigating', 'awaiting_approval')) AS critical_asset_findings,
       (SELECT MAX(started_at) FROM admin_runs) AS last_run_at
   `).first<OverviewCounts>();
   const runs = await db.prepare("SELECT id, status, started_at, completed_at, monitor_count, passed_count, failed_count FROM admin_runs ORDER BY started_at DESC LIMIT 8").all<RecentRun>();
-  return adminJson({ identity: identity.email, counts, recent_runs: runs.results });
+  return adminJson({ identity: identity.email, system: { admin_app: "online", authentication: "verified", database: "healthy" }, counts: { ...counts, open_findings: (counts?.open_findings || 0) + (counts?.open_asset_findings || 0), critical_findings: (counts?.critical_findings || 0) + (counts?.critical_asset_findings || 0) }, recent_runs: runs.results });
 }
