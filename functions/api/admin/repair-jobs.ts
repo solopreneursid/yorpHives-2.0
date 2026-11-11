@@ -60,6 +60,8 @@ interface RepairJobRow {
 interface CreateRepairJobRequest {
   finding_id?: string | null;
   request_text?: string;
+  permission_probe?: boolean;
+  confirm?: boolean;
 }
 const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();
@@ -183,6 +185,60 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
   }
 
   const body = await context.request.json().catch(() => null) as CreateRepairJobRequest | null;
+  if (body?.permission_probe === true) {
+    if (body.confirm !== true) {
+      return adminJson({ error: { code: "CONFIRMATION_REQUIRED", message: "Confirm the temporary branch and draft-PR permission probe." } }, 400);
+    }
+    const agent = context.env.ADMIN_AGENT_SERVICE;
+    if (!agent) {
+      return adminJson({ error: { code: "AGENT_NOT_CONFIGURED", message: "The private repair Worker service binding is unavailable." } }, 503);
+    }
+    const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const recentProbe = await context.env.DB!.prepare(
+      "SELECT COUNT(*) AS count FROM admin_audit_events WHERE action='github_permission_probe' AND created_at>=?"
+    ).bind(cutoff).first<{ count: number }>();
+    if ((recentProbe?.count || 0) >= 1) {
+      return adminJson({ error: { code: "PROBE_RATE_LIMIT", message: "A GitHub permission probe has already run in the last hour." } }, 429);
+    }
+    let probe: Record<string, unknown>;
+    try {
+      const response = await agent.fetch(new Request("https://admin-agent.internal/permission-probe", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-yorphives-internal-probe": "1"
+        },
+        body: JSON.stringify({ confirm: true })
+      }));
+      probe = await response.json().catch(() => null) as Record<string, unknown> | null as Record<string, unknown>;
+      if (!response.ok || !probe) {
+        return adminJson({ error: { code: "GITHUB_PERMISSION_PROBE_FAILED", message: "The repair Worker could not complete the permission probe." } }, response.status || 502);
+      }
+    } catch {
+      return adminJson({ error: { code: "GITHUB_PERMISSION_PROBE_UNAVAILABLE", message: "The private repair Worker could not be reached." } }, 502);
+    }
+    await context.env.DB!.prepare(
+      "INSERT INTO admin_audit_events (id,actor,action,resource_type,resource_id,details_json,created_at) VALUES (?,?,?,?,?,?,?)"
+    ).bind(
+      id(),
+      identity.email,
+      "github_permission_probe",
+      "github_token",
+      "cloudflare-admin-agent",
+      JSON.stringify({
+        ready: probe.ready === true,
+        contents_write: probe.contents_write === true,
+        pull_requests_write: probe.pull_requests_write === true,
+        cleanup: probe.cleanup || null,
+        cleanup_errors: probe.cleanup_errors || [],
+        remaining_branch: probe.remaining_branch || null,
+        remaining_pull_request: probe.remaining_pull_request || null
+      }),
+      now()
+    ).run();
+    return adminJson({ probe });
+  }
+
   const requestText = (body?.request_text || "").trim();
   if (!requestText || requestText.length > 4000) {
     return adminJson({ error: { code: "INVALID_REQUEST", message: "Describe the repair in 1–4000 characters." } }, 400);
