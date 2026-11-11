@@ -578,13 +578,39 @@ export default {
       return new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } });
     }
     if (request.method === "GET") {
-      const health = await checkGithubAccess(env);
-      return Response.json(health, {
-        status: health.ready ? 200 : 503,
+      const githubHealth = await checkGithubAccess(env);
+      const dependencies = {
+        database: Boolean(env.DB),
+        workers_ai: Boolean(env.AI),
+        durable_workflow: Boolean(env.ADMIN_REPAIR_WORKFLOW)
+      };
+      const missing = Object.entries(dependencies)
+        .filter(([, available]) => !available)
+        .map(([name]) => name);
+      const ready = githubHealth.ready === true && missing.length === 0;
+      return Response.json({
+        ...githubHealth,
+        ready,
+        dependencies,
+        ...(missing.length ? {
+          error: githubHealth.error || "Required Worker bindings are missing: " + missing.join(", ")
+        } : {})
+      }, {
+        status: ready ? 200 : 503,
         headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" }
       });
     }
-    if (!env.GITHUB_TOKEN) return Response.json({ error: "GITHUB_TOKEN Worker secret is not configured." }, { status: 503 });
+    const missingDependencies = [
+      !env.GITHUB_TOKEN ? "GITHUB_TOKEN" : null,
+      !env.DB ? "DB" : null,
+      !env.AI ? "AI" : null,
+      !env.ADMIN_REPAIR_WORKFLOW ? "ADMIN_REPAIR_WORKFLOW" : null
+    ].filter(Boolean);
+    if (missingDependencies.length) {
+      return Response.json({
+        error: "Required repair Worker configuration is missing: " + missingDependencies.join(", ")
+      }, { status: 503, headers: { "cache-control": "no-store" } });
+    }
     const payload = await request.json().catch(() => null);
     if (!payload || !/^[0-9a-f-]{36}$/i.test(String(payload.job_id || "")) ||
         typeof payload.request_text !== "string" || payload.request_text.length > 4000) {
