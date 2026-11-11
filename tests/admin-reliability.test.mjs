@@ -16,6 +16,8 @@ test("admin routes require a signed Cloudflare Access identity and explicit emai
   assert.match(auth, /cf-access-jwt-assertion/);
   assert.match(auth, /RSASSA-PKCS1-v1_5/);
   assert.match(auth, /CF_ACCESS_AUD/);
+  assert.match(auth, /expectedAudiences/);
+  assert.match(auth, /tokenAudiences\.some/);
   assert.match(auth, /ADMIN_ALLOWED_EMAILS/);
   assert.match(auth, /claims\.exp/);
   assert.match(auth, /claims\.iss/);
