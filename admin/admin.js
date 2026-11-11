@@ -343,7 +343,15 @@ async function loadRepairDesk() {
       const meta = document.createElement("p");
       meta.textContent = "Requested " + date(job.created_at) + " by " + job.requested_by;
       article.append(head, request, meta);
-      if (job.branch_name) {\n        const branchLink = document.createElement("a");\n        branchLink.href = "https://github.com/solopreneursid/yorpHives-2.0/tree/" + job.branch_name.split("/").map(encodeURIComponent).join("/");\n        branchLink.target = "_blank";\n        branchLink.rel = "noopener noreferrer";\n        branchLink.textContent = "Inspect agent branch ↗";\n        article.append(branchLink);\n      }\n      if (job.pull_request_url) {
+      if (job.branch_name) {
+        const branchLink = document.createElement("a");
+        branchLink.href = "https://github.com/solopreneursid/yorpHives-2.0/tree/" + job.branch_name.split("/").map(encodeURIComponent).join("/");
+        branchLink.target = "_blank";
+        branchLink.rel = "noopener noreferrer";
+        branchLink.textContent = "Inspect agent branch ↗";
+        article.append(branchLink);
+      }
+      if (job.pull_request_url) {
         const link = document.createElement("a");
         link.href = job.pull_request_url;
         link.target = "_blank";
