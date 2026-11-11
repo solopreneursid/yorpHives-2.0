@@ -117,7 +117,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   const agentConfigured = agentHealth?.ready === true;
   const [scheduled, securityAudit, openSecurity, queuedJobs] = await Promise.all([
     context.env.DB!.prepare("SELECT MAX(started_at) AS last_run_at FROM admin_runs WHERE trigger_source='scheduled' AND status='completed'").first<{last_run_at:string|null}>(),
-    context.env.DB!.prepare("SELECT action,details_json,created_at AS last_run_at FROM admin_audit_events WHERE action IN ('security_audit_completed','security_audit_partial') ORDER BY created_at DESC LIMIT 1").first<{action:string;details_json:string;last_run_at:string}>(),
+    context.env.DB!.prepare("SELECT action,details_json,created_at AS last_run_at FROM admin_audit_events WHERE action IN ('security_audit_completed','security_audit_partial') ORDER BY created_at DESC LIMIT 1").first<{action:string;details_json:string|null;last_run_at:string|null}>(),
     context.env.DB!.prepare("SELECT COUNT(*) AS count FROM admin_asset_findings WHERE category='security' AND status IN ('open','investigating','awaiting_approval')").first<{count:number}>(),
     context.env.DB!.prepare("SELECT COUNT(*) AS count FROM admin_repair_jobs WHERE status IN ('queued','dispatched','running','needs_review')").first<{count:number}>()
   ]);
@@ -135,13 +135,19 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     securityEvidence.skipped === 0;
   const securityFresh = Boolean(securityComplete && securityAudit?.last_run_at &&
     Date.now()-Date.parse(securityAudit.last_run_at)<8*60*60*1000);
+  const hasStructuredSecurityEvidence = typeof securityEvidence?.target_count === "number" &&
+    typeof securityEvidence.checked === "number" &&
+    typeof securityEvidence.errors === "number" &&
+    typeof securityEvidence.skipped === "number";
   const securityDetail = !securityAudit
     ? "No security audit has run yet."
-    : !securityComplete
-      ? `Last audit was partial: ${securityEvidence?.checked ?? 0}/${securityEvidence?.target_count ?? 0} targets checked, ${securityEvidence?.errors ?? 0} errors, ${securityEvidence?.skipped ?? 0} skipped.`
-      : securityFresh
-        ? "All configured public targets completed the passive security audit."
-        : "The last complete security audit is older than eight hours.";
+    : !hasStructuredSecurityEvidence
+      ? "The last audit used an older evidence format; full target coverage cannot be verified. Waiting for a complete audit cycle."
+      : !securityComplete
+        ? `Last audit was partial: ${securityEvidence.checked}/${securityEvidence.target_count} targets checked, ${securityEvidence.errors} errors, ${securityEvidence.skipped} skipped.`
+        : securityFresh
+          ? "All configured public targets completed the passive security audit."
+          : "The last complete security audit is older than eight hours.";
   const qa = specialistState(agentHealth, "browser smoke tests and seo crawl");
   const review = specialistState(agentHealth, "code review");
   const performance = specialistState(agentHealth, "lighthouse performance audit");
