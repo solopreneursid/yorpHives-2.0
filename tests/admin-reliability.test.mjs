@@ -141,11 +141,13 @@ test("agent callbacks require the configured bearer secret and constrain branche
   const callback = await read("../functions/api/admin/agent-callback.ts");
   const dispatch = await read("../functions/api/admin/repair-jobs.ts");
   assert.match(callback, /UNAUTHORIZED_AGENT/);
-  assert.match(callback, /ADMIN_AGENT_WEBHOOK_TOKEN/);
+  assert.match(callback, /ADMIN_AGENT_CALLBACK_TOKEN/);
   assert.ok(callback.includes("agent|repair"));
   assert.ok(callback.includes("solopreneursid") && callback.includes("pull"));
   assert.match(callback, /admin_audit_events/);
   assert.match(dispatch, /callback_url/);
+  assert.match(dispatch, /admin_repair_requested/);
+  assert.match(dispatch, /api.github.com\/repos\/solopreneursid\/yorpHives-2.0\/dispatches/);
 });
 
 
@@ -163,4 +165,25 @@ test("Admin findings support audited triage while fixed status remains verificat
   assert.match(script, /method: "PATCH"/);
   assert.match(script, /loadAudit\(\)/);
   assert.match(html, /id="audit-list"/);
+});
+
+
+test("repair agent workflow is dispatch-only, least-privilege and cannot edit protected infrastructure", async () => {
+  const workflow = await read("../.github/workflows/admin-repair-agent.yml");
+  const agent = await read("../scripts/admin-repair-agent.mjs");
+  const ci = await read("../.github/workflows/ci.yml");
+  assert.match(workflow, /repository_dispatch/);
+  assert.match(workflow, /admin_repair_requested/);
+  assert.match(workflow, /contents: write/);
+  assert.match(workflow, /pull-requests: write/);
+  assert.match(agent, /MAX_PATCH_CHARS/);
+  assert.match(agent, /isAllowedPath/);
+  assert.match(agent, /"--check"/);
+  assert.match(agent, /npm.*run.*check/);
+  assert.match(agent, /--draft/);
+  assert.match(agent, /needs_review/);
+  assert.match(agent, /admin-staging\\.yorphives\\.com/);
+  assert.match(ci, /agent\\/\\*\\*/);
+  assert.match(ci, /repair\\/\\*\\*/);
+  assert.doesNotMatch(agent, /gh.*pr.*merge/);
 });
