@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { checkMonitor } from "../admin-monitor/admin-health.js";
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 const extractApprovedHosts = (source) => {
   const block = source.match(/const APPROVED_HOSTS = new Set\(\[([\s\S]*?)\]\)/)?.[1] || "";
@@ -42,6 +43,8 @@ test("admin health checks are read-only, same-origin and reject arbitrary target
   assert.match(shared, /AbortSignal\.timeout\(8000\)/);
   assert.match(shared, /redirect: "manual"/);
   assert.match(shared, /admin_findings/);
+  assert.match(shared, /ACCESS_GATE_MONITORS/);
+  assert.match(shared, /expectedAccessDenial/);
 });
 
 test("scheduled monitor uses the existing D1 binding and a single six-hour cron", async () => {
@@ -236,4 +239,30 @@ test("scheduled health checks include the private Admin UI and API access gates"
   assert.match(migration, /admin-staging-ui/);
   assert.match(migration, /admin-staging-api/);
   assert.match(migration, /environment\)/);
+});
+
+
+test("private Admin gate monitors treat Cloudflare Access 401 and 403 denials as healthy", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => new Response(null, { status: 401, headers: { "cf-ray": "test-ray" } });
+    const admin = await checkMonitor({ id: "admin-staging-ui", name: "Admin UI", url: "https://admin-staging.yorphives.com/admin/", environment: "preview" });
+    const publicSite = await checkMonitor({ id: "prod-home", name: "Production homepage", url: "https://yorphives.com/", environment: "production" });
+    assert.equal(admin.ok, true);
+    assert.equal(admin.status_code, 401);
+    assert.equal(admin.error_message, null);
+    assert.equal(publicSite.ok, false);
+    assert.equal(publicSite.error_message, "HTTP 401");
+
+    globalThis.fetch = async () => new Response(null, { status: 403, headers: { "cf-ray": "test-ray" } });
+    const deniedApi = await checkMonitor({ id: "admin-staging-api", name: "Admin API", url: "https://admin-staging.yorphives.com/api/admin/overview", environment: "preview" });
+    assert.equal(deniedApi.ok, true);
+    assert.equal(deniedApi.status_code, 403);
+
+    globalThis.fetch = async () => new Response(null, { status: 401 });
+    const unverifiedDenial = await checkMonitor({ id: "admin-staging-api", name: "Admin API", url: "https://admin-staging.yorphives.com/api/admin/overview", environment: "preview" });
+    assert.equal(unverifiedDenial.ok, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
