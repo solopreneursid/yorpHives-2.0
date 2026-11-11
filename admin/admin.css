@@ -17,3 +17,14 @@
 .system-message a{color:inherit;font-weight:800;white-space:nowrap}
 .system-message button{border:0;background:transparent;color:inherit;font-size:18px;cursor:pointer}
 @media(max-width:760px){.account-card{margin-bottom:10px}.system-message{align-items:flex-start;flex-wrap:wrap}.system-message a{white-space:normal}}
+/* Keep account controls reachable even when the sidebar content is taller than the viewport. */
+.sidebar{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#30445e transparent}
+.sidebar .brand,.sidebar .workspace-label,.sidebar .side-nav{flex-shrink:0}
+.sidebar-bottom{flex-shrink:0;margin-top:auto;padding-top:14px}
+.account-card{display:block;visibility:visible;opacity:1;position:relative;z-index:1}
+.account-actions{grid-template-columns:1fr;gap:7px}
+.account-action{min-height:38px;font-size:11px}
+.account-action.signout{background:#321c27;border-color:#81505d;color:#ffd1d8;font-weight:800}
+.account-action.sign-in{background:#102a34}
+.access-card{margin:10px 0 0}
+@media(max-height:720px){.sidebar{padding-top:14px;padding-bottom:12px}.brand{padding-bottom:12px}.workspace-label{padding-top:10px;padding-bottom:5px}.nav-item{padding-top:8px;padding-bottom:8px}.sidebar-bottom{padding-top:8px}}
