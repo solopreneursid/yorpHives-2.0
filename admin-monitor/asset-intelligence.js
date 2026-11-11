@@ -356,7 +356,7 @@ export async function runAssetIntelligence(db) {
     const manifest = await response.json();
     if (!Array.isArray(manifest)) throw new Error("Tool manifest is not an array.");
     for (const tool of manifest) {
-      if (!tool || typeof tool.slug !== "string" || typeof tool.url !== "string" || !/^[a-z0-9-]{2,80}$/.test(tool.slug)) continue;
+      if (!tool || typeof tool.slug !== "string" || typeof tool.url !== "string" || tool.processing === "planned" || !/^[a-z0-9-]{2,80}$/.test(tool.slug)) continue;
       const url = safeInternalUrl(tool.url);
       if (!url) continue;
       inventory.push({ key: "tool:" + tool.slug, type: "free_tool", title: String(tool.title || tool.slug).slice(0, 160), url: url.pathname, source: "free-tools/manifest.json" });
