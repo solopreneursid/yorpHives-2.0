@@ -10,7 +10,7 @@ paths:
     get:
       operationId: listFreeTools
       summary: List browser-first Free Tools
-      description: Returns the static Free Tools manifest as JSON by default or Markdown when requested with Accept: text/markdown or format=markdown. Browser-local tools are discovery records, not remotely executable agent tools.
+      description: Returns the static Free Tools manifest as JSON by default or Markdown when requested with Accept: text/markdown or format=markdown. Processing describes browser runtime dependencies. agent_execution is not_available for every current tool; this is discovery metadata, not a remote execution contract.
       parameters:
         - in: query
           name: format
@@ -30,7 +30,7 @@ paths:
                     type: array
                     items:
                       type: object
-                      required: [slug, title, category, description, url, processing]
+                      required: [slug, title, category, description, url, processing, agent_execution]
                       properties:
                         slug: { type: string }
                         title: { type: string }
@@ -38,6 +38,7 @@ paths:
                         description: { type: string }
                         url: { type: string }
                         processing: { type: string, enum: [browser, library, network, planned] }
+                        agent_execution: { type: string, enum: [not_available] }
                   count: { type: integer }
             text/markdown:
               schema: { type: string }
