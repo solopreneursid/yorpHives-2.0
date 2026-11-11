@@ -7,6 +7,7 @@ const CONCURRENCY = 8;
 const SITE_PAGES = [
   { key: "site:home", type: "website_page", title: "Homepage", url: "/" },
   { key: "site:free-tools", type: "website_page", title: "Free Tools directory", url: "/free-tools/" },
+  { key: "site:tool-manifest", type: "discovery", title: "Free Tools manifest", url: "/free-tools/manifest.json" },
   { key: "site:explore", type: "website_page", title: "Explore marketplace", url: "/explore/" },
   { key: "site:builder", type: "website_page", title: "Builder", url: "/builder/" },
   { key: "site:connect", type: "website_page", title: "Connect", url: "/connect/" },
@@ -264,7 +265,7 @@ async function checkNpmDependency(db, dependency, now) {
     const currentMajor = Number(dependency.currentVersion.split(".")[0]);
     const latestMajor = Number(String(latest || "").split(".")[0]);
     const newer = latest && compareVersions(latest, dependency.currentVersion) > 0;
-    const status = deprecatedMessage ? "deprecated" : newer ? (latestMajor > currentMajor ? "major_update" : "update_available") : "current";
+    const status = deprecatedMessage ? "deprecated" : !latest ? "unknown" : newer ? (latestMajor > currentMajor ? "major_update" : "update_available") : "current";
     const details = deprecatedMessage ? String(deprecatedMessage).slice(0, 500) :
       newer ? "Latest registry version is " + latest + "; current CDN pin is " + dependency.currentVersion + "." :
       "Pinned version matches the current npm latest tag.";
