@@ -1,5 +1,6 @@
 import { adminJson, isAdminResponse, requireAdmin, type AdminRequestContext } from "../../_lib/admin-auth";
 
+/** Private Cloudflare Service binding to the durable Admin repair Workflow Worker. */
 interface AgentService {
   fetch(request: Request): Promise<Response>;
 }
