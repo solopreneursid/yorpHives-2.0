@@ -14,7 +14,7 @@ function allowedPath(path) {
   if (/^(wrangler|package(-lock)?\.json|\.npmrc|\.env)/i.test(path)) return false;
   if (/^functions\/_lib\//.test(path) || /^functions\/admin\//.test(path)) return false;
   if (/^functions\/api\/admin\/(analytics|agent-callback|repair-jobs|audit|release[^/]*)\.ts$/.test(path)) return false;
-  return /^(app\.js|discover\/|listing\/|free-tools\/|explore\/|admin\/(admin\.js|index\.html)$|functions\/api\/)/.test(path);
+  return /^(app\.js|discover\/|listing\/|free-tools\/|explore\/|admin\/(admin\.js|admin\.css|index\.html)$|functions\/api\/)/.test(path);
 }
 
 async function github(env, path, method = "GET", body) {
