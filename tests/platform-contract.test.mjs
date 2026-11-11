@@ -151,6 +151,8 @@ test("Free Tools have an agent discovery API and machine-readable documentation"
   const openapi = await read("../openapi.yaml");
   assert.match(api, /text\/markdown/);
   assert.match(api, /FreeToolsResponse/);
+  assert.match(api, /agent_execution: "not_available"/);
+  assert.match(api, /"library" \| "network" \| "planned"/);
   assert.equal(manifest.machine_interfaces.free_tools, "/api/v1/free-tools");
   assert.match(llms, /api\/v1\/free-tools/);
   assert.match(openapi, /\/api\/v1\/free-tools/);
@@ -168,5 +170,10 @@ test("advanced Free Tools expose dedicated browser interfaces and disclosed proc
     assert.match(page, /advanced-runtime\.js/);
     assert.match(runtime, new RegExp(slug));
   }
-  assert.equal(manifest.find(entry => entry.slug === "background-remover").processing, "planned");
+  assert.equal(manifest.find(entry => entry.slug === "background-remover").processing, "library");
+  for (const item of manifest) assert.equal(item.agent_execution, "not_available");
+  assert.match(runtime, /background-removal/);
+  assert.match(runtime, /pdfjs-dist/);
+  assert.match(runtime, /quality/);
+  assert.match(runtime, /Cross-origin access depends on the target website CORS policy/);
 });
