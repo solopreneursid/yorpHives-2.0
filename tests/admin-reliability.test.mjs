@@ -159,10 +159,10 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   const route = await read("../functions/api/admin/repair-jobs.ts");
   const worker = await read("../admin-agent/worker.js");
   const config = JSON.parse(await read("../admin-agent/wrangler.jsonc"));
-  assert.match(route, /ADMIN_AGENT_SERVICE/);\n  assert.match(route, /ADMIN_AGENT_SERVICE_TOKEN/);
+  assert.match(route, /ADMIN_AGENT_SERVICE/);\n  assert.match(route, /ADMIN_AGENT_SERVICE_TOKEN/);\n  assert.match(route, /admin-agent\\.internal\\/health/);
   assert.match(route, /AGENT_DAILY_LIMIT/);
   assert.match(route, /admin-agent\.internal\/instances/);
-  assert.match(worker, /WorkflowEntrypoint/);\n  assert.match(worker, /ADMIN_AGENT_SERVICE_TOKEN/);
+  assert.match(worker, /WorkflowEntrypoint/);\n  assert.match(worker, /ADMIN_AGENT_SERVICE_TOKEN/);\n  assert.match(worker, /ready: Boolean\\(env\\.GITHUB_TOKEN\\)/);
   assert.match(worker, /@cf\/qwen\/qwen3\.8-27b/);
   assert.match(worker, /build\/agent\/repair-/);
   assert.match(worker, /yorphives platform checks/);
