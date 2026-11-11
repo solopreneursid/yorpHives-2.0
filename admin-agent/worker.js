@@ -53,6 +53,21 @@ async function githubMaybe(env, path) {
   return payload;
 }
 
+async function githubMaybe(env, path) {
+  const response = await fetch("https://api.github.com" + path, {
+    headers: {
+      authorization: "Bearer " + env.GITHUB_TOKEN,
+      accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    },
+    signal: AbortSignal.timeout(15000)
+  });
+  if (response.status === 404) return null;
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(`GitHub lookup failed with HTTP ${response.status}: ${payload?.message || "unknown error"}`);
+  return payload;
+}
+
 function decodeBase64Utf8(value) {
   const binary = atob(value.replace(/\s/g, ""));
   const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
@@ -136,6 +151,8 @@ function parseModelResponse(output, files) {
 
 async function createBranchCommit(env, jobId, base, changes) {
   const branch = `build/agent/repair-${jobId}`;
+  const existing = await githubMaybe(env, `/repos/${REPOSITORY}/git/ref/heads/${branch}`);
+  if (existing?.object?.sha) return { branch, commitSha: existing.object.sha };
   const tree = [];
   for (const change of changes) {
     const blob = await github(env, `/repos/${REPOSITORY}/git/blobs`, "POST", {
@@ -221,9 +238,8 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
     if (!/^[0-9a-f-]{36}$/i.test(jobId) || !requestText || requestText.length > 4000) {
       throw new Error("Invalid Admin repair workflow payload.");
     }
-    if (!this.env.GITHUB_TOKEN) throw new Error("The GITHUB_TOKEN Worker secret is not configured.");
-
     try {
+      if (!this.env.GITHUB_TOKEN) throw new Error("The GITHUB_TOKEN Worker secret is not configured.");
       await step.do("mark-repair-running", async () => {
         await updateJob(this.env.DB, jobId, "running", { agentName: "yorphives-cloudflare-agent", summary: "Durable repair workflow started." });
         return { jobId, status: "running" };
