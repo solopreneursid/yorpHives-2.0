@@ -26,10 +26,14 @@ export default {
         assets_unavailable: assets.unavailable,
         discovered_assets: assets.discovered,
         dependency_observations: assets.dependencies,
+        security_status: security.status,
         security_assets_checked: security.checked,
+        security_target_count: security.target_count,
+        security_errors: security.errors,
+        security_skipped: security.skipped,
         security_findings: security.findings
       }));
-      if (health.run.failed_count > 0 || changes.results.some(result => !result.ok) || assets.unavailable > 0 || assets.degraded > 0 || assets.manifest_error || assets.sitemap_error || assets.catalogue_error || assets.openapi_error) {
+      if (health.run.failed_count > 0 || changes.results.some(result => !result.ok) || assets.unavailable > 0 || assets.degraded > 0 || assets.manifest_error || assets.sitemap_error || assets.catalogue_error || assets.openapi_error || security.status !== "complete") {
         console.warn(JSON.stringify({ event: "reliability_cycle_warnings", health_failures: health.run.failed_count, snapshot_results: changes.results, asset_results: assets.results, manifest_error: assets.manifest_error, sitemap_error: assets.sitemap_error, catalogue_error: assets.catalogue_error, openapi_error: assets.openapi_error, inventory_truncated: assets.inventory_truncated, security_results: security.results }));
       }
     } catch (error) {
