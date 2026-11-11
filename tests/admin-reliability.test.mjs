@@ -41,7 +41,8 @@ test("scheduled monitor uses the existing D1 binding and a single six-hour cron"
   const config = JSON.parse(await read("../admin-monitor/wrangler.jsonc"));
   assert.match(worker, /scheduled\(controller, env\)/);
   assert.match(worker, /runAdminHealthChecks\(env\.DB, "scheduled"\)/);
-  assert.match(worker, /captureProductionSnapshots\(env\.DB\)/);\n  assert.match(worker, /runAssetIntelligence\(env\.DB\)/);
+  assert.match(worker, /captureProductionSnapshots\(env\.DB\)/);
+  assert.match(worker, /runAssetIntelligence\(env\.DB\)/);
   assert.equal(config.name, "yorphives-admin-monitor");
   assert.equal(config.workers_dev, false);
   assert.equal(config.preview_urls, false);
@@ -53,7 +54,10 @@ test("admin dashboard is private, responsive and loads all protected APIs", asyn
   const html = await read("../admin/index.html");
   const script = await read("../admin/admin.js");
   assert.match(html, /noindex,nofollow,noarchive/);
-  assert.match(html, /changes-list/);\n  assert.match(html, /assets-list/);\n  assert.match(html, /asset-findings-list/);\n  assert.match(html, /dependencies-list/);
+  assert.match(html, /changes-list/);
+  assert.match(html, /assets-list/);
+  assert.match(html, /asset-findings-list/);
+  assert.match(html, /dependencies-list/);
   assert.match(html, /@media\(max-width:760px\)/);
   assert.match(html, /Read-only monitoring/);
   for (const route of ["overview", "findings", "changes", "assets", "run-checks", "run-assets"]) assert.ok(script.includes("/api/admin/" + route));
@@ -94,7 +98,8 @@ test("quality workflows include browser, SEO, Lighthouse and passive security co
   assert.match(quality, /lighthouse/);
   assert.match(script, /free_tools_search/);
   assert.match(script, /json_formatter_execution/);
-  assert.match(script, /sitemap_pages_http_and_metadata/);\n  assert.match(script, /all_free_tools_render_and_controls/);
+  assert.match(script, /sitemap_pages_http_and_metadata/);
+  assert.match(script, /all_free_tools_render_and_controls/);
   assert.match(security, /gitleaks/);
   assert.match(security, /retire/);
   assert.match(security, /action-baseline/);
