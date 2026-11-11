@@ -253,7 +253,7 @@ async function loadMonitoring() {
   const [assets,overview,changes]=await Promise.all([getAssets(true),getOverview(),api("/api/admin/changes")]);
   renderAssets();renderCatalogue();renderRuns($("runs"),overview.recent_runs || []);renderChanges($("changes-list"),changes.data || []);
   const sourceFailures=Object.entries(state.sourceErrors).filter(([,error])=>error).map(([name,error])=>name+": "+error);
-  $("inventory-source-status").textContent=sourceFailures.length?"Some live inventory sources are unavailable: "+sourceFailures.join(" · "):"Live inventory sources connected · public catalogue · Free Tools API · sitemap";
+  $("inventory-source-status").textContent=sourceFailures.length?"Some live inventory sources are unavailable: "+sourceFailures.join(" · "):"Live inventory sources connected · public catalogue · Free Tools API · sitemap · OpenAPI";
   const c=state.assetCounts;
   $("website-count").textContent=number(c.website_pages);
   $("tools-count").textContent=number(c.free_tools);
