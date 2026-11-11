@@ -91,6 +91,7 @@ async function getAssets(force = false) {
   state.assets = result.assets || [];
   state.dependencies = result.dependencies || [];
   state.catalogue = result.catalogue || [];
+  state.sourceErrors = result.source_errors || {};
   state.assetCounts = result.counts || {};
   state.assetFindings = result.findings || [];
   updateNavigationCounts();
@@ -158,8 +159,9 @@ function renderCatalogue() {
     (tr,item)=>{const td=cell(tr,"");td.append(badge(item.status));},
     (tr,item)=>cell(tr,item.access_model),
     (tr,item)=>cell(tr,item.destination_url || "Not published"),
+    (tr,item)=>cell(tr,item.source || "—"),
     (tr,item)=>cell(tr,date(item.updated_at))
-  ],"No YorpHives applications are registered in the shared catalogue.",5);
+  ],"No YorpHives applications are registered in the shared catalogue.",6);
 }
 function renderDependencies() {
   const target = $("dependencies-list");
@@ -194,6 +196,7 @@ async function loadOverview() {
   state.assets = assetsResult.assets || [];
   state.dependencies = assetsResult.dependencies || [];
   state.catalogue = assetsResult.catalogue || [];
+  state.sourceErrors = assetsResult.source_errors || {};
   state.assetCounts = assetsResult.counts || {};
   state.assetFindings = assetsResult.findings || [];
   state.findings = findings.data || [];
@@ -249,6 +252,8 @@ async function loadOverview() {
 async function loadMonitoring() {
   const [assets,overview,changes]=await Promise.all([getAssets(true),getOverview(),api("/api/admin/changes")]);
   renderAssets();renderCatalogue();renderRuns($("runs"),overview.recent_runs || []);renderChanges($("changes-list"),changes.data || []);
+  const sourceFailures=Object.entries(state.sourceErrors).filter(([,error])=>error).map(([name,error])=>name+": "+error);
+  $("inventory-source-status").textContent=sourceFailures.length?"Some live inventory sources are unavailable: "+sourceFailures.join(" · "):"Live inventory sources connected · public catalogue · Free Tools API · sitemap";
   const c=state.assetCounts;
   $("website-count").textContent=number(c.website_pages);
   $("tools-count").textContent=number(c.free_tools);
