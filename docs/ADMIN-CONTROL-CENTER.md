@@ -30,7 +30,7 @@ Add one encrypted Worker secret:
 
 The Worker uses the Cloudflare Workers AI binding and does not require an external model-provider key. It uses `@cf/qwen/qwen3.8-27b`, one bounded inference call per job, a 3,500-token output cap, and a maximum of two repair jobs per 24 hours. Workers AI has a daily free allocation; usage beyond the included allowance can incur charges.
 
-The Pages project must have the `ADMIN_AGENT_SERVICE` Service binding pointing to `yorphives-admin-agent` in both its preview and production environment configurations. The service request is also authenticated with a random `ADMIN_AGENT_SERVICE_TOKEN` secret stored on both sides; the Worker rejects requests without it. In this architecture, “production” refers only to the production environment of the separate Admin staging Pages project; it does not refer to the public YorpHives site.
+The Pages project must have the `ADMIN_AGENT_SERVICE` Service binding pointing to `yorphives-admin-agent` in both its preview and production environment configurations. The Worker has no `workers.dev` hostname or public route; it is reachable only through the Pages Service binding. In this architecture, “production” refers only to the production environment of the separate Admin staging Pages project; it does not refer to the public YorpHives site.
 
 ## Repair workflow
 
