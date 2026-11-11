@@ -1,5 +1,6 @@
 const SITE_ORIGIN = "https://yorphives.com";
 const MAX_ASSETS = 250;
+const MAX_ASSETS_PER_RUN = 60;
 const MAX_BODY_BYTES = 384 * 1024;
 const MAX_DEPENDENCIES = 30;
 const CONCURRENCY = 8;
@@ -376,8 +377,21 @@ export async function runAssetIntelligence(db) {
     });
   }
 
-  await syncInventory(db, inventory, now, !manifestError);
-  const checked = await mapLimit(inventory.slice(0, MAX_ASSETS), CONCURRENCY, asset => checkAsset(db, asset, now));
+  const trackedInventory = inventory.slice(0, MAX_ASSETS);
+  await syncInventory(db, trackedInventory, now, !manifestError);
+  const checkState = await db.prepare("SELECT asset_key, last_checked_at FROM admin_assets WHERE active=1").all();
+  const lastChecked = new Map((checkState.results || []).map(row => [row.asset_key, row.last_checked_at || ""]));
+  const coreAssets = trackedInventory.filter(asset => asset.source === "site");
+  const rotatingAssets = trackedInventory.filter(asset => asset.source !== "site").sort((a, b) => {
+    const left = lastChecked.get(a.key) || "";
+    const right = lastChecked.get(b.key) || "";
+    return left.localeCompare(right);
+  });
+  const selectedAssets = [
+    ...coreAssets,
+    ...rotatingAssets.slice(0, Math.max(0, MAX_ASSETS_PER_RUN - coreAssets.length))
+  ];
+  const checked = await mapLimit(selectedAssets, CONCURRENCY, asset => checkAsset(db, asset, now));
   const dependencies = new Map();
   for (const result of checked) {
     for (const dependency of result.dependencies || []) dependencies.set(dependency.key, dependency);
