@@ -23,6 +23,7 @@ async function github(env, path, method = "GET", body) {
     method,
     headers: {
       authorization: "Bearer " + env.GITHUB_TOKEN,
+      "user-agent": "YorpHives-Agentic-Operations/1.0",
       accept: "application/vnd.github+json",
       "content-type": "application/json",
       "X-GitHub-Api-Version": "2022-11-28"
@@ -54,6 +55,7 @@ async function githubMaybe(env, path) {
   const response = await fetch("https://api.github.com" + path, {
     headers: {
       authorization: "Bearer " + env.GITHUB_TOKEN,
+      "user-agent": "YorpHives-Agentic-Operations/1.0",
       accept: "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28"
     },
@@ -66,19 +68,29 @@ async function githubMaybe(env, path) {
 }
 
 async function checkGithubAccess(env) {
-  if (!env.GITHUB_TOKEN) return { ready: false, error: "GITHUB_TOKEN secret is not configured." };
-  if (githubHealthCache && Date.now() - githubHealthCache.checkedAt < 120000) return githubHealthCache.value;
+  if (!env.GITHUB_TOKEN) {
+    return { ready: false, error: "GITHUB_TOKEN Worker secret is not configured." };
+  }
+  if (githubHealthCache && Date.now() - githubHealthCache.checkedAt < 120000) {
+    return githubHealthCache.value;
+  }
 
   try {
-    const [user, repository] = await Promise.all([
-      github(env, "/user"),
-      github(env, `/repos/${REPOSITORY}`)
-    ]);
+    const repository = await github(env, `/repos/${REPOSITORY}`);
     if (repository.full_name?.toLowerCase() !== REPOSITORY.toLowerCase()) {
       throw new Error("The configured token resolved to an unexpected repository.");
     }
 
-    let workflow = { access: false, latest_run: null, jobs: [], detail: "Actions read permission is unavailable or no workflow run exists." };
+    const hasAuthenticatedPermissions = Boolean(repository.permissions && typeof repository.permissions === "object");
+    const repositoryWrite = repository.permissions?.push === true;
+    let workflow = {
+      access: false,
+      jobs_access: false,
+      latest_run: null,
+      jobs: [],
+      detail: "GitHub Actions read permission has not been verified."
+    };
+
     try {
       const runs = await github(env, `/repos/${REPOSITORY}/actions/workflows/site-quality.yml/runs?per_page=1`);
       const latest = runs.workflow_runs?.[0] || null;
@@ -86,6 +98,7 @@ async function checkGithubAccess(env) {
         const jobResult = await github(env, `/repos/${REPOSITORY}/actions/runs/${latest.id}/jobs?per_page=30`);
         workflow = {
           access: true,
+          jobs_access: true,
           latest_run: {
             id: latest.id,
             status: latest.status,
@@ -101,30 +114,55 @@ async function checkGithubAccess(env) {
             started_at: job.started_at,
             completed_at: job.completed_at
           })),
-          detail: "GitHub Actions run metadata is readable."
+          detail: "GitHub Actions workflow-run and job metadata are readable."
         };
       } else {
-        workflow = { ...workflow, access: true, detail: "Actions access is available; the specialist workflow has not run yet." };
+        workflow = {
+          access: true,
+          jobs_access: false,
+          latest_run: null,
+          jobs: [],
+          detail: "Actions workflow-run listing is readable, but no run exists to verify job-read access."
+        };
       }
     } catch (error) {
       const detail = error instanceof Error ? error.message.slice(0, 240) : "Unknown GitHub Actions API error.";
-      workflow = { ...workflow, access: false, detail: "GitHub Actions check failed: " + detail };
+      workflow = {
+        access: false,
+        jobs_access: false,
+        latest_run: null,
+        jobs: [],
+        detail: "GitHub Actions check failed: " + detail
+      };
     }
 
-    const ready = workflow.access === true;
+    const ready = hasAuthenticatedPermissions && repositoryWrite && workflow.access && workflow.jobs_access;
+    const error = !hasAuthenticatedPermissions
+      ? "GitHub authenticated repository permissions were not returned; token identity and write access are unverified."
+      : !repositoryWrite
+        ? "The token can read the repository, but GitHub does not report repository push permission."
+        : !workflow.access || !workflow.jobs_access
+          ? workflow.detail
+          : undefined;
+
     const value = {
       ready,
-      github: { authenticated: true, login: user.login, repository_access: true, repository: repository.full_name },
+      github: {
+        authenticated: hasAuthenticatedPermissions,
+        repository_access: true,
+        repository: repository.full_name,
+        repository_write: repositoryWrite
+      },
       workflow,
-      ...(ready ? {} : { error: workflow.detail || "GitHub Actions read permission is required to verify specialist job results and gate repair pull requests." })
+      ...(error ? { error } : {})
     };
     githubHealthCache = { checkedAt: Date.now(), value };
     return value;
   } catch (error) {
     const value = {
       ready: false,
-      github: { authenticated: false, repository_access: false },
-      error: error instanceof Error ? error.message.slice(0, 300) : "GitHub authentication check failed."
+      github: { authenticated: false, repository_access: false, repository_write: false },
+      error: error instanceof Error ? error.message.slice(0, 300) : "GitHub repository authentication check failed."
     };
     githubHealthCache = { checkedAt: Date.now(), value };
     return value;
@@ -297,12 +335,15 @@ async function waitForChecks(env, step, commitSha) {
 
     const failed = required
       .map(item => ({ expected: item, job: jobsByKey.get(item.key) }))
-      .filter(item => item.job?.status === "completed" && !["success", "neutral", "skipped"].includes(item.job.conclusion));
+      .filter(item => item.job?.status === "completed" && item.job.conclusion !== "success");
     if (failed.length) {
-      throw new Error("Repository verification failed: " + failed.map(item => `${item.expected.key}=${item.job.conclusion}`).join(", "));
+      throw new Error("Repository verification failed: " + failed.map(item => `${item.expected.key}=${item.job.conclusion || "missing conclusion"}`).join(", "));
     }
 
-    if (required.every(item => jobsByKey.get(item.key)?.status === "completed")) {
+    if (required.every(item => {
+      const job = jobsByKey.get(item.key);
+      return job?.status === "completed" && job.conclusion === "success";
+    })) {
       return {
         passed: true,
         checks: required.map(item => ({
