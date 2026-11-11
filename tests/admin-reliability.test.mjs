@@ -207,7 +207,7 @@ test("Admin inventory discovers sitemap pages, manifest tools and published Yorp
   assert.match(scanner, /openapi\.yaml/);
   assert.match(scanner, /openapiError/);
   assert.match(scanner, /inventoryTruncated/);
-  assert.match(scanner, /syncInventory\(db, trackedInventory, now, !manifestError && !sitemapError && !openapiError && !catalogueError\)/);
+  assert.match(scanner, /syncInventory\(db, trackedInventory, now, !manifestError && !sitemapError && !openapiError && !catalogueError && !inventoryTruncated\)/);
 });
 
 test("Admin findings API unifies monitor and asset findings with audited triage", async () => {
