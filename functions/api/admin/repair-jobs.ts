@@ -210,10 +210,11 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
         },
         body: JSON.stringify({ confirm: true })
       }));
-      probe = await response.json().catch(() => null) as Record<string, unknown> | null as Record<string, unknown>;
-      if (!response.ok || !probe) {
+      const result = await response.json().catch(() => null) as unknown;
+      if (!response.ok || !result || typeof result !== "object" || Array.isArray(result)) {
         return adminJson({ error: { code: "GITHUB_PERMISSION_PROBE_FAILED", message: "The repair Worker could not complete the permission probe." } }, response.status || 502);
       }
+      probe = result as Record<string, unknown>;
     } catch {
       return adminJson({ error: { code: "GITHUB_PERMISSION_PROBE_UNAVAILABLE", message: "The private repair Worker could not be reached." } }, 502);
     }
