@@ -7,7 +7,7 @@ const migration = await readFile(new URL("../migrations/0007_admin_asset_intelli
 const endpoint = await readFile(new URL("../functions/api/admin/run-assets.ts", import.meta.url), "utf8");
 
 test("asset intelligence inventories core site routes and the Free Tools manifest", () => {
-  for (const route of ["/", "/free-tools/", "/explore/", "/builder/", "/connect/", "/sitemap.xml", "/robots.txt", "/llms.txt", "/openapi.yaml", "/.well-known/yorphives.json", "/api/v1/free-tools"]) {
+  for (const route of ["/", "/free-tools/", "/free-tools/manifest.json", "/explore/", "/builder/", "/connect/", "/sitemap.xml", "/robots.txt", "/llms.txt", "/openapi.yaml", "/.well-known/yorphives.json", "/api/v1/free-tools"]) {
     assert.ok(source.includes(route), "missing monitored route " + route);
   }
   assert.match(source, /free-tools\/manifest\.json/);
