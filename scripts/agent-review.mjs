@@ -24,6 +24,10 @@ async function resolveBase() {
     await git(["fetch", "--no-tags", "origin", repairBase]);
     return `origin/${repairBase}`;
   }
+  if (refName.startsWith("build/")) {
+    await git(["fetch", "--no-tags", "origin", "main"]);
+    return "origin/main";
+  }
   if (before && !/^0+$/.test(before)) return before;
   try {
     return await git(["rev-parse", "HEAD^"]);
@@ -103,6 +107,10 @@ async function main() {
     "This automated review is a heuristic signal, not a substitute for human review or a full security assessment."
   ].join("\n"));
   console.log(JSON.stringify(report.summary));
+  if (counts.critical > 0 || counts.high > 0) {
+    console.error("Code review blocked: critical/high risk findings require owner review.");
+    process.exitCode = 1;
+  }
 }
 
 await main();
