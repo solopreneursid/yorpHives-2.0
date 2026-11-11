@@ -405,7 +405,7 @@ async function loadAgents(refresh=true) {
     }
     repairAgentReady=jobs.agentConfigured===true;
     const status=$("agent-state");
-    if(status){status.textContent=repairAgentReady?"GitHub connected · @"+(jobs.github?.login||"verified"):"GitHub authentication or repository access not verified";status.classList.toggle("ready",repairAgentReady);}
+    if(status){status.textContent=repairAgentReady?"GitHub connected · @"+(jobs.github?.login||"verified"):"GitHub or Actions read permission not verified";status.classList.toggle("ready",repairAgentReady);}
     if($("repair-submit"))$("repair-submit").disabled=!repairAgentReady;
     if($("agent-count"))$("agent-count").textContent=repairAgentReady?"Ready": "Setup";
     if($("agent-summary"))$("agent-summary").textContent=(jobs.data||[]).length+" recorded repair jobs";
