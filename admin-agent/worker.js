@@ -323,7 +323,10 @@ export default {
     if (request.method !== "POST" || url.pathname !== "/instances") {
       return new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } });
     }
-    const expected = env.ADMIN_AGENT_SERVICE_TOKEN || "";\n    const supplied = (request.headers.get("authorization") || "").replace(/^Bearer\\s+/i, "");\n    if (!expected || supplied !== expected) return Response.json({ error: "Unauthorized service request." }, { status: 401, headers: { "cache-control": "no-store" } });\n    const payload = await request.json().catch(() => null);
+    const expected = env.ADMIN_AGENT_SERVICE_TOKEN || "";
+    const supplied = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+    if (!expected || supplied !== expected) return Response.json({ error: "Unauthorized service request." }, { status: 401, headers: { "cache-control": "no-store" } });
+    const payload = await request.json().catch(() => null);
     if (!payload || !/^[0-9a-f-]{36}$/i.test(String(payload.job_id || "")) ||
         typeof payload.request_text !== "string" || payload.request_text.length > 4000) {
       return Response.json({ error: "Invalid repair request." }, { status: 400 });
