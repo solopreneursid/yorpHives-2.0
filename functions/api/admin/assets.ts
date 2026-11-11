@@ -159,7 +159,6 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     if (!discovered.has(key)) discovered.set(key, virtualAsset(key, "product", product.title, destination.pathname, "public catalogue API"));
   }
   const knownPaths = new Set([...discovered.values()].map(item => item.url));
-  const toolSlugs = new Set(publicTools.data.map(item => item.slug));
   for (const path of sitemap.data) {
     if (knownPaths.has(path)) continue;
     const toolMatch = path.match(/^\/free-tools\/([a-z0-9-]+)\/$/);
