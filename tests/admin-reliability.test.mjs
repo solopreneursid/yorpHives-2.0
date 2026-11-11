@@ -24,13 +24,13 @@ test("admin routes verify user and CI service identities while keeping CI access
   assert.match(auth, /RSASSA-PKCS1-v1_5/);
   assert.match(auth, /CF_ACCESS_AUD/);
   assert.match(auth, /expectedAudiences/);
-  assert.match(auth, /tokenAudiences\\.some/);
+  assert.match(auth, /tokenAudiences\.some/);
   assert.match(auth, /ADMIN_ALLOWED_EMAILS/);
   assert.match(auth, /ADMIN_CI_SERVICE_TOKEN_IDS/);
-  assert.match(auth, /claims\\.common_name/);
-  assert.match(auth, /claims\\.exp/);
-  assert.match(auth, /claims\\.iss/);
-  assert.match(auth, /identity\\.serviceToken && !\\["GET", "HEAD"\\]/);
+  assert.match(auth, /claims\.common_name/);
+  assert.match(auth, /claims\.exp/);
+  assert.match(auth, /claims\.iss/);
+  assert.match(auth, /identity\.serviceToken && !\["GET", "HEAD"\]/);
   assert.match(auth, /ADMIN_CI_READ_ONLY/);
   assert.match(route, /requireAdmin/);
 });
