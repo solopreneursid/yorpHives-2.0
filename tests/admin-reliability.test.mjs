@@ -147,3 +147,20 @@ test("agent callbacks require the configured bearer secret and constrain branche
   assert.match(callback, /admin_audit_events/);
   assert.match(dispatch, /callback_url/);
 });
+
+
+test("Admin findings support audited triage while fixed status remains verification-controlled", async () => {
+  const findings = await read("../functions/api/admin/findings.ts");
+  const audit = await read("../functions/api/admin/audit.ts");
+  const script = await read("../admin/admin.js");
+  const html = await read("../admin/index.html");
+  assert.match(findings, /onRequestPatch/);
+  assert.match(findings, /accepted_risk/);
+  assert.match(findings, /admin_audit_events/);
+  assert.match(findings, /INVALID_ORIGIN/);
+  assert.match(audit, /requireAdmin/);
+  assert.match(audit, /ORDER BY created_at DESC/);
+  assert.match(script, /method: "PATCH"/);
+  assert.match(script, /loadAudit\(\)/);
+  assert.match(html, /id="audit-list"/);
+});
