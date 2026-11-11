@@ -99,9 +99,9 @@ async function run() {
       await unauthenticated.dispose();
     }
 
-    record("browser_page_errors", pageErrors.length === 0, pageErrors.length ? pageErrors.join(" | ") : "No uncaught page errors");
+    record("browser_page_errors", pageErrors.length === 0, pageErrors.length + " uncaught page errors");
   } catch (error) {
-    record("admin_browser_flow", false, error instanceof Error ? error.message.slice(0, 240) : "Unknown browser failure");
+    record("admin_browser_flow", false, "Browser flow failed; inspect the workflow step for the failure location.");
   } finally {
     if (context) await context.close();
     await browser.close();
