@@ -2,12 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
+const extractApprovedHosts = (source) => {
+  const block = source.match(/const APPROVED_HOSTS = new Set\\(\\[([\\s\\S]*?)\\]\\)/)?.[1] || "";
+  return [...block.matchAll(/"([^"]+)"/g)].map(([, host]) => host);
+};
 
 test("admin reliability migration creates isolated monitoring and findings tables", async () => {
   const sql = await read("../migrations/0004_admin_reliability.sql");
   for (const table of ["admin_monitors", "admin_runs", "admin_checks", "admin_findings"]) assert.match(sql, new RegExp("CREATE TABLE IF NOT EXISTS " + table));
   assert.match(sql, /INSERT OR IGNORE INTO admin_monitors/);
-  const productionUrl = sql.match(/'prod-home'[^\\n]*'(https:\\/\\/[^']+)'/)?.[1];
+  const productionUrl = sql.match(/'prod-home'[^\n]*'(https:\/\/[^']+)'/)?.[1];
   assert.equal(new URL(productionUrl).hostname, ["yorphives", "com"].join("."));
 });
 
@@ -31,9 +35,10 @@ test("admin health checks are read-only, same-origin and reject arbitrary target
   assert.match(runner, /origin !== new URL\(context\.request\.url\)\.origin/);
   assert.match(runner, /confirm !== true/);
   assert.match(runner, /runAdminHealthChecks/);
-  assert.match(shared, /APPROVED_HOSTS/);
-  assert.match(shared, /["]yorphives[.]com["]/);
-  assert.match(shared, /build-yorphives-admin-reliab[.]yorphives-2-preview[.]pages[.]dev/);
+  const approvedHosts = extractApprovedHosts(shared);
+  assert.ok(approvedHosts.some(host => host === ["yorphives", "com"].join(".")));
+  assert.ok(approvedHosts.some(host => host === ["www", "yorphives", "com"].join(".")));
+  assert.ok(approvedHosts.some(host => host === ["build-yorphives-admin-reliab", "yorphives-2-preview", "pages", "dev"].join(".")));
   assert.match(shared, /AbortSignal\.timeout\(8000\)/);
   assert.match(shared, /redirect: "manual"/);
   assert.match(shared, /admin_findings/);
@@ -114,7 +119,7 @@ test("quality workflows include browser, SEO, Lighthouse and passive security co
   assert.match(security, /retire/);
   assert.match(security, /action-baseline/);
   assert.doesNotMatch(security, /rules_file_name/);
-  const securityTarget = security.match(/target:\\s*(https:\\/\\/[^\\s]+)/)?.[1];
+  const securityTarget = security.match(/target:\s*(https:\/\/[^\s]+)/)?.[1];
   assert.equal(new URL(securityTarget).hostname, ["yorphives", "com"].join("."));
 });
 
@@ -226,6 +231,7 @@ test("Admin findings API unifies monitor and asset findings with audited triage"
 test("scheduled health checks include the private Admin UI and API access gates", async () => {
   const health = await read("../admin-monitor/admin-health.js");
   const migration = await read("../migrations/0009_admin_control_center_monitors.sql");
+  const approvedHosts = extractApprovedHosts(health);
   assert.ok(approvedHosts.some(host => host === ["admin-staging", "yorphives", "com"].join(".")));
   assert.match(migration, /admin-staging-ui/);
   assert.match(migration, /admin-staging-api/);
