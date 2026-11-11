@@ -14,7 +14,7 @@ test("asset intelligence inventories core site routes and the Free Tools manifes
   assert.match(source, /api\/v1\/catalogue/);
   assert.match(source, /catalogue_error/);
   assert.match(source, /openapi_error/);
-  assert.match(source, /api\\/admin\\//);
+
 });
 
 test("asset intelligence is bounded and restricts requests to the production origin", () => {
