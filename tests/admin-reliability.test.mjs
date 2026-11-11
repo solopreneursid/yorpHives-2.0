@@ -98,5 +98,6 @@ test("quality workflows include browser, SEO, Lighthouse and passive security co
   assert.match(security, /gitleaks/);
   assert.match(security, /retire/);
   assert.match(security, /action-baseline/);
+  assert.doesNotMatch(security, /rules_file_name/);
   assert.match(security, /target: https:\/\/yorphives\.com/);
 });
