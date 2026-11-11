@@ -36,7 +36,7 @@ export async function onRequestGet(context: AdminRequestContext & { env: AdminRe
   const end = new Date();
   const start = new Date(end.getTime() - days * 86400000);
   const iso = (date: Date) => date.toISOString().slice(0, 10);
-  const query = `query YorpHivesAnalytics($zoneTag: string!, $startDate: Date!, $endDate: Date!, $startTime: DateTime!, $endTime: DateTime!) {
+  const query = `query YorpHivesAnalytics($zoneTag: String!, $startDate: Date!, $endDate: Date!, $startTime: DateTime!, $endTime: DateTime!) {
     viewer {
       zones(filter: { zoneTag: $zoneTag }) {
         httpRequests1dGroups(limit: 31, filter: { date_geq: $startDate, date_leq: $endDate }) {
