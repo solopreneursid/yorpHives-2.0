@@ -29,7 +29,12 @@ jobs:
     env:
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-      ADMIN_BASE_URL: ${{ vars.ADMIN_STAGING_BASE_URL }}
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      PAGES_PROJECT_NAME: yorphives-admin-staging
+      PAGES_BRANCH: ${{ github.head_ref || github.ref_name }}
+      PAGES_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PAGES_COMMIT_MESSAGE: ${{ github.event.pull_request.title || github.event.head_commit.message || github.sha }}
     steps:
       - name: Check out the tested branch
         uses: actions/checkout@v4
@@ -37,19 +42,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Resolve branch preview and verify Access secrets
+      - name: Verify required deployment and Access credentials
         shell: bash
         run: |
-          if [ -z "$CF_ACCESS_CLIENT_ID" ] || [ -z "$CF_ACCESS_CLIENT_SECRET" ]; then
-            echo "::error::Add CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET to repository Actions secrets, then authorize the token with a Service Auth policy on the YorpHives Admin deployment aliases Access application."
+          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ACCOUNT_ID" ]; then
+            echo "::error::Add CLOUDFLARE_API_TOKEN as a repository secret and CLOUDFLARE_ACCOUNT_ID as a repository variable."
             exit 1
           fi
-          if [ -z "$ADMIN_BASE_URL" ]; then
-            BRANCH="${GITHUB_REF_NAME}"
-            BRANCH_SLUG="$(printf '%s' "$BRANCH" | tr '[:upper:]_./' '[:lower:]---' | cut -c1-28)"
-            ADMIN_BASE_URL="https://${BRANCH_SLUG}.yorphives-admin-staging.pages.dev"
+          if [ -z "$CF_ACCESS_CLIENT_ID" ] || [ -z "$CF_ACCESS_CLIENT_SECRET" ]; then
+            echo "::error::Add CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET as repository secrets, then authorize the token with a Service Auth policy on the YorpHives Admin deployment aliases Access application."
+            exit 1
           fi
-          echo "ADMIN_BASE_URL=$ADMIN_BASE_URL" >> "$GITHUB_ENV"
+      - name: Deploy the Admin feature branch to isolated Pages staging
+        run: npm run deploy:pages-preview
+      - name: Wait for authenticated Admin preview
+        shell: bash
+        run: |
+          if [ -z "$ADMIN_BASE_URL" ]; then
+            echo "::error::The Pages deployment step did not return ADMIN_BASE_URL."
+            exit 1
+          fi
           echo "Waiting for authenticated Admin preview: $ADMIN_BASE_URL"
           for attempt in $(seq 1 30); do
             STATUS="$(curl -sS -L -o /dev/null -w '%{http_code}' --max-time 15 \
