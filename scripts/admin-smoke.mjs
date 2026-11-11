@@ -79,6 +79,13 @@ async function run() {
       }
     }
 
+    const deniedWrite = await page.request.post(baseUrl + "/api/admin/repair-jobs", {
+      data: { permission_probe: true, confirm: true },
+      timeout: 15000
+    });
+    record("ci_service_token_write_denied", deniedWrite.status() === 403, "HTTP " + deniedWrite.status());
+    record("github_permission_probe_control_present", await page.locator("#verify-github-permissions").count() === 1, "Owner-only permission probe control is present");
+
     const agentsNav = page.locator('.nav-item[data-view="agents"]');
     await agentsNav.click();
     await page.locator("#view-agents").waitFor({ state: "visible", timeout: 10000 });
