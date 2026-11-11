@@ -53,20 +53,6 @@ async function githubMaybe(env, path) {
   return payload;
 }
 
-async function githubMaybe(env, path) {
-  const response = await fetch("https://api.github.com" + path, {
-    headers: {
-      authorization: "Bearer " + env.GITHUB_TOKEN,
-      accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28"
-    },
-    signal: AbortSignal.timeout(15000)
-  });
-  if (response.status === 404) return null;
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(`GitHub lookup failed with HTTP ${response.status}: ${payload?.message || "unknown error"}`);
-  return payload;
-}
 
 function decodeBase64Utf8(value) {
   const binary = atob(value.replace(/\s/g, ""));
