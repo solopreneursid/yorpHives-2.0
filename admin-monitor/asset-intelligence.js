@@ -57,7 +57,7 @@ async function sha256(bytes) {
 
 function htmlText(html, expression) {
   const match = html.match(expression);
-  const entities = { "&amp;": "&", "&quot;": '"' , "&#39;": "'"' };
+  const entities = { "&amp;": "&", "&quot;": String.fromCharCode(34), "&#39;": String.fromCharCode(39) };
   return match?.[1]?.replace(/&(?:amp|quot|#39);/g, entity => entities[entity]).trim().slice(0, 500) || null;
 }
 
