@@ -453,7 +453,7 @@
     "slug": "seo-analyzer",
     "title": "SEO Analyzer",
     "category": "Business",
-    "description": "Audit a live page when browser CORS permits, or pasted HTML, for titles, descriptions, headings, canonical tags, image alt text and other on-page signals.",
+    "description": "Crawl up to 10 same-origin pages when the website permits browser access, or analyze pasted HTML. Checks titles, descriptions, headings, canonicals, image alt text and basic indexability signals.",
     "url": "/free-tools/seo-analyzer/",
     "processing": "network",
     "agent_execution": "not_available"
