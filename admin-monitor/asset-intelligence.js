@@ -395,24 +395,48 @@ export async function runAssetIntelligence(db) {
     sitemapError = error instanceof Error ? error.message : "Sitemap fetch failed";
   }
 
-  const products = await db.prepare(`
-    SELECT id, slug, title, listing_type, status, destination_url
-    FROM catalogue_listings WHERE status='available' AND listing_type='application' AND owner_type='yorphives' ORDER BY updated_at DESC LIMIT 100
-  `).all();
-  for (const product of products.results || []) {
-    const destination = safeInternalUrl(product.destination_url);
-    if (!destination) continue;
-    inventory.push({
-      key: "product:" + product.id,
-      type: "product",
-      title: String(product.title || product.slug).slice(0, 160),
-      url: destination.pathname,
-      source: "catalogue_listings"
-    });
+  let catalogueError = null;
+  try {
+    let offset = 0;
+    let total = 0;
+    const pageSize = 50;
+    const maxPages = 5;
+    for (let page = 0; page < maxPages && (page === 0 || offset < total); page++) {
+      const endpoint = new URL("/api/v1/catalogue", SITE_ORIGIN);
+      endpoint.searchParams.set("type", "application");
+      endpoint.searchParams.set("limit", String(pageSize));
+      endpoint.searchParams.set("offset", String(offset));
+      const response = await fetch(endpoint, {
+        headers: { "accept": "application/json", "user-agent": "YorpHives-AssetMonitor/1.0" },
+        redirect: "manual",
+        signal: AbortSignal.timeout(7000)
+      });
+      if (!response.ok) throw new Error("Public catalogue returned HTTP " + response.status);
+      const payload = await response.json();
+      if (!Array.isArray(payload.data) || !payload.pagination) throw new Error("Public catalogue response is invalid.");
+      total = Number(payload.pagination.count || 0);
+      for (const product of payload.data) {
+        if (!product || typeof product.slug !== "string" || typeof product.title !== "string") continue;
+        const destination = safeInternalUrl(product.destination_url);
+        if (!destination) continue;
+        inventory.push({
+          key: "product:" + String(product.id || product.slug),
+          type: "product",
+          title: String(product.title || product.slug).slice(0, 160),
+          url: destination.pathname,
+          source: "api/v1/catalogue"
+        });
+      }
+      offset += payload.data.length;
+      if (!payload.data.length) break;
+    }
+    if (total > offset) catalogueError = "Public catalogue discovery was capped at " + offset + " of " + total + " applications.";
+  } catch (error) {
+    catalogueError = error instanceof Error ? error.message : "Public catalogue fetch failed";
   }
 
   const trackedInventory = inventory.slice(0, MAX_ASSETS);
-  await syncInventory(db, trackedInventory, now, !manifestError && !sitemapError);
+  await syncInventory(db, trackedInventory, now, !manifestError && !sitemapError && !catalogueError);
   const checkState = await db.prepare("SELECT asset_key, last_checked_at FROM admin_assets WHERE active=1").all();
   const lastChecked = new Map((checkState.results || []).map(row => [row.asset_key, row.last_checked_at || ""]));
   const coreAssets = trackedInventory.filter(asset => asset.source === "site");
