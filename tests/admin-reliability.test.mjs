@@ -65,3 +65,33 @@ test("CodeQL security workflow runs weekly and on branch changes", async () => {
   assert.match(workflow, /javascript-typescript/);
   assert.match(workflow, /security-extended/);
 });
+
+test("production change tracking is bounded, fixed-target and persists hash differences", async () => {
+  const migration = await read("../migrations/0006_admin_change_tracking.sql");
+  const monitor = await read("../admin-monitor/change-monitor.js");
+  const worker = await read("../admin-monitor/worker.js");
+  const route = await read("../functions/api/admin/changes.ts");
+  for (const table of ["admin_page_snapshots", "admin_change_events"]) assert.match(migration, new RegExp("CREATE TABLE IF NOT EXISTS " + table));
+  assert.match(monitor, /SNAPSHOT_TARGETS/);
+  assert.match(monitor, /SNAPSHOT_HOSTS/);
+  assert.match(monitor, /512 \* 1024/);
+  assert.match(monitor, /redirect: "manual"/);
+  assert.match(monitor, /crypto\.subtle\.digest\("SHA-256"/);
+  assert.match(worker, /captureProductionSnapshots\(env\.DB\)/);
+  assert.match(route, /requireAdmin/);
+  assert.match(route, /admin_change_events/);
+});
+
+test("quality workflows include browser, SEO, Lighthouse and passive security coverage", async () => {
+  const quality = await read("../.github/workflows/site-quality.yml");
+  const security = await read("../.github/workflows/security.yml");
+  const script = await read("../scripts/site-quality.mjs");
+  assert.match(quality, /playwright install/);
+  assert.match(quality, /lighthouse/);
+  assert.match(script, /free_tools_search/);
+  assert.match(script, /json_formatter_execution/);
+  assert.match(script, /sitemap_pages_http_and_metadata/);
+  assert.match(security, /gitleaks/);
+  assert.match(security, /action-baseline/);
+  assert.match(security, /target: https:\/\/yorphives\.com/);
+});
