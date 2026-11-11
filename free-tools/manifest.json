@@ -286,5 +286,157 @@
     "description": "Convert an image to a Base64 data URL locally in your browser.",
     "url": "/free-tools/image-to-base64/",
     "processing": "browser"
+  },
+  {
+    "slug": "qr-code-generator",
+    "title": "QR Code Generator",
+    "category": "Design",
+    "description": "Create downloadable QR codes for text and URLs. QR rendering uses an open-source browser library loaded from jsDelivr.",
+    "url": "/free-tools/qr-code-generator/",
+    "processing": "library"
+  },
+  {
+    "slug": "wifi-qr",
+    "title": "Wi-Fi QR Code Generator",
+    "category": "Design",
+    "description": "Create a QR code that lets guests join a Wi-Fi network. QR rendering uses an open-source browser library loaded from jsDelivr.",
+    "url": "/free-tools/wifi-qr/",
+    "processing": "library"
+  },
+  {
+    "slug": "vcard-qr",
+    "title": "vCard QR Code Generator",
+    "category": "Business",
+    "description": "Create a contact-card QR code with name, phone, email and website. QR rendering uses an open-source browser library loaded from jsDelivr.",
+    "url": "/free-tools/vcard-qr/",
+    "processing": "library"
+  },
+  {
+    "slug": "pdf-merger",
+    "title": "PDF Merger",
+    "category": "Productivity",
+    "description": "Combine multiple PDF files in the selected order in your browser.",
+    "url": "/free-tools/pdf-merger/",
+    "processing": "library"
+  },
+  {
+    "slug": "pdf-splitter",
+    "title": "PDF Splitter",
+    "category": "Productivity",
+    "description": "Extract selected pages or page ranges from a PDF in your browser.",
+    "url": "/free-tools/pdf-splitter/",
+    "processing": "library"
+  },
+  {
+    "slug": "pdf-compressor",
+    "title": "PDF Compressor",
+    "category": "Productivity",
+    "description": "Re-save PDF structure and object streams locally. Embedded image recompression is not performed.",
+    "url": "/free-tools/pdf-compressor/",
+    "processing": "library"
+  },
+  {
+    "slug": "jpg-to-pdf",
+    "title": "JPG to PDF Converter",
+    "category": "Images",
+    "description": "Convert JPG, PNG and WebP images into a downloadable PDF.",
+    "url": "/free-tools/jpg-to-pdf/",
+    "processing": "library"
+  },
+  {
+    "slug": "pdf-to-jpg",
+    "title": "PDF to JPG Converter",
+    "category": "Images",
+    "description": "Render a selected PDF page as a downloadable JPG in your browser.",
+    "url": "/free-tools/pdf-to-jpg/",
+    "processing": "library"
+  },
+  {
+    "slug": "heic-to-jpg",
+    "title": "HEIC to JPG Converter",
+    "category": "Images",
+    "description": "Convert HEIC and HEIF photos to JPEG in your browser using an open-source library.",
+    "url": "/free-tools/heic-to-jpg/",
+    "processing": "library"
+  },
+  {
+    "slug": "webp-converter",
+    "title": "WebP Converter",
+    "category": "Images",
+    "description": "Convert images between WebP, JPEG and PNG formats in your browser.",
+    "url": "/free-tools/webp-converter/",
+    "processing": "browser"
+  },
+  {
+    "slug": "background-remover",
+    "title": "Background Remover",
+    "category": "Images",
+    "description": "Background removal interface is listed, but automatic segmentation is not yet implemented. Files remain on your device.",
+    "url": "/free-tools/background-remover/",
+    "processing": "planned"
+  },
+  {
+    "slug": "invoice-generator",
+    "title": "Invoice Generator",
+    "category": "Business",
+    "description": "Create a simple itemized invoice with GST and download it as an HTML document for printing.",
+    "url": "/free-tools/invoice-generator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "sip-calculator",
+    "title": "SIP Calculator",
+    "category": "Finance",
+    "description": "Estimate the future value of monthly SIP investments using a standard compounding formula.",
+    "url": "/free-tools/sip-calculator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "currency-converter",
+    "title": "Currency Converter",
+    "category": "Finance",
+    "description": "Convert currencies using live reference rates from the Frankfurter public API. Rates are indicative, not transaction quotes.",
+    "url": "/free-tools/currency-converter/",
+    "processing": "network"
+  },
+  {
+    "slug": "seo-analyzer",
+    "title": "SEO Analyzer",
+    "category": "Business",
+    "description": "Analyze pasted HTML for title, description, headings, canonical URL, image alt text and links.",
+    "url": "/free-tools/seo-analyzer/",
+    "processing": "browser"
+  },
+  {
+    "slug": "meta-tag-generator",
+    "title": "Meta Tag Generator",
+    "category": "Developer",
+    "description": "Generate SEO, canonical, Open Graph and social metadata tags for a web page.",
+    "url": "/free-tools/meta-tag-generator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "sitemap-generator",
+    "title": "XML Sitemap Generator",
+    "category": "Developer",
+    "description": "Validate a list of HTTP(S) URLs and download a basic XML sitemap.",
+    "url": "/free-tools/sitemap-generator/",
+    "processing": "browser"
+  },
+  {
+    "slug": "youtube-thumbnail-downloader",
+    "title": "YouTube Thumbnail Downloader",
+    "category": "Images",
+    "description": "Open available YouTube thumbnail image variants using the public YouTube thumbnail endpoint.",
+    "url": "/free-tools/youtube-thumbnail-downloader/",
+    "processing": "network"
+  },
+  {
+    "slug": "social-image-sizes",
+    "title": "Social Media Image Size Guide",
+    "category": "Design",
+    "description": "Look up common image dimensions for Instagram, YouTube, Facebook, LinkedIn, X and TikTok.",
+    "url": "/free-tools/social-image-sizes/",
+    "processing": "browser"
   }
 ]
