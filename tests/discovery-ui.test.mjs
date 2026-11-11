@@ -6,16 +6,17 @@ const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
 test("Free Tools page provides functional browser-local utilities", async () => {
   const html = await read("../free-tools/index.html");
-  const script = await read("../free-tools/tools.js");
+  const manifest = JSON.parse(await read("../free-tools/manifest.json"));
+  const runtime = await read("../free-tools/tool-runtime.js");
+  const advanced = await read("../free-tools/advanced-runtime.js");
   assert.match(html, /Word & character counter/i);
-  assert.match(html, /JSON formatter/i);
-  assert.match(html, /URL encoder/i);
-  assert.match(html, /id="counter-input"/);
-  assert.match(html, /id="json-input"/);
-  assert.match(html, /id="url-input"/);
-  assert.match(script, /JSON\.parse/);
-  assert.match(script, /encodeURIComponent/);
-  assert.match(script, /decodeURIComponent/);
+  assert.match(html, /tool-search/);
+  assert.match(html, /data-filter/);
+  assert.ok(manifest.length >= 55);
+  assert.match(runtime, /JSON\.parse/);
+  assert.match(runtime, /encodeURIComponent/);
+  assert.match(advanced, /qr-code-generator/);
+  assert.match(advanced, /pdf-merger/);
 });
 
 test("Explore is a dedicated YorpHives application marketplace", async () => {
