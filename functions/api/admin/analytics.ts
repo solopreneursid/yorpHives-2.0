@@ -36,14 +36,14 @@ export async function onRequestGet(context: AdminRequestContext & { env: AdminRe
   const end = new Date();
   const start = new Date(end.getTime() - days * 86400000);
   const iso = (date: Date) => date.toISOString().slice(0, 10);
-  const query = `query YorpHivesAnalytics($zoneTag: string!, $start: Date!, $end: Date!) {
+  const query = `query YorpHivesAnalytics($zoneTag: string!, $startDate: Date!, $endDate: Date!, $startTime: DateTime!, $endTime: DateTime!) {
     viewer {
       zones(filter: { zoneTag: $zoneTag }) {
-        httpRequests1dGroups(limit: 31, filter: { date_geq: $start, date_leq: $end }) {
+        httpRequests1dGroups(limit: 31, filter: { date_geq: $startDate, date_leq: $endDate }) {
           dimensions { date }
           sum { requests pageViews bytes }
         }
-        httpRequestsAdaptiveGroups(limit: 10, filter: { datetime_geq: $start, datetime_leq: $end }) {
+        httpRequestsAdaptiveGroups(limit: 10, filter: { datetime_geq: $startTime, datetime_leq: $endTime }) {
           dimensions { clientRequestPath }
           count
         }
@@ -54,7 +54,7 @@ export async function onRequestGet(context: AdminRequestContext & { env: AdminRe
     const response = await fetch("https://api.cloudflare.com/client/v4/graphql", {
       method: "POST",
       headers: { authorization: "Bearer " + token, "content-type": "application/json" },
-      body: JSON.stringify({ query, variables: { zoneTag: zoneId, start: iso(start), end: iso(end) } }),
+      body: JSON.stringify({ query, variables: { zoneTag: zoneId, startDate: iso(start), endDate: iso(end), startTime: start.toISOString(), endTime: end.toISOString() } }),
       signal: AbortSignal.timeout(10000)
     });
     if (!response.ok) return adminJson({ configured: true, error: "Cloudflare Analytics API returned HTTP " + response.status }, 502);
