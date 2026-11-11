@@ -215,7 +215,7 @@ $("run").addEventListener("click", async () => {
   } catch (error) {
     alert(error.message);
   } finally {
-    button.disabled = false;
+    button.disabled = !repairAgentReady;
     button.textContent = "Run health checks";
   }
 });
@@ -299,7 +299,9 @@ async function loadRepairDesk() {
       api("/api/admin/repair-jobs"),
       api("/api/admin/findings")
     ]);
-    repairAgentReady = jobs.agentConfigured === true;\n    $("agent-state").textContent = repairAgentReady ? "Cloudflare repair agent ready" : "Agent setup required · add GITHUB_TOKEN to Worker secrets";\n    $("repair-submit").disabled = !repairAgentReady;
+    repairAgentReady = jobs.agentConfigured === true;
+    $("agent-state").textContent = repairAgentReady ? "Cloudflare repair agent ready" : "Agent setup required · add GITHUB_TOKEN to Worker secrets";
+    $("repair-submit").disabled = !repairAgentReady;
     const select = $("repair-finding");
     const selected = select.value;
     select.replaceChildren();
@@ -365,6 +367,7 @@ $("repair-form").addEventListener("submit", async (event) => {
   const button = $("repair-submit");
   const requestText = $("repair-request").value.trim();
   if (!requestText) return;
+  if (!repairAgentReady) { $("repair-message").textContent = "Configure the GITHUB_TOKEN Worker secret before starting an agent job."; return; }
   button.disabled = true;
   button.textContent = "Submitting…";
   $("repair-message").textContent = "";
