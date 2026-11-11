@@ -1,22 +1,30 @@
 import { runAdminHealthChecks } from "./admin-health.js";
+import { captureProductionSnapshots } from "./change-monitor.js";
 
 export default {
   async scheduled(controller, env) {
+    const scheduledTime = new Date(controller.scheduledTime).toISOString();
     try {
-      const result = await runAdminHealthChecks(env.DB, "scheduled");
+      const health = await runAdminHealthChecks(env.DB, "scheduled");
+      const changes = await captureProductionSnapshots(env.DB);
       console.log(JSON.stringify({
-        event: "scheduled_health_check_completed",
-        scheduled_time: new Date(controller.scheduledTime).toISOString(),
-        run_id: result.run.id,
-        monitors: result.run.monitor_count,
-        passed: result.run.passed_count,
-        failed: result.run.failed_count,
+        event: "scheduled_reliability_cycle_completed",
+        scheduled_time: scheduledTime,
+        run_id: health.run.id,
+        monitors: health.run.monitor_count,
+        passed: health.run.passed_count,
+        failed: health.run.failed_count,
+        snapshot_targets: changes.targets,
+        changed_pages: changes.changed
       }));
+      if (health.run.failed_count > 0 || changes.results.some(result => !result.ok)) {
+        console.warn(JSON.stringify({ event: "reliability_cycle_warnings", health_failures: health.run.failed_count, snapshot_results: changes.results }));
+      }
     } catch (error) {
       console.error(JSON.stringify({
-        event: "scheduled_health_check_failed",
-        scheduled_time: new Date(controller.scheduledTime).toISOString(),
-        error: error instanceof Error ? error.message : "Unknown health check failure",
+        event: "scheduled_reliability_cycle_failed",
+        scheduled_time: scheduledTime,
+        error: error instanceof Error ? error.message : "Unknown reliability failure"
       }));
       throw error;
     }
@@ -24,7 +32,7 @@ export default {
   async fetch() {
     return new Response("Not found", {
       status: 404,
-      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" }
     });
-  },
+  }
 };
