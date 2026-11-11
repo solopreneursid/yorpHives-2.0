@@ -28,6 +28,8 @@ test("admin routes verify user and CI service identities while keeping CI access
   assert.match(auth, /ADMIN_ALLOWED_EMAILS/);
   assert.match(auth, /ADMIN_CI_SERVICE_TOKEN_IDS/);
   assert.match(auth, /claims\.common_name/);
+  assert.match(auth, /claims\.service_token_status === true/);
+  assert.match(auth, /claims\.sub === ""/);
   assert.match(auth, /claims\.exp/);
   assert.match(auth, /claims\.iss/);
   assert.match(auth, /identity\.serviceToken && !\["GET", "HEAD"\]/);
