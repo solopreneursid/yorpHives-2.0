@@ -99,10 +99,12 @@ async function checkGithubAccess(env) {
       workflow = { ...workflow, access: false, detail: "Actions run metadata is unavailable; repository authentication still works." };
     }
 
+    const ready = workflow.access === true;
     const value = {
-      ready: true,
+      ready,
       github: { authenticated: true, login: user.login, repository_access: true, repository: repository.full_name },
-      workflow
+      workflow,
+      ...(ready ? {} : { error: "GitHub Actions read permission is required to verify specialist job results and gate repair pull requests." })
     };
     githubHealthCache = { checkedAt: Date.now(), value };
     return value;
