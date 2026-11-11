@@ -239,3 +239,134 @@ $("assets-run").addEventListener("click", async () => {
   } catch (error) { alert(error.message); }
   finally { button.disabled = false; button.textContent = "Run next asset scan"; }
 });
+
+
+let analyticsRange = "7d";
+const numberFormat = (value) => new Intl.NumberFormat().format(Number(value || 0));
+async function loadAnalytics() {
+  const status = $("analytics-status");
+  status.textContent = "Loading Cloudflare traffic analytics…";
+  try {
+    const result = await api("/api/admin/analytics?range=" + analyticsRange);
+    if (!result.configured) {
+      status.textContent = result.message;
+      $("metric-views").textContent = "—";
+      $("metric-requests").textContent = "—";
+      $("metric-bandwidth").textContent = "—";
+      $("top-paths").replaceChildren();
+      emptyRow($("top-paths"), "Connect Cloudflare Analytics to view popular pages.", 2);
+      return;
+    }
+    if (result.error) throw new Error(result.error);
+    status.textContent = "Cloudflare edge analytics · " + result.range;
+    $("metric-views").textContent = numberFormat(result.totals.pageViews);
+    $("metric-requests").textContent = numberFormat(result.totals.requests);
+    $("metric-bandwidth").textContent = (Number(result.totals.bytes || 0) / 1073741824).toFixed(2) + " GB";
+    const target = $("top-paths");
+    target.replaceChildren();
+    if (!result.topPaths?.length) emptyRow(target, "No path data returned for this range.", 2);
+    else for (const item of result.topPaths) {
+      const tr = document.createElement("tr");
+      cell(tr, item.path || "/");
+      cell(tr, numberFormat(item.requests));
+      target.append(tr);
+    }
+  } catch (error) {
+    status.textContent = "Analytics unavailable: " + error.message;
+  }
+}
+
+async function loadRepairDesk() {
+  try {
+    const [jobs, findings] = await Promise.all([
+      api("/api/admin/repair-jobs"),
+      api("/api/admin/findings")
+    ]);
+    $("agent-state").textContent = jobs.agentConfigured ? "Agent webhook connected" : "Agent not connected · requests will be queued";
+    const select = $("repair-finding");
+    const selected = select.value;
+    select.replaceChildren();
+    const general = document.createElement("option");
+    general.value = "";
+    general.textContent = "General investigation";
+    select.append(general);
+    for (const finding of findings.data || []) {
+      const option = document.createElement("option");
+      option.value = finding.id;
+      option.textContent = "[" + finding.severity + "] " + finding.title;
+      select.append(option);
+    }
+    select.value = selected;
+    const target = $("repair-jobs");
+    target.replaceChildren();
+    if (!jobs.data?.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "No repair requests yet.";
+      target.append(empty);
+      return;
+    }
+    for (const job of jobs.data) {
+      const article = document.createElement("article");
+      article.className = "job";
+      const head = document.createElement("div");
+      head.className = "job-head";
+      const title = document.createElement("strong");
+      title.textContent = "Repair " + job.id.slice(0, 8);
+      const status = document.createElement("span");
+      status.className = "pill " + (job.status === "failed" ? "high" : job.status === "completed" ? "low" : "medium");
+      status.textContent = job.status;
+      head.append(title, status);
+      const request = document.createElement("p");
+      request.textContent = job.request_text;
+      const meta = document.createElement("p");
+      meta.textContent = "Requested " + date(job.created_at) + " by " + job.requested_by;
+      article.append(head, request, meta);
+      if (job.pull_request_url) {
+        const link = document.createElement("a");
+        link.href = job.pull_request_url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "Review pull request ↗";
+        article.append(link);
+      }
+      if (job.result_summary) {
+        const summary = document.createElement("p");
+        summary.textContent = job.result_summary;
+        article.append(summary);
+      }
+      target.append(article);
+    }
+  } catch (error) {
+    $("agent-state").textContent = "Repair desk unavailable: " + error.message;
+  }
+}
+$("analytics-7d").addEventListener("click", () => { analyticsRange = "7d"; loadAnalytics(); });
+$("analytics-30d").addEventListener("click", () => { analyticsRange = "30d"; loadAnalytics(); });
+$("repair-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = $("repair-submit");
+  const requestText = $("repair-request").value.trim();
+  if (!requestText) return;
+  button.disabled = true;
+  button.textContent = "Submitting…";
+  $("repair-message").textContent = "";
+  try {
+    const result = await api("/api/admin/repair-jobs", {
+      method: "POST",
+      body: JSON.stringify({ finding_id: $("repair-finding").value || null, request_text: requestText })
+    });
+    $("repair-message").textContent = result.dispatched
+      ? "Repair dispatched to the agent. Changes must return through a pull request."
+      : result.message || "Repair request saved.";
+    $("repair-request").value = "";
+    await loadRepairDesk();
+  } catch (error) {
+    $("repair-message").textContent = "Could not submit repair: " + error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Request repair";
+  }
+});
+loadAnalytics();
+loadRepairDesk();
