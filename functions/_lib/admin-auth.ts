@@ -81,9 +81,10 @@ export async function verifyAdminAccess(request: Request, env: AdminEnv): Promis
     const tokenAudiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
     if (!tokenAudiences.some((audience) => expectedAudiences.has(audience))) return null;
     const serviceTokenId = (claims.service_token_id || claims.common_name || "").trim();
-    const isAllowedServiceToken = serviceTokenId.length > 0 && allowedServiceTokenIds.has(serviceTokenId);
+    const serviceTokenClaim = claims.service_token_status === true || (serviceTokenId.length > 0 && claims.sub === "");
+    const isAllowedServiceToken = serviceTokenClaim && serviceTokenId.length > 0 && allowedServiceTokenIds.has(serviceTokenId);
     const email = (claims.email || "").trim().toLowerCase();
-    if (serviceTokenId ? !isAllowedServiceToken : (!email || !allowedEmails.has(email))) return null;
+    if (serviceTokenClaim ? !isAllowedServiceToken : (!email || !allowedEmails.has(email))) return null;
     const keys = await getAccessKeys(teamDomain);
     const jwk = keys.find((key) => key.kid === header.kid);
     if (!jwk) return null;
