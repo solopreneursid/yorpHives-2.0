@@ -30,11 +30,22 @@ async function github(env, path, method = "GET", body) {
     body: body === undefined ? undefined : JSON.stringify(body),
     signal: AbortSignal.timeout(20000)
   });
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
+  const responseText = await response.text();
+  let payload = null;
+  if (responseText) {
+    try {
+      payload = JSON.parse(responseText);
+    } catch {
+      const excerpt = responseText.replace(/\\s+/g, " ").trim().slice(0, 240);
+      if (!response.ok) {
+        throw new Error(`GitHub API ${method} ${path} failed with HTTP ${response.status}: non-JSON response: ${excerpt || "empty response"}`);
+      }
+      throw new Error(`GitHub API ${method} ${path} returned HTTP ${response.status} with an unexpected non-JSON response: ${excerpt || "empty response"}`);
+    }
+  }
   if (!response.ok) {
-    const message = payload?.message || "GitHub API request failed";
-    throw new Error(`GitHub API ${method} ${path} failed with HTTP ${response.status}: ${message}`);
+    const message = payload?.message || payload?.error || "GitHub API request failed";
+    throw new Error(`GitHub API ${method} ${path} failed with HTTP ${response.status}: ${String(message).slice(0, 240)}`);
   }
   return payload;
 }
@@ -95,8 +106,9 @@ async function checkGithubAccess(env) {
       } else {
         workflow = { ...workflow, access: true, detail: "Actions access is available; the specialist workflow has not run yet." };
       }
-    } catch {
-      workflow = { ...workflow, access: false, detail: "Actions run metadata is unavailable; repository authentication still works." };
+    } catch (error) {
+      const detail = error instanceof Error ? error.message.slice(0, 240) : "Unknown GitHub Actions API error.";
+      workflow = { ...workflow, access: false, detail: "GitHub Actions check failed: " + detail };
     }
 
     const ready = workflow.access === true;
