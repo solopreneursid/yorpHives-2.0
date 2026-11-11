@@ -11,7 +11,12 @@ The first slice provides:
 - Read-only HTTPS checks for a fixed YorpHives host allowlist.
 - Deduplicated findings with recovery verification.
 - A separate scheduled Worker that runs the same health-check logic every six hours.
-- Weekly GitHub CodeQL analysis for JavaScript and TypeScript.\n- Playwright browser flows for homepage navigation, Free Tools search, JSON Formatter execution, and mobile navigation.\n- Sitemap-wide HTTP, title, description, canonical and internal-link checks.\n- Weekly Lighthouse reports for performance, accessibility, best practices and SEO.\n- Gitleaks repository secret scanning, Dependabot update proposals, dependency review on pull requests, and a passive OWASP ZAP baseline.\n- Six-hour SHA-256 snapshots of the production homepage, Free Tools directory, discovery API and agent discovery document, with protected change history in the admin dashboard.
+- Weekly GitHub CodeQL analysis for JavaScript and TypeScript.
+- Playwright browser flows for homepage navigation, Free Tools search, JSON Formatter execution, and mobile navigation.
+- Sitemap-wide HTTP, title, description, canonical and internal-link checks.
+- Weekly Lighthouse reports for performance, accessibility, best practices and SEO.
+- Gitleaks repository secret scanning, Dependabot update proposals, dependency review on pull requests, and a passive OWASP ZAP baseline.
+- Six-hour SHA-256 snapshots of the production homepage, Free Tools directory, discovery API and agent discovery document, with protected change history in the admin dashboard.
 
 ## Zero-cost operating model
 
