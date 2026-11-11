@@ -146,7 +146,7 @@ async function load() {
       cell(tr, item.latest_version || "—");
       const stateCell = cell(tr, "");
       const badge = document.createElement("span");
-      badge.className = "pill " + (item.status === "deprecated" ? "high" : item.status === "major_update" ? "medium" : item.status === "update_available" ? "info" : "low");
+      badge.className = "pill " + (item.status === "deprecated" ? "high" : item.status === "major_update" ? "medium" : item.status === "update_available" || item.status === "unknown" ? "info" : "low");
       badge.textContent = item.status;
       stateCell.append(badge);
       cell(tr, item.details);
