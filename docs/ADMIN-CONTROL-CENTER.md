@@ -39,7 +39,7 @@ The Pages project must have the `ADMIN_AGENT_SERVICE` Service binding pointing t
 3. The Workflow loads a bounded set of eligible source files and asks Workers AI for complete replacement contents in a strict JSON format.
 4. The agent rejects changes outside its allowlist. It cannot edit tests, `.github/`, migrations, authentication, Cloudflare Access, release controls, deployment configuration, monitoring infrastructure, or secrets.
 5. It creates a branch named `build/agent/repair-<job-id>`. The existing repository platform-check workflow runs on that branch.
-6. The Workflow waits for the platform contract checks. Only when they pass does it open a draft PR against `build/yorphives-admin-reliability`.
+6. The Workflow creates and removes a temporary CI trigger file on the isolated branch so GitHub emits a push event, then waits for the platform contract checks on the final source commit. Only when they pass does it open a draft PR against `build/yorphives-admin-reliability`.
 7. D1 records the branch, PR URL, verification summary, and audit event. The job enters `needs_review`; no merge or deployment occurs.
 
 A failed inference, invalid patch, failed CI run, or CI timeout leaves a failed job record and does not open a PR.
