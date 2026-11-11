@@ -372,20 +372,23 @@ export async function runAssetIntelligence(db) {
     });
     if (!response.ok) throw new Error("Sitemap returned HTTP " + response.status);
     const xml = await response.text();
-    const toolPaths = new Set(inventory.filter(item => item.type === "free_tool").map(item => item.url));
+    const knownPaths = new Set(inventory.map(item => item.url));
     const discovered = new Map();
     for (const match of xml.matchAll(/<loc>\\s*([^<]+?)\\s*<\\/loc>/gi)) {
       const url = safeInternalUrl(match[1].replace(/&amp;/g, "&").trim());
-      if (!url || url.pathname === "/sitemap.xml" || url.pathname === "/free-tools/manifest.json" || toolPaths.has(url.pathname)) continue;
+      if (!url || url.pathname === "/sitemap.xml" || url.pathname === "/free-tools/manifest.json" || knownPaths.has(url.pathname)) continue;
       const path = url.pathname || "/";
-      const key = "page:" + path;
+      const toolMatch = path.match(/^\\/free-tools\\/([a-z0-9-]+)\\/$/);
+      const slug = toolMatch?.[1];
+      const key = slug ? "tool:" + slug : "page:" + path;
       if (!discovered.has(key)) discovered.set(key, {
         key,
-        type: "website_page",
+        type: slug ? "free_tool" : "website_page",
         title: path === "/" ? "Homepage" : path.split("/").filter(Boolean).slice(-1)[0].replace(/[-_]/g, " ").replace(/\\b\\w/g, letter => letter.toUpperCase()),
         url: path,
-        source: "sitemap.xml"
+        source: slug ? "sitemap.xml (tool fallback)" : "sitemap.xml"
       });
+      knownPaths.add(path);
     }
     for (const asset of discovered.values()) inventory.push(asset);
   } catch (error) {
