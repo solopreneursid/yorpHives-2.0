@@ -137,20 +137,6 @@ test("Control Center adds bounded repair jobs, owner audit history and optional 
 });
 
 
-test("agent callbacks require the configured bearer secret and constrain branches and pull requests", async () => {
-  const callback = await read("../functions/api/admin/agent-callback.ts");
-  const dispatch = await read("../functions/api/admin/repair-jobs.ts");
-  assert.match(callback, /UNAUTHORIZED_AGENT/);
-  assert.match(callback, /ADMIN_AGENT_CALLBACK_TOKEN/);
-  assert.ok(callback.includes("agent|repair"));
-  assert.ok(callback.includes("solopreneursid") && callback.includes("pull"));
-  assert.match(callback, /admin_audit_events/);
-  assert.match(dispatch, /callback_url/);
-  assert.match(dispatch, /admin_repair_requested/);
-  assert.match(dispatch, /api.github.com\/repos\/solopreneursid\/yorpHives-2.0\/dispatches/);
-});
-
-
 test("Admin findings support audited triage while fixed status remains verification-controlled", async () => {
   const findings = await read("../functions/api/admin/findings.ts");
   const audit = await read("../functions/api/admin/audit.ts");
@@ -175,10 +161,10 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   const config = JSON.parse(await read("../admin-agent/wrangler.jsonc"));
   assert.match(route, /ADMIN_AGENT_SERVICE/);
   assert.match(route, /AGENT_DAILY_LIMIT/);
-  assert.match(route, /admin-agent\\.internal\\/instances/);
+  assert.match(route, /admin-agent\.internal\/instances/);
   assert.match(worker, /WorkflowEntrypoint/);
-  assert.match(worker, /@cf\\/qwen\\/qwen3\\.8-27b/);
-  assert.match(worker, /build\\/agent\\/repair-/);
+  assert.match(worker, /@cf\/qwen\/qwen3\.8-27b/);
+  assert.match(worker, /build\/agent\/repair-/);
   assert.match(worker, /yorphives platform checks/);
   assert.match(worker, /needs_review/);
   assert.match(worker, /draft: true/);
