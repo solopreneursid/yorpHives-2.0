@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 const date = (value) => value ? new Date(value).toLocaleString() : "—";
-const safe = (value) => String(value ?? "");\nlet repairAgentReady = false;
+const safe = (value) => String(value ?? "");
+let repairAgentReady = false;
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -236,7 +237,7 @@ $("snapshot").addEventListener("click", async () => {
   } catch (error) {
     alert(error.message);
   } finally {
-    button.disabled = false;
+    button.disabled = !repairAgentReady;
     button.textContent = "Check production changes";
   }
 });
@@ -390,6 +391,7 @@ $("repair-form").addEventListener("submit", async (event) => {
 });
 loadAnalytics();
 loadRepairDesk();
+setInterval(loadRepairDesk, 30000);
 
 
 async function loadAudit() {
