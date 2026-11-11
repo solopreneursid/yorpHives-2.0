@@ -49,14 +49,13 @@ The dashboard's manual run button and the scheduled Cron Worker call the same sh
 - Not automated: code changes, merges, production deploys, DNS, secrets, Cloudflare configuration, data deletion, or active vulnerability scans.
 - Active security testing belongs on preview/test only and must be explicitly approved.
 
-## Next implementation slices
+## Future improvements
 
-1. Preview browser smoke tests with Playwright and artifacts.
-2. Dependency and secret scanning with free GitHub security features where available.
-3. Preview-only passive OWASP ZAP baseline scan.
-4. SEO and agent-discovery contract checks.
-5. Agentic investigation and recommendations using deterministic rules first.
-6. Approval queue and pull-request preparation; no autonomous merge or deployment.
+1. Add per-tool deterministic input/output tests for the highest-usage tools, extending the current all-tool page/control smoke coverage.
+2. Add authenticated preview browser testing so proposed branch changes can be tested before merge without exposing Access credentials to public workflows.
+3. Add explicit API schema and product-catalogue contract drift checks.
+4. Add a reviewed recommendation-to-pull-request workflow, retaining human approval for code changes, merges and production deployment.
+5. Add history-based performance and availability trends to distinguish regressions from normal variation.
 
 
 ## Asset intelligence and improvement recommendations
