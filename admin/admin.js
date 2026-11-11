@@ -39,7 +39,7 @@ async function load() {
     if (!overview.recent_runs?.length) {
       const tr = document.createElement("tr");
       const td = cell(tr, "No monitoring runs yet.");
-      td.colSpan = 5;
+      td.colSpan = colspan;
       td.className = "empty";
       runs.append(tr);
     } else {
@@ -78,7 +78,7 @@ async function load() {
         list.append(tr);
       }
     }
-    $("run-state").textContent = "Updated " + new Date().toLocaleTimeString();
+    const changeList = $("changes-list");\n    changeList.replaceChildren();\n    if (!changes.data?.length) {\n      const tr = document.createElement("tr");\n      const td = cell(tr, "No production changes detected yet. Initial snapshots are being established.");\n      td.colSpan = 4;\n      td.className = "empty";\n      changeList.append(tr);\n    } else {\n      for (const item of changes.data) {\n        const tr = document.createElement("tr");\n        cell(tr, date(item.detected_at));\n        cell(tr, item.title);\n        cell(tr, item.details);\n        cell(tr, item.status);\n        changeList.append(tr);\n      }\n    }\n    $("run-state").textContent = "Updated " + new Date().toLocaleTimeString();
   } catch (error) {
     $("run-state").textContent = "Error";
     $("identity").textContent = error.message;
