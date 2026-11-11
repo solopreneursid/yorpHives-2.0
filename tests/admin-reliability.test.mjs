@@ -184,6 +184,7 @@ test("Admin findings support audited triage while fixed status remains verificat
 test("Cloudflare durable repair agent uses a private service binding and CI-gated draft PRs", async () => {
   const route = await read("../functions/api/admin/repair-jobs.ts");
   const worker = await read("../admin-agent/worker.js");
+  const reviewer = await read("../scripts/agent-review.mjs");
   const config = JSON.parse(await read("../admin-agent/wrangler.jsonc"));
   assert.match(route, /ADMIN_AGENT_SERVICE/);
   const adminUi = await read("../admin/admin.js");
@@ -200,6 +201,8 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(route, /older evidence format/);
   assert.match(route, /hasStructuredSecurityEvidence/);
   assert.match(worker, /WorkflowEntrypoint/);
+  assert.match(reviewer, /refName\.startsWith\("build\/agentic-ops-"\)/);
+  assert.match(reviewer, /build\/yorphives-admin-reliability/);
   assert.match(worker, /"user-agent": "YorpHives-Agentic-Operations\/1\.0"/);
   assert.match(worker, /repositoryWrite/);
   assert.match(worker, /jobs_access/);
