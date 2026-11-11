@@ -1,0 +1,85 @@
+name: YorpHives browser, SEO and performance quality
+
+on:
+  push:
+    branches: [main, "build/**"]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "41 2 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-and-seo:
+    name: Browser smoke tests and SEO crawl
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser test runtime
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run real-browser and SEO checks
+        run: node scripts/site-quality.mjs
+        env:
+          SITE_BASE_URL: https://yorphives.com
+      - name: Upload quality report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yorphives-site-quality-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+
+  lighthouse:
+    name: Lighthouse performance budgets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Lighthouse and Chromium
+        run: |
+          npm install --no-save --no-package-lock lighthouse@12.8.2
+          npx --yes playwright@1.56.1 install --with-deps chromium
+      - name: Run Lighthouse on key public pages
+        run: |
+          mkdir -p artifacts/lighthouse
+          CHROME_BIN="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -o -name chromium | head -n 1)"
+          npx lighthouse https://yorphives.com/ --chrome-path="$CHROME_BIN" --output=json --output-path=artifacts/lighthouse/home.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags="--headless --no-sandbox"
+          npx lighthouse https://yorphives.com/free-tools/ --chrome-path="$CHROME_BIN" --output=json --output-path=artifacts/lighthouse/free-tools.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags="--headless --no-sandbox"
+      - name: Summarize Lighthouse scores
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+          const files = ['artifacts/lighthouse/home.json','artifacts/lighthouse/free-tools.json'];
+          const rows = [];
+          for (const file of files) {
+            const report = JSON.parse(await readFile(file,'utf8'));
+            const scores = Object.fromEntries(Object.entries(report.categories).map(([key,value]) => [key, Math.round(value.score * 100)]));
+            rows.push({ page: report.finalDisplayedUrl, ...scores });
+          }
+          console.table(rows);
+          await writeFile('artifacts/lighthouse/summary.json', JSON.stringify(rows,null,2));
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: yorphives-lighthouse-${{ github.run_id }}
+          path: artifacts/lighthouse/
+          if-no-files-found: warn
+          retention-days: 30
