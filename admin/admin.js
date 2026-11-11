@@ -1,4 +1,9 @@
 const $ = (id) => document.getElementById(id);
+const setText = (id, value) => {
+  const element = $(id);
+  if (element) element.textContent = String(value ?? "—");
+  else console.warn("Admin UI element is missing:", id);
+};
 const date = (value) => value ? new Date(value).toLocaleString() : "—";
 const number = (value) => new Intl.NumberFormat().format(Number(value || 0));
 const text = (value) => String(value ?? "—");
@@ -87,7 +92,7 @@ function showView(name) {
   state.view = name;
   document.querySelectorAll(".view").forEach(item => item.classList.toggle("active", item === view));
   document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === name));
-  $("breadcrumb").textContent = view.dataset.title || name;
+  setText("breadcrumb", view.dataset.title || name);
   $("sidebar").classList.remove("open");
   $("mobile-scrim").classList.remove("show");
   $("mobile-menu").setAttribute("aria-expanded", "false");
@@ -184,7 +189,7 @@ function renderAssets() {
 function renderCatalogue() {
   const target=$("catalogue-list");
   if(!target)return;
-  $("catalogue-count").textContent=number(state.catalogue.length)+" applications";
+  setText("catalogue-count", number(state.catalogue.length)+" applications");
   renderTable(target,state.catalogue,[
     (tr,item)=>cell(tr,item.title+" · "+item.slug),
     (tr,item)=>{const td=cell(tr,"");td.append(badge(item.status));},
@@ -233,20 +238,20 @@ async function loadOverview() {
   state.findings = findings.data || [];
   const counts = overview.counts || {};
   const ac = state.assetCounts;
-  $("identity").textContent = overview.identity || "Administrator";
-  $("sidebar-identity").textContent = overview.identity || "Authorized owner";
-  $("asset-count").textContent = number(ac.assets);
-  $("asset-breakdown").textContent = number(ac.website_pages) + " pages · " + number(ac.free_tools) + " tools · " + number(ac.catalogue_applications ?? ac.products) + " applications";
-  $("findings").textContent = number(counts.open_findings);
-  $("critical-label").textContent = number(counts.critical_findings) + " critical findings";
-  $("updates-count").textContent = number(ac.updates_available);
-  $("agent-count").textContent = "—";
-  $("agent-summary").textContent = "Open AI Operations for live readiness";
-  $("last-run").textContent = "Last check " + date(counts.last_run_at);
+  setText("identity", overview.identity || "Administrator");
+  setText("sidebar-identity", overview.identity || "Authorized owner");
+  setText("asset-count", number(ac.assets));
+  setText("asset-breakdown", number(ac.website_pages) + " pages · " + number(ac.free_tools) + " tools · " + number(ac.catalogue_applications ?? ac.products) + " applications");
+  setText("findings", number(counts.open_findings));
+  setText("critical-label", number(counts.critical_findings) + " critical findings");
+  setText("updates-count", number(ac.updates_available));
+  setText("agent-count", "—");
+  setText("agent-summary", "Open AI Operations for live readiness");
+  setText("last-run", "Last check " + date(counts.last_run_at));
   const down = (ac.unavailable || 0) + (ac.degraded || 0);
-  $("platform-status").textContent = down ? down + " asset" + (down === 1 ? "" : "s") + " need attention" : "Monitoring signals are available";
-  $("platform-summary").textContent = number(ac.assets) + " discovered assets · " + number(ac.healthy) + " healthy · " + down + " degraded or unavailable. A successful scan is required to confirm health.";
-  $("run-state").textContent = "Updated " + new Date().toLocaleTimeString();
+  setText("platform-status", down ? down + " asset" + (down === 1 ? "" : "s") + " need attention" : "Monitoring signals are available");
+  setText("platform-summary", number(ac.assets) + " discovered assets · " + number(ac.healthy) + " healthy · " + down + " degraded or unavailable. A successful scan is required to confirm health.");
+  setText("run-state", "Updated " + new Date().toLocaleTimeString());
   const components = [
     ["Admin Control Center", 1, "Authenticated · Admin API responding"],
     ["Public website", ac.website_pages, "Discovered through sitemap"],
@@ -284,13 +289,13 @@ async function loadMonitoring() {
   const [assets,overview,changes]=await Promise.all([getAssets(true),getOverview(),api("/api/admin/changes")]);
   renderAssets();renderCatalogue();renderRuns($("runs"),overview.recent_runs || []);renderChanges($("changes-list"),changes.data || []);
   const sourceFailures=Object.entries(state.sourceErrors).filter(([,error])=>error).map(([name,error])=>name+": "+error);
-  $("inventory-source-status").textContent=sourceFailures.length?"Some live inventory sources are unavailable: "+sourceFailures.join(" · "):"Live inventory sources connected · public catalogue · Free Tools API · sitemap · OpenAPI";
+  setText("inventory-source-status", sourceFailures.length ? "Some live inventory sources are unavailable: " + sourceFailures.join(" · ") : "Live inventory sources connected · public catalogue · Free Tools API · sitemap · OpenAPI");
   const c=state.assetCounts;
-  $("website-count").textContent=number(c.website_pages);
-  $("tools-count").textContent=number(c.free_tools);
-  $("products-count").textContent=number(c.catalogue_applications ?? c.products);
+  setText("website-count", number(c.website_pages));
+  setText("tools-count", number(c.free_tools));
+  setText("products-count", number(c.catalogue_applications ?? c.products));
   renderCatalogue();
-  $("asset-down").textContent=number((c.unavailable||0)+(c.degraded||0));
+  setText("asset-down", number((c.unavailable||0)+(c.degraded||0)));
 }
 async function loadIssues() {
   const status=state.findingFilter;
@@ -329,35 +334,35 @@ function renderFindings() {
   ],"No findings in this view.",6);
 }
 async function loadAnalytics() {
-  $("analytics-status").textContent="Loading Cloudflare zone analytics · "+state.range+"…";
+  setText("analytics-status", "Loading Cloudflare zone analytics · " + state.range + "…");
   try {
     const result=await api("/api/admin/analytics?range="+state.range);
-    if(!result.configured){$("analytics-status").textContent=result.message;analyticsSnapshot=null;resetAnalytics();return;}
+    if(!result.configured){setText("analytics-status", result.message);analyticsSnapshot=null;resetAnalytics();return;}
     if(result.error)throw new Error(result.error);
     analyticsSnapshot=result;
-    $("analytics-status").textContent="Cloudflare edge analytics · "+result.range+" · refreshed "+new Date().toLocaleTimeString();
-    $("metric-views").textContent=number(result.totals?.pageViews);
-    $("metric-requests").textContent=number(result.totals?.requests);
-    $("metric-bandwidth").textContent=(Number(result.totals?.bytes||0)/1073741824).toFixed(2)+" GB";
+    setText("analytics-status", "Cloudflare edge analytics · " + result.range + " · refreshed " + new Date().toLocaleTimeString());
+    setText("metric-views", number(result.totals?.pageViews));
+    setText("metric-requests", number(result.totals?.requests));
+    setText("metric-bandwidth", (Number(result.totals?.bytes||0)/1073741824).toFixed(2)+" GB");
     renderTraffic(result.daily || []);
     renderTable($("top-paths"),result.topPaths || [],[
       (tr,item)=>cell(tr,item.path || "/"),
       (tr,item)=>cell(tr,number(item.requests))
     ],"No path data returned for this period.",2);
   } catch(error) {
-    $("analytics-status").textContent="Analytics unavailable: "+error.message;
+    setText("analytics-status", "Analytics unavailable: " + error.message);
     resetAnalytics();
   }
 }
 function exportAnalytics(){
-  if(!analyticsSnapshot){$("analytics-status").textContent="No verified analytics data is available to export.";return;}
+  if(!analyticsSnapshot){setText("analytics-status", "No verified analytics data is available to export.");return;}
   const blob=new Blob([JSON.stringify({generated_at:new Date().toISOString(),source:"Cloudflare zone analytics",...analyticsSnapshot},null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="yorphives-analytics-"+analyticsSnapshot.range+".json";link.click();URL.revokeObjectURL(url);
 }
 function resetAnalytics(){
   ["metric-views","metric-requests","metric-bandwidth"].forEach(id=>$(id).textContent="—");
   emptyRow($("top-paths"),"Analytics data is not available.",2);
-  $("traffic-chart").textContent="Daily traffic is unavailable until the analytics connection responds.";
+  setText("traffic-chart", "Daily traffic is unavailable until the analytics connection responds.");
 }
 function renderTraffic(daily) {
   const target=$("traffic-chart");target.replaceChildren();
@@ -415,9 +420,9 @@ async function loadAgents(refresh=true) {
 async function loadUpdates() {
   await getAssets(true);
   const c=state.assetCounts;
-  $("deprecated-count").textContent=number(c.deprecated_dependencies);
-  $("updates-count-panel").textContent=number(c.updates_available);
-  $("dependency-count").textContent=number(state.dependencies.length);
+  setText("deprecated-count", number(c.deprecated_dependencies));
+  setText("updates-count-panel", number(c.updates_available));
+  setText("dependency-count", number(state.dependencies.length));
   renderDependencies();
 }
 async function loadActivity() {
