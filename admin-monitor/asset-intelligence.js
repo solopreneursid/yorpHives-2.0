@@ -363,6 +363,35 @@ export async function runAssetIntelligence(db) {
     }
   } catch (error) { manifestError = error instanceof Error ? error.message : "Tool manifest fetch failed"; }
 
+  let sitemapError = null;
+  try {
+    const response = await fetch(SITE_ORIGIN + "/sitemap.xml", {
+      headers: { "accept": "application/xml,text/xml", "user-agent": "YorpHives-AssetMonitor/1.0" },
+      redirect: "manual",
+      signal: AbortSignal.timeout(7000)
+    });
+    if (!response.ok) throw new Error("Sitemap returned HTTP " + response.status);
+    const xml = await response.text();
+    const toolPaths = new Set(inventory.filter(item => item.type === "free_tool").map(item => item.url));
+    const discovered = new Map();
+    for (const match of xml.matchAll(/<loc>\\s*([^<]+?)\\s*<\\/loc>/gi)) {
+      const url = safeInternalUrl(match[1].replace(/&amp;/g, "&").trim());
+      if (!url || url.pathname === "/sitemap.xml" || url.pathname === "/free-tools/manifest.json" || toolPaths.has(url.pathname)) continue;
+      const path = url.pathname || "/";
+      const key = "page:" + path;
+      if (!discovered.has(key)) discovered.set(key, {
+        key,
+        type: "website_page",
+        title: path === "/" ? "Homepage" : path.split("/").filter(Boolean).slice(-1)[0].replace(/[-_]/g, " ").replace(/\\b\\w/g, letter => letter.toUpperCase()),
+        url: path,
+        source: "sitemap.xml"
+      });
+    }
+    for (const asset of discovered.values()) inventory.push(asset);
+  } catch (error) {
+    sitemapError = error instanceof Error ? error.message : "Sitemap fetch failed";
+  }
+
   const products = await db.prepare(`
     SELECT id, slug, title, listing_type, status, destination_url
     FROM catalogue_listings WHERE status='available' AND listing_type='application' AND owner_type='yorphives' ORDER BY updated_at DESC LIMIT 100
@@ -380,7 +409,7 @@ export async function runAssetIntelligence(db) {
   }
 
   const trackedInventory = inventory.slice(0, MAX_ASSETS);
-  await syncInventory(db, trackedInventory, now, !manifestError);
+  await syncInventory(db, trackedInventory, now, !manifestError && !sitemapError);
   const checkState = await db.prepare("SELECT asset_key, last_checked_at FROM admin_assets WHERE active=1").all();
   const lastChecked = new Map((checkState.results || []).map(row => [row.asset_key, row.last_checked_at || ""]));
   const coreAssets = trackedInventory.filter(asset => asset.source === "site");
@@ -415,6 +444,8 @@ export async function runAssetIntelligence(db) {
     unavailable: checked.filter(item => item.status === "unavailable").length,
     dependencies: dependencyResults.length,
     manifest_error: manifestError,
+    sitemap_error: sitemapError,
+    discovered: { website_pages: trackedInventory.filter(item => item.type === "website_page").length, free_tools: trackedInventory.filter(item => item.type === "free_tool").length, products: trackedInventory.filter(item => item.type === "product").length },
     results: checked
   };
 }
