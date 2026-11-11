@@ -116,7 +116,7 @@ async function checkGithubAccess(env) {
       ready,
       github: { authenticated: true, login: user.login, repository_access: true, repository: repository.full_name },
       workflow,
-      ...(ready ? {} : { error: "GitHub Actions read permission is required to verify specialist job results and gate repair pull requests." })
+      ...(ready ? {} : { error: workflow.detail || "GitHub Actions read permission is required to verify specialist job results and gate repair pull requests." })
     };
     githubHealthCache = { checkedAt: Date.now(), value };
     return value;
