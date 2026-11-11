@@ -55,6 +55,7 @@ test("scheduled monitor uses the existing D1 binding and a single six-hour cron"
 test("admin dashboard is private, responsive and loads all protected APIs", async () => {
   const html = await read("../admin/index.html");
   const script = await read("../admin/admin.js");
+  const styles = await read("../admin/admin.css");
   assert.match(html, /noindex,nofollow,noarchive/);
   assert.match(html, /changes-list/);
   assert.match(html, /assets-list/);
@@ -63,8 +64,10 @@ test("admin dashboard is private, responsive and loads all protected APIs", asyn
   assert.match(html, /products-count/);
   assert.match(html, /tools-count/);
   assert.match(html, /website-count/);
-  assert.match(html, /@media\(max-width:760px\)/);
-  assert.match(html, /Read-only monitoring/);
+  assert.match(styles, /@media\(max-width:760px\)/);
+  assert.match(html, /Monitoring/);
+  assert.match(html, /data-view="overview"/);
+  assert.match(html, /data-view="agents"/);
   for (const route of ["overview", "findings", "changes", "assets", "run-checks", "run-assets"]) assert.ok(script.includes("/api/admin/" + route));
 });
 
@@ -129,11 +132,11 @@ test("Control Center adds bounded repair jobs, owner audit history and optional 
   assert.match(repairs, /ADMIN_AGENT_SERVICE/);
   assert.match(repairs, /AGENT_DAILY_LIMIT/);
   assert.match(repairs, /admin-agent\.internal\/instances/);
-  assert.match(html, /id="analytics"/);
-  assert.match(html, /id="repair-desk"/);
-  assert.match(html, /id="release-control"/);
+  assert.match(html, /id="view-analytics"/);
+  assert.match(html, /id="view-agents"/);
+  assert.match(html, /id="view-releases"/);
   assert.match(script, /loadAnalytics\(\)/);
-  assert.match(script, /loadRepairDesk\(\)/);
+  assert.match(script, /loadAgents\(\)/);
 });
 
 
@@ -149,7 +152,7 @@ test("Admin findings support audited triage while fixed status remains verificat
   assert.match(audit, /requireAdmin/);
   assert.match(audit, /ORDER BY created_at DESC/);
   assert.match(script, /method: "PATCH"/);
-  assert.match(script, /loadAudit\(\)/);
+  assert.match(script, /loadActivity\(\)/);
   assert.match(html, /id="audit-list"/);
 });
 
@@ -163,8 +166,8 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   const adminUi = await read("../admin/admin.js");
   const adminHtml = await read("../admin/index.html");
   assert.match(adminUi, /Cloudflare repair agent ready/);
-  assert.match(adminUi, /setInterval\(loadRepairDesk, 30000\)/);
-  assert.match(adminHtml, /CI-verified draft pull request/);
+  assert.match(adminUi, /setInterval\(\(\) =>/);
+  assert.match(adminHtml, /draft pull request with CI evidence/);
   assert.match(route, /admin-agent\.internal\/health/);
   assert.match(route, /AGENT_DAILY_LIMIT/);
   assert.match(route, /admin-agent\.internal\/instances/);
@@ -181,4 +184,23 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.equal(config.name, "yorphives-admin-agent");
   assert.equal(config.workflows[0].class_name, "AdminRepairWorkflow");
   assert.equal(config.d1_databases[0].database_id, "e8690813-b139-44a2-a1c7-bea2d2777ead");
+});
+
+test("Admin inventory discovers sitemap pages, manifest tools and published YorpHives applications without duplicates", async () => {
+  const scanner = await read("../admin-monitor/asset-intelligence.js");
+  assert.match(scanner, /SITE_ORIGIN \+ "\/sitemap\.xml"/);
+  assert.match(scanner, /free-tools\/manifest\.json/);
+  assert.match(scanner, /catalogue_listings/);
+  assert.match(scanner, /knownPaths/);
+  assert.match(scanner, /sitemapError/);
+  assert.match(scanner, /syncInventory\(db, trackedInventory, now, !manifestError && !sitemapError\)/);
+});
+
+test("Admin findings API unifies monitor and asset findings with audited triage", async () => {
+  const findings = await read("../functions/api/admin/findings.ts");
+  assert.match(findings, /admin_asset_findings/);
+  assert.match(findings, /source_type: "asset"/);
+  assert.match(findings, /resource_type/);
+  assert.match(findings, /finding_status_changed/);
+  assert.match(findings, /UPDATE " \+ table/);
 });
