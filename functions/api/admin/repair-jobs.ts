@@ -5,7 +5,6 @@ interface AgentService {
 }
 interface RepairEnv {
   ADMIN_AGENT_SERVICE?: AgentService;
-  ADMIN_AGENT_SERVICE_TOKEN?: string;
 }
 interface RepairJobRow {
   id: string;
@@ -41,11 +40,9 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   ).all<RepairJobRow>();
   const env = context.env as RepairEnv;
   let agentConfigured = false;
-  if (env.ADMIN_AGENT_SERVICE && env.ADMIN_AGENT_SERVICE_TOKEN) {
+  if (env.ADMIN_AGENT_SERVICE) {
     try {
-      const health = await env.ADMIN_AGENT_SERVICE.fetch(new Request("https://admin-agent.internal/health", {
-        headers: { authorization: "Bearer " + env.ADMIN_AGENT_SERVICE_TOKEN }
-      }));
+      const health = await env.ADMIN_AGENT_SERVICE.fetch(new Request("https://admin-agent.internal/health"));
       const status = await health.json().catch(() => null) as { ready?: boolean } | null;
       agentConfigured = health.ok && status?.ready === true;
     } catch {
@@ -100,7 +97,7 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
   try {
     const dispatch = await agent.fetch(new Request("https://admin-agent.internal/instances", {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: "Bearer " + (context.env.ADMIN_AGENT_SERVICE_TOKEN || "") },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({
         job_id: jobId,
         finding_id: findingId,
