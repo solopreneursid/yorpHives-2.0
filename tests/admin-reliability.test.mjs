@@ -68,6 +68,7 @@ test("admin dashboard is private, responsive and loads all protected APIs", asyn
   assert.match(html, /Monitoring/);
   assert.match(html, /data-view="overview"/);
   assert.match(html, /data-view="agents"/);
+  assert.match(html, /id="catalogue-list"/);
   for (const route of ["overview", "findings", "changes", "assets", "run-checks", "run-assets"]) assert.ok(script.includes("/api/admin/" + route));
 });
 
@@ -166,7 +167,7 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   const adminUi = await read("../admin/admin.js");
   const adminHtml = await read("../admin/index.html");
   assert.match(adminUi, /Cloudflare repair agent ready/);
-  assert.match(adminUi, /setInterval\(\(\) =>/);
+  assert.match(adminUi, /setInterval\(\(\)=>/);
   assert.match(adminHtml, /draft pull request with CI evidence/);
   assert.match(route, /admin-agent\.internal\/health/);
   assert.match(route, /AGENT_DAILY_LIMIT/);
