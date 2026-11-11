@@ -4,6 +4,7 @@ const number = (value) => new Intl.NumberFormat().format(Number(value || 0));
 const text = (value) => String(value ?? "—");
 const state = { view: "overview", loaded: new Set(), assets: [], findings: [], dependencies: [], range: "7d", findingFilter: "active", assetFilter: "all", assetQuery: "", dependencyQuery: "" };
 let repairAgentReady = false;
+let analyticsSnapshot = null;
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -199,6 +200,7 @@ async function loadOverview() {
   $("platform-summary").textContent = number(ac.assets) + " discovered assets · " + number(ac.healthy) + " healthy · " + down + " degraded or unavailable. A successful scan is required to confirm health.";
   $("run-state").textContent = "Updated " + new Date().toLocaleTimeString();
   const components = [
+    ["Admin Control Center", 1, "Authenticated · Admin API responding"],
     ["Public website", ac.website_pages, "Discovered through sitemap"],
     ["Free Tools", ac.free_tools, "Discovered through manifest"],
     ["Products & apps", ac.products, "Discovered through product catalogue"],
@@ -278,8 +280,9 @@ async function loadAnalytics() {
   $("analytics-status").textContent="Loading Cloudflare zone analytics · "+state.range+"…";
   try {
     const result=await api("/api/admin/analytics?range="+state.range);
-    if(!result.configured){$("analytics-status").textContent=result.message;resetAnalytics();return;}
+    if(!result.configured){$("analytics-status").textContent=result.message;analyticsSnapshot=null;resetAnalytics();return;}
     if(result.error)throw new Error(result.error);
+    analyticsSnapshot=result;
     $("analytics-status").textContent="Cloudflare edge analytics · "+result.range+" · refreshed "+new Date().toLocaleTimeString();
     $("metric-views").textContent=number(result.totals?.pageViews);
     $("metric-requests").textContent=number(result.totals?.requests);
@@ -293,6 +296,11 @@ async function loadAnalytics() {
     $("analytics-status").textContent="Analytics unavailable: "+error.message;
     resetAnalytics();
   }
+}
+function exportAnalytics(){
+  if(!analyticsSnapshot){$("analytics-status").textContent="No verified analytics data is available to export.";return;}
+  const blob=new Blob([JSON.stringify({generated_at:new Date().toISOString(),source:"Cloudflare zone analytics",...analyticsSnapshot},null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="yorphives-analytics-"+analyticsSnapshot.range+".json";link.click();URL.revokeObjectURL(url);
 }
 function resetAnalytics(){
   ["metric-views","metric-requests","metric-bandwidth"].forEach(id=>$(id).textContent="—");
@@ -406,6 +414,7 @@ $("assets-run").addEventListener("click",event=>runAssetScan(event.currentTarget
 $("updates-scan").addEventListener("click",event=>runAssetScan(event.currentTarget));
 $("analytics-7d").addEventListener("click",()=>{state.range="7d";$("analytics-7d").classList.add("active");$("analytics-30d").classList.remove("active");loadAnalytics();});
 $("analytics-30d").addEventListener("click",()=>{state.range="30d";$("analytics-30d").classList.add("active");$("analytics-7d").classList.remove("active");loadAnalytics();});
+$("analytics-export").addEventListener("click",exportAnalytics);
 $("repair-form").addEventListener("submit",async event=>{
   event.preventDefault();
   const button=$("repair-submit");const requestText=$("repair-request").value.trim();
