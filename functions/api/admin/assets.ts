@@ -22,6 +22,10 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   ]);
   const counts = {
     assets: assets.results.length,
+    website_pages: assets.results.filter(row => row.asset_type === "website_page").length,
+    free_tools: assets.results.filter(row => row.asset_type === "free_tool").length,
+    products: assets.results.filter(row => row.asset_type === "product").length,
+    api_discovery: assets.results.filter(row => row.asset_type === "api" || row.asset_type === "discovery").length,
     healthy: assets.results.filter(row => row.last_status === "healthy").length,
     degraded: assets.results.filter(row => row.last_status === "degraded").length,
     unavailable: assets.results.filter(row => row.last_status === "unavailable").length,
