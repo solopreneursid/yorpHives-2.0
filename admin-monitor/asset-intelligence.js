@@ -374,7 +374,12 @@ export async function runAssetIntelligence(db) {
   }
   const dependencyResults = await mapLimit([...dependencies.values()].slice(0, MAX_DEPENDENCIES), 5,
     dependency => checkNpmDependency(db, dependency, now));
-  for (const result of checked) {\n    for (const dependency of result.dependencies || []) {\n      const observed = dependencyResults.find(item => item.key === dependency.key);\n      if (observed) await recordDependencyFinding(db, result.asset_key, observed, now);\n    }\n  }
+  for (const result of checked) {
+    for (const dependency of result.dependencies || []) {
+      const observed = dependencyResults.find(item => item.key === dependency.key);
+      if (observed) await recordDependencyFinding(db, result.asset_key, observed, now);
+    }
+  }
 
   return {
     checked_at: now,
