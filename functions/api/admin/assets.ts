@@ -161,7 +161,8 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     db.prepare("SELECT id, slug, title, status, access_model, destination_url, updated_at FROM catalogue_listings WHERE owner_type='yorphives' AND listing_type='application' ORDER BY updated_at DESC LIMIT 150").all<CatalogueApplication>(),
     loadPublicCatalogue(),
     loadPublicTools(),
-    loadSitemap()
+    loadSitemap(),
+    loadOpenApi()
   ]);
 
   const catalogueBySlug = new Map<string, CatalogueApplication>();
