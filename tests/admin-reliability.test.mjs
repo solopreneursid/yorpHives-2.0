@@ -219,7 +219,7 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.doesNotMatch(worker, /"success", "neutral", "skipped"/);
   assert.match(worker, /@cf\/qwen\/qwen3\.8-27b/);
   assert.match(worker, /build\/agent\/repair-/);
-  assert.match(worker, /yorphives platform checks/);
+  assert.match(worker, /YorpHives platform checks/);
   assert.match(worker, /triggerPlatformChecks/);
   assert.match(worker, /repair-receipts/);
   assert.match(worker, /needs_review/);
