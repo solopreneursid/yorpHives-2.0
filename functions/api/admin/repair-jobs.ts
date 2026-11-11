@@ -12,9 +12,11 @@ interface AgentHealth {
     login?: string;
     repository_access?: boolean;
     repository?: string;
+    repository_write?: boolean;
   };
   workflow?: {
     access?: boolean;
+    jobs_access?: boolean;
     latest_run?: {
       id: number;
       status: string;
@@ -108,25 +110,44 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     }
   }
   const agentConfigured = agentHealth?.ready === true;
-  const [scheduled, security, openSecurity, queuedJobs] = await Promise.all([
+  const [scheduled, securityAudit, openSecurity, queuedJobs] = await Promise.all([
     context.env.DB!.prepare("SELECT MAX(started_at) AS last_run_at FROM admin_runs WHERE trigger_source='scheduled' AND status='completed'").first<{last_run_at:string|null}>(),
-    context.env.DB!.prepare("SELECT MAX(created_at) AS last_run_at FROM admin_audit_events WHERE action='security_audit_completed'").first<{last_run_at:string|null}>(),
+    context.env.DB!.prepare("SELECT action,details_json,created_at AS last_run_at FROM admin_audit_events WHERE action IN ('security_audit_completed','security_audit_partial') ORDER BY created_at DESC LIMIT 1").first<{action:string;details_json:string;last_run_at:string}>(),
     context.env.DB!.prepare("SELECT COUNT(*) AS count FROM admin_asset_findings WHERE category='security' AND status IN ('open','investigating','awaiting_approval')").first<{count:number}>(),
     context.env.DB!.prepare("SELECT COUNT(*) AS count FROM admin_repair_jobs WHERE status IN ('queued','dispatched','running','needs_review')").first<{count:number}>()
   ]);
   const scheduledFresh = Boolean(scheduled?.last_run_at && Date.now()-Date.parse(scheduled.last_run_at)<8*60*60*1000);
-  const securityFresh = Boolean(security?.last_run_at && Date.now()-Date.parse(security.last_run_at)<8*60*60*1000);
+  let securityEvidence: {status?:string;checked?:number;target_count?:number;errors?:number;skipped?:number}|null = null;
+  try {
+    securityEvidence = securityAudit?.details_json ? JSON.parse(securityAudit.details_json) : null;
+  } catch {
+    securityEvidence = null;
+  }
+  const securityComplete = securityAudit?.action === "security_audit_completed" &&
+    securityEvidence?.status === "complete" &&
+    securityEvidence.checked === securityEvidence.target_count &&
+    securityEvidence.errors === 0 &&
+    securityEvidence.skipped === 0;
+  const securityFresh = Boolean(securityComplete && securityAudit?.last_run_at &&
+    Date.now()-Date.parse(securityAudit.last_run_at)<8*60*60*1000);
+  const securityDetail = !securityAudit
+    ? "No security audit has run yet."
+    : !securityComplete
+      ? `Last audit was partial: ${securityEvidence?.checked ?? 0}/${securityEvidence?.target_count ?? 0} targets checked, ${securityEvidence?.errors ?? 0} errors, ${securityEvidence?.skipped ?? 0} skipped.`
+      : securityFresh
+        ? "All configured public targets completed the passive security audit."
+        : "The last complete security audit is older than eight hours.";
   const qa = specialistState(agentHealth, "browser smoke tests and seo crawl");
   const review = specialistState(agentHealth, "code review");
   const performance = specialistState(agentHealth, "lighthouse performance audit");
   const agents = [
     {id:"sentinel",name:"Sentinel",role:"Availability & monitoring",description:"Scheduled HTTP health checks and production change snapshots.",status:scheduledFresh?"active":"degraded",last_run_at:scheduled?.last_run_at||null,detail:scheduledFresh?"Scheduled reliability cycle is recent.":"No successful scheduled health cycle in the last eight hours."},
     {id:"asset-intelligence",name:"Asset Intelligence",role:"Inventory & discovery",description:"Discovers pages, tools, catalogue entries, APIs and dependencies.",status:scheduledFresh?"active":"degraded",last_run_at:scheduled?.last_run_at||null,detail:scheduledFresh?"Runs with the scheduled monitoring cycle.":"Waiting for the next successful inventory cycle."},
-    {id:"security-auditor",name:"Security Auditor",role:"Passive security configuration",description:"Checks public HTTPS response headers and records evidence-backed findings without exploit attempts.",status:securityFresh?"active":"degraded",last_run_at:security?.last_run_at||null,detail:securityFresh?"A recent passive security audit completed.":"Waiting for the first scheduled security audit."},
+    {id:"security-auditor",name:"Security Auditor",role:"Passive security configuration",description:"Checks public HTTPS response headers and records evidence-backed findings without exploit attempts.",status:securityFresh?"active":"degraded",last_run_at:securityAudit?.last_run_at||null,detail:securityDetail},
     {id:"qa-engineer",name:"QA Engineer",role:"Browser & journey testing",description:"Playwright Chromium checks navigation, search, tool execution, mobile navigation, sitemap pages and internal links.",...qa},
     {id:"code-reviewer",name:"Code Reviewer",role:"Change & regression review",description:"Independent Workers AI review for repair proposals plus changed-line risk checks for dynamic execution, HTML sinks, hard-coded credentials, insecure URLs and sensitive configuration.",...review},
     {id:"performance-engineer",name:"Performance Engineer",role:"Performance & Core Web Vitals",description:"Scheduled and change-triggered Lighthouse measurements for homepage and Free Tools.",...performance},
-    {id:"repair-engineer",name:"Repair Engineer",role:"Isolated code repair",description:"Workers AI repair proposals, isolated branches and CI-gated draft PRs.",status:agentConfigured?"active":"blocked",last_run_at:null,detail:agentConfigured?"GitHub token authentication and repository read access verified. Repairs still require all CI specialist checks.":(agentHealth?.error||"GitHub authentication or repository access is not verified.")}
+    {id:"repair-engineer",name:"Repair Engineer",role:"Isolated code repair",description:"Workers AI repair proposals, isolated branches and CI-gated draft PRs.",status:agentConfigured?"active":"blocked",last_run_at:null,detail:agentConfigured?"Repository write permission and GitHub Actions workflow/job read access are verified. Actual token write scopes are exercised by isolated branch and draft-PR creation; repairs remain CI-gated.":(agentHealth?.error||"GitHub repository write or Actions read capability is not verified.")}
   ];
   return adminJson({
     data: result.results,
