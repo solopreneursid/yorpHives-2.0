@@ -163,26 +163,26 @@ async function createBranchCommit(env, jobId, base, changes) {
   return { branch, commitSha: commit.sha };
 }
 
-async function triggerPlatformChecks(env, branch, jobId) {
-  const path = `/repos/${REPOSITORY}/contents/admin-agent/.ci-trigger-${jobId}.json`;
+async function triggerPlatformChecks(env, branch, jobId, baseCommitSha) {
+  const path = `/repos/${REPOSITORY}/contents/admin-agent/repair-receipts/${jobId}.json`;
   const query = `?ref=${encodeURIComponent(branch)}`;
-  let file = await githubMaybe(env, path + query);
-  if (!file) {
-    const created = await github(env, path, "PUT", {
-      message: `ci: trigger platform checks for repair ${jobId.slice(0, 8)}`,
-      content: btoa(JSON.stringify({ job_id: jobId, purpose: "temporary CI trigger" })),
-      branch
-    });
-    file = created.content;
+  const existing = await githubMaybe(env, path + query);
+  if (existing) {
+    const ref = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${branch}`);
+    return { commitSha: ref.object.sha };
   }
-  if (!file?.sha) throw new Error("Could not create a temporary CI trigger file.");
-  const removed = await github(env, path, "DELETE", {
-    message: `chore: remove temporary CI trigger for repair ${jobId.slice(0, 8)}`,
-    sha: file.sha,
+  const created = await github(env, path, "PUT", {
+    message: `ci: record repair verification request ${jobId.slice(0, 8)}`,
+    content: btoa(JSON.stringify({
+      job_id: jobId,
+      base_commit_sha: baseCommitSha,
+      purpose: "CI verification receipt",
+      created_at: new Date().toISOString()
+    }, null, 2)),
     branch
   });
-  if (!removed?.commit?.sha) throw new Error("Could not finalize the CI trigger commit.");
-  return { commitSha: removed.commit.sha };
+  if (!created?.commit?.sha) throw new Error("Could not create the repair verification receipt.");
+  return { commitSha: created.commit.sha };
 }
 
 async function waitForChecks(env, step, commitSha) {
@@ -232,7 +232,7 @@ async function createDraftPullRequest(env, branch, jobId, requestedBy, requestTe
       "",
       checkLines,
       "",
-      "This is a draft PR. Review the diff before accepting or merging."
+      `A verification receipt is stored at `admin-agent/repair-receipts/${jobId}.json`.`,\n      "This is a draft PR. Review the diff before accepting or merging."
     ].join("\n")
   });
 }
@@ -297,7 +297,7 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
 
       attemptedBranch = branchCommit.branch;
       const ciTrigger = await step.do("trigger-platform-checks-on-agent-branch", async () =>
-        triggerPlatformChecks(this.env, branchCommit.branch, jobId)
+        triggerPlatformChecks(this.env, branchCommit.branch, jobId, branchCommit.commitSha)
       );
       const verification = await waitForChecks(this.env, step, ciTrigger.commitSha);
       const pullRequest = await step.do("open-draft-pull-request", async () =>
