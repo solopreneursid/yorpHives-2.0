@@ -11,13 +11,13 @@ The first slice provides:
 - Read-only HTTPS checks for a fixed YorpHives host allowlist.
 - Deduplicated findings with recovery verification.
 - A separate scheduled Worker that runs the same health-check logic every six hours.
-- Weekly GitHub CodeQL analysis for JavaScript and TypeScript.
+- Weekly GitHub CodeQL analysis for JavaScript and TypeScript.\n- Playwright browser flows for homepage navigation, Free Tools search, JSON Formatter execution, and mobile navigation.\n- Sitemap-wide HTTP, title, description, canonical and internal-link checks.\n- Weekly Lighthouse reports for performance, accessibility, best practices and SEO.\n- Gitleaks repository secret scanning, Dependabot update proposals, dependency review on pull requests, and a passive OWASP ZAP baseline.\n- Six-hour SHA-256 snapshots of the production homepage, Free Tools directory, discovery API and agent discovery document, with protected change history in the admin dashboard.
 
 ## Zero-cost operating model
 
 The implementation uses the existing Cloudflare Pages Functions and D1 binding, one lightweight Cron Worker, and GitHub Actions. It does not add a paid AI API, Cloudflare Workflows, a paid uptime vendor, paid browser testing, or a new D1 database.
 
-The Cron Worker uses one trigger and checks at most five fixed HTTPS URLs every six hours. It writes compact run/check/finding records to the existing preview D1 database. This is designed to remain within Cloudflare Workers and D1 free quotas at the current monitor count and cadence; usage is still subject to the account's actual plan and aggregate usage. No cost guarantee applies if account-wide free quotas are exceeded.
+The Cron Worker uses one trigger every six hours. It checks the five configured HTTPS monitors and captures bounded (512 KiB maximum per response) SHA-256 snapshots for four fixed production URLs. Runs, checks, findings, snapshots and detected changes are stored in the existing preview D1 database. Browser/SEO and Lighthouse checks run weekly through GitHub Actions and retain reports for 30 days. This is designed to remain within Cloudflare Workers and D1 free quotas at the current monitor count and cadence; usage is still subject to the account's actual plan and aggregate usage. No cost guarantee applies if account-wide free quotas are exceeded.
 
 ## Preview setup
 
@@ -39,13 +39,13 @@ Never set these values on production until preview is verified and production de
 
 The monitor list checks the production homepage, Free Tools directory, discovery API, llms.txt, and the feature-branch preview alias. The runner rejects hosts outside the explicit HTTPS allowlist, refuses redirects, uses bounded requests, and does not accept caller-supplied URLs.
 
-A 2xx or 3xx response is considered reachable. This is HTTP reachability only, not browser testing, functional testing, SEO auditing, vulnerability scanning, or proof that client-side tools work.
+A 2xx or 3xx response is considered reachable. The Playwright suite exercises the public homepage, Free Tools search, JSON Formatter execution and mobile navigation. The sitemap crawler checks each listed page for HTTP 200, title, description and canonical metadata, and checks internal links. Lighthouse measures public homepage and Free Tools performance, accessibility, best practices and SEO. ZAP runs its passive baseline spider against production; it does not run active attack rules. Secret scanning checks repository content and history.
 
 The dashboard's manual run button and the scheduled Cron Worker call the same shared health-check module. Scheduled runs are persisted with trigger source scheduled.
 
 ## Permission boundary
 
-- Automated: read-only HTTP checks, findings and run history, CodeQL analysis.
+- Automated: read-only HTTP checks, browser smoke tests, SEO/link checks, Lighthouse reports, Gitleaks, Dependabot proposals, dependency review, CodeQL, passive ZAP, and production content-hash change history.
 - Not automated: code changes, merges, production deploys, DNS, secrets, Cloudflare configuration, data deletion, or active vulnerability scans.
 - Active security testing belongs on preview/test only and must be explicitly approved.
 
