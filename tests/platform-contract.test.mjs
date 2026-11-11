@@ -173,6 +173,7 @@ test("advanced Free Tools expose dedicated browser interfaces and disclosed proc
   assert.equal(manifest.find(entry => entry.slug === "background-remover").processing, "library");
   for (const item of manifest) assert.equal(item.agent_execution, "not_available");
   assert.match(runtime, /background-removal/);
+  assert.match(runtime, /<meta name="description" content=/);
   assert.match(runtime, /pdfjs-dist/);
   assert.match(runtime, /quality/);
   assert.match(runtime, /Cross-origin fetch requires the target server to permit CORS/);
