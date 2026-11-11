@@ -213,7 +213,8 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(worker, /durable_workflow: Boolean\(env\.ADMIN_REPAIR_WORKFLOW\)/);
   assert.match(worker, /missingDependencies/);
   assert.match(route, /workers_ai\?: boolean/);
-  assert.doesNotMatch(worker, /github\(env, "\/user"\)/);
+  assert.match(worker, /identity = await github\(env, "\/user"\)/);
+  assert.match(worker, /catch \{\s*authenticatedLogin = null;\s*\}/);
   assert.match(worker, /job\.conclusion !== "success"/);
   assert.doesNotMatch(worker, /"success", "neutral", "skipped"/);
   assert.match(worker, /@cf\/qwen\/qwen3\.8-27b/);
