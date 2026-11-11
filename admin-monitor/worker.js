@@ -1,6 +1,7 @@
 import { runAdminHealthChecks } from "./admin-health.js";
 import { captureProductionSnapshots } from "./change-monitor.js";
 import { runAssetIntelligence } from "./asset-intelligence.js";
+import { runSecurityAudit } from "./security-auditor.js";
 
 export default {
   async scheduled(controller, env) {
@@ -9,6 +10,7 @@ export default {
       const health = await runAdminHealthChecks(env.DB, "scheduled");
       const changes = await captureProductionSnapshots(env.DB);
       const assets = await runAssetIntelligence(env.DB);
+      const security = await runSecurityAudit(env.DB);
       console.log(JSON.stringify({
         event: "scheduled_reliability_cycle_completed",
         scheduled_time: scheduledTime,
@@ -23,10 +25,12 @@ export default {
         assets_degraded: assets.degraded,
         assets_unavailable: assets.unavailable,
         discovered_assets: assets.discovered,
-        dependency_observations: assets.dependencies
+        dependency_observations: assets.dependencies,
+        security_assets_checked: security.checked,
+        security_findings: security.findings
       }));
       if (health.run.failed_count > 0 || changes.results.some(result => !result.ok) || assets.unavailable > 0 || assets.degraded > 0 || assets.manifest_error || assets.sitemap_error || assets.catalogue_error || assets.openapi_error) {
-        console.warn(JSON.stringify({ event: "reliability_cycle_warnings", health_failures: health.run.failed_count, snapshot_results: changes.results, asset_results: assets.results, manifest_error: assets.manifest_error, sitemap_error: assets.sitemap_error, catalogue_error: assets.catalogue_error, openapi_error: assets.openapi_error, inventory_truncated: assets.inventory_truncated }));
+        console.warn(JSON.stringify({ event: "reliability_cycle_warnings", health_failures: health.run.failed_count, snapshot_results: changes.results, asset_results: assets.results, manifest_error: assets.manifest_error, sitemap_error: assets.sitemap_error, catalogue_error: assets.catalogue_error, openapi_error: assets.openapi_error, inventory_truncated: assets.inventory_truncated, security_results: security.results }));
       }
     } catch (error) {
       console.error(JSON.stringify({
