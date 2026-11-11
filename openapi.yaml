@@ -6,6 +6,41 @@ info:
 servers:
   - url: https://yorphives.com
 paths:
+  /api/v1/free-tools:
+    get:
+      operationId: listFreeTools
+      summary: List browser-first Free Tools
+      description: Returns the static Free Tools manifest as JSON by default or Markdown when requested with Accept: text/markdown or format=markdown. Browser-local tools are discovery records, not remotely executable agent tools.
+      parameters:
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [markdown]
+      responses:
+        '200':
+          description: Free Tools manifest.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, count]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [slug, title, category, description, url, processing]
+                      properties:
+                        slug: { type: string }
+                        title: { type: string }
+                        category: { type: string }
+                        description: { type: string }
+                        url: { type: string }
+                        processing: { type: string, enum: [browser, library, network, planned] }
+                  count: { type: integer }
+            text/markdown:
+              schema: { type: string }
   /api/v1/catalogue:
     get:
       operationId: listCatalogueListings
