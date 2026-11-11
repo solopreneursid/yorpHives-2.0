@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 const extractApprovedHosts = (source) => {
-  const block = source.match(/const APPROVED_HOSTS = new Set\\(\\[([\\s\\S]*?)\\]\\)/)?.[1] || "";
+  const block = source.match(/const APPROVED_HOSTS = new Set\(\[([\s\S]*?)\]\)/)?.[1] || "";
   return [...block.matchAll(/"([^"]+)"/g)].map(([, host]) => host);
 };
 
