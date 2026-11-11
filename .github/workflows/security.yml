@@ -44,6 +44,29 @@ jobs:
       - name: Validate package manifest
         run: node -e "const p=require('./package.json'); if(!p.private) process.exit(1); console.log('Package manifest parsed; runtime dependencies are browser/CDN based and no npm lockfile is present.')"
 
+  browser-library-audit:
+    name: Browser library vulnerability inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install current Retire.js scanner
+        run: npm install --no-save --no-package-lock retire
+      - name: Scan bundled and CDN-referenced browser libraries
+        run: |
+          mkdir -p artifacts
+          npx retire --path . --outputformat json --outputpath artifacts/retirejs.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: yorphives-retirejs-${{ github.run_id }}
+          path: artifacts/retirejs.json
+          if-no-files-found: warn
+          retention-days: 30
+
   zap-passive-baseline:
     name: OWASP ZAP passive baseline (production)
     runs-on: ubuntu-latest
