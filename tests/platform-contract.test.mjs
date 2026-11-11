@@ -140,7 +140,7 @@ test("Free Tools directory exposes substantial searchable browser-first catalogu
     const page = await read("../free-tools/" + item.slug + "/index.html");
     assert.match(page, new RegExp(item.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(page, /application\/ld\+json/);
-    assert.match(page, /tool-runtime\.js/);
+    assert.match(page, /(?:tool-runtime|image-runtime|advanced-runtime)\.js/);
   }
 });
 
