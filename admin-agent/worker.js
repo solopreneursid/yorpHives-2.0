@@ -309,9 +309,6 @@ export default {
     if (!((request.method === "GET" && url.pathname === "/health") || (request.method === "POST" && url.pathname === "/instances"))) {
       return new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } });
     }
-    const expected = env.ADMIN_AGENT_SERVICE_TOKEN || "";
-    const supplied = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
-    if (!expected || supplied !== expected) return Response.json({ error: "Unauthorized service request." }, { status: 401, headers: { "cache-control": "no-store" } });
     if (request.method === "GET") return Response.json({ ready: Boolean(env.GITHUB_TOKEN) }, { headers: { "cache-control": "no-store" } });
     if (!env.GITHUB_TOKEN) return Response.json({ error: "GITHUB_TOKEN Worker secret is not configured." }, { status: 503 });
     const payload = await request.json().catch(() => null);
