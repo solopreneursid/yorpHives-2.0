@@ -10,6 +10,7 @@ const APPROVED_HOSTS = new Set([
   "yorphives.com",
   "www.yorphives.com",
   "build-yorphives-admin-reliab.yorphives-2-preview.pages.dev",
+  "admin-staging.yorphives.com",
 ]);
 
 function approvedUrl(value) {
