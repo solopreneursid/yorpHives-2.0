@@ -18,7 +18,7 @@ async function checkMonitor(monitor: MonitorRow): Promise<CheckResult> {
     const response = await fetch(url.toString(), {
       method: "GET",
       headers: { "user-agent": "YorpHives-SiteHealth/1.0", "range": "bytes=0-1023" },
-      redirect: "follow",
+      redirect: "manual",
       signal: AbortSignal.timeout(8000),
     });
     const duration = Date.now() - started;
@@ -32,6 +32,9 @@ async function checkMonitor(monitor: MonitorRow): Promise<CheckResult> {
 export async function onRequestPost(context: AdminRequestContext): Promise<Response> {
   const identity = await requireAdmin(context);
   if (isAdminResponse(identity)) return identity;
+  const origin = context.request.headers.get("origin");
+  if (!origin || origin !== new URL(context.request.url).origin) return adminJson({ error: { code: "INVALID_ORIGIN", message: "Admin actions must originate from this site." } }, 403);
+  if (!context.request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return adminJson({ error: { code: "INVALID_CONTENT_TYPE", message: "A JSON request body is required." } }, 415);
   const db = context.env.DB!;
   const body = await context.request.json().catch(() => ({})) as { confirm?: boolean };
   if (body.confirm !== true) return adminJson({ error: { code: "CONFIRMATION_REQUIRED", message: "Send { confirm: true } to run the approved read-only HTTP checks." } }, 400);
