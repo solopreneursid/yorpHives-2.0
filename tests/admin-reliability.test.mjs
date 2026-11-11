@@ -32,7 +32,7 @@ test("admin health checks are read-only, same-origin and reject arbitrary target
   assert.match(runner, /runAdminHealthChecks/);
   assert.match(shared, /APPROVED_HOSTS/);
   assert.match(shared, /["]yorphives[.]com["]/);
-  assert.match(shared, /["]yorphives-2-preview[.]pages[.]dev["]/);
+  assert.match(shared, /build-yorphives-admin-reliab[.]yorphives-2-preview[.]pages[.]dev/);
   assert.match(shared, /AbortSignal\.timeout\(8000\)/);
   assert.match(shared, /redirect: "manual"/);
   assert.match(shared, /admin_findings/);
