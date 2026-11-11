@@ -187,22 +187,15 @@ test("new researched Free Tools have unique manifest entries and dedicated pages
  const manifest = JSON.parse(await read("../free-tools/manifest.json"));
  const slugs = manifest.map(item => item.slug);
  assert.equal(new Set(slugs).size, slugs.length, "Free Tool slugs must be unique");
- const researchRuntime = await read("../free-tools/research-runtime.js");
  const nextRuntime = await read("../free-tools/next-tools-runtime.js");
  for (const slug of ["compound-interest-calculator","timezone-converter","bmr-calculator","sample-size-calculator","yaml-validator","xml-formatter","json-to-csv","json-ld-generator","cron-expression-helper","html-to-markdown","csv-to-markdown","llms-txt-generator","macro-calculator","saas-unit-economics-calculator","pdf-metadata-remover","color-palette-extractor","robots-ai-crawler-checker","ai-agent-readiness-checker"]) {
   const item = manifest.find(entry => entry.slug === slug);
   assert.ok(item, "Missing manifest entry: " + slug);
   assert.equal(item.agent_execution, "not_available");
   const page = await read("../free-tools/" + slug + "/index.html");
-  if (slug === "macro-calculator") {
-   assert.match(page, /id="next-tool"/);
-   assert.match(page, /next-tools-runtime\.js/);
-   assert.match(nextRuntime, new RegExp(slug));
-  } else {
-   assert.match(page, /id="research-tool"/);
-   assert.match(page, /research-runtime\.js/);
-   assert.match(researchRuntime, new RegExp(slug));
-  }
+  assert.match(page, /id="next-tool"/);
+  assert.match(page, /next-tools-runtime\.js/);
+  assert.match(nextRuntime, new RegExp(slug));
   assert.ok(page.includes(item.title));
  }
 });
