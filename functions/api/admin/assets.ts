@@ -85,6 +85,36 @@ async function loadPublicTools(): Promise<PublicSourceResult<PublicTool[]>> {
   }
 }
 
+async function loadOpenApi(): Promise<PublicSourceResult<string[]>> {
+  try {
+    const url = new URL("/openapi.yaml", PUBLIC_ORIGIN);
+    const response = await fetch(url, {
+      headers: { accept: "application/yaml,text/yaml,text/plain", "user-agent": "YorpHives-AdminInventory/1.0" },
+      redirect: "manual",
+      signal: AbortSignal.timeout(7000)
+    });
+    if (!response.ok) throw new Error("OpenAPI document returned HTTP " + response.status + ".");
+    const spec = await response.text();
+    if (spec.length > 2_000_000) throw new Error("OpenAPI document exceeded the 2 MB inventory limit.");
+    const lines = spec.split(/\r?\n/);
+    const paths = new Set<string>();
+    for (let index = 0; index < lines.length; index++) {
+      const match = lines[index].match(/^  (\/[^:]+):\s*$/);
+      if (!match) continue;
+      const path = match[1];
+      if (!path.startsWith("/api/") || path.includes("{") || path.includes("}")) continue;
+      let hasGet = false;
+      for (let next = index + 1; next < lines.length && !/^  \S/.test(lines[next]); next++) {
+        if (/^    get:\s*$/.test(lines[next])) { hasGet = true; break; }
+      }
+      if (hasGet && sameOriginUrl(path)) paths.add(path);
+    }
+    return { data: [...paths], error: null };
+  } catch (cause) {
+    return { data: [], error: cause instanceof Error ? cause.message : "OpenAPI registry could not be loaded." };
+  }
+}
+
 async function loadSitemap(): Promise<PublicSourceResult<string[]>> {
   try {
     const response = await fetch(new URL("/sitemap.xml", PUBLIC_ORIGIN), {
@@ -124,7 +154,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   const identity = await requireAdmin(context);
   if (isAdminResponse(identity)) return identity;
   const db = context.env.DB!;
-  const [assets, findings, dependencies, localCatalogue, publicCatalogue, publicTools, sitemap] = await Promise.all([
+  const [assets, findings, dependencies, localCatalogue, publicCatalogue, publicTools, sitemap, openapi] = await Promise.all([
     db.prepare("SELECT id, asset_key, asset_type, title, url, source, last_status, last_http_status, last_checked_at, last_changed_at, last_duration_ms, last_title, last_description, last_canonical FROM admin_assets WHERE active=1 ORDER BY CASE asset_type WHEN 'website_page' THEN 0 WHEN 'free_tool' THEN 1 WHEN 'product' THEN 2 ELSE 3 END, title").all<AssetRow>(),
     db.prepare(`SELECT f.id, f.asset_id, a.asset_key, a.title AS asset_title, f.severity, f.category, f.title, f.details, f.recommendation, f.status, f.first_detected, f.last_verified FROM admin_asset_findings f JOIN admin_assets a ON a.id=f.asset_id WHERE f.status IN ('open','investigating','awaiting_approval') ORDER BY CASE f.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END, f.last_verified DESC LIMIT 200`).all<AssetFinding>(),
     db.prepare("SELECT dependency_key, package_name, current_version, latest_version, deprecated_message, source_url, status, checked_at, details FROM admin_dependency_observations ORDER BY CASE status WHEN 'deprecated' THEN 0 WHEN 'major_update' THEN 1 WHEN 'update_available' THEN 2 ELSE 3 END, package_name LIMIT 100").all(),
@@ -168,6 +198,11 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     knownPaths.add(path);
   }
 
+  for (const path of openapi.data) {
+    const key = "api:" + path;
+    if (!discovered.has(key)) discovered.set(key, virtualAsset(key, "api", "API " + path, path, "public OpenAPI registry"));
+  }
+
   const allAssets = [...discovered.values()].sort((a, b) => {
     const rank: Record<string, number> = { website_page: 0, free_tool: 1, product: 2, api: 3, discovery: 4 };
     return (rank[a.asset_type] ?? 5) - (rank[b.asset_type] ?? 5) || a.title.localeCompare(b.title);
@@ -193,6 +228,6 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     findings: findings.results,
     dependencies: dependencies.results || [],
     catalogue,
-    source_errors: { catalogue: publicCatalogue.error, free_tools: publicTools.error, sitemap: sitemap.error }
+    source_errors: { catalogue: publicCatalogue.error, free_tools: publicTools.error, sitemap: sitemap.error, openapi: openapi.error }
   });
 }
