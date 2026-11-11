@@ -2,7 +2,7 @@ name: YorpHives browser, SEO and performance quality
 
 on:
   push:
-    branches: [main]
+    branches: [main, "build/**"]
   pull_request:
     branches: [main]
   schedule:
@@ -23,6 +23,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -40,6 +42,28 @@ jobs:
         with:
           name: yorphives-site-quality-${{ github.run_id }}
           path: artifacts/
+          if-no-files-found: warn
+          retention-days: 30
+
+  code-review:
+    name: Code review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run automated change-risk review
+        run: node scripts/agent-review.mjs
+      - name: Upload code-review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yorphives-code-review-${{ github.run_id }}
+          path: artifacts/agent-review/
           if-no-files-found: warn
           retention-days: 30
 
