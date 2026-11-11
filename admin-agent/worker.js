@@ -296,7 +296,8 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
       );
 
       attemptedBranch = branchCommit.branch;
-      const ciTrigger = await step.do("trigger-platform-checks-on-agent-branch", async () =>\n        triggerPlatformChecks(this.env, branchCommit.branch, jobId)\n      );\n      const verification = await waitForChecks(this.env, step, ciTrigger.commitSha);
+      const ciTrigger = await step.do("trigger-platform-checks-on-agent-branch", async () =>
+        triggerPlatformChecks(this.env, branchCommit.branch, jobId)\n      );\n      const verification = await waitForChecks(this.env, step, ciTrigger.commitSha);
       const pullRequest = await step.do("open-draft-pull-request", async () =>
         createDraftPullRequest(this.env, branchCommit.branch, jobId, requestedBy, requestText, proposal.summary, verification.checks)
       );
