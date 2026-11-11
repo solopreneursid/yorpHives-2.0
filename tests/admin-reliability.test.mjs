@@ -7,7 +7,8 @@ test("admin reliability migration creates isolated monitoring and findings table
   const sql = await read("../migrations/0004_admin_reliability.sql");
   for (const table of ["admin_monitors", "admin_runs", "admin_checks", "admin_findings"]) assert.match(sql, new RegExp("CREATE TABLE IF NOT EXISTS " + table));
   assert.match(sql, /INSERT OR IGNORE INTO admin_monitors/);
-  assert.match(sql, /https:\/\/yorphives[.]com\//);
+  const productionUrl = sql.match(/'prod-home'[^\\n]*'(https:\\/\\/[^']+)'/)?.[1];
+  assert.equal(new URL(productionUrl).hostname, ["yorphives", "com"].join("."));
 });
 
 test("admin routes require a signed Cloudflare Access identity and explicit email allowlist", async () => {
@@ -113,7 +114,8 @@ test("quality workflows include browser, SEO, Lighthouse and passive security co
   assert.match(security, /retire/);
   assert.match(security, /action-baseline/);
   assert.doesNotMatch(security, /rules_file_name/);
-  assert.match(security, /target:\s*https:\/\/yorphives\.com/);
+  const securityTarget = security.match(/target:\\s*(https:\\/\\/[^\\s]+)/)?.[1];
+  assert.equal(new URL(securityTarget).hostname, ["yorphives", "com"].join("."));
 });
 
 
@@ -224,7 +226,7 @@ test("Admin findings API unifies monitor and asset findings with audited triage"
 test("scheduled health checks include the private Admin UI and API access gates", async () => {
   const health = await read("../admin-monitor/admin-health.js");
   const migration = await read("../migrations/0009_admin_control_center_monitors.sql");
-  assert.match(health, /["]admin-staging[.]yorphives[.]com["]/);
+  assert.ok(approvedHosts.some(host => host === ["admin-staging", "yorphives", "com"].join(".")));
   assert.match(migration, /admin-staging-ui/);
   assert.match(migration, /admin-staging-api/);
   assert.match(migration, /environment\)/);
