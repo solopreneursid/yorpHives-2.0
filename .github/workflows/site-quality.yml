@@ -20,7 +20,7 @@ jobs:
   browser-and-seo:
     name: Browser smoke tests and SEO crawl
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,14 +28,38 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Resolve and wait for the isolated Pages preview
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          BRANCH="${HEAD_REF:-$REF_NAME}"
+          if [ "$BRANCH" = "main" ]; then
+            TARGET_URL="https://yorphives.com"
+          else
+            BRANCH_SLUG="$(printf '%s' "$BRANCH" | tr '[:upper:]_./' '[:lower:]---' | cut -c1-28)"
+            TARGET_URL="https://${BRANCH_SLUG}.yorphives-2-preview.pages.dev"
+          fi
+          echo "SITE_BASE_URL=$TARGET_URL" >> "$GITHUB_ENV"
+          echo "Waiting for branch preview: $TARGET_URL"
+          for attempt in $(seq 1 30); do
+            STATUS="$(curl -sS -L -o /dev/null -w '%{http_code}' --max-time 15 "$TARGET_URL/" || true)"
+            if [ "$STATUS" = "200" ]; then
+              echo "Preview is serving HTTP 200."
+              exit 0
+            fi
+            echo "Preview not ready yet (HTTP $STATUS), attempt $attempt/30."
+            sleep 10
+          done
+          echo "The isolated Pages preview did not become ready within five minutes."
+          exit 1
       - name: Install browser test runtime
         run: npm install --no-save --no-package-lock playwright@1.56.1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run real-browser and SEO checks
+      - name: Run real-browser and SEO checks against the branch preview
         run: node scripts/site-quality.mjs
-        env:
-          SITE_BASE_URL: https://yorphives.com
       - name: Upload quality report
         if: always()
         uses: actions/upload-artifact@v4
@@ -70,22 +94,47 @@ jobs:
   lighthouse:
     name: Lighthouse performance budgets
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Resolve and wait for the isolated Pages preview
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          BRANCH="${HEAD_REF:-$REF_NAME}"
+          if [ "$BRANCH" = "main" ]; then
+            TARGET_URL="https://yorphives.com"
+          else
+            BRANCH_SLUG="$(printf '%s' "$BRANCH" | tr '[:upper:]_./' '[:lower:]---' | cut -c1-28)"
+            TARGET_URL="https://${BRANCH_SLUG}.yorphives-2-preview.pages.dev"
+          fi
+          echo "SITE_BASE_URL=$TARGET_URL" >> "$GITHUB_ENV"
+          echo "Waiting for branch preview: $TARGET_URL"
+          for attempt in $(seq 1 30); do
+            STATUS="$(curl -sS -L -o /dev/null -w '%{http_code}' --max-time 15 "$TARGET_URL/" || true)"
+            if [ "$STATUS" = "200" ]; then
+              echo "Preview is serving HTTP 200."
+              exit 0
+            fi
+            echo "Preview not ready yet (HTTP $STATUS), attempt $attempt/30."
+            sleep 10
+          done
+          echo "The isolated Pages preview did not become ready within five minutes."
+          exit 1
       - name: Install Lighthouse and Chromium
         run: |
           npm install --no-save --no-package-lock lighthouse@12.8.2
           npx --yes playwright@1.56.1 install --with-deps chromium
-      - name: Run Lighthouse on key public pages
+      - name: Run Lighthouse on key branch-preview pages
         run: |
           mkdir -p artifacts/lighthouse
           CHROME_BIN="$(find "$HOME/.cache/ms-playwright" -type f -name chrome -o -name chromium | head -n 1)"
-          npx lighthouse https://yorphives.com/ --chrome-path="$CHROME_BIN" --output=json --output-path=artifacts/lighthouse/home.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags="--headless --no-sandbox"
-          npx lighthouse https://yorphives.com/free-tools/ --chrome-path="$CHROME_BIN" --output=json --output-path=artifacts/lighthouse/free-tools.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags="--headless --no-sandbox"
+          npx lighthouse "$SITE_BASE_URL/" --chrome-path="$CHROME_BIN" --output=json --output-path=artifacts/lighthouse/home.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags="--headless --no-sandbox"
+          npx lighthouse "$SITE_BASE_URL/free-tools/" --chrome-path="$CHROME_BIN" --output=json --output-path=artifacts/lighthouse/free-tools.json --only-categories=performance,accessibility,best-practices,seo --chrome-flags="--headless --no-sandbox"
       - name: Summarize Lighthouse scores
         run: |
           node --input-type=module <<'NODE'
