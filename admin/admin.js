@@ -77,6 +77,23 @@ async function load() {
         cell(tr, item.environment || "—");
         cell(tr, item.status);
         cell(tr, date(item.last_verified));
+        const actions = document.createElement("td");
+        const actionButton = document.createElement("button");
+        actionButton.className = "button";
+        actionButton.textContent = item.status === "accepted_risk" ? "Reopen" : item.status === "investigating" ? "Accept risk" : "Investigate";
+        actionButton.addEventListener("click", async () => {
+          const nextStatus = item.status === "accepted_risk" ? "open" : item.status === "investigating" ? "accepted_risk" : "investigating";
+          if (nextStatus === "accepted_risk" && !confirm("Record this finding as an accepted risk? It will remain in the audit history.")) return;
+          actionButton.disabled = true;
+          try {
+            await api("/api/admin/findings", { method: "PATCH", body: JSON.stringify({ id: item.id, status: nextStatus }) });
+            await load();
+            await loadAudit();
+          } catch (error) { alert(error.message); }
+          finally { actionButton.disabled = false; }
+        });
+        actions.append(actionButton);
+        tr.append(actions);
         list.append(tr);
       }
     }
@@ -370,3 +387,27 @@ $("repair-form").addEventListener("submit", async (event) => {
 });
 loadAnalytics();
 loadRepairDesk();
+
+
+async function loadAudit() {
+  const target = $("audit-list");
+  if (!target) return;
+  try {
+    const result = await api("/api/admin/audit");
+    target.replaceChildren();
+    if (!result.data?.length) { emptyRow(target, "No recorded admin actions yet.", 5); return; }
+    for (const item of result.data) {
+      const tr = document.createElement("tr");
+      cell(tr, date(item.created_at));
+      cell(tr, item.actor);
+      cell(tr, item.action);
+      cell(tr, item.resource_type + (item.resource_id ? " · " + item.resource_id.slice(0, 10) : ""));
+      cell(tr, item.details_json);
+      target.append(tr);
+    }
+  } catch (error) {
+    target.replaceChildren();
+    emptyRow(target, "Audit history unavailable: " + error.message, 5);
+  }
+}
+loadAudit();
