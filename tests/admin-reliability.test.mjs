@@ -35,6 +35,24 @@ test("admin routes verify user and CI service identities while keeping CI access
   assert.match(route, /requireAdmin/);
 });
 
+test("GitHub write-permission probe is owner-triggered, audited and automatically cleaned up", async () => {
+  const worker = await read("../admin-agent/worker.js");
+  const route = await read("../functions/api/admin/repair-jobs.ts");
+  const html = await read("../admin/index.html");
+  const ui = await read("../admin/admin.js");
+  assert.match(worker, /probeGithubWritePermissions/);
+  assert.match(worker, /pull_requests_write/);
+  assert.match(worker, /pull_request_closed/);
+  assert.match(worker, /branch_deleted/);
+  assert.match(worker, /x-yorphives-internal-probe/);
+  assert.match(route, /permission_probe/);
+  assert.match(route, /PROBE_RATE_LIMIT/);
+  assert.match(route, /github_permission_probe/);
+  assert.match(html, /verify-github-permissions/);
+  assert.match(ui, /permissionProbeButton/);
+  assert.match(ui, /No files are merged/);
+});
+
 test("admin health checks are read-only, same-origin and reject arbitrary targets and redirects", async () => {
   const runner = await read("../functions/api/admin/run-checks.ts");
   const shared = await read("../admin-monitor/admin-health.js");
