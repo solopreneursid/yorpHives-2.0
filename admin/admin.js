@@ -1,6 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const date = (value) => value ? new Date(value).toLocaleString() : "—";
-const safe = (value) => String(value ?? "");
+const safe = (value) => String(value ?? "");\nlet repairAgentReady = false;
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -299,7 +299,7 @@ async function loadRepairDesk() {
       api("/api/admin/repair-jobs"),
       api("/api/admin/findings")
     ]);
-    $("agent-state").textContent = jobs.agentConfigured ? "Agent webhook connected" : "Agent not connected · requests will be queued";
+    repairAgentReady = jobs.agentConfigured === true;\n    $("agent-state").textContent = repairAgentReady ? "Cloudflare repair agent ready" : "Agent setup required · add GITHUB_TOKEN to Worker secrets";\n    $("repair-submit").disabled = !repairAgentReady;
     const select = $("repair-finding");
     const selected = select.value;
     select.replaceChildren();
