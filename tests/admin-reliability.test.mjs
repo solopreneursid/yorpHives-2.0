@@ -168,22 +168,22 @@ test("Admin findings support audited triage while fixed status remains verificat
 });
 
 
-test("repair agent workflow is dispatch-only, least-privilege and cannot edit protected infrastructure", async () => {
-  const workflow = await read("../.github/workflows/admin-repair-agent.yml");
-  const agent = await read("../scripts/admin-repair-agent.mjs");
-  const ci = await read("../.github/workflows/ci.yml");
-  assert.match(workflow, /repository_dispatch/);
-  assert.match(workflow, /admin_repair_requested/);
-  assert.match(workflow, /contents: write/);
-  assert.match(workflow, /pull-requests: write/);
-  assert.match(agent, /MAX_PATCH_CHARS/);
-  assert.match(agent, /isAllowedPath/);
-  assert.match(agent, /"--check"/);
-  assert.match(agent, /"npm", \["run", "check"\]/);
-  assert.match(agent, /--draft/);
-  assert.match(agent, /needs_review/);
-  assert.match(agent, /admin-staging\.yorphives\.com/);
-  assert.match(ci, /agent\/\*\*/);
-  assert.match(ci, /repair\/\*\*/);
-  assert.doesNotMatch(agent, /gh.*pr.*merge/);
+
+test("Cloudflare durable repair agent uses a private service binding and CI-gated draft PRs", async () => {
+  const route = await read("../functions/api/admin/repair-jobs.ts");
+  const worker = await read("../admin-agent/worker.js");
+  const config = JSON.parse(await read("../admin-agent/wrangler.jsonc"));
+  assert.match(route, /ADMIN_AGENT_SERVICE/);
+  assert.match(route, /AGENT_DAILY_LIMIT/);
+  assert.match(route, /admin-agent\\.internal\\/instances/);
+  assert.match(worker, /WorkflowEntrypoint/);
+  assert.match(worker, /@cf\\/qwen\\/qwen3\\.8-27b/);
+  assert.match(worker, /build\\/agent\\/repair-/);
+  assert.match(worker, /yorphives platform checks/);
+  assert.match(worker, /needs_review/);
+  assert.match(worker, /draft: true/);
+  assert.doesNotMatch(worker, /mergePullRequest|productionDeploy|wrangler deploy/);
+  assert.equal(config.name, "yorphives-admin-agent");
+  assert.equal(config.workflows[0].class_name, "AdminRepairWorkflow");
+  assert.equal(config.d1_databases[0].database_id, "e8690813-b139-44a2-a1c7-bea2d2777ead");
 });
