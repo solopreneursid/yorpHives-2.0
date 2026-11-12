@@ -20,8 +20,10 @@ jobs:
   contract-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Check out repository with history for cumulative review
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -30,6 +32,8 @@ jobs:
         run: npm run check
       - name: Verify Headquarters component, migration and provider policy
         run: npm run check:headquarters-readiness
+      - name: Inventory full Headquarters release lineage against main
+        run: npm run audit:headquarters-lineage
       - name: Upload Headquarters preproduction audit
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
