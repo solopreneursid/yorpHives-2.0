@@ -67,7 +67,9 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     execution_enabled: OWNER_DELEGATION_EXECUTOR_ENABLED,
     mfa_endpoint: "/api/admin/step-up/owner-delegations",
     step_up_configured: Boolean(context.env.CF_ACCESS_STEP_UP_AUD &&
-      context.env.CF_ACCESS_STEP_UP_MFA_POLICY_CONFIRMED === "yes"),
+      context.env.CF_ACCESS_STEP_UP_MFA_POLICY_CONFIRMED === "yes" &&
+      !(context.env.CF_ACCESS_AUD || "").split(",").map(value => value.trim())
+        .includes(context.env.CF_ACCESS_STEP_UP_AUD.trim())),
     delegations: rows.results || []
   });
 }
