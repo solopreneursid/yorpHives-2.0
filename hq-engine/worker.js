@@ -63,8 +63,14 @@ async function failMission(db, id, reason) {
 /** Runs a bounded, durable, single-model recommendation; it does not browse, edit code, publish, or spend with third parties. */
 export class MissionWorkflow extends WorkflowEntrypoint {
   async run(event, step) {
-    const payload = event.payload || {};
-    const jobId = String(payload.job_id || "");
+    // Workflows invoked through the REST API deliver params as JSON text;
+    // service-binding create({ params: ... }) delivers an object.
+    let payload = event.payload || {};
+    if (typeof payload === "string") {
+      if (payload.length > 8192) throw new Error("Mission workflow payload exceeds the allowed size.");
+      try { payload = JSON.parse(payload); } catch { throw new Error("Mission workflow payload is not valid JSON."); }
+    }
+    const jobId = String(payload?.job_id || "");
     if (payload.kind !== "mission_brief" || !UUID.test(jobId)) throw new Error("Invalid mission workflow payload.");
     try {
       const job = await step.do("claim-queued-mission", async () => {

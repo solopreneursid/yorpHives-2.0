@@ -143,7 +143,7 @@ test("mission execution requires authenticated owner, allowed specialist and hea
 
     const wf = new MissionWorkflow();
     wf.env = workerEnv;
-    const completed = await wf.run({ payload: { kind: "mission_brief", job_id: mission.job_id } }, step);
+    const completed = await wf.run({ payload: JSON.stringify({ kind: "mission_brief", job_id: mission.job_id }) }, step);
     assert.equal(completed.status, "awaiting_owner_approval");
     const record = database.prepare("SELECT status,result_json,evidence_json FROM agent_jobs WHERE job_id=?").get(mission.job_id);
     assert.equal(record.status, "awaiting_owner_approval");
