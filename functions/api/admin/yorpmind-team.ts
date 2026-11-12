@@ -71,7 +71,8 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     db.prepare("SELECT agent_id,display_name,department_id,status,enabled,autonomy_level FROM agent_registry ORDER BY agent_id LIMIT ?").bind(MAX_TEAM_AGENTS_SCANNED).all<Specialist>(),
     db.prepare("SELECT department_id,name FROM agent_departments LIMIT 40").all<Department>(),
     db.prepare("SELECT job_id,agent_id,job_type,title,status,priority,updated_at FROM agent_jobs ORDER BY updated_at DESC LIMIT ?").bind(MAX_TEAM_JOBS_SCANNED).all<Job>(),
-    db.prepare("SELECT report_id,report_day,report_key,manager_id,subject_agent_id,source_job_id,recommendation,severity,summary,evidence_json,state,created_at,reviewed_by,reviewed_at,review_note FROM yorpmind_team_reports ORDER BY created_at DESC LIMIT 40").all<Report>()
+    db.prepare("SELECT report_id,report_day,report_key,manager_id,subject_agent_id,source_job_id,recommendation,severity,summary,evidence_json,state,created_at,reviewed_by,reviewed_at,review_note FROM yorpmind_team_reports ORDER BY created_at DESC LIMIT 40").all<Report>(),
+    db.prepare("SELECT COUNT(*) AS used FROM agent_job_events WHERE event_type='mission_queued' AND substr(created_at,1,10)=date('now')").first<{ used: number }>()
   ]);
   const current = recommendTeamActions(staff.results || [], agents.results || [], jobs.results || [], departments.results || []);
   const saved = (reports.results || []).map(row => {
