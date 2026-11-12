@@ -98,6 +98,10 @@ export function recommendTeamActions(staff, agents, jobs, departments, now = new
   const deptNames = new Map((departments || []).map(d => [d.department_id, d.name]));
   const sourceJobs = (jobs || []).slice(0, MAX_TEAM_JOBS_SCANNED);
   const activeJobs = sourceJobs.filter(j => active.has(j.status)).length;
+  const dailyUsed = Number.isInteger(limits.dailyMissionsUsed) && limits.dailyMissionsUsed >= 0
+    ? limits.dailyMissionsUsed : DAILY_MISSION_CAP;
+  const supervisorCap = new Map((staff || []).map(s => [s.staff_id, s.max_parallel_reviews]));
+  const activeByManager = new Map();
   const activeByAgent = new Map();
   for (const job of sourceJobs) {
     if (active.has(job.status)) activeByAgent.set(job.agent_id, (activeByAgent.get(job.agent_id) || 0) + 1);
