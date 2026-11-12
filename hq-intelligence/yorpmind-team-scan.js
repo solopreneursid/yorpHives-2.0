@@ -11,7 +11,8 @@ export async function scanYorpMindTeam(db, clock = () => new Date()) {
     db.prepare("SELECT staff_id,display_name,tier,domain,reports_to,max_parallel_reviews,enabled FROM yorpmind_staff WHERE enabled=1 LIMIT 20").all(),
     db.prepare("SELECT agent_id,display_name,department_id,status,enabled,autonomy_level FROM agent_registry ORDER BY agent_id LIMIT ?").bind(MAX_TEAM_AGENTS_SCANNED).all(),
     db.prepare("SELECT department_id,name FROM agent_departments LIMIT 40").all(),
-    db.prepare("SELECT job_id,agent_id,title,status,priority,updated_at FROM agent_jobs ORDER BY updated_at DESC LIMIT ?").bind(MAX_TEAM_JOBS_SCANNED).all()
+    db.prepare("SELECT job_id,agent_id,job_type,title,status,priority,updated_at FROM agent_jobs ORDER BY updated_at DESC LIMIT ?").bind(MAX_TEAM_JOBS_SCANNED).all(),
+    db.prepare("SELECT COUNT(*) AS used FROM agent_job_events WHERE event_type='mission_queued' AND substr(created_at,1,10)=date('now')").first()
   ]);
   const recommendations = recommendTeamActions(staff.results || [], agents.results || [], jobs.results || [], departments.results || [], now);
   let count = 0;
