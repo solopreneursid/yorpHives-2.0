@@ -202,6 +202,16 @@ async function run() {
     });
     record("ci_qa_write_denied", deniedQaWrite.status() === 403,
       "Read-only CI token cannot submit issue-specific QA; HTTP " + deniedQaWrite.status());
+    const privateReleases = await page.request.get(baseUrl + "/api/admin/release-evidence", {
+      headers: accessHeaders, timeout: 15000
+    });
+    const releaseData = await privateReleases.json().catch(() => null);
+    record("release_evidence_private_read_only",
+      privateReleases.status() === 200 &&
+      releaseData?.production_approved === false &&
+      releaseData?.production_deployment_enabled === false &&
+      Number(releaseData?.counts?.production_authorized) === 0,
+      "Staging D1 Release board must provide authenticated read-only, permanently locked evidence: HTTP " + privateReleases.status());
 
     record("github_permission_probe_control_present", await page.locator("#verify-github-permissions").count() === 1, "Owner-only permission probe control is present");
 
@@ -277,10 +287,14 @@ async function run() {
     record("repair_qa_dialog_accessible",
       await page.getByRole("dialog", { name: "Verify repair outcome" }).isVisible(),
       "Authenticated founder sees a dedicated revision-specific QA form");
+    await page.waitForFunction(() => {
+      const label = document.querySelector("#repair-qa-status")?.textContent || "";
+      return label.includes("No issue-specific QA") || label.includes("QA is unavailable");
+    }, null, { timeout: 10000 });
     record("repair_qa_clear_separate_approval",
       (await page.locator("#repair-qa-dialog").innerText()).includes("This never publishes a release") &&
       (await page.locator("#repair-qa-status").innerText()).includes("No issue-specific QA"),
-      "QA testing is separate from production approval; CI never submits QA evidence");
+      "Async QA evidence must settle before interpreting the founder's review state");
     await page.locator("#repair-qa-close").click();
     await page.locator("#incident-prepare").click();
     await page.locator("#view-agents").waitFor({ state: "visible", timeout: 10000 });
@@ -303,6 +317,47 @@ async function run() {
     await page.unroute("**/api/admin/repair-jobs");
     await page.unroute("**/api/admin/repair-qa?**");
 
+    // Release evidence UI is read-only; browser route fixtures cannot mark
+    // production approved or issue any deployment and are never persisted.
+    await page.route("**/api/admin/release-evidence", async route => {
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          schema_version: 1,
+          generated_at: "2026-11-12T13:30:00Z",
+          scope: "most_recent_25_repairs",
+          production_approved: false,
+          production_deployment_enabled: false,
+          counts: { repairs: 1, ci_attested: 1, qa_recorded: 0, production_authorized: 0 },
+          repairs: [{
+            job_id: "123e4567-e89b-42d3-a456-426614174000",
+            job_status: "needs_review",
+            title: "Synthetic preview repair verification",
+            updated_at: "2026-11-12T13:15:00Z",
+            ci_verified: true,
+            qa_recorded_for_ci_revision: false,
+            live_revision_verified: false,
+            production_approved: false,
+            pull_request_url: "https://github.com/solopreneursid/yorpHives-2.0/pull/26",
+            blockers: ["Independent founder QA remains outstanding.", "Exact owner production authorization is not granted."]
+          }]
+        })
+      });
+    });
+    await page.locator('.nav-item[data-view="releases"]').click();
+    await page.locator("#view-releases").waitFor({ state: "visible", timeout: 10000 });
+    await page.locator(".release-evidence-card").first().waitFor({ state: "visible", timeout: 10000 });
+    record("release_evidence_board_founder_visible",
+      (await page.locator("#release-evidence-summary").innerText()).includes("Recent investigations") &&
+      (await page.locator("#release-evidence-list").innerText()).includes("Synthetic preview repair verification"),
+      "First-party release evidence appears in the founder workspace");
+    record("release_evidence_no_implicit_production_approval",
+      (await page.locator("#view-releases").innerText()).includes("Production remains locked") &&
+      (await page.locator("#release-evidence-list").innerText()).includes("PRODUCTION LOCKED") &&
+      (await page.locator("#view-releases button").allTextContents()).every(label => !/deploy|publish|release to production/i.test(label)),
+      "Release status is explanatory only; no publishing action is enabled");
+    await page.unroute("**/api/admin/release-evidence");
+
     const unauthenticated = await request.newContext({ baseURL: baseUrl, maxRedirects: 0 });
     try {
       const anonymousResponse = await unauthenticated.get("/api/admin/overview", { timeout: 15000 });
@@ -312,6 +367,10 @@ async function run() {
       record("repair_qa_requires_cloudflare_access",
         [302, 303, 401, 403].includes(anonymousQa.status()),
         "Anonymous QA request denied by Access: HTTP " + anonymousQa.status());
+      const anonymousReleases = await unauthenticated.get("/api/admin/release-evidence", { timeout: 15000 });
+      record("release_evidence_requires_cloudflare_access",
+        [302, 303, 401, 403].includes(anonymousReleases.status()),
+        "Anonymous Release evidence must not reveal private operational state: HTTP " + anonymousReleases.status());
     } finally {
       await unauthenticated.dispose();
     }

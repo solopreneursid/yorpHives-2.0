@@ -114,7 +114,7 @@ async function loadView(name) {
     issues: loadIssues,
     agents: loadAgents,
     updates: loadUpdates,
-    releases: async () => {},
+    releases: () => window.loadReleaseEvidence(),
     activity: loadActivity
   };
   const loader = loaders[name];
