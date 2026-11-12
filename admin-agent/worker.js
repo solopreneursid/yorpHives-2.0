@@ -207,15 +207,30 @@ function decodeBase64Utf8(value) {
 async function updateJob(db, jobId, status, values = {}) {
   const timestamp = new Date().toISOString();
   const completedAt = status === "failed" ? timestamp : null;
-  await db.prepare(
-    "UPDATE admin_repair_jobs SET status=?,agent_name=COALESCE(?,agent_name),branch_name=COALESCE(?,branch_name),pull_request_url=COALESCE(?,pull_request_url),result_summary=COALESCE(?,result_summary),updated_at=?,completed_at=COALESCE(?,completed_at) WHERE id=?"
-  ).bind(status, values.agentName || null, values.branchName || null, values.pullRequestUrl || null,
-    values.summary || null, timestamp, completedAt, jobId).run();
-  await db.prepare(
+  if (status === "needs_review" &&
+      (!/^[0-9a-f]{40}$/i.test(values.ciCommitSha || "") ||
+       !Array.isArray(values.checks) || values.checks.length !== 5 ||
+       values.checks.some(check => check.conclusion !== "success" || check.commit_sha !== values.ciCommitSha))) {
+    throw new Error("Cannot record review-ready repair without complete exact-commit CI evidence.");
+  }
+  const statements = [
+    db.prepare(
+      "UPDATE admin_repair_jobs SET status=?,agent_name=COALESCE(?,agent_name),branch_name=COALESCE(?,branch_name),pull_request_url=COALESCE(?,pull_request_url),result_summary=COALESCE(?,result_summary),updated_at=?,completed_at=COALESCE(?,completed_at) WHERE id=?"
+    ).bind(status, values.agentName || null, values.branchName || null, values.pullRequestUrl || null,
+      values.summary || null, timestamp, completedAt, jobId)
+  ];
+  if (status === "needs_review") {
+    statements.push(db.prepare(
+      "INSERT INTO admin_repair_ci_verifications(job_id,commit_sha,checks_json,verified_at) VALUES (?,?,?,?) " +
+      "ON CONFLICT(job_id) DO UPDATE SET commit_sha=excluded.commit_sha,checks_json=excluded.checks_json,verified_at=excluded.verified_at"
+    ).bind(jobId, values.ciCommitSha, JSON.stringify(values.checks), timestamp));
+  }
+  statements.push(db.prepare(
     "INSERT INTO admin_audit_events (id,actor,action,resource_type,resource_id,details_json,created_at) VALUES (?,?,?,?,?,?,?)"
   ).bind(crypto.randomUUID(), "yorphives-cloudflare-agent", "agent_" + status, "repair_job", jobId,
-    JSON.stringify({ branch_name: values.branchName || null, pull_request_url: values.pullRequestUrl || null, summary: values.summary || null }),
-    timestamp).run();
+    JSON.stringify({ branch_name: values.branchName || null, pull_request_url: values.pullRequestUrl || null,
+      ci_verified_commit_sha: values.ciCommitSha || null, summary: values.summary || null }), timestamp));
+  await db.batch(statements);
 }
 
 async function loadRepositoryContext(env, requestText) {
@@ -690,6 +705,8 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
           agentName: "yorphives-cloudflare-agent",
           branchName: branchCommit.branch,
           pullRequestUrl: pullRequest.html_url,
+          ciCommitSha: ciTrigger.commitSha,
+          checks: verification.checks,
           summary
         });
         return { status: "needs_review", pullRequestUrl: pullRequest.html_url };
