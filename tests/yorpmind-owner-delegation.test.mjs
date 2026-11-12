@@ -29,7 +29,7 @@ const securePage = await read("../functions/api/admin/step-up/owner-delegations.
 const loadRoute = async source => import(dataURL(stripTypeScriptTypes(source
   .replace(/"\.\.\/\.\.\/\.\.\/_lib\/admin-auth"|"\.\.\/\.\.\/_lib\/admin-auth"/g, JSON.stringify(auth))
   .replace(/"\.\.\/\.\.\/\.\.\/_lib\/owner-delegation.js"|"\.\.\/\.\.\/_lib\/owner-delegation.js"/g, JSON.stringify(helper))
-))));
+)));
 const owner = await loadRoute(unbundled);
 const stepup = await loadRoute(securePage);
 const actualAuth = await import(dataURL(stripTypeScriptTypes(await read("../functions/_lib/admin-auth.ts"))));
