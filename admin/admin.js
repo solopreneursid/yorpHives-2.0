@@ -103,6 +103,7 @@ async function loadView(name) {
   const loaders = {
     headquarters: () => window.loadHeadquarters(),
     departments: () => window.loadHeadquarters(),
+    radar: () => window.loadRadar(),
     overview: loadOverview,
     monitoring: loadMonitoring,
     analytics: loadAnalytics,

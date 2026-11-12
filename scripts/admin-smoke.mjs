@@ -60,6 +60,7 @@ async function run() {
 
     const readEndpoints = [
       "/api/admin/headquarters",
+      "/api/admin/radar",
       "/api/admin/overview",
       "/api/admin/assets",
       "/api/admin/findings",
@@ -91,6 +92,14 @@ async function run() {
         a.enabled === 1 && a.status === "ready" && a.autonomy_level === "recommend").length === 7,
         "Only seven recommendation specialists are enabled; engineering and QA still require verified runtimes");
     }
+    await page.locator('.nav-item[data-view="radar"]').click();
+    await page.locator("#view-radar").waitFor({ state: "visible", timeout: 10000 });
+    record("radar_workspace_rendered", await page.locator("#view-radar h1").count() === 1, "Opportunity Radar view is accessible");
+    await page.waitForFunction(() => document.querySelector("#radar-status")?.textContent?.includes("stored first-party signals"), null, { timeout: 20000 });
+    const radarContent = await page.locator("#view-radar").innerText();
+    record("radar_source_provenance_disclosed", radarContent.includes("First-party evidence only"), "No fabricated external market intelligence");
+    await page.locator('.nav-item[data-view="headquarters"]').click();
+    await page.locator("#view-headquarters").waitFor({ state: "visible", timeout: 10000 });
     await page.locator("#hq-new").click();
     record("mission_composer_opens", await page.locator("#hq-compose").isVisible(), "New mission opens without submitting work");
     record("mission_specialists_loaded", await page.locator("#hq-agent option").count() === 9, "Nine persistent specialist definitions");
