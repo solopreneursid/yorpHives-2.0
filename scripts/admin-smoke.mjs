@@ -108,6 +108,11 @@ async function run() {
     record("intelligence_workspace_rendered", await page.locator("#view-intelligence h1").count() === 1, "Protected research UI renders");
     await page.waitForFunction(() => document.querySelector("#intel-status-text")?.textContent?.includes("hypotheses stored"), null, { timeout: 20000 });
     record("intelligence_source_disclaimer", (await page.locator("#view-intelligence").innerText()).includes("not independently validated"), "Unverified evidence disclosed");
+    const proposalCards = await page.locator("#intel-ideas .intel-card").count();
+    const experimentPanels = await page.locator("#intel-ideas .hq-val-section").count();
+    record("intelligence_validation_lab_inline",
+      proposalCards > 0 && experimentPanels === proposalCards,
+      "Each product hypothesis has a source-independent validation panel, without performing a mutation");
     await page.locator('.nav-item[data-view="headquarters"]').click();
     await page.locator('.nav-item[data-view="radar"]').click();
     await page.locator("#view-radar").waitFor({ state: "visible", timeout: 10000 });

@@ -59,7 +59,7 @@ Cloudflare Access-protected /admin/#intelligence
 4. Register Workflow `yorphives-global-research` with class `ResearchWorkflow`. Test one Workflow via Cloudflare before enabling the daily Cron schedule.
 5. Add an `INTELLIGENCE_SERVICE` binding only to the **Admin Pages preview** pointing to `yorphives-global-intelligence`, preserving `ADMIN_AGENT_SERVICE` and `HQ_ENGINE_SERVICE`.
 6. Deploy the branch to isolated Admin Pages preview. Verify Cloudflare Access, JSON and Markdown output, authenticated mobile navigation, bounded manual scan and readable source links.
-7. After a verified live run, enable the 03:30 UTC daily schedule on the private Worker. Cost depends on actual Workers AI and Workflow usage; inspect billing before raising quotas. **No paid external data APIs** are called.
+7. A daily 03:30 UTC schedule is now configured on the private Worker. Confirm live execution, request limits and billed usage before widening quotas. Cost depends on actual Workers AI and Workflow usage; inspect billing before raising quotas. **No paid external data APIs** are called.
 8. Keep the work in draft until focused security review and authenticated human-owner action tests pass. Do not merge into public `main`; production website and live monetization stay unchanged.
 
 ## Long-term design
@@ -67,3 +67,29 @@ Cloudflare Access-protected /admin/#intelligence
 Adding a new research market should mean registering a new **allowlisted source adapter**, not rewriting the UI, database or agent. Future candidates include independent country/language research, customer feedback, release changelogs, opt-in analytics, market sizing, competitive analysis and agent-compatible distribution.
 
 Market research must preserve who said what, where and when; data-collection terms, copyright and attribution constraints; region and language coverage; independent QA; and bias controls. Prioritize experiments over speculative forecasts. YorpHives should remain model/provider replaceable while using Cloudflare as the execution fabric.
+
+## Implemented Validation Lab (migration 0016)
+
+The private `hq_validation_experiments` table and `hq_validation_events` audit log support structured founder-led experiments. Migrate `migrations/0016_headquarters_validation.sql` **only to the private Admin staging D1** after migration 0015.
+
+`GET /api/admin/validation` returns experiments as JSON or clean Markdown (`Accept: text/markdown`). `POST /api/admin/validation` requires a signed, allowlisted Cloudflare Access human-owner identity and same-origin JSON, not a CI service token. Supported actions are:
+
+- `create`: attach a research question, method, success metric, numerical target and timebox to an existing idea. Each idea permits at most eight experiments.
+- `start`: move a planned experiment to active with revision-locked optimistic concurrency.
+- `record_result`: enter an observed count, research notes of at least 30 characters and optionally an HTTPS evidence reference. The backend compares the reported count with the numeric target, saves immutable audit details, and labels the result `unverified_owner_report`.
+- `cancel`: stop a planned or active experiment while retaining its event trail.
+
+Experiment status does **not** change the underlying idea status. Even an owner-reported target met does not prove market demand, validate a region, grant an engineering deployment approval, create a release, or authorize spending. The interface cautions against recording sensitive participant information.
+
+The Validation Lab is embedded within the expandable detail of every saved proposal in **Ideas & Intelligence**. The first two candidates are an AI-powered code quality tool and an agent security portal; both have two stored public source references each. Their value scores are internal research priorities, not expected success rates. Live source collection and AI synthesis are verified; real user validation has not been performed.
+
+### Operational release gates
+
+- ✅ 38 real public source observations saved through a private Cloudflare Workflow; 2 hypotheses generated from a single model attempt.
+- ✅ Private research Worker has Workers.dev and Worker preview URLs disabled; only Admin preview Pages environment has `INTELLIGENCE_SERVICE`.
+- ✅ Cloudflare Access, signed-JWT API, Model/Workflow Node SQLite contracts, CodeQL, and browser/SEO performance checks were exercised on the feature branch.
+- ✅ Validation D1 schema and audit triggers installed in private staging; synthetic QA lifecycle tested and removed.
+- 🔒 PR #15 remains a draft: automated code-risk review still flags infrastructure-sensitive changes; owner-clicked mutation E2E testing and a focused security assessment are required.
+- 🔒 Public YorpHives production was not changed.
+
+Future market intelligence can add compliant, region-specific public sources, opt-in surveys, and verified usage analytics without changing the idea/validation storage model. Do not infer global demand from English-speaking developer communities.
