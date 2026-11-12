@@ -105,7 +105,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   const identity = await requireAdmin(context);
   if (isAdminResponse(identity)) return identity;
   const result = await context.env.DB!.prepare(
-    "SELECT id,finding_id,requested_by,request_text,status,agent_name,branch_name,pull_request_url,result_summary,created_at,updated_at FROM admin_repair_jobs ORDER BY created_at DESC LIMIT 50"
+    "SELECT id,finding_id,requested_by,request_text,status,agent_name,branch_name,pull_request_url,result_summary,created_at,updated_at FROM admin_repair_jobs WHERE id!='github-permission-probe-singleton' ORDER BY created_at DESC LIMIT 50"
   ).all<RepairJobRow>();
   const env = context.env as RepairEnv;
   let agentHealth: AgentHealth | null = null;
@@ -122,7 +122,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     context.env.DB!.prepare("SELECT MAX(started_at) AS last_run_at FROM admin_runs WHERE trigger_source='scheduled' AND status='completed'").first<{last_run_at:string|null}>(),
     context.env.DB!.prepare("SELECT action,details_json,created_at AS last_run_at FROM admin_audit_events WHERE action IN ('security_audit_completed','security_audit_partial') ORDER BY created_at DESC LIMIT 1").first<{action:string;details_json:string|null;last_run_at:string|null}>(),
     context.env.DB!.prepare("SELECT COUNT(*) AS count FROM admin_asset_findings WHERE category='security' AND status IN ('open','investigating','awaiting_approval')").first<{count:number}>(),
-    context.env.DB!.prepare("SELECT COUNT(*) AS count FROM admin_repair_jobs WHERE status IN ('queued','dispatched','running','needs_review')").first<{count:number}>()
+    context.env.DB!.prepare("SELECT COUNT(*) AS count FROM admin_repair_jobs WHERE id!='github-permission-probe-singleton' AND status IN ('queued','dispatched','running','needs_review')").first<{count:number}>()
   ]);
   const scheduledFresh = Boolean(scheduled?.last_run_at && Date.now()-Date.parse(scheduled.last_run_at)<8*60*60*1000);
   let securityEvidence: {status?:string;checked?:number;target_count?:number;errors?:number;skipped?:number}|null = null;
@@ -193,14 +193,25 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
     if (!agent) {
       return adminJson({ error: { code: "AGENT_NOT_CONFIGURED", message: "The private repair Worker service binding is unavailable." } }, 503);
     }
-    const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const recentProbe = await context.env.DB!.prepare(
-      "SELECT COUNT(*) AS count FROM admin_audit_events WHERE action='github_permission_probe' AND created_at>=?"
-    ).bind(cutoff).first<{ count: number }>();
-    if ((recentProbe?.count || 0) >= 1) {
-      return adminJson({ error: { code: "PROBE_RATE_LIMIT", message: "A GitHub permission probe has already run in the last hour." } }, 429);
+    const lockId = "github-permission-probe-singleton";
+    const emergencyOverride = body.emergency_override === true;
+    const staleBefore = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    await context.env.DB!.prepare(
+      "INSERT OR IGNORE INTO admin_repair_jobs (id,finding_id,requested_by,request_text,status,created_at,updated_at) VALUES (?,NULL,?,?, 'idle',?,?)"
+    ).bind(lockId, identity.email, "Internal GitHub permission probe concurrency lock.", now(), now()).run();
+    const acquired = await context.env.DB!.prepare(
+      "UPDATE admin_repair_jobs SET status='running',requested_by=?,request_text=?,updated_at=? WHERE id=? AND (status!='running' OR (updated_at<? AND ?=1))"
+    ).bind(identity.email, emergencyOverride ? "Emergency override: reclaim stale permission probe lock." : "GitHub permission probe lock.", now(), lockId, staleBefore, emergencyOverride ? 1 : 0).run();
+    if ((acquired.meta?.changes || 0) !== 1) {
+      return adminJson({
+        error: {
+          code: "PROBE_ALREADY_RUNNING",
+          message: "Another GitHub permission probe is still running. Retry when it finishes. Emergency override can reclaim a lock that has been stale for more than ten minutes."
+        }
+      }, 409);
     }
-    let probe: Record<string, unknown>;
+    let probe: Record<string, unknown> | null = null;
+    let failure: { code: string; message: string; status: number } | null = null;
     try {
       const response = await agent.fetch(new Request("https://admin-agent.internal/permission-probe", {
         method: "POST",
@@ -208,35 +219,36 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
           "content-type": "application/json",
           "x-yorphives-internal-probe": "1"
         },
-        body: JSON.stringify({ confirm: true })
+        body: JSON.stringify({ confirm: true, emergency_override: emergencyOverride })
       }));
       const result = await response.json().catch(() => null) as unknown;
       if (!response.ok || !result || typeof result !== "object" || Array.isArray(result)) {
-        return adminJson({ error: { code: "GITHUB_PERMISSION_PROBE_FAILED", message: "The repair Worker could not complete the permission probe." } }, response.status || 502);
+        failure = { code: "GITHUB_PERMISSION_PROBE_FAILED", message: "The repair Worker could not complete the permission probe.", status: response.status || 502 };
+      } else {
+        probe = result as Record<string, unknown>;
       }
-      probe = result as Record<string, unknown>;
     } catch {
-      return adminJson({ error: { code: "GITHUB_PERMISSION_PROBE_UNAVAILABLE", message: "The private repair Worker could not be reached." } }, 502);
+      failure = { code: "GITHUB_PERMISSION_PROBE_UNAVAILABLE", message: "The private repair Worker could not be reached.", status: 502 };
+    } finally {
+      await context.env.DB!.prepare(
+        "UPDATE admin_repair_jobs SET status='completed',updated_at=? WHERE id=?"
+      ).bind(now(), lockId).run();
     }
+    const auditDetails = {
+      ready: probe?.ready === true,
+      contents_write: probe?.contents_write === true,
+      pull_requests_write: probe?.pull_requests_write === true,
+      cleanup: probe?.cleanup || null,
+      cleanup_errors: probe?.cleanup_errors || [],
+      remaining_branch: probe?.remaining_branch || null,
+      remaining_pull_request: probe?.remaining_pull_request || null,
+      emergency_override: emergencyOverride,
+      error: failure?.message || probe?.error || null
+    };
     await context.env.DB!.prepare(
       "INSERT INTO admin_audit_events (id,actor,action,resource_type,resource_id,details_json,created_at) VALUES (?,?,?,?,?,?,?)"
-    ).bind(
-      id(),
-      identity.email,
-      "github_permission_probe",
-      "github_token",
-      "cloudflare-admin-agent",
-      JSON.stringify({
-        ready: probe.ready === true,
-        contents_write: probe.contents_write === true,
-        pull_requests_write: probe.pull_requests_write === true,
-        cleanup: probe.cleanup || null,
-        cleanup_errors: probe.cleanup_errors || [],
-        remaining_branch: probe.remaining_branch || null,
-        remaining_pull_request: probe.remaining_pull_request || null
-      }),
-      now()
-    ).run();
+    ).bind(id(), identity.email, "github_permission_probe", "github_token", "cloudflare-admin-agent", JSON.stringify(auditDetails), now()).run();
+    if (failure) return adminJson({ error: { code: failure.code, message: failure.message } }, failure.status);
     return adminJson({ probe });
   }
 
