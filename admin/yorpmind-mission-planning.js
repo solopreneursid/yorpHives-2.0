@@ -153,19 +153,18 @@ import {
     host.append(action);
   }
 
-  async function review(queryText, host, status, options, prior) {
-    if (prior?.controller) prior.controller.abort();
+  async function review(queryText, host, status, options, current) {
+    const controller = current.controller;
     host.replaceChildren();
     const query = prepareMissionMemoryQuery(queryText);
     if (!query) {
       status.textContent = "Use a descriptive mission title with at least one meaningful word of 3+ characters.";
       return null;
     }
-    const controller = new AbortController();
     status.textContent = "Looking up historical evidence without calling an AI model…";
     try {
       const data = await fetchReferences(query, controller.signal);
-      if (!host.isConnected || controller.signal.aborted) return { controller };
+      if (!host.isConnected || controller.signal.aborted) return current;
       renderResults(host, status, data, { ...options, query });
     } catch (error) {
       if (!controller.signal.aborted && host.isConnected) {
@@ -173,7 +172,7 @@ import {
         status.textContent = safeMessage(error) + " Mission creation and dispatch permissions are unchanged.";
       }
     }
-    return { controller };
+    return current;
   }
 
   function initComposer() {
@@ -184,12 +183,12 @@ import {
     if (!button || !panel || !status || !results) return;
     button.addEventListener("click", async () => {
       panel.hidden = false;
-      const current = composerRequest;
+      composerRequest?.controller?.abort();
       const marker = { controller: new AbortController() };
       composerRequest = marker;
       button.disabled = true;
       const done = await review(byId("hq-title").value, results, status,
-        { allowAttach: true }, current);
+        { allowAttach: true }, marker);
       if (composerRequest === marker) {
         composerRequest = done;
         button.disabled = false;
@@ -221,10 +220,10 @@ import {
     button.addEventListener("click", async () => {
       panel.hidden = false;
       button.disabled = true;
-      const previous = missionRequests.get(panel);
+      missionRequests.get(panel)?.controller?.abort();
       const current = { controller: new AbortController() };
       missionRequests.set(panel, current);
-      const outcome = await review(mission.title, results, status, { allowAttach: false }, previous);
+      const outcome = await review(mission.title, results, status, { allowAttach: false }, current);
       if (missionRequests.get(panel) === current) {
         missionRequests.set(panel, outcome);
         button.disabled = false;
