@@ -274,6 +274,12 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(worker, /triggerPlatformChecks/);
   assert.match(worker, /repair-receipts/);
   assert.match(worker, /needs_review/);
+  assert.match(worker, /admin_repair_ci_verifications/);
+  assert.match(worker, /await db\.batch\(statements\)/);
+  assert.match(worker, /ciCommitSha: ciTrigger\.commitSha/);
+  assert.match(worker, /checks: verification\.checks/);
+  assert.match(worker, /Cannot record review-ready repair without complete exact-commit CI evidence/);
+
   assert.match(worker, /draft: true/);
   assert.doesNotMatch(worker, /mergePullRequest|productionDeploy|wrangler deploy/);
   assert.equal(config.vars.REPAIR_BASE_BRANCH, "build/headquarters-repair-verification");
