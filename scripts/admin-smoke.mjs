@@ -208,12 +208,12 @@ async function run() {
       await route.fulfill({
         status: 200, contentType: "application/json",
         body: JSON.stringify({
-          data: [{ id: "preview-repair-fixture", finding_id: sampleFinding.id,
+          data: [{ id: "preview-repair-fixture", finding_id: sampleFinding.id, finding_source: "asset",
             request_text: "Investigate synthetic failure", status: "needs_review",
             result_summary: "Synthetic preview result only; no actual repair.",
             updated_at: "2026-11-12T00:15:00Z",
             pull_request_url: "https://github.com/solopreneursid/yorpHives-2.0/pull/22" }],
-          agentConfigured: false, agents: [], summary: {}
+          finding_links_ready: true, agentConfigured: false, agents: [], summary: {}
         })
       });
     });
@@ -235,9 +235,9 @@ async function run() {
     record("incident_prepare_does_not_dispatch",
       (await page.locator("#repair-request").inputValue()).includes("Preview-only tool failure") &&
       (await page.locator("#repair-request").inputValue()).includes(sampleFinding.id) &&
-      (await page.locator("#repair-finding").inputValue()) === "" &&
-      (await page.locator("#repair-message").innerText()).includes("general investigation"),
-      "Asset finding preparation preserves evidence without submitting an invalid monitor-only foreign key or dispatching AI");
+      (await page.locator("#repair-finding").inputValue()) === sampleFinding.id &&
+      (await page.locator("#repair-message").innerText()).includes("Finding linked"),
+      "Source-qualified asset finding appears in the prepared form; no repair is dispatched");
     await page.unroute("**/api/admin/findings*");
     await page.unroute("**/api/admin/repair-jobs");
 
