@@ -152,6 +152,25 @@
           <div class="ym-policy-lock">PUBLIC ACCESS OFF · AI EXECUTION OFF · PRODUCTION LOCKED</div>
         </aside>
       </header>
+      <section class="ym-search-panel" aria-labelledby="ym-search-title">
+        <div class="ym-search-head">
+          <div><span class="ym-eyebrow">EVIDENCE-AWARE MEMORY RETRIEVAL · PHASE 2</span>
+            <h2 id="ym-search-title">Find what YorpMind remembers</h2>
+            <p>Search founder-recorded lessons and approved reference skills without spending AI credits. Results are lexical matches, not proof of a current fix.</p>
+          </div>
+          <span class="ym-search-badge">PRIVATE · MODEL-FREE</span>
+        </div>
+        <form id="ym-search-form" class="ym-search-form" role="search" aria-label="Search private YorpMind knowledge">
+          <label for="ym-search-query">Investigation or procedure to look up</label>
+          <div class="ym-search-controls">
+            <input id="ym-search-query" type="search" minlength="3" maxlength="160" required autocomplete="off" spellcheck="false"
+              placeholder="e.g. QR download regression">
+            <button class="button primary" id="ym-search-submit" type="submit">Search memory</button>
+          </div>
+        </form>
+        <p id="ym-search-status" class="ym-search-status" role="status" aria-live="polite">Search is limited to the 120 most recent eligible records of each type.</p>
+        <div id="ym-search-results" class="ym-search-results"></div>
+      </section>
       <div class="ym-stats" id="ym-stats" aria-label="YorpMind knowledge counters"></div>
       <div class="ym-workspace">
         <section class="ym-panel" aria-labelledby="ym-memory-title">
@@ -758,6 +777,7 @@
 <script src="/admin/incident-workspace.js" defer></script>
 <script src="/admin/release-evidence.js" defer></script>
 <script src="/admin/yorpmind.js" defer></script>
+<script src="/admin/yorpmind-search.js" defer></script>
 <script src="/admin/headquarters.js" defer></script>
 <script src="/admin/radar.js" defer></script>
 <script src="/admin/intelligence.js" defer></script>
