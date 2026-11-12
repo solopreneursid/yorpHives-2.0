@@ -218,6 +218,7 @@
       renderMissions();
       renderDepartments();
       renderEvents();
+      if (typeof window.loadOwnerActionCenter === "function") await window.loadOwnerActionCenter();
     } catch (error) {
       el("hq-storage").textContent = "Unavailable";
       el("hq-updated").textContent = "Could not load Headquarters. Use Refresh to retry.";

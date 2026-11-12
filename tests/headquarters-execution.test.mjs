@@ -15,12 +15,14 @@ const routeURL = dataURL(
 );
 const { onRequestGet, onRequestPost, onRequestPatch } = await import(routeURL);
 const retrievalURL = dataURL(await source("../functions/_lib/yorpmind-retrieval.js"));
+const briefOutputURL = dataURL(await source("../hq-engine/brief-output.js"));
 const missionContextURL = dataURL((await source("../hq-engine/yorpmind-context.js"))
   .replace('"../functions/_lib/yorpmind-retrieval.js"', JSON.stringify(retrievalURL)));
 const engineSource = (await source("../hq-engine/worker.js"))
   .replace('import { WorkflowEntrypoint } from "cloudflare:workers";',
     "class WorkflowEntrypoint { constructor() { this.env = {}; } }")
-  .replace('"./yorpmind-context.js"', JSON.stringify(missionContextURL));
+  .replace('"./yorpmind-context.js"', JSON.stringify(missionContextURL))
+  .replace('"./brief-output.js"', JSON.stringify(briefOutputURL));
 const { MissionWorkflow, default: missionWorker } = await import(dataURL(engineSource));
 
 const key = await crypto.subtle.generateKey({
@@ -180,6 +182,8 @@ test("mission execution requires authenticated owner, allowed specialist and hea
     assert.equal(completed.status, "awaiting_owner_approval");
     const record = database.prepare("SELECT status,result_json,evidence_json FROM agent_jobs WHERE job_id=?").get(mission.job_id);
     assert.equal(record.status, "awaiting_owner_approval");
+    const firstAttempt = database.prepare("SELECT json_extract(input_json,'$.model_attempt_started_at') AS attempted FROM agent_jobs WHERE job_id=?").get(mission.job_id);
+    assert.ok(firstAttempt.attempted, "The one paid AI attempt must be recorded in D1");
     assert.equal(JSON.parse(record.result_json).verified, false);
     assert.deepEqual(JSON.parse(record.result_json).actions, brief().actions);
     assert.equal(JSON.parse(record.evidence_json)[0].source_count, 0);
@@ -234,6 +238,8 @@ test("failed AI inference is recorded without marking a mission verified", async
     await assert.rejects(workflow.run({ payload: { kind: "mission_brief", job_id: mission.job_id } }, step), /Model unavailable/);
     const record = database.prepare("SELECT status,result_json FROM agent_jobs WHERE job_id=?").get(mission.job_id);
     assert.equal(record.status, "failed");
+    assert.equal(JSON.parse(record.result_json).code, "MISSION_EXECUTION_FAILED");
+    assert.ok(database.prepare("SELECT json_extract(input_json,'$.model_attempt_started_at') AS started FROM agent_jobs WHERE job_id=?").get(mission.job_id).started);
     assert.equal(JSON.parse(record.result_json).verified, false);
   } finally { database.close(); }
 });
@@ -362,4 +368,57 @@ test("owner AI mission dispatches stop at six per UTC day, including failed/comp
     globalThis.fetch = originalFetch;
     database.close();
   }
+});
+
+
+test("persisted inference claim prevents duplicate model billing after a workflow replay", async () => {
+  const { database, adapter } = createDb();
+  database.exec(await source("../migrations/0010_agentic_os_foundation.sql"));
+  database.exec(await source("../migrations/0012_headquarters_execution.sql"));
+  database.exec(await source("../migrations/0013_headquarters_brief_review.sql"));
+  const mission = makeMission("innovation-scout");
+  database.prepare(
+    "INSERT INTO agent_jobs(job_id,agent_id,job_type,title,request_summary,status,priority,created_by,started_at,input_json) " +
+    "VALUES (?,?,'owner_mission',?,?,'running',?,?,'2026-11-12T01:00:00.000Z',?)"
+  ).run(mission.job_id,mission.agent_id,mission.title,mission.request_summary,mission.priority,
+    "owner@example.com",JSON.stringify({model_attempt_started_at:"2026-11-12T01:00:00.000Z"}));
+  let modelCalls = 0;
+  const workflow = new MissionWorkflow();
+  workflow.env = {DB:adapter,AI:{run:async()=>{modelCalls++;return {response:JSON.stringify(brief())};}}};
+  try {
+    await assert.rejects(workflow.run({payload:{kind:"mission_brief",job_id:mission.job_id}},step),
+      /already claimed its one permitted AI attempt/);
+    assert.equal(modelCalls,0);
+    const saved=database.prepare("SELECT status,result_json FROM agent_jobs WHERE job_id=?").get(mission.job_id);
+    assert.equal(saved.status,"failed");
+    assert.equal(JSON.parse(saved.result_json).verified,false);
+  } finally { database.close(); }
+});
+
+test("invalid model JSON causes a recorded failure after exactly one charged attempt", async () => {
+  const {database,adapter}=createDb();
+  database.exec(await source("../migrations/0010_agentic_os_foundation.sql"));
+  database.exec(await source("../migrations/0012_headquarters_execution.sql"));
+  database.exec(await source("../migrations/0013_headquarters_brief_review.sql"));
+  const mission=makeMission("innovation-scout");
+  database.prepare(
+    "INSERT INTO agent_jobs(job_id,agent_id,job_type,title,request_summary,status,priority,created_by) " +
+    "VALUES(?,?,'owner_mission',?,?,'queued',?,?)"
+  ).run(mission.job_id,mission.agent_id,mission.title,mission.request_summary,mission.priority,"owner@example.com");
+  let providerCalls=0;
+  const workflow=new MissionWorkflow();
+  workflow.env={DB:adapter,AI:{run:async()=>{providerCalls++;return {response:"not valid JSON"};}}};
+  try{
+    await assert.rejects(workflow.run({payload:{kind:"mission_brief",job_id:mission.job_id}},step),
+      /structured decision brief/);
+    assert.equal(providerCalls,1);
+    const saved=database.prepare(
+      "SELECT status,result_json,json_extract(input_json,'$.model_attempt_started_at') AS attempted " +
+      "FROM agent_jobs WHERE job_id=?").get(mission.job_id);
+    assert.equal(saved.status,"failed");
+    assert.ok(saved.attempted);
+    assert.equal(JSON.parse(saved.result_json).code,"BRIEF_JSON_INVALID");
+    assert.equal(JSON.parse(saved.result_json).verified,false);
+    assert.equal(database.prepare("SELECT COUNT(*) AS n FROM agent_approvals").get().n,0);
+  }finally{database.close();}
 });

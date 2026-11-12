@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/admin/incident-workspace.css">
 <link rel="stylesheet" href="/admin/release-evidence.css">
 <link rel="stylesheet" href="/admin/owner-delegation.css">
+<link rel="stylesheet" href="/admin/owner-action-center.css">
 <link rel="stylesheet" href="/admin/yorpmind.css">
 <link rel="stylesheet" href="/admin/yorpmind-evolution.css">
 <link rel="stylesheet" href="/admin/yorpmind-team.css">
@@ -70,6 +71,24 @@
 
 
     <section class="view active" id="view-headquarters" data-title="Headquarters">
+      <section class="owner-console" aria-labelledby="owner-action-title">
+        <div class="owner-console-header">
+          <div>
+            <span class="owner-kicker">YOUR DECISIONS · EVIDENCE FIRST</span>
+            <h2 id="owner-action-title">What should I do next?</h2>
+            <p class="owner-console-intro" id="owner-action-intro" role="status" aria-live="polite">Checking private Headquarters activity…</p>
+          </div>
+          <div class="owner-console-controls">
+            <span class="owner-console-stat" id="owner-action-count">Loading</span>
+            <button class="owner-console-refresh" id="owner-action-refresh" type="button">↻ Refresh decisions</button>
+          </div>
+        </div>
+        <div class="owner-task-list" id="owner-actions" aria-label="Prioritized founder actions"></div>
+        <div class="owner-console-foot">
+          <span id="owner-action-status" role="status" aria-live="polite">Reading verified private records…</span>
+          <span class="owner-console-locked">🔒 No automatic release or administrative approval</span>
+        </div>
+      </section>
       <div class="hq-hero">
         <div class="hq-hero-content">
           <div class="hq-overline"><span class="hq-live-dot" aria-hidden="true"></span> FOUNDER COMMAND · YORPHIVES HEADQUARTERS</div>
@@ -129,7 +148,7 @@
         <section class="hq-panel hq-mission-panel">
           <div class="hq-panel-heading">
             <div><span class="hq-kicker">MISSION CONTROL</span><h2>Work in motion</h2><p>Briefs, execution states and reviewable results in one place.</p></div>
-            <label class="hq-filter">View <select id="hq-filter" class="hq-input"><option value="active">Open work</option><option value="review">Needs review</option><option value="all">All missions</option><option value="cancelled">Cancelled</option></select></label>
+            <label class="hq-filter">View <select id="hq-filter" class="hq-input"><option value="active">Open work</option><option value="review">Needs review</option><option value="all">All missions</option><option value="failed">Failed — investigate</option><option value="cancelled">Cancelled</option></select></label>
           </div>
           <div id="hq-missions" class="hq-mission-list" aria-live="polite"></div>
         </section>
@@ -865,6 +884,7 @@
 <script src="/admin/incident-workspace.js" defer></script>
 <script src="/admin/release-evidence.js" defer></script>
 <script src="/admin/owner-delegation.js" defer></script>
+<script src="/admin/owner-action-center.js" defer></script>
 <script src="/admin/yorpmind.js" defer></script>
 <script src="/admin/yorpmind-evolution.js" defer></script>
 <script src="/admin/yorpmind-team.js" defer></script>

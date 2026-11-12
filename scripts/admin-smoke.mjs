@@ -63,6 +63,7 @@ async function run() {
 
     const readEndpoints = [
       "/api/admin/headquarters",
+      "/api/admin/action-center",
       "/api/admin/radar",
       "/api/admin/intelligence",
       "/api/admin/validation",
@@ -92,6 +93,49 @@ async function run() {
         record("read_api_" + endpoint.split("/").pop().replace(/[^a-z0-9-]/gi, "-"), false, "Request failed");
       }
     }
+
+    record("founder_action_panel_present", await page.locator("#owner-action-title").count() === 1,
+      "Founder decisions are visible on the first Headquarters screen");
+    const actionUi = await page.evaluate(async () => {
+      if (typeof window.loadOwnerActionCenter !== "function") return { available: false };
+      const apiOriginal = window.api;
+      window.api = async (path, options) => {
+        if (path === "/api/admin/action-center") return {
+          name: "Headquarters Founder Action Center",
+          scope: "private_d1_evidence_only",
+          generated_at: new Date().toISOString(),
+          auto_ai_dispatch_enabled: false,
+          release_execution_enabled: false,
+          recorded_jobs_scanned: 1,
+          pending_total_in_window: 1,
+          truncated: false,
+          actions: [{
+            id: "synthetic-failure", urgency: "urgent",
+            title: "<img src=x onerror=alert(1)>",
+            why: "Synthetic untrusted report text.",
+            next_step: "Inspect the failed record; do not deploy.",
+            view: "headquarters", target: "failed",
+            execution_authorized: false, approval_granted: false
+          }]
+        };
+        return apiOriginal(path, options);
+      };
+      try {
+        await window.loadOwnerActionCenter(true);
+        const host = document.querySelector("#owner-actions");
+        return {
+          available: true,
+          untrusted_inert: host?.textContent?.includes("<img src=x onerror=alert(1)>") === true &&
+            host.querySelectorAll("img").length === 0,
+          button_present: host?.querySelectorAll("button.owner-task-button").length === 1
+        };
+      } finally { window.api = apiOriginal; }
+    });
+    record("founder_action_untrusted_html_inert",
+      actionUi.available && actionUi.untrusted_inert && actionUi.button_present,
+      "HTML-shaped mission content is shown inertly, and review navigation is visible");
+    // Return to real authenticated evidence after the browser-local synthetic fixture.
+    await page.evaluate(() => window.loadOwnerActionCenter?.(true));
 
     // Verify the real private D1 schema before installing synthetic browser GET fixtures.
     const repairLinksResponse = await page.request.get(baseUrl + "/api/admin/repair-jobs", {
