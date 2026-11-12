@@ -27,7 +27,7 @@ test("successful preview creation rejects mismatched commit even on HTTP 200", a
       deployment_trigger: { metadata: { branch: base.branch, commit_hash: "c".repeat(40) } }
     }) })
     : json({ success: true, result: [
-      deployment({ deployment_trigger: { metadata: { branch: base.branch, commit_hash: "c".repeat(40) } })
+      deployment({ deployment_trigger: { metadata: { branch: base.branch, commit_hash: "c".repeat(40) } } })
     ] });
   await assert.rejects(createOrReusePreview({ ...base, fetchImpl, delayImpl: async () => {} }),
     /No successful Cloudflare Pages preview matched/);
