@@ -34,7 +34,8 @@ export function validMissionMemoryReference(record) {
       !UUID.test(record.record_id || "") || !UUID.test(record.source_id || "")) return false;
   if (record.record_type === "experience") {
     return record.evidence_level === "founder_reported_qa" &&
-      record.source_type === "repair_qa" && SHA.test(record.source_commit_sha || "");
+      record.source_type === "repair_qa" && record.status === "recorded" &&
+      SHA.test(record.source_commit_sha || "");
   }
   if (record.record_type === "reference_skill") {
     return record.evidence_level === "founder_approved_reference_text" &&
