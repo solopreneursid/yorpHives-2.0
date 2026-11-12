@@ -97,7 +97,8 @@ function showView(name) {
   $("sidebar").classList.remove("open");
   $("mobile-scrim").classList.remove("show");
   $("mobile-menu").setAttribute("aria-expanded", "false");
-  if (!state.loaded.has(name)) loadView(name);
+  if (!state.loaded.has(name)) return loadView(name);
+  return Promise.resolve();
 }
 async function loadView(name) {
   const loaders = {
