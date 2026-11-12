@@ -22,10 +22,15 @@ const json = (value, status = 200) => Response.json(value, { status });
 const notModified = () => new Response(null, { status: 304 });
 
 test("successful preview creation rejects mismatched commit even on HTTP 200", async () => {
-  const fetchImpl = async () => json({ success: true, result: deployment({
-    deployment_trigger: { metadata: { branch: base.branch, commit_hash: "c".repeat(40) } }
-  }) });
-  await assert.rejects(createOrReusePreview({ ...base, fetchImpl }), /exact isolated preview/);
+  const fetchImpl = async (url, init) => init.method === "POST"
+    ? json({ success: true, result: deployment({
+      deployment_trigger: { metadata: { branch: base.branch, commit_hash: "c".repeat(40) } }
+    }) })
+    : json({ success: true, result: [
+      deployment({ deployment_trigger: { metadata: { branch: base.branch, commit_hash: "c".repeat(40) } })
+    ] });
+  await assert.rejects(createOrReusePreview({ ...base, fetchImpl, delayImpl: async () => {} }),
+    /No successful Cloudflare Pages preview matched/);
 });
 
 test("duplicate 304 reuses only an exact successful preview from Cloudflare", async () => {
@@ -53,7 +58,7 @@ test("304 fails closed when only another branch or an unfinished preview exists"
       deployment({ deployment_trigger: { metadata: { branch: "main", commit_hash: base.commitSha } } }),
       deployment({ latest_stage: { name: "deploy", status: "active" } })
     ] });
-  await assert.rejects(createOrReusePreview({ ...base, fetchImpl }), /refusing to reuse/);
+  await assert.rejects(createOrReusePreview({ ...base, fetchImpl, delayImpl: async () => {} }), /No successful Cloudflare Pages preview matched/);
 });
 
 test("rejects production branches, unknown projects, invalid URLs and nonpreview responses", async () => {
@@ -74,4 +79,56 @@ test("valid fresh preview returns exact deployment and no reuse flag", async () 
   } });
   assert.equal(result.reused, false);
   assert.equal(result.output, "SITE_BASE_URL");
+});
+
+test("HTTP 200 with temporarily incorrect metadata recovers only via verified GET result", async () => {
+  let calls = 0;
+  const fetchImpl = async (url, init) => {
+    calls++;
+    if (init.method === "POST") return json({ success: true, result: deployment({
+      deployment_trigger: { metadata: { branch: "build/old-preview", commit_hash: "c".repeat(40) } }
+    }) });
+    assert.match(url, /per_page=10/);
+    return json({ success: true, result: [deployment()] });
+  };
+  const result = await createOrReusePreview({ ...base, fetchImpl, delayImpl: async () => {} });
+  assert.equal(result.reused, true);
+  assert.equal(result.id, "successful-preview");
+  assert.equal(calls, 2);
+});
+
+test("lookup waits for exact deployment success and never trusts an active preview", async () => {
+  let lookupCalls = 0;
+  const fetchImpl = async (url, init) => {
+    if (init.method === "POST") return notModified();
+    lookupCalls++;
+    return json({ success: true, result: [
+      lookupCalls === 1 ? deployment({ latest_stage: { name: "deploy", status: "active" } }) : deployment()
+    ] });
+  };
+  const result = await createOrReusePreview({ ...base, fetchImpl, delayImpl: async () => {} });
+  assert.equal(result.reused, true);
+  assert.equal(lookupCalls, 2);
+});
+
+test("lookup scans a bounded additional page and still validates exact branch and SHA", async () => {
+  const fetchImpl = async (url, init) => {
+    if (init.method === "POST") return notModified();
+    const page = Number(new URL(url).searchParams.get("page"));
+    if (page === 1) return json({ success: true, result: Array.from({ length: 10 }, () => deployment({
+      deployment_trigger: { metadata: { branch: "build/unrelated", commit_hash: base.commitSha } }
+    })) });
+    if (page === 2) return json({ success: true, result: [deployment()] });
+    throw Error("Unbounded pagination");
+  };
+  const result = await createOrReusePreview({ ...base, fetchImpl, delayImpl: async () => {} });
+  assert.equal(result.id, "successful-preview");
+});
+
+test("Cloudflare lookup errors fail closed rather than accepting stale POST metadata", async () => {
+  const fetchImpl = async (url, init) => init.method === "POST"
+    ? json({ success: true, result: deployment({ environment: "production" }) })
+    : Response.json({ success: false, result: null }, { status: 500 });
+  await assert.rejects(createOrReusePreview({ ...base, fetchImpl, delayImpl: async () => {} }),
+    /preview lookup failed/);
 });
