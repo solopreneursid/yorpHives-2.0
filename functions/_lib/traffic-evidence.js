@@ -3,7 +3,7 @@
 export const GRAPHQL_LIMIT=250;
 const LIVE_HOSTS=new Set(["yorphives.com","www.yorphives.com"]);
 const MAX_REQUESTS=1000000000;
-export const TRAFFIC_GRAPHQL_QUERY=`query HQFreeToolsTraffic($zoneTag: String!, $start: Time!, $end: Time!) {
+export const TRAFFIC_GRAPHQL_QUERY=`query HQFreeToolsTraffic($zoneTag: string!, $start: Time!, $end: Time!) {
  viewer {
   zones(filter: {zoneTag: $zoneTag}) {
    httpRequestsAdaptiveGroups(

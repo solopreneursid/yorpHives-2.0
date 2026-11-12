@@ -147,7 +147,7 @@ export class ResearchWorkflow extends WorkflowEntrypoint {
       // technology, product format or business model to the starter categories.
       const demand=await indexDemand(this.env.DB,collected.sources,"research_workflow",id);
       const warnings=[...collected.errors,...market.warnings,modelProblem].filter(Boolean);
-      const partial=warnings.length>0||count===0||candidates.length===0;
+      const partial=warnings.length>0||count===0;
       await setState(this.env.DB,id,partial?"partial":"completed",count,created,warnings.join("; ").slice(0,600)||null);
       return {status:partial?"partial":"completed",source_count:count,new_ideas:created,
         new_discovery_categories:demand.generated_candidates,

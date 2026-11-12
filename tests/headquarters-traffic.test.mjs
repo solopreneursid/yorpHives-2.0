@@ -103,6 +103,8 @@ test("One bounded analytics query uses a seven-day window and never requests ide
   assert.equal(request.redirect,"manual");
   const body=JSON.parse(request.body);
   assert.match(body.query,/requestSource:\s*"eyeball"/);
+  assert.match(body.query,/\$zoneTag: string!/);
+  assert.doesNotMatch(body.query,/\$zoneTag: String!/);
   assert.match(body.query,/orderBy:\s*\[count_DESC\]/);
   assert.match(body.query,/clientRequestPath_like:/);
   assert.doesNotMatch(body.query,/clientIP|cookie|userAgent|clientAsn/);
