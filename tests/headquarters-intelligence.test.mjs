@@ -28,6 +28,14 @@ const {onRequestGet:getDemand,onRequestPost:postDemand}=await import(demandRoute
 const nextActionsURI=data((await file("../functions/api/admin/next-actions.ts"))
   .replace('"../../_lib/admin-auth"',JSON.stringify(authURI)));
 const {onRequestGet:getNextActions}=await import(nextActionsURI);
+const businessEngineURI=data((await file("../functions/_lib/business-intelligence.ts"))
+  .replace('"./admin-auth"',JSON.stringify(authURI)));
+const {buildBusinessBoard}=await import(businessEngineURI);
+const businessRouteURI=data((await file("../functions/api/admin/business-intelligence.ts"))
+  .replace('"../../_lib/admin-auth"',JSON.stringify(authURI))
+  .replace('"../../_lib/headquarters"',JSON.stringify(headquartersURI))
+  .replace('"../../_lib/business-intelligence"',JSON.stringify(businessEngineURI)));
+const {onRequestGet:getBusinessBoard,onRequestPost:postBusinessReview}=await import(businessRouteURI);
 const synthesisURI=data(await file("../hq-intelligence/synthesis.js"));
 const {parseIdeas,synthesizeIdeas}=await import(synthesisURI);
 const workerURI=data((await file("../hq-intelligence/worker.js"))
@@ -73,7 +81,8 @@ async function database(){
   "../migrations/0017_headquarters_existing_tool_demand.sql",
   "../migrations/0018_headquarters_traffic_evidence.sql",
   "../migrations/0019_headquarters_public_market_sources.sql",
-  "../migrations/0020_headquarters_tool_activity.sql"
+  "../migrations/0020_headquarters_tool_activity.sql",
+  "../migrations/0021_headquarters_business_opportunity_board.sql"
  ])db.exec(await file(path));
  const DB={
    prepare(sql){
@@ -467,5 +476,102 @@ test("Read-only HQ next actions distinguish source types and do not invent deman
   assert.match(markdown.headers.get("content-type"),/text\/markdown/);
   assert.match(await markdown.text(),/Approved to build: no/);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM agent_approvals").get().n,0);
+ }finally{globalThis.fetch=originalFetch;db.close();}
+});
+
+test("v8 unified business board preserves independent evidence classes and connection gaps",async()=>{
+ const {db,DB}=await database();
+ globalThis.fetch=stub;
+ try{
+  const e=envFor(DB);
+  const forbidden=await getBusinessBoard(context(e,"GET",undefined,{"cf-access-jwt-assertion":""}));
+  assert.equal(forbidden.status,401);
+  const empty=await getBusinessBoard(context(e));
+  assert.equal(empty.status,200);
+  const first=await empty.json();
+  assert.equal(first.totals.all,0);
+  assert.equal(first.coverage.find(x=>x.id==="search_console").state,"not_ingested");
+  assert.equal(first.coverage.find(x=>x.id==="revenue").state,"not_ingested");
+  assert.equal(first.coverage.find(x=>x.id==="cloudflare_http").state,"pending_capture");
+  assert.match(first.policy,/not market size/);
+  const cap=crypto.randomUUID(),run=crypto.randomUUID(),ideaId=crypto.randomUUID();
+  db.prepare("INSERT INTO hq_traffic_captures(capture_id,capture_day,observed_start,observed_end,tool_paths,grouped_requests,candidate_groups,recorded_by) VALUES (?,'2026-11-12','2026-11-05T00:00:00Z','2026-11-12T00:00:00Z',1,500,1,'qa')").run(cap);
+  db.prepare("INSERT INTO hq_traffic_tool_paths(capture_id,slug,path,grouped_requests) VALUES (?,'word-counter','/free-tools/word-counter/',500)").run(cap);
+  db.prepare("INSERT INTO hq_tool_activity_daily(activity_day,slug,channel,success_count) VALUES (date('now'),'word-counter','browser_client_reported',7)").run();
+  db.prepare("INSERT INTO hq_tool_activity_daily(activity_day,slug,channel,success_count) VALUES (date('now'),'sha256-text','access_authenticated_agent_execution',3)").run();
+  db.prepare("INSERT INTO hq_public_market_signals(signal_key,provider,evidence_kind,source_id,source_query,title,excerpt,source_url,public_metric_label,public_metric_value) VALUES ('wordpress:business-tools','wordpress_plugins','existing_product','business-tools','business','Business Tools','Public competitor example','https://wordpress.org/plugins/business-tools/','active_install_band',20000)").run();
+  db.prepare("INSERT INTO hq_public_market_signals(signal_key,provider,evidence_kind,source_id,source_query,title,excerpt,source_url,public_metric_label,public_metric_value) VALUES ('stackexchange:webapps:8731','stackexchange_questions','public_question','webapps:8731','webapps','How do teams organize online tasks?','Question only','https://webapps.stackexchange.com/questions/8731','question_score',3)").run();
+  db.prepare("INSERT INTO hq_intelligence_runs(run_id,trigger_source,run_date,status) VALUES (?,'owner','2026-11-12','completed')").run(run);
+  db.prepare("INSERT INTO hq_intelligence_sources(source_id,provider,external_id,title,excerpt,source_url) VALUES ('github:catalogue-303','github_repo','catalogue-303','Independent marine analytics','Fisheries software','https://github.com/example/fisheries')").run();
+  db.prepare("INSERT INTO hq_intelligence_ideas(idea_id,fingerprint,run_id,title,kind,audience,problem,solution,why_now,mvp,differentiation,validation_plan,monetization_hypothesis,distribution_hypothesis,risks,priority_score,source_count) VALUES (?,'cross-industry-business-idea',?,'Ocean logistics software','direction','Marine teams','Long-haul shipping delays','Research shipping data','Public source only','Interview operators','No validated advantage','Verify needs','Unverified workflow subscription','Ocean communities','Market unverified',41,1)").run(ideaId,run);
+  db.prepare("INSERT INTO hq_demand_categories(category_key,title,summary,scale,origin,origin_idea_id,user_job,agent_job,monetization_model,implementation_risk) VALUES (?,'Ocean logistics software','Research possible maritime needs','industrial_platform','hypothesis',?,'Help marine teams','Not validated','Unverified subscription','unknown')").run("hypothesis:"+ideaId,ideaId);
+  db.prepare("INSERT INTO hq_demand_evidence(category_key,source_id,evidence_kind) VALUES (?,'github:catalogue-303','open_source_example')").run("hypothesis:"+ideaId);
+  const result=await getBusinessBoard(context(e));
+  assert.equal(result.status,200);
+  const board=await result.json();
+  assert.equal(board.totals.tool_routes,1);
+  assert.equal(board.totals.agent_utilities,1);
+  assert.equal(board.totals.public_products,1);
+  assert.equal(board.totals.public_problems,1);
+  assert.equal(board.totals.hypotheses,1);
+  assert.equal(board.coverage.find(x=>x.id==="search_console").state,"not_ingested");
+  assert.equal(board.coverage.find(x=>x.id==="google_analytics").record_count,null);
+  const tool=board.candidates.find(x=>x.candidate_id==="tool:word-counter");
+  assert.ok(tool);
+  assert.deepEqual(tool.evidence.map(x=>x.evidence_class).sort(),
+   ["adaptive_http_requests","browser_reported_completion"]);
+  assert.equal(tool.evidence[0].value,500);
+  assert.equal(tool.evidence[1].value,7);
+  assert.equal(tool.approved_for_engineering,false);
+  assert.equal(tool.independently_validated_demand,false);
+  assert.equal(tool.missing_evidence.includes("Search Console landing-page queries and clicks"),true);
+  const agent=board.candidates.find(x=>x.candidate_id==="api:sha256-text");
+  assert.equal(agent.evidence[0].evidence_class,"signed_private_service_execution");
+  assert.match(agent.evidence[0].not_evidence_of,/external AI-agent demand/);
+  const product=board.candidates.find(x=>x.candidate_id==="market:wordpress:business-tools");
+  assert.equal(product.evidence[0].value,20000);
+  assert.match(product.evidence[0].not_evidence_of,/install precision/);
+  const idea=board.candidates.find(x=>x.candidate_id==="idea:hypothesis:"+ideaId);
+  assert.equal(idea.source_links.length,1);
+  assert.match(idea.source_links[0].url,/github.com/);
+  assert.ok(board.candidates.every(x=>x.independently_validated_demand===false&&
+   x.approved_for_release===false&&x.approved_for_engineering===false));
+  assert.ok(board.candidates.every(x=>x.investigation_priority<=85));
+  const markdown=await getBusinessBoard(context(e,"GET",undefined,{accept:"text/markdown"}));
+  assert.match(markdown.headers.get("content-type"),/text\/markdown/);
+  assert.match(await markdown.text(),/Search Console.*not_ingested/);
+  assert.match(await markdown.text(),/release authorized: no/i);
+  const unauthenticated=await postBusinessReview(context(e,"POST",{
+    action:"review",candidate_id:tool.candidate_id,expected_revision:0,
+    review_status:"shortlisted",owner_note:"Check real functionality."
+  },{"cf-access-jwt-assertion":""}));
+  assert.equal(unauthenticated.status,401);
+  const ci=await signedToken({email:undefined,sub:"",common_name:"ci-test",service_token_status:true});
+  const command={action:"review",candidate_id:tool.candidate_id,expected_revision:0,
+   review_status:"shortlisted",owner_note:"Confirm existing tool and compare competing tools."};
+  assert.equal((await postBusinessReview(context(e,"POST",command,{"cf-access-jwt-assertion":ci}))).status,403);
+  assert.equal((await postBusinessReview(context(e,"POST",command,{origin:"https://foreign.example"}))).status,403);
+  assert.equal((await postBusinessReview(context(e,"POST",{...command,candidate_id:"tool:fake-does-not-exist"}))).status,404);
+  assert.equal((await postBusinessReview(context(e,"POST",{...command,action:"publish"}))).status,400);
+  const saved=await postBusinessReview(context(e,"POST",command));
+  assert.equal(saved.status,200);
+  const savedData=await saved.json();
+  assert.equal(savedData.review_status,"shortlisted");
+  assert.equal(savedData.production_approved,false);
+  assert.equal(savedData.market_validated,false);
+  assert.equal(savedData.revision,1);
+  assert.equal((await postBusinessReview(context(e,"POST",command))).status,409);
+  const replay=await postBusinessReview(context(e,"POST",{...command,expected_revision:1}));
+  assert.equal((await replay.json()).replayed,true);
+  const changed=await postBusinessReview(context(e,"POST",{...command,
+   expected_revision:1,review_status:"investigating",owner_note:"User interviews required."}));
+  assert.equal(changed.status,200);
+  assert.equal((await changed.json()).revision,2);
+  const audit=db.prepare("SELECT action,details_json FROM hq_business_opportunity_events WHERE candidate_id=? ORDER BY created_at").all(tool.candidate_id);
+  assert.deepEqual(audit.map(x=>x.action),["created","review_changed"]);
+  assert.ok(audit.every(x=>JSON.parse(x.details_json).approved_for_release===0));
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM agent_approvals").get().n,0);
+  const refreshed=await getBusinessBoard(context(e));
+  assert.equal((await refreshed.json()).candidates.find(x=>x.candidate_id===tool.candidate_id).review.status,"investigating");
  }finally{globalThis.fetch=originalFetch;db.close();}
 });
