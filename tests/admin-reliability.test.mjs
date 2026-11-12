@@ -434,7 +434,7 @@ test("Security Auditor checks clickjacking only on HTML and requires an actual f
   const auditor = await read("../admin-monitor/security-auditor.js");
   assert.match(auditor, /contentType\.includes\("text\/html"\)/);
   assert.match(auditor, /hasFrameAncestors/);
-  assert.match(auditor, /frame-ancestors\\b/i);
+  assert.match(auditor, /frame-ancestors\b/i);
   assert.match(auditor, /!response\.headers\.get\("x-frame-options"\)/);
   assert.match(auditor, /await closeVerifiedFindings\(db, asset\.id, detected, startedAt\)/);
 });
