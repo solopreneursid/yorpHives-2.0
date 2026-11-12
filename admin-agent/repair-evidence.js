@@ -42,6 +42,7 @@ export function evaluateRepairEvidence(runs, jobsByRun, expected) {
     if (job.conclusion !== "success") return { status: "failed", reason: "Job failed: " + required.name, checks: evidence };
     evidence.push({
       key: required.key,
+      name: required.name,
       workflow_run_id: run.id,
       workflow: required.workflow,
       job_id: job.id,
