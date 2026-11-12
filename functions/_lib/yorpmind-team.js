@@ -158,8 +158,11 @@ export function recommendTeamActions(staff, agents, jobs, departments, now = new
     const elapsed = safeTime(job.updated_at);
     const hours = elapsed === null ? 0 : Math.max(0, (now.getTime() - elapsed) / 3600000);
     if (job.status === "awaiting_owner_approval") {
+      const review = inspectSpecialistBrief(job.result_json);
       candidates.push(makeAdvice("review_specialist_output", "high", job, agent, managerId,
-        "A specialist has submitted a planning result. Supervisor review is due; independent QA and founder release approval remain separate."));
+        review.schema_valid
+          ? "Saved specialist brief has required review sections. Verify its claims and listed checks independently before any action."
+          : "Saved specialist brief lacks one or more required fields or independent verification steps. Request a corrected draft before owner action."));
     } else if (job.status === "failed") {
       candidates.push(makeAdvice("investigate_failed_mission", "medium", job, agent, managerId,
         "Investigate recorded failure and evidence before proposing a bounded retry. No retry has been scheduled."));
