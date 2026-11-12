@@ -202,6 +202,16 @@ async function run() {
     });
     record("ci_qa_write_denied", deniedQaWrite.status() === 403,
       "Read-only CI token cannot submit issue-specific QA; HTTP " + deniedQaWrite.status());
+    const privateReleases = await page.request.get(baseUrl + "/api/admin/release-evidence", {
+      headers: accessHeaders, timeout: 15000
+    });
+    const releaseData = await privateReleases.json().catch(() => null);
+    record("release_evidence_private_read_only",
+      privateReleases.status() === 200 &&
+      releaseData?.production_approved === false &&
+      releaseData?.production_deployment_enabled === false &&
+      Number(releaseData?.counts?.production_authorized) === 0,
+      "Staging D1 Release board must provide authenticated read-only, permanently locked evidence: HTTP " + privateReleases.status());
 
     record("github_permission_probe_control_present", await page.locator("#verify-github-permissions").count() === 1, "Owner-only permission probe control is present");
 
@@ -353,6 +363,10 @@ async function run() {
       record("repair_qa_requires_cloudflare_access",
         [302, 303, 401, 403].includes(anonymousQa.status()),
         "Anonymous QA request denied by Access: HTTP " + anonymousQa.status());
+      const anonymousReleases = await unauthenticated.get("/api/admin/release-evidence", { timeout: 15000 });
+      record("release_evidence_requires_cloudflare_access",
+        [302, 303, 401, 403].includes(anonymousReleases.status()),
+        "Anonymous Release evidence must not reveal private operational state: HTTP " + anonymousReleases.status());
     } finally {
       await unauthenticated.dispose();
     }
