@@ -48,9 +48,9 @@ async function run() {
     record("admin_page_http", response?.status() === 200, "HTTP " + (response?.status() || 0));
     record("admin_page_not_redirected_to_login", !page.url().includes("/cdn-cgi/access/login"), page.url().split("?")[0]);
 
-    await page.locator("#view-overview").waitFor({ state: "visible", timeout: 15000 });
+    await page.locator("#view-headquarters").waitFor({ state: "visible", timeout: 15000 });
     record("admin_shell_rendered", await page.locator(".app-shell").count() === 1, "Admin application shell exists");
-    record("admin_heading_rendered", await page.locator("#view-overview h1").textContent().then(value => Boolean(value?.trim())), "Overview heading is present");
+    record("admin_heading_rendered", await page.locator("#view-headquarters h1").textContent().then(value => Boolean(value?.trim())), "Headquarters heading is present");
 
     await page.waitForFunction(() => {
       const identity = document.querySelector("#identity")?.textContent?.trim() || "";
@@ -59,6 +59,7 @@ async function run() {
     record("access_identity_resolved", true, "Admin identity resolved after Access authentication");
 
     const readEndpoints = [
+      "/api/admin/headquarters",
       "/api/admin/overview",
       "/api/admin/assets",
       "/api/admin/findings",
@@ -79,6 +80,27 @@ async function run() {
       }
     }
 
+    await page.waitForFunction(() => document.querySelector("#hq-storage")?.textContent === "Connected", null, { timeout: 20000 });
+    record("headquarters_storage_connected", true, "Headquarters loaded the persistent registry");
+    await page.locator("#hq-new").click();
+    record("mission_composer_opens", await page.locator("#hq-compose").isVisible(), "New mission opens without submitting work");
+    record("mission_specialists_loaded", await page.locator("#hq-agent option").count() === 9, "Nine persistent specialist definitions");
+    await page.locator("#hq-close").click();
+    await page.locator('.nav-item[data-view="departments"]').click();
+    await page.locator("#hq-team article").first().waitFor({ state: "visible" });
+    record("departments_rendered", await page.locator("#hq-team article").count() === 9, "Nine departments rendered");
+    const markdown = await page.request.get(baseUrl + "/admin/", { headers: { ...accessHeaders, Accept: "text/markdown" } });
+    record("headquarters_markdown", markdown.status() === 200 && markdown.headers()["content-type"]?.includes("text/markdown") && (await markdown.text()).includes("# YorpHives Headquarters"), "Authenticated Markdown representation");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator("#mobile-menu").click();
+    await page.locator('.nav-item[data-view="headquarters"]').click();
+    record("mobile_headquarters_navigation", await page.locator("#view-headquarters").isVisible(), "Mobile menu navigates and closes");
+    const fits = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+    record("mobile_no_horizontal_overflow", fits, "Headquarters fits a 390px viewport");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const deniedMission = await page.request.post(baseUrl + "/api/admin/headquarters", { headers: accessHeaders, data: {} });
+    record("ci_mission_write_denied", deniedMission.status() === 403, "CI identity cannot create missions");
+
     const deniedWrite = await page.request.post(baseUrl + "/api/admin/repair-jobs", {
       headers: accessHeaders,
       data: { permission_probe: true, confirm: true },
@@ -93,7 +115,7 @@ async function run() {
     await page.locator("#agent-roster").waitFor({ state: "attached", timeout: 10000 });
     await page.waitForFunction(() => {
       const roster = document.querySelector("#agent-roster");
-      return Boolean(roster && (roster.children.length > 0 || roster.textContent?.includes("No agent")));
+      return Boolean(roster && (roster.querySelector(".agent-card") || roster.textContent?.includes("No agent")));
     }, null, { timeout: 20000 });
     record("agent_operations_view_rendered", await page.locator("#agent-roster").count() === 1, "Agent registry view rendered");
     record("agent_cards_present", await page.locator("#agent-roster .agent-card").count() > 0, "Agent cards are present");
