@@ -144,6 +144,7 @@
       if (mission.status === "completed" && mission.result_json) {
         footer.append(make("span", "hq-inprogress", "Brief acknowledged · model claims still unverified."));
       }
+      if (window.HQMissionMemory?.addMissionReview) window.HQMissionMemory.addMissionReview(mission, footer);
       card.append(footer);
       const result = renderResult(mission);
       if (result) card.append(result);

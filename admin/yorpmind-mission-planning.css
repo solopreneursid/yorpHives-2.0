@@ -1,0 +1,22 @@
+/* Founder-controlled YorpMind mission planning. Private, read-only lookup. */
+.hq-memory-assist{border:1px solid #36566a;border-radius:12px;background:linear-gradient(145deg,#122c3d,#0c1e32);padding:16px;margin:8px 0 18px}
+.hq-memory-assist-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.hq-memory-assist-head p{color:#b0c6d7;font-size:.78rem;max-width:620px;line-height:1.6;margin-top:6px}
+.hq-memory-assist-head button{flex-shrink:0}
+.hq-memory-panel{margin-top:14px;border-top:1px solid #37516a;padding-top:13px}
+.hq-memory-in-mission{width:100%;margin:12px 0 0;border:1px solid #3a536a;border-radius:10px;padding:13px;background:#101d30}
+.hq-memory-status{font-size:.77rem;color:#b2cbdc;line-height:1.6}
+.hq-memory-disclaimer{padding:10px 12px;border-left:3px solid #e6b263;background:#2c251a;border-radius:0 7px 7px 0;color:#f0dfc4;font-size:.75rem;line-height:1.6}
+.hq-memory-results{display:grid;gap:10px;margin:12px 0}
+.hq-memory-result{padding:12px;border:1px solid #3a506b;border-radius:9px;background:#101e33;min-width:0}
+.hq-memory-result-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hq-memory-choice{display:flex;align-items:flex-start;gap:10px;color:#edfdff;font-size:.79rem;font-weight:700;line-height:1.45;overflow-wrap:anywhere}
+.hq-memory-choice input{margin-top:3px;accent-color:#67e8f9;flex-shrink:0;width:15px;height:15px}
+.hq-memory-kind{padding:5px 8px;white-space:nowrap;font-size:.61rem;border:1px solid #387089;color:#a5e8fa;border-radius:99px;background:#153747}
+.hq-memory-description{white-space:pre-wrap;overflow-wrap:anywhere;color:#b9cce0;line-height:1.6;font-size:.76rem;margin:9px 0}
+.hq-memory-origin{color:#92acc5;font-size:.68rem;line-height:1.6;overflow-wrap:anywhere}
+.hq-memory-empty{color:#b8cde0;font-size:.8rem;line-height:1.6}
+.hq-memory-attach{margin-top:10px}
+.hq-memory-attach:disabled,.hq-memory-assist button:disabled{opacity:.5;cursor:not-allowed}
+#view-headquarters .hq-memory-assist :is(button,input):focus-visible,#view-headquarters .hq-memory-in-mission :is(button,input):focus-visible{outline:2px solid #67e8f9;outline-offset:3px}
+@media(max-width:680px){.hq-memory-assist{padding:13px}.hq-memory-result-top{flex-direction:column;align-items:flex-start}.hq-memory-assist-head button{width:100%}}
