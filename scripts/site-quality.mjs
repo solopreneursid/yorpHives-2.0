@@ -107,12 +107,23 @@ async function run() {
           responseStatus = response?.status() || 0;
           finalUrl = toolPage.url();
           stage = "tool-root";
-          const root = toolPage.locator("#tool-app, #advanced-tool").first();
-          rootCount = await toolPage.locator("#tool-app, #advanced-tool").count();
-          visibleRootCount = await toolPage.locator("#tool-app:visible, #advanced-tool:visible").count();
+          // Tool pages use several real root contracts: legacy #tool-app/#advanced-tool,
+          // image #image-tool, research #research-tool, and newer #next-tool.
+          // Prefer the explicit data-tool contract so the smoke test follows the page itself.
+          const rootSelector = "main [data-tool], main #tool-app, main #advanced-tool, main .tool-workspace";
+          const root = toolPage.locator(rootSelector).first();
+          rootCount = await toolPage.locator(rootSelector).count();
+          try {
+            await root.waitFor({ state: "visible", timeout: 5000 });
+          } catch {}
+          visibleRootCount = await toolPage.locator(rootSelector + ":visible").count();
           stage = "interactive-controls";
-          controls = await root.locator("input, textarea, select, button").count().catch(() => 0);
-          visibleControls = await root.locator("input:visible, textarea:visible, select:visible, button:visible").count().catch(() => 0);
+          const controlSelector = "input:not([type=hidden]), textarea, select, button, [role=button], a.button";
+          controls = await root.locator(controlSelector).count().catch(() => 0);
+          try {
+            await root.locator("input:not([type=hidden]):visible, textarea:visible, select:visible, button:visible, [role=button]:visible, a.button:visible").first().waitFor({ state: "visible", timeout: 5000 });
+          } catch {}
+          visibleControls = await root.locator("input:not([type=hidden]):visible, textarea:visible, select:visible, button:visible, [role=button]:visible, a.button:visible").count().catch(() => 0);
           stage = "primary-heading";
           heading = (await toolPage.locator("main h1").first().textContent().catch(() => "")) || "";
           const ok = responseStatus === 200 && visibleRootCount > 0 && visibleControls > 0 && Boolean(heading.trim()) && pageErrorsForTool.length === 0;
