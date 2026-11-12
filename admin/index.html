@@ -6,16 +6,19 @@
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#090d16">
-<title>YorpHives Admin — Control Center</title>
+<title>YorpHives Headquarters</title>
+<link rel="stylesheet" href="/admin/headquarters.css">
 <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
 <div class="app-shell">
 <aside class="sidebar" id="sidebar">
-  <a class="brand" href="/admin/" aria-label="YorpHives Admin home"><span class="brand-mark">Y</span><span><strong>yorphives</strong><small>CONTROL CENTER</small></span></a>
+  <a class="brand" href="/admin/" aria-label="YorpHives Admin home"><span class="brand-mark">Y</span><span><strong>yorphives</strong><small>HEADQUARTERS</small></span></a>
   <div class="workspace-label">WORKSPACE</div>
   <nav class="side-nav" aria-label="Admin workspaces">
-    <button class="nav-item active" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
+    <button class="nav-item active" data-view="headquarters"><span class="nav-icon">◇</span>Headquarters</button>
+    <button class="nav-item" data-view="departments"><span class="nav-icon">▦</span>Departments</button>
+    <button class="nav-item" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
     <button class="nav-item" data-view="monitoring"><span class="nav-icon">⌁</span>Monitoring</button>
     <button class="nav-item" data-view="analytics"><span class="nav-icon">▥</span>Analytics</button>
   </nav>
@@ -51,7 +54,20 @@
     <div class="system-message" id="system-message" role="status" aria-live="polite" hidden><span class="system-message-text" id="system-message-text"></span><a id="system-message-action" href="/admin/" hidden>Re-authenticate ↗</a><button id="system-message-dismiss" type="button" aria-label="Dismiss message">×</button></div>
     <div class="global-notice"><span>◆</span><p><strong>Owner-controlled operations.</strong> Agents can investigate, prepare isolated changes and verify them. Production changes remain subject to your explicit approval.</p></div>
 
-    <section class="view active" id="view-overview" data-title="Overview">
+    <section class="view active" id="view-headquarters" data-title="Headquarters">
+      <div class="page-heading"><div><span class="eyebrow">FOUNDER WORKSPACE / YORPHIVES</span><h1>Your business. One headquarters.</h1><p>Set the direction. Track the work. Review the evidence.</p></div><button class="button primary" id="hq-new">+ New mission</button></div>
+      <div class="grid gap-5 lg:grid-cols-3 mb-6">
+        <article class="lg:col-span-2 rounded-2xl border border-cyan-900/60 bg-gradient-to-br from-slate-800 to-slate-950 p-7"><span class="text-xs font-semibold tracking-widest text-cyan-300">COMMAND DESK</span><h2 class="text-3xl font-semibold tracking-tight mt-3 mb-3">Make the next move count.</h2><p class="text-slate-400 max-w-xl">A shared mission ledger for engineering, product, research and growth. Keep every brief and decision connected to its owner.</p><div class="flex flex-wrap gap-3 mt-6"><button class="button" data-go="agents">Open engineering operations ↗</button><a class="button" href="/api/admin/headquarters?format=markdown" target="_blank" rel="noopener">Markdown briefing ↗</a></div></article>
+        <article class="rounded-2xl border border-slate-700 bg-slate-900/70 p-6"><span class="text-xs tracking-widest text-slate-400">WORKSPACE STATUS</span><h2 class="text-lg mt-3 mb-4">Private by design</h2><div class="space-y-4 text-sm"><p class="flex justify-between gap-3"><span class="text-slate-400">Owner session</span><span class="text-cyan-200">Access protected</span></p><p class="flex justify-between gap-3"><span class="text-slate-400">Mission storage</span><span id="hq-storage">Connecting…</span></p><p class="flex justify-between gap-3"><span class="text-slate-400">Public website</span><a href="https://yorphives.com" target="_blank" rel="noopener" class="text-cyan-200 hover:underline">Separate product ↗</a></p></div><p class="text-xs text-slate-400 mt-6" id="hq-updated" aria-live="polite">Loading headquarters…</p></article>
+      </div>
+      <div class="metric-grid three"><article class="metric-card"><div class="metric-top"><span>Open missions</span></div><strong id="hq-open">—</strong><small>Across the latest 100 missions</small></article><article class="metric-card"><div class="metric-top"><span>Departments</span></div><strong id="hq-departments">—</strong><small>One shared operating model</small></article><article class="metric-card"><div class="metric-top"><span>Enabled specialists</span></div><strong id="hq-ready">—</strong><small>From the persistent specialist registry</small></article></div>
+      <section class="panel" id="hq-compose" hidden><div class="panel-head"><div><span class="eyebrow">DEFINE THE OUTCOME</span><h2>New mission</h2><p>Saved as planned work. This does not start a model, spend credits or publish a change.</p></div><button type="button" class="text-button" id="hq-close">Close ×</button></div><form id="hq-form" class="repair-form"><label>Mission title<input class="field" id="hq-title" required minlength="3" maxlength="160" placeholder="What outcome should we work toward?"></label><div class="form-row"><label>Responsible specialist<select class="field" id="hq-agent" required></select></label><label>Priority<select class="field" id="hq-priority"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option><option value="low">Low</option></select></label></div><label>Brief and acceptance criteria<textarea class="field" id="hq-brief" required minlength="10" maxlength="4000" rows="4" placeholder="Describe the problem, desired result and how we will verify success."></textarea></label><div class="form-footer"><span id="hq-form-status" role="status"></span><button class="button primary" id="hq-save">Save mission</button></div></form></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">MISSION DESK</span><h2>Work with a clear destination</h2></div><label class="text-sm text-slate-400">Filter <select class="field" id="hq-filter"><option value="active">Open missions</option><option value="all">All missions</option><option value="cancelled">Cancelled</option></select></label></div><p class="source-status" id="hq-execution">Loading execution availability…</p><div class="grid gap-4 md:grid-cols-2" id="hq-missions" aria-live="polite"></div></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">DECISION TRAIL</span><h2>Mission activity</h2></div></div><div id="hq-events" class="divide-y divide-slate-800"></div></section>
+    </section>
+    <section class="view" id="view-departments" data-title="Departments"><div class="page-heading"><div><span class="eyebrow">ORGANIZATION</span><h1>A focused team for every function.</h1><p>Responsibilities, availability and permission boundaries from the shared registry.</p></div></div><div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="hq-team"></div></section>
+
+    <section class="view" id="view-overview" data-title="Overview">
       <div class="page-heading"><div><span class="eyebrow">PLATFORM PULSE</span><h1>Good to see you.</h1><p>Your YorpHives ecosystem at a glance.</p></div><div class="heading-actions"><span class="updated-label" id="run-state">Loading platform status…</span><button class="button primary" id="run">Run health checks</button></div></div>
       <div class="status-banner"><div class="status-emblem">✳</div><div class="status-copy"><span class="eyebrow">OPERATIONS OVERVIEW</span><h2 id="platform-status">Connecting to platform signals</h2><p id="platform-summary">Loading monitoring, inventory and agent readiness.</p></div><div class="status-meta"><span class="status-dot"></span><span id="last-run">Last check —</span></div></div>
       <div class="metric-grid">
@@ -146,41 +162,8 @@
   </div>
 </main>
 </div>
-<script>
-(() => {
-  const closeMobile = () => {
-    const sidebar = document.getElementById("sidebar");
-    const scrim = document.getElementById("mobile-scrim");
-    const menu = document.getElementById("mobile-menu");
-    sidebar?.classList.remove("open");
-    scrim?.classList.remove("show");
-    menu?.setAttribute("aria-expanded", "false");
-  };
-  document.addEventListener("click", (event) => {
-    const nav = event.target.closest("[data-view], [data-go]");
-    if (nav) {
-      const name = nav.dataset.view || nav.dataset.go;
-      const target = document.getElementById("view-" + name);
-      if (!target) return;
-      document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view === target));
-      document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
-      const breadcrumb = document.getElementById("breadcrumb");
-      if (breadcrumb) breadcrumb.textContent = target.dataset.title || name;
-      closeMobile();
-    }
-    if (event.target.closest("#mobile-menu")) {
-      const sidebar = document.getElementById("sidebar");
-      const scrim = document.getElementById("mobile-scrim");
-      const menu = document.getElementById("mobile-menu");
-      const open = !sidebar?.classList.contains("open");
-      sidebar?.classList.toggle("open", open);
-      scrim?.classList.toggle("show", open);
-      menu?.setAttribute("aria-expanded", open ? "true" : "false");
-    }
-    if (event.target.closest("#mobile-scrim")) closeMobile();
-  });
-})();
-</script>
+
 <script src="/admin/admin.js" defer></script>
+<script src="/admin/headquarters.js" defer></script>
 </body>
 </html>

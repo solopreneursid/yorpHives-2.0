@@ -84,3 +84,5 @@
 .agent-state.planned{color:#a5b4fc;border-color:#3c416d;background:#191b32}
 @media(max-width:850px){.agent-roster{grid-template-columns:1fr 1fr}.agent-summary-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.agent-roster{grid-template-columns:1fr}}
+/* Headquarters shares the existing operations shell. */
+#hq-compose[hidden]{display:none}.content{max-width:1600px;margin:auto}.page-heading h1{letter-spacing:-.045em}.nav-item:focus-visible,.button:focus-visible{outline:2px solid #67e8f9;outline-offset:3px}#view-headquarters .panel,#view-departments article{box-shadow:0 10px 35px #00000012}.sidebar .brand small{letter-spacing:.17em}.repair-form label{display:flex;flex-direction:column;gap:7px}.field{min-width:0}button:disabled{cursor:wait;opacity:.6}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
