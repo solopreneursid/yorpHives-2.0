@@ -109,9 +109,18 @@
         await actions.loadAgents();
         const select = byId("repair-finding");
         const option = Array.from(select.options).find(item => item.value === finding.id);
-        select.value = option ? finding.id : "";
+        // The existing repair-job FK currently references monitor findings only.
+        // Asset findings must be sent as general investigations until a reviewed
+        // polymorphic link migration is deployed; never submit an invalid FK.
+        const linkable = finding.source_type === "monitor" && Boolean(option);
+        select.value = linkable ? finding.id : "";
+        byId("repair-message").textContent = linkable
+          ? "Finding selected. Submitting this form will start a separately authorized, quota-limited repair."
+          : "Asset finding prepared as a general investigation: no database link will be recorded yet.";
         const input = byId("repair-request");
         input.value = [
+          "Finding ID: " + display(finding.id),
+          "Finding source: " + display(finding.source_type),
           "Investigate finding: " + display(finding.title),
           "Observed: " + display(finding.details),
           "Affected: " + display(finding.monitor_url),
