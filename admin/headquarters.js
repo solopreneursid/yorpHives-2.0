@@ -1,97 +1,243 @@
 (() => {
+  "use strict";
   const el = id => document.getElementById(id);
-  let snapshot = null;
-  let requestId = crypto.randomUUID();
-  const make = (tag, classes, text) => {
+  const make = (tag, cls = "", content) => {
     const node = document.createElement(tag);
-    node.className = classes;
-    if (text !== undefined) node.textContent = text;
+    if (cls) node.className = cls;
+    if (content !== undefined) node.textContent = String(content);
     return node;
   };
-  const when = value => new Date(value).toLocaleString();
+  const date = timestamp => {
+    const value = new Date(timestamp);
+    return Number.isNaN(value.getTime()) ? "Unknown" : value.toLocaleString();
+  };
+  const labels = {
+    planned: "Planned", queued: "Queued", running: "Generating",
+    awaiting_owner_approval: "Review brief", completed: "Completed",
+    cancelled: "Cancelled", failed: "Failed"
+  };
+  const closed = new Set(["completed", "cancelled", "failed", "rolled_back"]);
+  let snapshot = null;
+  let requestId = crypto.randomUUID();
+  let loading = false;
+
+  function statusClass(status) {
+    return "hq-pill hq-pill-" + (["queued","running"].includes(status) ? "active" : status === "awaiting_owner_approval" ? "review" : status === "failed" ? "error" : closed.has(status) ? "closed" : "planned");
+  }
+  function listBlock(title, items, cls = "") {
+    if (!Array.isArray(items) || items.length === 0) return null;
+    const section = make("div", "hq-brief-section " + cls);
+    section.append(make("h4", "", title));
+    const list = make("ul");
+    for (const item of items.slice(0, 8)) list.append(make("li", "", typeof item === "string" ? item : ""));
+    section.append(list);
+    return section;
+  }
+  function renderResult(mission) {
+    if (!mission.result_json) return null;
+    let result;
+    try { result = JSON.parse(mission.result_json); }
+    catch { return make("p", "hq-error", "Saved result is not readable."); }
+    const details = make("details", "hq-brief");
+    const summary = make("summary", "", result.error ? "Read failure details" : "Open AI decision brief");
+    details.append(summary);
+    if (result.error) {
+      details.append(make("p", "hq-error", result.error));
+      return details;
+    }
+    details.append(make("p", "hq-brief-warning", "MODEL ANALYSIS · NOT FACT-CHECKED · NO EXTERNAL RESEARCH"));
+    details.append(make("h3", "", result.summary || "AI recommendation"));
+    details.append(make("p", "hq-brief-intro", result.recommended_approach || ""));
+    for (const block of [
+      listBlock("Recommended next actions", result.actions),
+      listBlock("Risks to manage", result.risks),
+      listBlock("Assumptions", result.assumptions),
+      listBlock("What must be independently verified", result.verification_needed, "hq-verify")
+    ]) if (block) details.append(block);
+    details.append(make("p", "hq-brief-source", "Source: " + (result.model || "AI") + " · This is a planning artifact, not completed work or verified evidence."));
+    return details;
+  }
+  async function transition(mission, action, button) {
+    button.disabled = true;
+    const original = button.textContent;
+    button.textContent = action === "dispatch" ? "Starting…" : "Cancelling…";
+    try {
+      const payload = { job_id: mission.job_id, action, expected_updated_at: mission.updated_at };
+      await api("/api/admin/headquarters", { method: "PATCH", body: JSON.stringify(payload) });
+      await window.loadHeadquarters();
+    } catch (error) {
+      showSystemMessage(error.message, { kind: "error", reauthenticate: /Cloudflare Access/i.test(error.message) });
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  }
   function renderMissions() {
     const target = el("hq-missions");
     target.replaceChildren();
     const filter = el("hq-filter").value;
-    const closed = ["cancelled", "completed", "failed", "rolled_back"];
-    const missions = snapshot.missions.filter(m => filter === "all" || (filter === "active" ? !closed.includes(m.status) : m.status === filter));
-    if (!missions.length) target.append(make("p", "text-slate-400 py-6", "No missions in this view. Create a mission to capture the next outcome."));
-    for (const mission of missions) {
-      const card = make("article", "rounded-xl border border-slate-700 bg-slate-950/60 p-5");
-      const top = make("div", "flex justify-between gap-3 text-xs mb-3");
-      top.append(make("span", "uppercase tracking-wider text-cyan-300", mission.priority), make("span", "text-slate-400", mission.status.replaceAll("_", " ")));
-      const specialist = snapshot.specialists.find(a => a.agent_id === mission.agent_id);
-      card.append(top, make("h3", "text-lg font-semibold mb-2", mission.title), make("p", "text-sm text-slate-400 whitespace-pre-wrap break-words", mission.request_summary), make("p", "text-xs text-slate-500 mt-4", `${specialist?.display_name || "Unassigned"} · ${when(mission.created_at)}`));
+    const selected = snapshot.missions.filter(m =>
+      filter === "all" || (filter === "active" ? !closed.has(m.status) : filter === "review" ? m.status === "awaiting_owner_approval" : m.status === filter)
+    );
+    if (!selected.length) {
+      const empty = make("div", "hq-empty");
+      empty.append(make("div", "hq-empty-icon", "◇"), make("h3", "", "Nothing in this view"), make("p", "", "Create a new mission or choose a different filter to see previous work."));
+      target.append(empty);
+    }
+    for (const mission of selected) {
+      const agent = snapshot.specialists.find(x => x.agent_id === mission.agent_id);
+      const card = make("article", "hq-mission-card");
+      const top = make("div", "hq-mission-top");
+      const left = make("div", "hq-mission-meta");
+      left.append(make("span", "hq-priority hq-priority-" + mission.priority, mission.priority), make("span", "hq-specialist", agent?.display_name || "Unassigned"));
+      top.append(left, make("span", statusClass(mission.status), labels[mission.status] || mission.status.replaceAll("_", " ")));
+      card.append(top, make("h3", "hq-mission-title", mission.title), make("p", "hq-mission-desc", mission.request_summary));
+      const footer = make("div", "hq-mission-footer");
+      footer.append(make("span", "", date(mission.created_at)));
       if (mission.status === "planned") {
-        const cancel = make("button", "text-button mt-4", "Cancel planned mission");
+        const permitted = Boolean(snapshot.engine_available && agent?.enabled === 1 && agent?.status === "ready" && agent?.autonomy_level === "recommend");
+        const buttons = make("div", "hq-mission-actions");
+        if (permitted) {
+          const dispatch = make("button", "hq-small-primary", "Start AI brief ↗");
+          dispatch.type = "button";
+          dispatch.title = "Create an unverified AI recommendation brief. No website or financial changes.";
+          dispatch.addEventListener("click", () => {
+            if (confirm("Start one bounded AI recommendation for this mission? The model will spend inference credits but cannot publish code or make financial commitments.")) transition(mission, "dispatch", dispatch);
+          });
+          buttons.append(dispatch);
+        } else {
+          buttons.append(make("span", "hq-no-engine", agent?.autonomy_level === "sandbox_execute" ? "Execution runtime not enabled" : "Brief engine unavailable or specialist disabled"));
+        }
+        const cancel = make("button", "hq-small-muted", "Cancel");
         cancel.type = "button";
-        cancel.addEventListener("click", async () => {
-          cancel.disabled = true;
-          try {
-            await api("/api/admin/headquarters", { method: "PATCH", body: JSON.stringify({ job_id: mission.job_id, action: "cancel", expected_updated_at: mission.updated_at }) });
-            await window.loadHeadquarters();
-          } catch (error) { showSystemMessage(error.message, { kind: "error" }); }
-          finally { cancel.disabled = false; }
+        cancel.addEventListener("click", () => {
+          if (confirm("Cancel this planned mission?")) transition(mission, "cancel", cancel);
         });
-        card.append(cancel);
+        buttons.append(cancel);
+        footer.append(buttons);
       }
+      if (mission.status === "queued" || mission.status === "running") {
+        footer.append(make("span", "hq-inprogress", "The durable workflow is processing this request."));
+      }
+      card.append(footer);
+      const result = renderResult(mission);
+      if (result) card.append(result);
       target.append(card);
     }
   }
   function renderDepartments() {
-    const target = el("hq-team"); target.replaceChildren();
+    const target = el("hq-team");
+    target.replaceChildren();
     for (const department of snapshot.departments) {
       const card = make("article", "rounded-xl border border-slate-700 bg-slate-900/70 p-6");
-      card.append(make("span", "text-xs tracking-widest text-cyan-300 uppercase", department.department_id.replaceAll("-", " ")), make("h2", "text-lg font-semibold mt-3 mb-2", department.name), make("p", "text-sm text-slate-400 mb-5", department.mission));
+      card.append(
+        make("span", "text-xs tracking-widest text-cyan-300 uppercase", department.department_id.replaceAll("-", " ")),
+        make("h2", "text-lg font-semibold mt-3 mb-2", department.name),
+        make("p", "text-sm text-slate-400 mb-5", department.mission)
+      );
       for (const agent of snapshot.specialists.filter(a => a.department_id === department.department_id)) {
         const row = make("div", "border-t border-slate-800 pt-4 mt-4");
-        row.append(make("strong", "block text-sm", agent.display_name), make("p", "text-xs text-slate-400 mt-2", agent.description), make("p", "text-xs text-amber-200 mt-3", `${agent.status} · ${agent.enabled ? "enabled" : "disabled"} · ${agent.autonomy_level.replaceAll("_", " ")}`));
+        row.append(
+          make("strong", "block text-sm", agent.display_name),
+          make("p", "text-xs text-slate-400 mt-2", agent.description),
+          make("p", "text-xs text-amber-200 mt-3", agent.enabled && agent.status === "ready" && agent.autonomy_level === "recommend" ? "Recommendation briefs enabled · owner-controlled" : agent.status + " · execution disabled")
+        );
         card.append(row);
       }
       target.append(card);
     }
   }
+  function renderEvents() {
+    const target = el("hq-events");
+    target.replaceChildren();
+    if (!snapshot.events.length) {
+      target.append(make("p", "hq-event-empty", "No mission activity yet."));
+      return;
+    }
+    for (const event of snapshot.events.slice(0, 12)) {
+      const mission = snapshot.missions.find(m => m.job_id === event.job_id);
+      const row = make("div", "hq-event");
+      row.append(make("span", "hq-event-dot"), make("div", "hq-event-body"));
+      row.lastChild.append(
+        make("strong", "", event.event_type.replaceAll("_", " ")),
+        make("p", "", mission?.title || "Older mission"),
+        make("small", "", date(event.created_at))
+      );
+      target.append(row);
+    }
+  }
   window.loadHeadquarters = async () => {
+    if (loading) return;
+    loading = true;
     try {
       snapshot = await api("/api/admin/headquarters");
       el("hq-storage").textContent = "Connected";
-      el("hq-updated").textContent = "Updated " + when(snapshot.generated_at);
+      el("hq-updated").textContent = "Last synced · " + date(snapshot.generated_at);
       el("hq-execution").textContent = snapshot.execution;
-      el("hq-open").textContent = snapshot.missions.filter(m => !["completed", "cancelled", "failed", "rolled_back"].includes(m.status)).length;
+      const missions = snapshot.missions;
+      el("hq-open").textContent = missions.filter(m => !closed.has(m.status)).length;
+      el("hq-running").textContent = missions.filter(m => ["queued", "running"].includes(m.status)).length;
+      el("hq-review").textContent = missions.filter(m => m.status === "awaiting_owner_approval").length;
       el("hq-departments").textContent = snapshot.departments.length;
-      el("hq-ready").textContent = snapshot.specialists.filter(a => a.enabled && a.status === "ready").length;
+      el("hq-ready").textContent = snapshot.specialists.filter(a => a.enabled && a.status === "ready" && a.autonomy_level === "recommend").length;
       const selected = el("hq-agent").value;
-      el("hq-agent").replaceChildren(...snapshot.specialists.map(a => { const option = make("option", "", a.display_name + " · " + a.status); option.value = a.agent_id; return option; }));
-      if (selected) el("hq-agent").value = selected;
-      renderMissions(); renderDepartments();
-      const events = el("hq-events"); events.replaceChildren();
-      if (!snapshot.events.length) events.append(make("p", "text-sm text-slate-400 py-5", "No mission activity yet. New missions and cancellations are recorded automatically."));
-      for (const event of snapshot.events) {
-        const row = make("div", "py-4 flex flex-wrap justify-between gap-2");
-        const mission = snapshot.missions.find(m => m.job_id === event.job_id);
-        row.append(make("span", "text-sm text-slate-300", `${event.event_type.replaceAll("_", " ")} · ${mission?.title || event.job_id}`), make("span", "text-xs text-slate-500", when(event.created_at)));
-        events.append(row);
-      }
+      el("hq-agent").replaceChildren(...snapshot.specialists.map(a => {
+        const option = make("option", "", a.display_name + " · " + (a.enabled && a.status === "ready" && a.autonomy_level === "recommend" ? "AI brief available" : "planning only"));
+        option.value = a.agent_id;
+        return option;
+      }));
+      if (selected && snapshot.specialists.some(a => a.agent_id === selected)) el("hq-agent").value = selected;
+      renderMissions();
+      renderDepartments();
+      renderEvents();
     } catch (error) {
       el("hq-storage").textContent = "Unavailable";
-      el("hq-updated").textContent = "Could not load headquarters. Use Refresh to retry.";
+      el("hq-updated").textContent = "Could not load Headquarters. Use Refresh to retry.";
       throw error;
+    } finally {
+      loading = false;
     }
   };
-  el("hq-new").addEventListener("click", () => { el("hq-compose").hidden = false; el("hq-title").focus(); });
-  el("hq-close").addEventListener("click", () => { el("hq-compose").hidden = true; el("hq-new").focus(); });
+  el("hq-new").addEventListener("click", () => {
+    el("hq-compose").hidden = false;
+    el("hq-title").focus();
+    el("hq-compose").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  el("hq-close").addEventListener("click", () => {
+    el("hq-compose").hidden = true;
+    el("hq-new").focus();
+  });
   el("hq-filter").addEventListener("change", () => { if (snapshot) renderMissions(); });
   el("hq-form").addEventListener("input", () => { requestId = crypto.randomUUID(); });
   el("hq-form").addEventListener("submit", async event => {
     event.preventDefault();
-    const save = el("hq-save"); save.disabled = true;
-    el("hq-form-status").textContent = "Saving…";
+    const save = el("hq-save");
+    save.disabled = true;
+    el("hq-form-status").textContent = "Saving mission…";
     try {
-      await api("/api/admin/headquarters", { method: "POST", body: JSON.stringify({ job_id: requestId, title: el("hq-title").value.trim(), request_summary: el("hq-brief").value.trim(), agent_id: el("hq-agent").value, priority: el("hq-priority").value }) });
-      el("hq-form").reset(); requestId = crypto.randomUUID();
-      el("hq-form-status").textContent = "Mission saved as planned. No agent execution was started.";
+      await api("/api/admin/headquarters", {
+        method: "POST",
+        body: JSON.stringify({
+          job_id: requestId, title: el("hq-title").value.trim(),
+          request_summary: el("hq-brief").value.trim(),
+          agent_id: el("hq-agent").value, priority: el("hq-priority").value
+        })
+      });
+      el("hq-form").reset();
+      requestId = crypto.randomUUID();
+      el("hq-compose").hidden = true;
       await window.loadHeadquarters();
-    } catch (error) { el("hq-form-status").textContent = error.message; }
-    finally { save.disabled = false; }
+    } catch (error) {
+      el("hq-form-status").textContent = error.message;
+    } finally {
+      save.disabled = false;
+    }
   });
+  // Poll only while the command center is visible, and only if work is active.
+  setInterval(() => {
+    if (document.visibilityState === "visible" && el("view-headquarters")?.classList.contains("active") &&
+      snapshot?.missions.some(m => ["queued", "running"].includes(m.status))) {
+      window.loadHeadquarters().catch(() => {});
+    }
+  }, 12000);
 })();
