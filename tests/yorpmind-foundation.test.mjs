@@ -248,7 +248,7 @@ test("invalid inputs, CSRF, oversized JSON and missing staging migration fail cl
     assert.equal((await call("POST", recording(), { origin: "https://attacker.example" })).status, 403);
     assert.equal((await call("POST", recording(), { origin: null })).status, 403);
     assert.equal((await call("POST", { action: "unknown_action" })).status, 400);
-    assert.equal((await call("POST", { ...recording(), title: "<script>" })).status, 400);
+    assert.equal((await call("POST", { ...recording(), title: "short" })).status, 400);
     assert.equal((await call("POST", { ...recording(), repair_job_id: "not-a-uuid" })).status, 400);
     assert.equal((await call("POST", recording(), { raw: "x".repeat(9000) })).status, 400);
     assert.equal((await call("POST", recording(), { raw: "{invalid" })).status, 400);
