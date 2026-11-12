@@ -22,6 +22,7 @@ async function run() {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const pageErrors = [];
   const toolResults = [];
+  let failedTools = [];
   page.on("pageerror", error => pageErrors.push(error.message));
 
   try {
@@ -180,7 +181,7 @@ async function run() {
       }
     }
     await Promise.all(Array.from({ length: 4 }, checkToolPage));
-    const failedTools = toolResults.filter(item => !item.ok);
+    failedTools = toolResults.filter(item => !item.ok);
     const failureSummary = failedTools.map(item => {
       const reasons = [];
       if (item.status !== 200) reasons.push(`HTTP ${item.status}`);
@@ -295,6 +296,7 @@ async function run() {
       if (!item.visible_root_count) reasons.push("root not visible");
       if (!item.visible_control_count) reasons.push("no visible controls");
       if (!item.keyboard_focusable) reasons.push("no keyboard-focusable control");
+      if (item.hidden_elements_visible > 0) reasons.push(item.hidden_elements_visible + " hidden elements are visible");
       if (!item.primary_heading_present) reasons.push("main h1 missing");
       if (item.page_errors?.length) reasons.push(`page errors: ${item.page_errors.join(" | ")}`);
       if (item.console_errors?.length) reasons.push(`console errors: ${item.console_errors.slice(0, 3).join(" | ")}`);
