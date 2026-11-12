@@ -276,6 +276,8 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(worker, /needs_review/);
   assert.match(worker, /draft: true/);
   assert.doesNotMatch(worker, /mergePullRequest|productionDeploy|wrangler deploy/);
+  assert.equal(config.vars.REPAIR_BASE_BRANCH, "build/headquarters-repair-verification");
+  assert.match(worker, /repairBase\(env\)/);
   assert.equal(config.name, "yorphives-admin-agent");
   assert.equal(config.workflows[0].class_name, "AdminRepairWorkflow");
   assert.equal(config.d1_databases[0].database_id, "e8690813-b139-44a2-a1c7-bea2d2777ead");
