@@ -163,3 +163,52 @@ test("agent tool execution requires a separately allowlisted signed Access servi
   assert.match(await md.text(),/Agent.*2|agent tools: 2/i);
  }finally{globalThis.fetch=originalFetch;db.close();}
 });
+
+test("client reporter respects GPC, DNT, webdriver and per-tab budget without user content",async()=>{
+ const reporterURL=toModule(await file("../free-tools/usage-telemetry.js"));
+ const {reportToolSuccess}=await import(reporterURL);
+ const prev={
+  navigator:Object.getOwnPropertyDescriptor(globalThis,"navigator"),
+  location:Object.getOwnPropertyDescriptor(globalThis,"location"),
+  sessionStorage:Object.getOwnPropertyDescriptor(globalThis,"sessionStorage"),
+  fetch:Object.getOwnPropertyDescriptor(globalThis,"fetch")
+ };
+ const settings={globalPrivacyControl:false,doNotTrack:"0",webdriver:true};
+ const store=new Map(),events=[];
+ const set=(name,value)=>Object.defineProperty(globalThis,name,{
+  configurable:true,writable:true,value});
+ set("navigator",settings);
+ set("location",{protocol:"https:",hostname:"hq.example.com"});
+ set("sessionStorage",{
+  getItem:key=>store.get(key)||null,
+  setItem:(key,value)=>store.set(key,value)
+ });
+ set("fetch",(url,options)=>{
+  events.push({url,options});
+  return Promise.resolve(Response.json({accepted:true}));
+ });
+ try{
+  reportToolSuccess("json-formatter");
+  assert.equal(events.length,0,"automation must not increment usage");
+  settings.webdriver=false;settings.globalPrivacyControl=true;
+  reportToolSuccess("json-formatter");assert.equal(events.length,0);
+  settings.globalPrivacyControl=false;settings.doNotTrack="1";
+  reportToolSuccess("json-formatter");assert.equal(events.length,0);
+  settings.doNotTrack="0";
+  reportToolSuccess("not-on-the-list");assert.equal(events.length,0);
+  for(let i=0;i<4;i++)reportToolSuccess("json-formatter");
+  assert.equal(events.length,3,"per-tab event budget");
+  assert.equal(events[0].url,"/api/v1/tool-activity");
+  const {slug,event}=JSON.parse(events[0].options.body);
+  assert.deepEqual({slug,event},{slug:"json-formatter",event:"completed"});
+  assert.equal(events[0].options.credentials,"omit");
+  assert.equal(events[0].options.mode,"same-origin");
+  assert.equal(events[0].options.keepalive,true);
+  assert.equal(Object.keys(JSON.parse(events[0].options.body)).length,2);
+ }finally{
+  for(const [name,descriptor] of Object.entries(prev)){
+   if(descriptor)Object.defineProperty(globalThis,name,descriptor);
+   else delete globalThis[name];
+  }
+ }
+});
