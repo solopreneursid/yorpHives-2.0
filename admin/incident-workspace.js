@@ -107,11 +107,27 @@
         dialog.close();
         await actions.showView("agents");
         const select = byId("repair-finding");
-        const option = Array.from(select.options).find(item => item.value === finding.id);
-        // Only select an asset finding when staging has the source-qualified
-        // link migration; otherwise preserve its evidence as a general request.
-        const linkable = Boolean(option && !option.disabled);
-        select.value = linkable ? finding.id : "";
+        // Check the authenticated API's actual D1 migration state instead of
+        // trusting a possibly stale dropdown populated by another async view.
+        const capabilities = await actions.api("/api/admin/repair-jobs");
+        const source = finding.source_type;
+        const linkable = source === "monitor" ||
+          (source === "asset" && capabilities.finding_links_ready === true);
+        if (linkable) {
+          let option = Array.from(select.options).find(item =>
+            item.value === finding.id && item.dataset.source === source
+          );
+          if (!option) {
+            option = create("option", "", "[" + display(finding.severity) + "] " + display(finding.title));
+            option.value = finding.id;
+            option.dataset.source = source;
+            select.append(option);
+          }
+          option.disabled = false;
+          option.selected = true;
+        } else {
+          select.value = "";
+        }
         byId("repair-message").textContent = linkable
           ? "Finding linked. Submitting this form starts a separately authorized, quota-limited repair."
           : "Finding prepared as a general investigation; source evidence is preserved in the request.";
