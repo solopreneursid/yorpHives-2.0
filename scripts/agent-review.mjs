@@ -8,6 +8,18 @@ const eventName = process.env.GITHUB_EVENT_NAME || "push";
 const before = process.env.GITHUB_EVENT_BEFORE || "";
 const baseRef = process.env.GITHUB_BASE_REF || "main";
 const refName = process.env.GITHUB_REF_NAME || "";
+// Explicit stacked-PR ancestry for change review. The incremental review
+// detects *new* risks introduced by the branch; the full stack must still
+// receive founder/security review before any production release.
+const STACKED_BASES = Object.freeze({
+ "build/headquarters-traffic-evidence":"build/headquarters-existing-tool-demand",
+ "build/headquarters-existing-tool-demand":"build/headquarters-global-intelligence",
+ "build/headquarters-global-intelligence":"build/headquarters-opportunity-radar",
+ "build/headquarters-opportunity-radar":"build/headquarters-mission-execution",
+ "build/headquarters-mission-execution":"build/yorphives-official-logo",
+ "build/yorphives-official-logo":"build/yorphives-headquarters",
+ "build/yorphives-headquarters":"build/agentic-os-foundation"
+});
 
 async function git(args) {
   const { stdout } = await run("git", args, { maxBuffer: 8 * 1024 * 1024 });
@@ -23,6 +35,11 @@ async function resolveBase() {
     const repairBase = "build/yorphives-admin-reliability";
     await git(["fetch", "--no-tags", "origin", repairBase]);
     return `origin/${repairBase}`;
+  }
+  if (STACKED_BASES[refName]) {
+    const branch = STACKED_BASES[refName];
+    await git(["fetch", "--no-tags", "origin", branch]);
+    return "origin/" + branch;
   }
   if (refName.startsWith("build/")) {
     await git(["fetch", "--no-tags", "origin", "main"]);
@@ -89,6 +106,8 @@ async function main() {
   const report = {
     generated_at: new Date().toISOString(),
     base_ref: base,
+    comparison_scope: base === "origin/main" ? "full-main-lineage" : "incremental-stacked-feature",
+    release_requires_full_lineage_review: base !== "origin/main",
     head_sha: await git(["rev-parse", "HEAD"]),
     files_reviewed: changedFiles,
     summary: { files_changed: paths.length, findings: findings.length, ...counts },
@@ -103,6 +122,8 @@ async function main() {
     `Findings: ${report.summary.findings} (critical ${counts.critical}, high ${counts.high}, medium ${counts.medium})`,
     "",
     ...(findings.length ? findings.map(item => `- **${item.severity.toUpperCase()}** ${item.file}:${item.line} — ${item.description}`) : ["No configured static-risk patterns were detected."]),
+    "",
+    "Incremental feature reviews only cover the branch's PR base. All stacked changes still require separate full-lineage owner and security review before production release.",
     "",
     "This automated review is a heuristic signal, not a substitute for human review or a full security assessment."
   ].join("\n"));

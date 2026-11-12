@@ -156,6 +156,11 @@ window.loadDemand=async()=>{
    typeof x?.slug==="string"&&typeof x?.url==="string"): [];
   inventoryReady=Array.isArray(inventory);
   render();
+  await Promise.allSettled([
+   window.HQTrafficEvidence?.load(manifest),
+   window.HQMarketSources?.load(),
+   window.HQNextActions?.load()
+  ].filter(Boolean));
  }finally{loading=false;}
 };
 byId("demand-origin").addEventListener("change",render);
