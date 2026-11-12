@@ -287,10 +287,14 @@ async function run() {
     record("repair_qa_dialog_accessible",
       await page.getByRole("dialog", { name: "Verify repair outcome" }).isVisible(),
       "Authenticated founder sees a dedicated revision-specific QA form");
+    await page.waitForFunction(() => {
+      const label = document.querySelector("#repair-qa-status")?.textContent || "";
+      return label.includes("No issue-specific QA") || label.includes("QA is unavailable");
+    }, null, { timeout: 10000 });
     record("repair_qa_clear_separate_approval",
       (await page.locator("#repair-qa-dialog").innerText()).includes("This never publishes a release") &&
       (await page.locator("#repair-qa-status").innerText()).includes("No issue-specific QA"),
-      "QA testing is separate from production approval; CI never submits QA evidence");
+      "Async QA evidence must settle before interpreting the founder's review state");
     await page.locator("#repair-qa-close").click();
     await page.locator("#incident-prepare").click();
     await page.locator("#view-agents").waitFor({ state: "visible", timeout: 10000 });
