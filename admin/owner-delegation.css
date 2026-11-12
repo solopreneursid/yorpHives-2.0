@@ -1,0 +1,29 @@
+/* Controlled YorpMind delegated admin approval. No OTP form or credential collection. */
+.owner-delegation-panel{margin:20px 0;padding:22px;border:1px solid #315a72;border-radius:13px;background:linear-gradient(130deg,#14283b,#0c1525)}
+.owner-delegation-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.owner-delegation-heading h2{color:#e2f6ff;letter-spacing:-.025em;font-size:1.12rem;margin:7px 0}
+.owner-delegation-heading p{color:#acc4d5;font-size:.81rem;line-height:1.65;max-width:770px}
+.owner-delegation-notice{color:#f6dbaf;background:#312619;border-left:3px solid #d7aa5a;border-radius:0 9px 9px 0;padding:12px 14px;line-height:1.6;font-size:.78rem;margin:17px 0}
+.owner-delegation-form{display:grid;gap:12px;margin:17px 0 22px}
+.owner-delegation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.owner-delegation-form label{display:grid;gap:8px;color:#c5dbeb;font-size:.78rem;font-weight:620}
+.owner-delegation-form :is(input:not([type=checkbox]),textarea){min-width:0;width:100%;padding:12px 13px;border-radius:8px;border:1px solid #3c5d75;background:#0b1728;color:#f1f5f9;font:inherit;font-size:.84rem;resize:vertical}
+.owner-delegation-form fieldset{border:1px solid #385268;border-radius:9px;padding:14px;display:grid;gap:11px}
+.owner-delegation-form fieldset legend{padding:0 7px;font-size:.79rem;color:#9ce7f3;font-weight:700}
+.owner-delegation-form fieldset label{display:flex;align-items:flex-start;gap:9px;font-weight:500}
+.owner-delegation-form input[type=checkbox]{margin-top:3px;accent-color:#22d3ee}
+.owner-delegation-form button{justify-self:start}
+.owner-delegation-form button:disabled{opacity:.5;cursor:not-allowed}
+#owner-delegation-status{color:#b1d8e6;font-size:.78rem;line-height:1.5}
+.owner-delegation-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.owner-delegation-record{display:grid;gap:9px;padding:15px;border:1px solid #385a72;border-radius:9px;background:#101e30;min-width:0}
+.owner-delegation-record-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.owner-delegation-record strong{color:#e5f8ff;font-size:.83rem}
+.owner-delegation-record p{color:#b8ccde;font-size:.76rem;line-height:1.5;overflow-wrap:anywhere}
+.owner-delegation-record small{color:#9db7c9;font-size:.72rem}
+.owner-delegation-record .button{justify-self:start}
+.owner-delegation-state{font-size:.65rem;font-weight:700;padding:5px 9px;border-radius:30px;color:#fbd38d;background:#392e1a}
+.owner-delegation-warning{color:#f5da9f!important}
+.owner-delegation-panel :is(input,textarea,button,a):focus-visible{outline:2px solid #67e8f9;outline-offset:3px}
+@media(max-width:900px){.owner-delegation-grid,.owner-delegation-list{grid-template-columns:1fr}}
+@media(max-width:560px){.owner-delegation-panel{padding:15px}.owner-delegation-heading{flex-direction:column}.owner-delegation-form button{width:100%}}
