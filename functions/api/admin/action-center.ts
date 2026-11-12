@@ -114,7 +114,9 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
       scope: "private_d1_evidence_only",
       generated_at: new Date().toISOString(),
       status: snapshot.actions.length ? "review_required" : "no_action_in_sample",
-      ...snapshot
+      ...snapshot,
+      auto_ai_dispatch_enabled: false,
+      release_execution_enabled: false
     };
     const query = new URL(context.request.url).searchParams;
     if (query.get("format") === "markdown" ||
