@@ -3,6 +3,7 @@ import { collectPublicSignals } from "./sources.js";
 import { MODEL, synthesizeIdeas } from "./synthesis.js";
 import { indexDemand } from "./demand.js";
 import { collectMarketSources,storeMarketSources } from "./market-sources.js";
+import { scanYorpMindEvolution } from "./yorpmind-evolution.js";
 
 const MAX_MANUAL_PER_DAY=2;
 const MAX_SOURCE_ROWS=42;
@@ -166,6 +167,13 @@ export class ResearchWorkflow extends WorkflowEntrypoint {
 }
 export default {
  async scheduled(controller,env){
+  // Reference-only YorpMind self-evolution: no model calls, skill writes or deployments.
+  try {
+    const evolution = await scanYorpMindEvolution(env.DB);
+    if (evolution.status === "failed") console.warn(JSON.stringify({ event: "yorpmind_daily_scan_failed", run_id: evolution.run_id }));
+  } catch (error) {
+    console.warn(JSON.stringify({ event: "yorpmind_daily_scan_unavailable", reason: String(error instanceof Error ? error.message : error).slice(0,150) }));
+  }
   const result=await startResearch(env,"scheduled");
   if(result.status!==202)console.warn(JSON.stringify({event:"research_schedule_not_started",status:result.status,message:result.error}));
  },
