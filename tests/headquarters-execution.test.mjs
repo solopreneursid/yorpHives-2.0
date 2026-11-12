@@ -99,7 +99,7 @@ test("mission execution requires authenticated owner, allowed specialist and hea
   };
   const workerEnv = {
     DB: adapter,
-    AI: { run: async () => ({ response: JSON.stringify(brief()) }) },
+    AI: { run: async () => ({ choices: [{ message: { content: JSON.stringify(brief()) } }] }) },
     MISSION_WORKFLOW: {
       async create({ id, params }) {
         assert.equal(params.kind, "mission_brief");

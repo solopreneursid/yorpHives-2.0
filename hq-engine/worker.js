@@ -120,7 +120,12 @@ export class MissionWorkflow extends WorkflowEntrypoint {
           max_tokens: 2300,
           temperature: 0.2
         });
-        return parseBrief(response?.response ?? response?.result?.response);
+        const output =
+          response?.response ??
+          response?.choices?.[0]?.message?.content ??
+          response?.result?.response ??
+          response?.result?.choices?.[0]?.message?.content;
+        return parseBrief(output);
       });
       await step.do("persist-brief-and-review-gate", async () => {
         const saved = await this.env.DB.prepare(
