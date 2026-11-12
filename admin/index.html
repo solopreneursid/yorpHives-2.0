@@ -10,6 +10,7 @@
 <link rel="icon" type="image/svg+xml" href="/brand/yorphives-mark.svg">
 <link rel="stylesheet" href="/admin/headquarters.css">
 <link rel="stylesheet" href="/admin/admin.css">
+<link rel="stylesheet" href="/admin/incident-workspace.css">
 <link rel="stylesheet" href="/admin/business-intelligence.css">
 </head>
 <body>
@@ -543,6 +544,33 @@
     <section class="view" id="view-issues" data-title="Issues & risks">
       <div class="page-heading"><div><span class="eyebrow">TRIAGE &amp; RESOLUTION</span><h1>Issues &amp; risks</h1><p>Prioritize real findings, inspect evidence and track risk decisions.</p></div><div class="heading-actions"><button class="button" data-go="monitoring">Open monitoring ↗</button></div></div>
       <div class="filter-row"><button class="filter-chip active" data-finding-filter="active">Active</button><button class="filter-chip" data-finding-filter="all">All history</button><button class="filter-chip" data-finding-filter="resolved">Resolved / accepted</button></div>
+      <dialog class="incident-dialog" id="incident-dialog" aria-labelledby="incident-title" aria-describedby="incident-subtitle">
+        <div class="incident-shell">
+          <header class="incident-header">
+            <div><span class="eyebrow">INCIDENT WORKSPACE · VERIFIED RECORDS</span><h2 id="incident-title">Incident</h2><p id="incident-subtitle">Finding details</p></div>
+            <button class="incident-close" id="incident-close" type="button" aria-label="Close incident details">×</button>
+          </header>
+          <div class="incident-body">
+            <section class="incident-section" aria-labelledby="incident-metadata-heading">
+              <h3 id="incident-metadata-heading">Current status</h3>
+              <dl class="incident-fields" id="incident-fields"></dl>
+            </section>
+            <section class="incident-section" aria-labelledby="incident-evidence-heading">
+              <h3 id="incident-evidence-heading">Evidence</h3><p class="incident-evidence" id="incident-evidence"></p>
+              <a class="incident-link" id="incident-source" target="_blank" rel="noopener noreferrer" hidden>Inspect affected YorpHives page ↗</a>
+              <h3>Recommended next investigation</h3><p id="incident-recommendation"></p>
+            </section>
+            <section class="incident-section" aria-labelledby="incident-repairs-heading">
+              <h3 id="incident-repairs-heading">Linked repairs</h3><p class="incident-hint">Shows matching jobs from the most recent 50 records. Status is not a release approval.</p>
+              <div id="incident-related" aria-live="polite"></div>
+            </section>
+          </div>
+          <footer class="incident-actions">
+            <p>Starting an AI repair is a separate authenticated founder action. No changes are published automatically.</p>
+            <button class="button primary" type="button" id="incident-prepare">Prepare investigation ↗</button>
+          </footer>
+        </div>
+      </dialog>
       <section class="panel"><div class="table-wrap"><table><thead><tr><th>Severity</th><th>Finding</th><th>Environment</th><th>Status</th><th>Last verified</th><th>Action</th></tr></thead><tbody id="findings-list"><tr><td colspan="6" class="empty-state">Loading findings…</td></tr></tbody></table></div></section>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">RECOMMENDATIONS</span><h2>Improvement opportunities</h2><p>Recommendations are kept separate from confirmed failures.</p></div></div><div class="table-wrap"><table><thead><tr><th>Priority</th><th>Area</th><th>Observation</th><th>Evidence</th><th>Suggested action</th></tr></thead><tbody id="asset-findings-list"><tr><td colspan="5" class="empty-state">Loading recommendations…</td></tr></tbody></table></div></section>
     </section>
@@ -590,6 +618,7 @@
 </div>
 
 <script src="/admin/admin.js" defer></script>
+<script src="/admin/incident-workspace.js" defer></script>
 <script src="/admin/headquarters.js" defer></script>
 <script src="/admin/radar.js" defer></script>
 <script src="/admin/intelligence.js" defer></script>

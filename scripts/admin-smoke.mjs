@@ -190,6 +190,57 @@ async function run() {
     record("agent_operations_view_rendered", await page.locator("#agent-roster").count() === 1, "Agent registry view rendered");
     record("agent_cards_present", await page.locator("#agent-roster .agent-card").count() > 0, "Agent cards are present");
 
+    // Read-only, browser-local fixture: exercises the actual incident UI without
+    // creating findings, dispatching AI, or changing staging D1 records.
+    const sampleFinding = {
+      id: "preview-incident-fixture", title: "Preview-only tool failure",
+      severity: "high", details: "Synthetic preview QA: expected output not produced.",
+      status: "open", first_detected: "2026-11-12T00:00:00Z",
+      last_verified: "2026-11-12T00:10:00Z", resolved_at: null,
+      monitor_name: "Synthetic tool", monitor_url: "https://yorphives.com/free-tools/",
+      environment: "staging-fixture", source_type: "asset",
+      recommendation: "Reproduce in isolated preview and verify expected output."
+    };
+    await page.route("**/api/admin/findings*", async route => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: [sampleFinding] }) });
+    });
+    await page.route("**/api/admin/repair-jobs", async route => {
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          data: [{ id: "preview-repair-fixture", finding_id: sampleFinding.id,
+            request_text: "Investigate synthetic failure", status: "needs_review",
+            result_summary: "Synthetic preview result only; no actual repair.",
+            updated_at: "2026-11-12T00:15:00Z",
+            pull_request_url: "https://github.com/solopreneursid/yorpHives-2.0/pull/22" }],
+          agentConfigured: false, agents: [], summary: {}
+        })
+      });
+    });
+    await page.locator('.nav-item[data-view="issues"]').click();
+    await page.locator('#view-issues').waitFor({ state: "visible", timeout: 10000 });
+    await page.getByRole("button", { name: "View incident evidence for Preview-only tool failure" }).click();
+    record("incident_dialog_accessible",
+      await page.getByRole("dialog", { name: "Preview-only tool failure" }).isVisible(),
+      "Authenticated founder sees an accessible incident dialog");
+    record("incident_evidence_present",
+      (await page.locator("#incident-evidence").innerText()).includes("Synthetic preview QA"),
+      "Finding evidence is rendered as text, not executable HTML");
+    await page.locator("#incident-related .incident-repair").first().waitFor({ state: "visible", timeout: 10000 });
+    record("incident_linked_repair_history",
+      (await page.locator("#incident-related").innerText()).includes("Synthetic preview result"),
+      "Related repair history is visible without owner mutations");
+    await page.locator("#incident-prepare").click();
+    await page.locator("#view-agents").waitFor({ state: "visible", timeout: 10000 });
+    record("incident_prepare_does_not_dispatch",
+      (await page.locator("#repair-request").inputValue()).includes("Preview-only tool failure") &&
+      (await page.locator("#repair-request").inputValue()).includes(sampleFinding.id) &&
+      (await page.locator("#repair-finding").inputValue()) === "" &&
+      (await page.locator("#repair-message").innerText()).includes("general investigation"),
+      "Asset finding preparation preserves evidence without submitting an invalid monitor-only foreign key or dispatching AI");
+    await page.unroute("**/api/admin/findings*");
+    await page.unroute("**/api/admin/repair-jobs");
+
     const unauthenticated = await request.newContext({ baseURL: baseUrl, maxRedirects: 0 });
     try {
       const anonymousResponse = await unauthenticated.get("/api/admin/overview", { timeout: 15000 });

@@ -336,7 +336,19 @@ function renderFindings() {
         try{await api("/api/admin/findings",{method:"PATCH",body:JSON.stringify({id:item.id,status:next})});state.loaded.delete("overview");await loadIssues();await loadOverview();}
         catch(error){showSystemMessage(error.message, { kind: "error", reauthenticate: /Cloudflare Access/i.test(error.message) });}finally{button.disabled=false;}
       });
-      td.append(button);tr.append(td);
+      const inspect=document.createElement("button");
+      inspect.type="button";
+      inspect.className="button";
+      inspect.textContent="View case";
+      inspect.setAttribute("aria-label","View incident evidence for "+item.title);
+      inspect.addEventListener("click",()=>{
+        if(!window.HQIncidentWorkspace){showSystemMessage("The incident workspace is unavailable. Refresh Headquarters.",{kind:"error"});return;}
+        window.HQIncidentWorkspace.open(item,{
+          api,showView,loadAgents,
+          notify:message=>showSystemMessage(message,{kind:"error"})
+        });
+      });
+      td.append(inspect,button);tr.append(td);
     }
   ],"No findings in this view.",6);
 }
