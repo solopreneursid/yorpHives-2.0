@@ -134,13 +134,15 @@ async function run() {
               return document.activeElement === element;
             }).catch(() => false);
           }
+          const hiddenVisibleCount = await toolPage.locator("main [hidden]:visible").count();
           stage = "primary-heading";
           heading = (await toolPage.locator("main h1").first().textContent().catch(() => "")) || "";
-          const ok = responseStatus === 200 && visibleRootCount > 0 && visibleControls > 0 && keyboardFocusable && Boolean(heading.trim()) && pageErrorsForTool.length === 0;
+          const ok = responseStatus === 200 && visibleRootCount > 0 && visibleControls > 0 && keyboardFocusable && hiddenVisibleCount === 0 && Boolean(heading.trim()) && pageErrorsForTool.length === 0;
           const result = {
             slug: tool.slug, title: tool.title, path: tool.url, status: responseStatus, final_url: finalUrl,
             root_count: rootCount, visible_root_count: visibleRootCount,
             control_count: controls, visible_control_count: visibleControls, keyboard_focusable: keyboardFocusable,
+            hidden_elements_visible: hiddenVisibleCount,
             primary_heading_present: Boolean(heading.trim()),
             page_errors: pageErrorsForTool, console_errors: consoleErrors,
             failed_requests: failedRequests, http_errors: httpErrors,
@@ -159,7 +161,7 @@ async function run() {
             slug: tool.slug, title: tool.title, path: tool.url, status: responseStatus,
             final_url: toolPage.url(), stage, root_count: rootCount,
             visible_root_count: visibleRootCount, control_count: controls,
-            visible_control_count: visibleControls, keyboard_focusable: false, primary_heading_present: Boolean(heading.trim()),
+            visible_control_count: visibleControls, keyboard_focusable: false, hidden_elements_visible: null, primary_heading_present: Boolean(heading.trim()),
             page_errors: pageErrorsForTool, console_errors: consoleErrors,
             failed_requests: failedRequests, http_errors: httpErrors,
             duration_ms: Date.now() - startedAt,
@@ -185,6 +187,7 @@ async function run() {
       if (!item.visible_root_count) reasons.push("tool root not visible");
       if (!item.visible_control_count) reasons.push("no visible controls");
       if (!item.keyboard_focusable) reasons.push("no keyboard-focusable control");
+      if (item.hidden_elements_visible > 0) reasons.push(item.hidden_elements_visible + " hidden elements are visible");
       if (!item.primary_heading_present) reasons.push("main h1 missing");
       if (item.page_errors?.length) reasons.push(`pageerror: ${item.page_errors.join(" | ")}`);
       if (item.console_errors?.length) reasons.push(`console: ${item.console_errors.slice(0, 2).join(" | ")}`);
@@ -312,6 +315,7 @@ async function run() {
       root_count: item.root_count, visible_root_count: item.visible_root_count,
       control_count: item.control_count, visible_control_count: item.visible_control_count,
       keyboard_focusable: item.keyboard_focusable,
+      hidden_elements_visible: item.hidden_elements_visible,
       primary_heading_present: item.primary_heading_present, page_errors: item.page_errors,
       console_errors: item.console_errors, failed_requests: item.failed_requests,
       http_errors: item.http_errors, error: item.error, screenshot: item.screenshot
