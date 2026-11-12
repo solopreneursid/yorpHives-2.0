@@ -25,6 +25,7 @@ jobs:
       name: ${{ github.ref_name == 'main' && 'production-audits' || 'staging-deployments' }}
     outputs:
       url: ${{ steps.preview.outputs.url }}
+    env:
       CF_ACCOUNT_ID: 69234e51e08d8013980a7ff869746609
       PAGES_PROJECT_NAME: yorphives-2-preview
       PAGES_BRANCH: ${{ github.head_ref || github.ref_name }}
