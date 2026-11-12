@@ -197,7 +197,7 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
     const emergencyOverride = body.emergency_override === true;
     const staleBefore = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     await context.env.DB!.prepare(
-      "INSERT OR IGNORE INTO admin_repair_jobs (id,finding_id,requested_by,request_text,status,created_at,updated_at) VALUES (?,NULL,?,?, 'idle',?,?)"
+      "INSERT OR IGNORE INTO admin_repair_jobs (id,finding_id,requested_by,request_text,status,created_at,updated_at) VALUES (?,NULL,?,?, 'queued',?,?)"
     ).bind(lockId, identity.email, "Internal GitHub permission probe concurrency lock.", now(), now()).run();
     const acquired = await context.env.DB!.prepare(
       "UPDATE admin_repair_jobs SET status='running',requested_by=?,request_text=?,updated_at=? WHERE id=? AND (status!='running' OR (updated_at<? AND ?=1))"
