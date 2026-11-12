@@ -141,7 +141,10 @@ export function recommendTeamActions(staff, agents, jobs, departments, now = new
         candidates.push(makeAdvice("verify_reusable_history", "medium", job, agent, managerId,
           "A prior completed mission has the same normalized title. Review historical results before spending inference; past completion is not verified correctness."));
       } else if (agent?.enabled === 1 && agent?.status === "ready" && agent.autonomy_level === "recommend"
-          && activeJobs < ACTIVE_JOB_CAP && (activeByAgent.get(job.agent_id) || 0) < 2) {
+          && activeJobs < ACTIVE_JOB_CAP && dailyUsed < DAILY_MISSION_CAP
+          && (activeByManager.get(managerId) || 0) < (supervisorCap.get(managerId) || 1)
+          && (activeByAgent.get(job.agent_id) || 0) < 2
+          && (!job.job_type || job.job_type === "owner_mission")) {
         candidates.push(makeAdvice("route_planned_mission", "low", job, agent, managerId,
           "This ready specialist has spare recorded capacity. Offer the planned mission for owner-initiated dispatch under the existing daily AI budget."));
       } else {
