@@ -26,6 +26,7 @@ interface TeamResponse {
   review_is_not_approval: true;
   production_execution: false;
   model_calls_per_team_scan: 0;
+  shared_mission_budget: { daily_limit: number; daily_used: number; daily_remaining: number; active_limit: number; active_count: number };
   limitations: string;
 }
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
