@@ -149,10 +149,16 @@ export class MissionWorkflow extends WorkflowEntrypoint {
       return { job_id: jobId, status: "awaiting_owner_approval", verified: false };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Mission workflow failed.";
+      const code = error && typeof error === "object" && typeof error.code === "string" &&
+        /^BRIEF_[A-Z_]+$/.test(error.code) ? error.code :
+        /^BRIEF_(JSON_INVALID|REQUIRED_FIELDS_MISSING|RESPONSE_TOO_LARGE|RESPONSE_MISSING)\b/.exec(message)?.[0] ||
+        "MISSION_EXECUTION_FAILED";
+      // Provider errors may contain private diagnostics; never expose them via Admin.
+      const ownerMessage = code.startsWith("BRIEF_") ?
+        message.slice(0, 280) :
+        "AI execution failed. Check private Worker diagnostics before starting a new owner-approved mission.";
       await step.do("persist-mission-failure", async () => {
-        await failMission(this.env.DB, jobId, message,
-          error && typeof error === "object" && typeof error.code === "string" &&
-          /^BRIEF_[A-Z_]+$/.test(error.code) ? error.code : "MISSION_EXECUTION_FAILED");
+        await failMission(this.env.DB, jobId, ownerMessage, code);
         return { failed: true };
       });
       throw error;
