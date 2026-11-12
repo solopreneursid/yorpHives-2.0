@@ -539,8 +539,9 @@ test("v8 unified business board preserves independent evidence classes and conne
   assert.ok(board.candidates.every(x=>x.investigation_priority<=85));
   const markdown=await getBusinessBoard(context(e,"GET",undefined,{accept:"text/markdown"}));
   assert.match(markdown.headers.get("content-type"),/text\/markdown/);
-  assert.match(await markdown.text(),/Search Console.*not_ingested/);
-  assert.match(await markdown.text(),/release authorized: no/i);
+  const boardMarkdown=await markdown.text();
+  assert.match(boardMarkdown,/Search Console.*not_ingested/);
+  assert.match(boardMarkdown,/release authorized: no/i);
   const unauthenticated=await postBusinessReview(context(e,"POST",{
     action:"review",candidate_id:tool.candidate_id,expected_revision:0,
     review_status:"shortlisted",owner_note:"Check real functionality."
