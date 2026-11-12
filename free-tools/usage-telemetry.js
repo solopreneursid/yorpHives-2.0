@@ -4,7 +4,7 @@ const ELIGIBLE=new Set(["word-counter","json-formatter","json-validator",
  "json-minifier","uuid-generator","sha256-generator","html-to-markdown","csv-to-markdown"]);
 export function reportToolSuccess(slug){
  if(!ELIGIBLE.has(slug))return;
- if(navigator.globalPrivacyControl===true||navigator.doNotTrack==="1")return;
+ if(navigator.webdriver===true||navigator.globalPrivacyControl===true||navigator.doNotTrack==="1")return;
  if(location.protocol!=="https:"&&!["localhost","127.0.0.1"].includes(location.hostname))return;
  const key="hq-usage-v1:"+slug;
  try{
