@@ -24,7 +24,6 @@ interface IntelligenceSnapshot {
  provenance:string;budgets:{manual_scans_per_day:number;max_model_calls_per_scan:number};
 }
 interface IntelligenceService {fetch(request:Request):Promise<Response>;}
-interface Environment extends AdminRequestContext["env"] {INTELLIGENCE_SERVICE?:IntelligenceService;}
 interface IntelligenceContext extends AdminRequestContext {env:AdminRequestContext["env"]&{INTELLIGENCE_SERVICE?:IntelligenceService};}
 interface ScanCommand {action:"scan";}
 interface ReviewCommand {

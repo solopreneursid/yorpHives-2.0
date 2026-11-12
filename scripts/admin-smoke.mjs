@@ -61,6 +61,7 @@ async function run() {
     const readEndpoints = [
       "/api/admin/headquarters",
       "/api/admin/radar",
+      "/api/admin/intelligence",
       "/api/admin/overview",
       "/api/admin/assets",
       "/api/admin/findings",
@@ -92,6 +93,12 @@ async function run() {
         a.enabled === 1 && a.status === "ready" && a.autonomy_level === "recommend").length === 7,
         "Only seven recommendation specialists are enabled; engineering and QA still require verified runtimes");
     }
+    await page.locator('.nav-item[data-view="intelligence"]').click();
+    await page.locator("#view-intelligence").waitFor({ state: "visible", timeout: 10000 });
+    record("intelligence_workspace_rendered", await page.locator("#view-intelligence h1").count() === 1, "Protected research UI renders");
+    await page.waitForFunction(() => document.querySelector("#intel-status-text")?.textContent?.includes("hypotheses stored"), null, { timeout: 20000 });
+    record("intelligence_source_disclaimer", (await page.locator("#view-intelligence").innerText()).includes("not independently validated"), "Unverified evidence disclosed");
+    await page.locator('.nav-item[data-view="headquarters"]').click();
     await page.locator('.nav-item[data-view="radar"]').click();
     await page.locator("#view-radar").waitFor({ state: "visible", timeout: 10000 });
     record("radar_workspace_rendered", await page.locator("#view-radar h1").count() === 1, "Opportunity Radar view is accessible");
