@@ -103,6 +103,7 @@ function showView(name) {
 async function loadView(name) {
   const loaders = {
     headquarters: () => window.loadHeadquarters(),
+    yorpmind: () => window.loadYorpMind(),
     departments: () => window.loadHeadquarters(),
     radar: () => window.loadRadar(),
     intelligence: () => window.loadIntelligence(),

@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { DatabaseSync } from "node:sqlite";
 
 const migrationRoot = new URL("../migrations/", import.meta.url);
-const expectedMigrations = Array.from({ length: 23 }, (_, index) => index + 1);
+const expectedMigrations = Array.from({ length: 24 }, (_, index) => index + 1);
 
 test("complete D1 SQL migration chain can be restored from a disposable SQLite backup", async () => {
   const dir = await mkdtemp(join(tmpdir(), "yorphives-hq-restore-"));
@@ -28,6 +28,8 @@ test("complete D1 SQL migration chain can be restored from a disposable SQLite b
 
     assert.equal(databaseHas(db, "admin_repair_finding_links"), true);
     assert.equal(databaseHas(db, "admin_repair_qa_reports"), true);
+    assert.equal(databaseHas(db, "yorpmind_experiences"), true);
+    assert.equal(databaseHas(db, "yorpmind_skill_reviews"), true);
     assert.equal(databaseHas(db, "agent_jobs"), true);
     assert.equal(databaseHas(db, "admin_audit_events"), true);
     const before = db.prepare("PRAGMA foreign_key_check").all();

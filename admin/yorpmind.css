@@ -1,0 +1,56 @@
+/* YorpMind — private, first-party intelligence UI. No external UI dependency. */
+.ym-hero{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(230px,.7fr);gap:24px;margin-bottom:20px;padding:30px;border:1px solid #263951;border-radius:18px;background:radial-gradient(ellipse at 8% 0%,#183b4d 0%,transparent 50%),linear-gradient(115deg,#101d31,#0c1322);box-shadow:0 12px 42px #0206174d}
+.ym-eyebrow{display:block;color:#7dd3fc;font-size:.68rem;font-weight:760;letter-spacing:.12em;text-transform:uppercase}
+.ym-hero h1{font-size:clamp(2.3rem,5vw,4rem);line-height:1.05;margin:12px 0 15px;letter-spacing:-.06em;color:#f1f5f9}
+.ym-hero h1 span{color:#67e8f9}
+.ym-hero p{line-height:1.65;color:#a5b7ce;font-size:.89rem;max-width:780px}
+.ym-hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin:23px 0 10px}
+.ym-updated{font-size:.76rem!important;color:#91a5bd!important}
+.ym-hero-policy{padding:24px;border:1px solid #345167;border-radius:13px;background:linear-gradient(150deg,#122e3e,#111c31)}
+.ym-hero-policy strong{display:block;color:#f2fbff;font-size:1.18rem;margin:13px 0 10px;letter-spacing:-.02em}
+.ym-hero-policy p{font-size:.8rem}
+.ym-policy-lock{margin-top:22px;padding:11px;border:1px solid #3e5858;border-radius:9px;background:#0d2629;color:#a7f3d0;font-size:.7rem;font-weight:720;letter-spacing:.035em;line-height:1.5}
+.ym-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 20px}
+.ym-stat{display:flex;flex-direction:column;gap:5px;padding:20px;background:#111e31;border:1px solid #27394d;border-radius:12px;min-width:0}
+.ym-stat-name{font-size:.69rem;color:#9bb5d0;font-weight:650}
+.ym-stat-number{font-size:clamp(1.5rem,2.8vw,2rem);color:#e6f8fe;font-weight:760}
+.ym-stat-hint{font-size:.72rem;color:#869fb7;line-height:1.5}
+.ym-workspace{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:20px}
+.ym-panel{min-width:0;padding:22px;background:#0f1b2e;border:1px solid #24364d;border-radius:14px}
+.ym-panel-header{margin-bottom:20px}
+.ym-panel-header h2{font-size:1.1rem;line-height:1.32;margin:9px 0;color:#e9f6ff;letter-spacing:-.02em}
+.ym-panel-header p{font-size:.81rem;line-height:1.7;color:#92a8c0}
+.ym-form{display:flex;flex-direction:column;gap:9px}
+.ym-form label,.ym-review label{font-size:.78rem;color:#c6d9ed;font-weight:600;margin-top:8px}
+.ym-form :is(input,select,textarea),.ym-review textarea,.ym-inline-select{width:100%;min-height:42px;border:1px solid #344962;border-radius:9px;background:#0b1628;padding:11px 13px;font:inherit;color:#e2e8f0;font-size:.85rem}
+.ym-form textarea,.ym-review textarea{line-height:1.55;resize:vertical}
+.ym-form :is(input,textarea)::placeholder{color:#71849b}
+.ym-form button{align-self:flex-start;margin-top:10px}
+.ym-form-status{min-height:17px;color:#a8c9da;font-size:.77rem;line-height:1.55;overflow-wrap:anywhere}
+.ym-form-status[data-kind="error"]{color:#fca5a5}
+.ym-form-status[data-kind="success"]{color:#86efac}
+.ym-list{display:grid;gap:12px}
+.ym-entry{padding:17px;border:1px solid #314158;border-radius:11px;background:#122137;min-width:0}
+.ym-entry-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.ym-entry-head strong{color:#edf7ff;font-size:.9rem;line-height:1.5;overflow-wrap:anywhere}
+.ym-badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:.62rem;font-weight:740;letter-spacing:.02em;white-space:nowrap}
+.ym-badge-private{color:#b5d7fa;background:#20344c;border:1px solid #2c5072}
+.ym-badge-draft{color:#fde68a;background:#47371c;border:1px solid #6b5527}
+.ym-badge-approved{color:#a7f3d0;background:#163a30;border:1px solid #285b48}
+.ym-entry-summary{font-size:.83rem;line-height:1.7;color:#bdcde0;white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0}
+.ym-source{display:block;color:#86a2ba;font-size:.69rem;line-height:1.5;overflow-wrap:anywhere}
+.ym-empty{border:1px dashed #42556e;padding:18px;border-radius:9px;color:#9ab1c9;font-size:.82rem;line-height:1.65}
+.ym-procedure,.ym-revise{margin:14px 0;border-top:1px solid #304057;padding-top:12px}
+.ym-procedure summary,.ym-revise summary{cursor:pointer;color:#9ce5f4;font-size:.77rem;font-weight:650}
+.ym-procedure summary:hover,.ym-revise summary:hover{color:#fff}
+.ym-procedure ol{margin:12px 0 0;padding-left:24px;display:grid;gap:8px;color:#c5d5e5;font-size:.78rem;line-height:1.6}
+.ym-review{border-top:1px solid #304057;display:grid;gap:10px;margin-top:16px;padding-top:14px}
+.ym-review label{display:grid;gap:8px}
+.ym-inline-actions{display:flex;gap:9px;flex-wrap:wrap}
+.ym-review button:disabled,.ym-form button:disabled{opacity:.5;cursor:not-allowed}
+.ym-revise .ym-form{margin-top:12px}
+.ym-footer-note{border-left:3px solid #67e8f9;background:#112436;padding:13px 17px;border-radius:0 9px 9px 0;color:#9fc2d4;font-size:.77rem;line-height:1.6}
+#view-yorpmind :is(button,input,select,textarea,summary,a):focus-visible{outline:2px solid #67e8f9;outline-offset:3px}
+@media(max-width:1080px){.ym-hero{grid-template-columns:1fr}.ym-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:770px){.ym-workspace{grid-template-columns:1fr}.ym-hero{padding:21px}.ym-panel{padding:17px}}
+@media(max-width:480px){.ym-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-stat{padding:13px}.ym-entry-head{flex-direction:column;align-items:flex-start}.ym-hero-actions .button{width:100%;text-align:center}}
