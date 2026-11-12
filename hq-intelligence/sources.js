@@ -1,9 +1,11 @@
 // Fixed, allowlisted public endpoints. Never follow links suggested by source text.
 const FETCH_LIMIT_MS=8000;
 const MAX_HN_PER_FEED=11;
-const MAX_REPOS_PER_TOPIC=8;
+const MAX_REPOS_PER_TOPIC=4;
 const TODAY_WINDOW_DAYS=120;
-const GITHUB_TOPICS=["ai-agent","cloudflare-workers"];
+// Balanced samples: commonplace tools as well as agent-native and edge tooling.
+// GitHub stars are only a public interest proxy, not traffic or revenue evidence.
+const GITHUB_TOPICS=["pdf","image-processing","productivity","mcp-server","cloudflare-workers"];
 
 async function safeJson(url,limitBytes=450000){
   const target=new URL(url);

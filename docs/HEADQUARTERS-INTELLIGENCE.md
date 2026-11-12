@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Discover useful tools, apps, plugins, agent-native services, platforms and longer-term business directions from *traceable* public signals. Headquarters keeps observations, AI-generated hypotheses, owner decisions, and independently verified outcomes separate.
+Discover and prioritize **existing useful tool/app categories already found on the Internet**, alongside promising gaps and original inventions, from traceable public signals. YorpHives should adopt independent functionality that people or agents need—not duplicate a competitor’s copyrighted source code, visual identity, proprietary assets, or deceptive branding. Opportunities span tiny free utilities, medium workflow tools, larger applications, and agent-callable APIs/MCP services. Headquarters keeps observations, AI-generated hypotheses, owner decisions, and independently verified outcomes separate.
 
 This is **a source-linked discovery engine**, not a claim to represent global demand or predict profits. All growth and pricing assertions remain experiments until evidence is collected. Initial communities (Hacker News and GitHub) overrepresent English-speaking technical users; regional intelligence is explicitly `unverified`.
 
@@ -18,7 +18,7 @@ Durable Workflow (1 active run, 1 model call/run, ≤2 manual runs/day)
 Public source adapters → bounded, allowlisted HTTPS API calls
   • Hacker News official Ask HN list + item API
   • Hacker News official Show HN list + item API
-  • GitHub public repository search (ai-agent, cloudflare-workers)
+  • GitHub public repository search (pdf, image-processing, productivity, mcp-server, cloudflare-workers)
             ↓
 D1: public source records + original URLs and timestamps
             ↓
@@ -93,3 +93,9 @@ The Validation Lab is embedded within the expandable detail of every saved propo
 - 🔒 Public YorpHives production was not changed.
 
 Future market intelligence can add compliant, region-specific public sources, opt-in surveys, and verified usage analytics without changing the idea/validation storage model. Do not infer global demand from English-speaking developer communities.
+
+## Core product acquisition principle — existing solutions are opportunities
+
+Research must primarily look for **already-existing, useful** applications, services and tools that YorpHives can independently implement, package or improve for human traffic and AI-agent tool use. A novel invention is only one category of opportunity, not the default outcome. Examples of categories to *investigate* (not claims of verified demand) include PDF tools, QR generators, image conversion/compression, calculators, document utilities, productivity workflows, developer validation, and MCP/API tools. Some may work as AdSense-supported free tools; others may suit subscriptions, usage-based APIs or premium apps. Judge each by evidence, search intent, competition, maintenance costs, and sustainable revenue potential. 
+
+The initial automated source adapters still cover **limited English-speaking developer communities and public GitHub repositories**; these do **not** prove consumer search popularity, agent traffic or commercial viability. Product selection requires verified search-interest and/or first-party usage signals before assigning commercial confidence. Never invent traffic, SEO volumes, paid customers, international demand or conversion rates. A scheduled cross-web YorpHives Tool Demand Radar independently researches broader live categories; it is not the same as the deployed Cloudflare research engine and its results are not automatically inserted into D1. Broader vetted adapters and connected Search Console/analytics are future integration work.
