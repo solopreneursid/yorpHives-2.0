@@ -93,6 +93,12 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     autonomous_observation: true, autonomous_dispatch: false,
     review_is_not_approval: true, production_execution: false,
     model_calls_per_team_scan: 0,
+    shared_mission_budget: {
+      daily_limit: 6, daily_used: Number(daily?.used || 0),
+      daily_remaining: Math.max(0, 6 - Number(daily?.used || 0)),
+      active_limit: 3,
+      active_count: (jobs.results || []).filter(j => j.status === "queued" || j.status === "running").length
+    },
     limitations: "Routing considers at most 100 recent jobs and 80 specialists; current advice is not persisted until the daily scan. Historical completion is not independent QA. A report review cannot dispatch missions, change privileges, publish code, or authorize spending. Daily scans require an explicitly deployed Worker."
   };
   const req = context.request;
