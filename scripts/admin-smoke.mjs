@@ -89,6 +89,15 @@ async function run() {
       }
     }
 
+    // Verify the real private D1 schema before installing synthetic browser GET fixtures.
+    const repairLinksResponse = await page.request.get(baseUrl + "/api/admin/repair-jobs", {
+      headers: accessHeaders, timeout: 20000
+    });
+    const repairLinksSnapshot = repairLinksResponse.ok() ? await repairLinksResponse.json().catch(() => null) : null;
+    record("staging_asset_repair_schema_ready",
+      repairLinksResponse.status() === 200 && repairLinksSnapshot?.finding_links_ready === true,
+      "Private staging D1 migration 0022 is live and the Admin API acknowledges source-qualified repair links");
+
     await page.waitForFunction(() => document.querySelector("#hq-storage")?.textContent === "Connected", null, { timeout: 20000 });
     record("headquarters_storage_connected", true, "Headquarters loaded the persistent registry");
     if (process.env.PAGES_BRANCH === "build/headquarters-mission-execution") {
