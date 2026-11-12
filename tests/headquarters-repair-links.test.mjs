@@ -15,7 +15,7 @@ const routeSource = (await source("../functions/api/admin/repair-jobs.ts"))
   .replace('"../../_lib/admin-auth"', JSON.stringify(authStub));
 const { onRequestPost } = await import(asModule(stripTypeScriptTypes(routeSource)));
 
-function setup(withLinks = true) {
+async function setup(withLinks = true) {
   const database = new DatabaseSync(":memory:");
   database.exec("PRAGMA foreign_keys=ON; CREATE TABLE admin_findings(id TEXT PRIMARY KEY);" +
     "CREATE TABLE admin_asset_findings(id TEXT PRIMARY KEY);");
@@ -71,7 +71,7 @@ function setup(withLinks = true) {
 }
 
 test("asset finding uses an atomic source-specific link, not the monitor-only legacy FK", async () => {
-  const { database, call } = setup();
+  const { database, call } = await setup();
   try {
     const res = await call({ finding_id: "same-id", finding_source: "asset" });
     assert.equal(res.status, 202);
@@ -85,7 +85,7 @@ test("asset finding uses an atomic source-specific link, not the monitor-only le
 });
 
 test("monitor findings retain legacy FK and source-qualified association", async () => {
-  const { database, call } = setup();
+  const { database, call } = await setup();
   try {
     const res = await call({ finding_id: "same-id", finding_source: "monitor" });
     assert.equal(res.status, 202);
@@ -97,7 +97,7 @@ test("monitor findings retain legacy FK and source-qualified association", async
 });
 
 test("invalid finding source and nonexisting finding never dispatch", async () => {
-  const { database, call } = setup();
+  const { database, call } = await setup();
   try {
     assert.equal((await call({ finding_id: "same-id", finding_source: "unknown" })).status, 400);
     assert.equal((await call({ finding_id: "unknown", finding_source: "asset" })).status, 404);
@@ -106,7 +106,7 @@ test("invalid finding source and nonexisting finding never dispatch", async () =
 });
 
 test("older staging without migration remains compatible for monitors but fails closed for assets", async () => {
-  const { database, call } = setup(false);
+  const { database, call } = await setup(false);
   try {
     const asset = await call({ finding_id: "same-id", finding_source: "asset" });
     assert.equal(asset.status, 503);
@@ -117,7 +117,7 @@ test("older staging without migration remains compatible for monitors but fails 
 });
 
 test("database trigger rejects invalid linked identities without orphaning repair records", async () => {
-  const { database, adapter } = setup();
+  const { database, adapter } = await setup();
   try {
     await assert.rejects(adapter.batch([
       adapter.prepare("INSERT INTO admin_repair_jobs(id,finding_id,requested_by,request_text,status,created_at,updated_at) VALUES ('tx-test',NULL,'owner','repair','queued','now','now')"),
