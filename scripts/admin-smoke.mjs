@@ -186,6 +186,23 @@ async function run() {
       timeout: 15000
     });
     record("ci_service_token_write_denied", deniedWrite.status() === 403, "HTTP " + deniedWrite.status());
+    const invalidQa = await page.request.get(baseUrl + "/api/admin/repair-qa?job_id=invalid", {
+      headers: accessHeaders, timeout: 15000
+    });
+    record("repair_qa_private_route_responds",
+      invalidQa.status() === 400 &&
+      (invalidQa.headers()["content-type"] || "").includes("application/json"),
+      "Authenticated read-only QA route validates job IDs without recording a review");
+    const deniedQaWrite = await page.request.post(baseUrl + "/api/admin/repair-qa", {
+      headers: accessHeaders, data: {
+        job_id: "123e4567-e89b-42d3-a456-426614174000",
+        reproduction_status: "reproduced", fix_status: "passed", regression_status: "passed",
+        evidence: "CI service identity must never write QA observations or publish releases."
+      }, timeout: 15000
+    });
+    record("ci_qa_write_denied", deniedQaWrite.status() === 403,
+      "Read-only CI token cannot submit issue-specific QA; HTTP " + deniedQaWrite.status());
+
     record("github_permission_probe_control_present", await page.locator("#verify-github-permissions").count() === 1, "Owner-only permission probe control is present");
 
     const agentsNav = page.locator('.nav-item[data-view="agents"]');
@@ -213,7 +230,13 @@ async function run() {
     await page.route("**/api/admin/findings*", async route => {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: [sampleFinding] }) });
     });
+    let unexpectedRepairWrites = 0;
     await page.route("**/api/admin/repair-jobs", async route => {
+      if (route.request().method() !== "GET") {
+        unexpectedRepairWrites += 1;
+        await route.fulfill({ status: 405, contentType: "application/json", body: '{"error":"No repair dispatch is allowed in smoke tests."}' });
+        return;
+      }
       await route.fulfill({
         status: 200, contentType: "application/json",
         body: JSON.stringify({
@@ -223,6 +246,17 @@ async function run() {
             updated_at: "2026-11-12T00:15:00Z",
             pull_request_url: "https://github.com/solopreneursid/yorpHives-2.0/pull/22" }],
           finding_links_ready: true, agentConfigured: false, agents: [], summary: {}
+        })
+      });
+    });
+    await page.route("**/api/admin/repair-qa?**", async route => {
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          job_id: "preview-repair-fixture", qa: null,
+          revision_status: "not_reviewed", issue_specific_qa_complete: false,
+          production_approved: false,
+          note: "No issue-specific QA evidence recorded."
         })
       });
     });
@@ -239,22 +273,45 @@ async function run() {
     record("incident_linked_repair_history",
       (await page.locator("#incident-related").innerText()).includes("Synthetic preview result"),
       "Related repair history is visible without owner mutations");
+    await page.getByRole("button", { name: "Record issue-specific QA" }).click();
+    record("repair_qa_dialog_accessible",
+      await page.getByRole("dialog", { name: "Verify repair outcome" }).isVisible(),
+      "Authenticated founder sees a dedicated revision-specific QA form");
+    record("repair_qa_clear_separate_approval",
+      (await page.locator("#repair-qa-dialog").innerText()).includes("This never publishes a release") &&
+      (await page.locator("#repair-qa-status").innerText()).includes("No issue-specific QA"),
+      "QA testing is separate from production approval; CI never submits QA evidence");
+    await page.locator("#repair-qa-close").click();
     await page.locator("#incident-prepare").click();
     await page.locator("#view-agents").waitFor({ state: "visible", timeout: 10000 });
+    const repairRequestValue = await page.locator("#repair-request").inputValue();
+    const selectedFindingValue = await page.locator("#repair-finding").inputValue();
+    const repairStatusValue = await page.locator("#repair-message").innerText();
+    const linked = selectedFindingValue === sampleFinding.id && repairStatusValue.includes("Finding linked");
+    const safeGeneralFallback = selectedFindingValue === "" && repairStatusValue.includes("general investigation");
+    const preparedChecks = {
+      title: repairRequestValue.includes("Preview-only tool failure"),
+      finding_id: repairRequestValue.includes(sampleFinding.id),
+      safe_selected_or_general_fallback: linked || safeGeneralFallback,
+      no_repair_http_writes: unexpectedRepairWrites === 0
+    };
     record("incident_prepare_does_not_dispatch",
-      (await page.locator("#repair-request").inputValue()).includes("Preview-only tool failure") &&
-      (await page.locator("#repair-request").inputValue()).includes(sampleFinding.id) &&
-      (await page.locator("#repair-finding").inputValue()) === sampleFinding.id &&
-      (await page.locator("#repair-message").innerText()).includes("Finding linked"),
-      "Source-qualified asset finding appears in the prepared form; no repair is dispatched");
+      Object.values(preparedChecks).every(Boolean),
+      "Synthetic findings absent from live selectable inventory must fall back to general investigation; no repair POST. " +
+      JSON.stringify(preparedChecks) + "; options: " + await page.locator("#repair-finding option").count());
     await page.unroute("**/api/admin/findings*");
     await page.unroute("**/api/admin/repair-jobs");
+    await page.unroute("**/api/admin/repair-qa?**");
 
     const unauthenticated = await request.newContext({ baseURL: baseUrl, maxRedirects: 0 });
     try {
       const anonymousResponse = await unauthenticated.get("/api/admin/overview", { timeout: 15000 });
       const protectedStatus = [302, 303, 401, 403].includes(anonymousResponse.status());
       record("admin_api_requires_access", protectedStatus, "Unauthenticated HTTP " + anonymousResponse.status());
+      const anonymousQa = await unauthenticated.get("/api/admin/repair-qa?job_id=invalid", { timeout: 15000 });
+      record("repair_qa_requires_cloudflare_access",
+        [302, 303, 401, 403].includes(anonymousQa.status()),
+        "Anonymous QA request denied by Access: HTTP " + anonymousQa.status());
     } finally {
       await unauthenticated.dispose();
     }

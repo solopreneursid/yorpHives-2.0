@@ -29,3 +29,20 @@
 .incident-actions .button{white-space:nowrap;flex-shrink:0}
 .incident-dialog :focus-visible{outline:2px solid #67e8f9;outline-offset:3px}
 @media(max-width:640px){.incident-dialog{width:calc(100vw - 16px);max-height:95dvh;border-radius:12px}.incident-shell{max-height:95dvh}.incident-header,.incident-body,.incident-actions{padding:16px}.incident-fields{grid-template-columns:1fr}.incident-actions{align-items:stretch;flex-direction:column}.incident-actions .button{width:100%}}
+
+/* First-party QA evidence — no external UI dependency. */
+.incident-qa-button{display:inline-flex;align-items:center;justify-content:center;margin-top:14px;min-height:38px;padding:9px 13px;border-radius:9px;border:1px solid #38bdf8;background:#123147;color:#c5efff;cursor:pointer}
+.incident-qa-button:hover,.incident-qa-button:focus-visible{background:#16445c;border-color:#67e8f9;color:#fff}
+.qa-dialog{width:min(760px,calc(100vw - 28px))}
+.qa-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.qa-fields label,.qa-evidence-label{font-size:.82rem;font-weight:600;color:#cbd5e1;line-height:1.4}
+.qa-fields select,.qa-dialog textarea{display:block;width:100%;margin-top:8px;padding:12px;background:#111d2e;border:1px solid #334155;border-radius:9px;color:#e2e8f0;font:inherit;font-size:.87rem}
+.qa-fields select{min-height:44px}
+.qa-dialog textarea{min-height:130px;resize:vertical;line-height:1.55}
+.qa-status{padding:12px 14px;border:1px solid #334155;border-radius:9px;background:#111e30;color:#bfdbfe;font-size:.83rem;line-height:1.5}
+.qa-dialog form{display:flex;flex-direction:column;min-height:0;overflow:auto}
+.qa-dialog form>.incident-body{min-height:0}
+.qa-dialog .incident-actions{flex-shrink:0}
+.qa-dialog :is(input,select,textarea,button):focus-visible{outline:2px solid #67e8f9;outline-offset:2px}
+.qa-dialog .incident-actions button:disabled{opacity:.48;cursor:not-allowed}
+@media(max-width:700px){.qa-fields{grid-template-columns:1fr}.qa-dialog{width:calc(100vw - 16px)}}

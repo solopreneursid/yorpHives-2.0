@@ -32,6 +32,10 @@
   };
   let generation = 0;
   let previouslyFocused = null;
+  let qaGeneration = 0;
+  let qaJob = null;
+  let qaActions = null;
+  let qaPreviouslyFocused = null;
 
   function labeled(label, value) {
     const line = create("div", "incident-field");
@@ -63,7 +67,7 @@
     else link.removeAttribute("href");
   }
 
-  function renderRelated(jobs, finding) {
+  function renderRelated(jobs, finding, actions) {
     const node = byId("incident-related");
     node.replaceChildren();
     const matches = jobs.filter(job => job.finding_id === finding.id && (job.finding_source || "monitor") === finding.source_type);
@@ -86,7 +90,88 @@
         link.rel = "noopener noreferrer";
         article.append(link);
       }
+      if (href && job.status === "needs_review") {
+        const qa = create("button", "button incident-qa-button", "Record issue-specific QA");
+        qa.type = "button";
+        qa.addEventListener("click", () => openQa(job, actions));
+        article.append(qa);
+      }
       node.append(article);
+    }
+  }
+
+  async function openQa(job, actions) {
+    const dialog = byId("repair-qa-dialog");
+    if (!dialog || !job?.id) return;
+    qaJob = job;
+    qaActions = actions;
+    const current = ++qaGeneration;
+    qaPreviouslyFocused = document.activeElement;
+    const save = byId("repair-qa-submit");
+    save.disabled = true;
+    byId("repair-qa-status").textContent = "Checking the current repair revision…";
+    byId("repair-qa-revision").textContent = "Repair " + job.id + " · issue-specific QA only";
+    byId("repair-qa-reproduction").value = "not_reproduced";
+    byId("repair-qa-fix").value = "inconclusive";
+    byId("repair-qa-regression").value = "not_run";
+    byId("repair-qa-evidence").value = "";
+    if (!dialog.open) dialog.showModal();
+    try {
+      const record = await actions.api("/api/admin/repair-qa?job_id=" + encodeURIComponent(job.id));
+      if (current !== qaGeneration || !dialog.open) return;
+      const qa = record.qa;
+      if (qa) {
+        byId("repair-qa-reproduction").value = qa.reproduction_status;
+        byId("repair-qa-fix").value = qa.fix_status;
+        byId("repair-qa-regression").value = qa.regression_status;
+        byId("repair-qa-evidence").value = qa.evidence || "";
+        byId("repair-qa-revision").textContent =
+          "Recorded for " + qa.commit_sha.slice(0, 12) + " · " + record.revision_status + " · " + timestamp(qa.updated_at);
+      }
+      byId("repair-qa-status").textContent = record.issue_specific_qa_complete
+        ? "QA observations recorded for the current revision. Release approval is still required."
+        : qa ? "Existing QA is incomplete or the repair revision has changed. Re-test before claiming success."
+          : "No issue-specific QA has been recorded for this repair.";
+      save.disabled = false;
+    } catch (error) {
+      if (current !== qaGeneration || !dialog.open) return;
+      byId("repair-qa-status").textContent = "QA is unavailable until the private database and GitHub connection are ready.";
+      actions.notify(error instanceof Error ? error.message : "QA records unavailable.");
+    }
+  }
+
+  async function saveQa(event) {
+    event.preventDefault();
+    if (!qaJob || !qaActions) return;
+    const form = byId("repair-qa-form");
+    if (!form.reportValidity()) return;
+    const payload = {
+      job_id: qaJob.id,
+      reproduction_status: byId("repair-qa-reproduction").value,
+      fix_status: byId("repair-qa-fix").value,
+      regression_status: byId("repair-qa-regression").value,
+      evidence: byId("repair-qa-evidence").value.trim()
+    };
+    if (payload.fix_status === "passed" && payload.reproduction_status !== "reproduced") {
+      byId("repair-qa-status").textContent = "Reproduce the original issue before recording a passing fix.";
+      return;
+    }
+    const button = byId("repair-qa-submit");
+    button.disabled = true;
+    try {
+      const record = await qaActions.api("/api/admin/repair-qa", {
+        method: "POST", body: JSON.stringify(payload)
+      });
+      byId("repair-qa-revision").textContent =
+        "QA recorded for GitHub revision " + record.qa.commit_sha.slice(0, 12);
+      byId("repair-qa-status").textContent = record.issue_specific_qa_complete
+        ? "Issue-specific QA observations recorded. Production approval remains locked."
+        : "QA findings recorded. The repair is not cleared for release.";
+    } catch (error) {
+      byId("repair-qa-status").textContent = "QA was not saved. Check authorization and current PR revision.";
+      qaActions.notify(error instanceof Error ? error.message : "Unable to save QA evidence.");
+    } finally {
+      if (byId("repair-qa-dialog").open) button.disabled = false;
     }
   }
 
@@ -135,7 +220,7 @@
     if (!dialog.open) dialog.showModal();
     try {
       const result = await actions.api("/api/admin/repair-jobs");
-      if (generation === current && dialog.open) renderRelated(result.data || [], finding);
+      if (generation === current && dialog.open) renderRelated(result.data || [], finding, actions);
     } catch {
       if (generation === current && dialog.open) {
         byId("incident-related").replaceChildren(create("p", "incident-empty",
@@ -147,6 +232,15 @@
     const dialog = byId("incident-dialog");
     if (!dialog) return;
     byId("incident-close").addEventListener("click", () => dialog.close());
+    const qaDialog = byId("repair-qa-dialog");
+    byId("repair-qa-close").addEventListener("click", () => qaDialog.close());
+    byId("repair-qa-form").addEventListener("submit", saveQa);
+    qaDialog.addEventListener("close", () => {
+      qaGeneration++;
+      qaJob = null;
+      qaActions = null;
+      if (qaPreviouslyFocused?.isConnected) qaPreviouslyFocused.focus();
+    });
     dialog.addEventListener("close", () => {
       generation++;
       byId("incident-prepare").onclick = null;

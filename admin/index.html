@@ -571,6 +571,53 @@
           </footer>
         </div>
       </dialog>
+      <dialog class="incident-dialog qa-dialog" id="repair-qa-dialog" aria-labelledby="repair-qa-title" aria-describedby="repair-qa-intro">
+        <div class="incident-shell">
+          <header class="incident-header">
+            <div>
+              <span class="eyebrow">REPAIR QUALITY · HUMAN EVIDENCE</span>
+              <h2 id="repair-qa-title">Verify repair outcome</h2>
+              <p id="repair-qa-intro">Record actual issue reproduction and regression testing. This never publishes a release.</p>
+            </div>
+            <button class="incident-close" id="repair-qa-close" type="button" aria-label="Close repair quality review">×</button>
+          </header>
+          <form id="repair-qa-form">
+            <div class="incident-body">
+              <p class="incident-hint" id="repair-qa-revision">Reading the latest review…</p>
+              <p id="repair-qa-status" class="qa-status" role="status" aria-live="polite">Review not recorded.</p>
+              <div class="qa-fields">
+                <label>Original issue reproduced
+                  <select id="repair-qa-reproduction" name="reproduction_status" required>
+                    <option value="not_reproduced">Not reproduced</option>
+                    <option value="reproduced">Reproduced with the original version</option>
+                  </select>
+                </label>
+                <label>Fix verification
+                  <select id="repair-qa-fix" name="fix_status" required>
+                    <option value="inconclusive">Inconclusive</option>
+                    <option value="failed">Still failing</option>
+                    <option value="passed">Fix passed on preview</option>
+                  </select>
+                </label>
+                <label>Regression testing
+                  <select id="repair-qa-regression" name="regression_status" required>
+                    <option value="not_run">Not yet run</option>
+                    <option value="failed">Regression tests failed</option>
+                    <option value="passed">Regression tests passed</option>
+                  </select>
+                </label>
+              </div>
+              <label class="qa-evidence-label" for="repair-qa-evidence">Reproduction steps, expected result, observed result and testing evidence</label>
+              <textarea id="repair-qa-evidence" name="evidence" minlength="30" maxlength="3000" rows="7" required></textarea>
+              <p class="incident-hint">QA evidence is recorded against the current GitHub repair-PR commit. If that commit changes, the review becomes stale.</p>
+            </div>
+            <footer class="incident-actions">
+              <p>Saving records QA observations only. Production publishing remains under separate founder approval.</p>
+              <button class="button primary" id="repair-qa-submit" type="submit">Save QA evidence</button>
+            </footer>
+          </form>
+        </div>
+      </dialog>
       <section class="panel"><div class="table-wrap"><table><thead><tr><th>Severity</th><th>Finding</th><th>Environment</th><th>Status</th><th>Last verified</th><th>Action</th></tr></thead><tbody id="findings-list"><tr><td colspan="6" class="empty-state">Loading findings…</td></tr></tbody></table></div></section>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">RECOMMENDATIONS</span><h2>Improvement opportunities</h2><p>Recommendations are kept separate from confirmed failures.</p></div></div><div class="table-wrap"><table><thead><tr><th>Priority</th><th>Area</th><th>Observation</th><th>Evidence</th><th>Suggested action</th></tr></thead><tbody id="asset-findings-list"><tr><td colspan="5" class="empty-state">Loading recommendations…</td></tr></tbody></table></div></section>
     </section>
