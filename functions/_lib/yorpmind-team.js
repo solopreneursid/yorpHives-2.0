@@ -104,7 +104,12 @@ export function recommendTeamActions(staff, agents, jobs, departments, now = new
   const activeByManager = new Map();
   const activeByAgent = new Map();
   for (const job of sourceJobs) {
-    if (active.has(job.status)) activeByAgent.set(job.agent_id, (activeByAgent.get(job.agent_id) || 0) + 1);
+    if (active.has(job.status)) {
+      activeByAgent.set(job.agent_id, (activeByAgent.get(job.agent_id) || 0) + 1);
+      const assigned = agentById.get(job.agent_id);
+      const lead = teamLeadFor(assigned?.department_id || "", deptNames.get(assigned?.department_id));
+      activeByManager.set(lead, (activeByManager.get(lead) || 0) + 1);
+    }
   }
   const candidates = [];
   const seenCompleted = new Map();
