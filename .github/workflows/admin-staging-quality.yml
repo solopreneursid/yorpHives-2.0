@@ -12,18 +12,6 @@ on:
       - "package.json"
       - "scripts/admin-smoke.mjs"
       - ".github/workflows/admin-staging-quality.yml"
-  pull_request:
-    branches: ["main", "build/yorphives-admin-reliability"]
-    paths:
-      - "admin/**"
-      - "functions/**"
-      - "admin-agent/**"
-      - "admin-monitor/**"
-      - "migrations/**"
-      - "package.json"
-      - "scripts/admin-smoke.mjs"
-      - "scripts/deploy-pages-preview.mjs"
-      - ".github/workflows/admin-staging-quality.yml"
   workflow_dispatch:
 
 permissions:
