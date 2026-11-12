@@ -30,6 +30,13 @@ async function fixture(withSchema = true) {
     "build/agent/repair-" + fixtureId,
     "https://github.com/solopreneursid/yorpHives-2.0/pull/45",
     "2026-11-12T00:00:00Z","2026-11-12T00:00:00Z");
+  if (withSchema) {
+    db.prepare(
+      "INSERT INTO admin_repair_ci_verifications(job_id,commit_sha,checks_json,verified_at) VALUES(?,?,?,?)"
+    ).run(fixtureId, latestSha,
+      JSON.stringify([{ name: "contract-tests", commit_sha: latestSha, conclusion: "success" }]),
+      "2026-11-12T00:00:00Z");
+  }
 
   const prepare = sql => {
     let args = [];
@@ -130,6 +137,10 @@ test("changed GitHub PR commit invalidates prior QA while preserving its history
     assert.equal(stale.qa.commit_sha, latestSha);
     assert.equal(stale.revision_status, "changed");
     assert.equal(stale.issue_specific_qa_complete, false);
+    const newAttempt = await call("POST", validInput());
+    assert.equal(newAttempt.status, 409, "New PR revision must not inherit old CI approval");
+    assert.equal((await newAttempt.json()).error.code, "CI_REVISION_CHANGED");
+    db.prepare("UPDATE admin_repair_ci_verifications SET commit_sha=? WHERE job_id=?").run(nextSha, fixtureId);
     const later = await (await call("POST", { ...validInput(), evidence: "Retested on new revision; original issue still reproduces on old revision. Updated fix passes all regressions." })).json();
     assert.equal(later.qa.commit_sha, nextSha);
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM admin_repair_qa_reports").get().n, 2);
@@ -163,6 +174,22 @@ test("invalid source, insecure origin, unknown PR and unsupported findings are d
     assert.equal((await call("POST", validInput(), { headers: { "x-ci-service": "1" } })).status, 403);
     db.prepare("UPDATE admin_repair_jobs SET status='running' WHERE id=?").run(fixtureId);
     assert.equal((await call("POST", validInput())).status, 409);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM admin_repair_qa_reports").get().n, 0);
+  } finally { globalThis.fetch = originalFetch; db.close(); }
+});
+
+test("repair PR without independently recorded exact-commit CI attestation cannot obtain passing QA", async () => {
+  const { db, call } = await fixture();
+  globalThis.fetch = githubStub();
+  try {
+    db.prepare("DELETE FROM admin_repair_ci_verifications WHERE job_id=?").run(fixtureId);
+    const denied = await call("POST", validInput());
+    assert.equal(denied.status, 409);
+    assert.equal((await denied.json()).error.code, "CI_NOT_VERIFIED");
+    const read = await (await call("GET")).json();
+    assert.equal(read.revision_status, "unverified");
+    assert.equal(read.issue_specific_qa_complete, false);
+    assert.equal(read.production_approved, false);
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM admin_repair_qa_reports").get().n, 0);
   } finally { globalThis.fetch = originalFetch; db.close(); }
 });
