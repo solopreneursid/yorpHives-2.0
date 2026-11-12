@@ -66,7 +66,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   if (isAdminResponse(identity)) return identity;
   if (!await hasTeamSchema(context)) return denied("TEAM_MIGRATION_REQUIRED", "Private migration 0027 is required.", 503);
   const db = context.env.DB!;
-  const [staff, agents, departments, jobs, reports] = await Promise.all([
+  const [staff, agents, departments, jobs, reports, daily] = await Promise.all([
     db.prepare("SELECT staff_id,display_name,tier,domain,reports_to,max_parallel_reviews,enabled FROM yorpmind_staff ORDER BY tier,staff_id LIMIT 20").all<Staff>(),
     db.prepare("SELECT agent_id,display_name,department_id,status,enabled,autonomy_level FROM agent_registry ORDER BY agent_id LIMIT ?").bind(MAX_TEAM_AGENTS_SCANNED).all<Specialist>(),
     db.prepare("SELECT department_id,name FROM agent_departments LIMIT 40").all<Department>(),
