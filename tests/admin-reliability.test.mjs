@@ -48,7 +48,7 @@ test("GitHub write-permission probe is owner-triggered, audited and automaticall
   assert.match(worker, /branch_deleted/);
   assert.match(worker, /x-yorphives-internal-probe/);
   assert.match(route, /permission_probe/);
-  assert.match(route, /github_permission_probe-singleton/);
+  assert.match(route, /github-permission-probe-singleton/);
   assert.match(route, /UPDATE admin_repair_jobs SET status='running'/);
   assert.match(route, /emergencyOverride/);
   assert.match(route, /updated_at<\?/);
