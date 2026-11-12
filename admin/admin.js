@@ -104,6 +104,7 @@ async function loadView(name) {
     headquarters: () => window.loadHeadquarters(),
     departments: () => window.loadHeadquarters(),
     radar: () => window.loadRadar(),
+    intelligence: () => window.loadIntelligence(),
     overview: loadOverview,
     monitoring: loadMonitoring,
     analytics: loadAnalytics,

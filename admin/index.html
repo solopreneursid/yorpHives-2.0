@@ -18,6 +18,7 @@
   <div class="workspace-label">WORKSPACE</div>
   <nav class="side-nav" aria-label="Admin workspaces">
     <button class="nav-item active" data-view="headquarters"><span class="nav-icon">◇</span>Headquarters</button>
+    <button class="nav-item" data-view="intelligence"><span class="nav-icon">✦</span>Ideas &amp; Intelligence</button>
     <button class="nav-item" data-view="radar"><span class="nav-icon">◈</span>Opportunity Radar</button>
     <button class="nav-item" data-view="departments"><span class="nav-icon">▦</span>Departments</button>
     <button class="nav-item" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
@@ -124,6 +125,81 @@
         </aside>
       </div>
     </section>
+    <section class="view" id="view-intelligence" data-title="Global Intelligence">
+      <div class="intel-hero">
+        <div class="intel-intro">
+          <span class="intel-overline"><i aria-hidden="true"></i> RESEARCH & INNOVATION // YORPHIVES</span>
+          <h1>Find what’s <span>worth building.</span></h1>
+          <p>Signals from public developer communities become source-linked hypotheses for tools, apps, plugins, agent-native services, and new YorpHives directions. We measure what we can verify—not imagined demand.</p>
+          <div class="intel-hero-actions">
+            <button class="hq-button hq-button-primary" type="button" id="intel-scan">✦ Run discovery scan</button>
+            <a class="hq-button hq-button-secondary" href="/api/admin/intelligence?format=markdown" target="_blank" rel="noopener noreferrer">Machine-readable ideas ↗</a>
+          </div>
+          <div class="intel-mini-note" id="intel-engine" role="status" aria-live="polite">Checking private research engine…</div>
+        </div>
+        <div class="intel-aside">
+          <span class="intel-overline">RESEARCH PRINCIPLES</span>
+          <h2>Evidence before excitement.</h2>
+          <div class="intel-rule"><b>01</b><div><strong>Observe</strong><span>Public Ask HN, Show HN and open-source projects</span></div></div>
+          <div class="intel-rule"><b>02</b><div><strong>Hypothesize</strong><span>One bounded AI synthesis per scan; ideas must cite collected signals</span></div></div>
+          <div class="intel-rule"><b>03</b><div><strong>Validate</strong><span>Test demand, technical feasibility, and willingness to pay before building</span></div></div>
+          <p>Community signals have geographic and audience bias. These suggestions are not independently validated global-market findings.</p>
+        </div>
+      </div>
+      <div class="intel-stats" aria-label="Global Intelligence metrics">
+        <article><span>PRODUCT HYPOTHESES</span><strong id="intel-total">—</strong><small>Proposals, not verified products</small></article>
+        <article><span>SHORTLISTED</span><strong id="intel-shortlisted">—</strong><small>Prioritized for founder review</small></article>
+        <article><span>PUBLIC SOURCES</span><strong id="intel-sources">—</strong><small>Linkable research observations</small></article>
+        <article><span>RESEARCH RUNS</span><strong id="intel-runs">—</strong><small>Durable, bounded and auditable</small></article>
+      </div>
+      <div class="intel-grid">
+        <section class="intel-primary">
+          <div class="intel-section-head">
+            <div><span class="intel-overline">GROWTH BACKLOG</span><h2>Ideas &amp; directions</h2>
+              <p>Ranked by a heuristic for investigation—not market size or expected revenue.</p></div>
+            <div class="intel-filters">
+              <label for="intel-status">Status</label>
+              <select class="hq-input" id="intel-status">
+                <option value="active">Open ideas</option><option value="all">All</option>
+                <option value="shortlisted">Shortlisted</option><option value="proposed">New proposals</option>
+                <option value="promoted">Planned missions</option><option value="dismissed">Dismissed</option>
+              </select>
+              <label for="intel-type">Format</label>
+              <select class="hq-input" id="intel-type">
+                <option value="all">All formats</option><option value="tool">Tool</option><option value="app">App</option>
+                <option value="plugin">Plugin</option><option value="platform">Platform</option>
+                <option value="service">Service</option><option value="direction">Business direction</option>
+              </select>
+            </div>
+          </div>
+          <div id="intel-status-text" class="intel-status-message" role="status" aria-live="polite">Loading source-linked ideas…</div>
+          <div id="intel-ideas" class="intel-cards"></div>
+        </section>
+        <aside class="intel-sidebar">
+          <div class="intel-panel">
+            <span class="intel-overline">LATEST RUNS</span>
+            <h2>Research journal</h2>
+            <p>Failures and incomplete scans stay visible. A successful scan can find zero worthwhile ideas.</p>
+            <div id="intel-journal" class="intel-journal"></div>
+          </div>
+          <div class="intel-panel intel-provenance">
+            <span class="intel-overline">SOURCE FOOTPRINT</span>
+            <h2>What we're seeing</h2>
+            <div class="intel-source-row"><span>Ask HN · user questions</span><b id="intel-ask">—</b></div>
+            <div class="intel-source-row"><span>Show HN · product examples</span><b id="intel-show">—</b></div>
+            <div class="intel-source-row"><span>GitHub · open projects</span><b id="intel-github">—</b></div>
+            <p id="intel-disclaimer">Regional demand, competition and pricing are unverified. Never infer global adoption from a developer community.</p>
+          </div>
+          <div class="intel-panel intel-next">
+            <span class="intel-overline">BUILD THE RIGHT THING</span>
+            <h2>From hypothesis to launch</h2>
+            <p>Shortlist a candidate, gather independent market evidence, interview real target users, and run a bounded MVP experiment. Only then should Product and Engineering receive an implementation mission.</p>
+            <button class="hq-text-action" type="button" data-go="headquarters">Open mission control ↗</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
     <section class="view" id="view-radar" data-title="Opportunity Radar">
       <div class="radar-hero">
         <div class="radar-hero-main">
@@ -283,5 +359,7 @@
 <script src="/admin/admin.js" defer></script>
 <script src="/admin/headquarters.js" defer></script>
 <script src="/admin/radar.js" defer></script>
+<script src="/admin/intelligence.js" defer></script>
+<script src="/admin/validation.js" defer></script>
 </body>
 </html>

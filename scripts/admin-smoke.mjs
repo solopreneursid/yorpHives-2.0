@@ -61,6 +61,8 @@ async function run() {
     const readEndpoints = [
       "/api/admin/headquarters",
       "/api/admin/radar",
+      "/api/admin/intelligence",
+      "/api/admin/validation",
       "/api/admin/overview",
       "/api/admin/assets",
       "/api/admin/findings",
@@ -92,6 +94,26 @@ async function run() {
         a.enabled === 1 && a.status === "ready" && a.autonomy_level === "recommend").length === 7,
         "Only seven recommendation specialists are enabled; engineering and QA still require verified runtimes");
     }
+    if (process.env.PAGES_BRANCH === "build/headquarters-global-intelligence") {
+      const researchResponse = await page.request.get(baseUrl + "/api/admin/intelligence", { headers: accessHeaders });
+      const research = researchResponse.ok() ? await researchResponse.json() : null;
+      record("intelligence_private_worker_health", researchResponse.ok() && research?.engine_available === true,
+        "Private Research Worker is healthy through preview-only service binding");
+      record("intelligence_live_source_provenance", Boolean(research?.ideas?.length) &&
+        research.ideas.some(idea => idea.sources?.length && idea.sources.every(source => source.source_url?.startsWith("https://"))),
+        "Stored hypotheses have legitimate public source links");
+    }
+    await page.locator('.nav-item[data-view="intelligence"]').click();
+    await page.locator("#view-intelligence").waitFor({ state: "visible", timeout: 10000 });
+    record("intelligence_workspace_rendered", await page.locator("#view-intelligence h1").count() === 1, "Protected research UI renders");
+    await page.waitForFunction(() => document.querySelector("#intel-status-text")?.textContent?.includes("hypotheses stored"), null, { timeout: 20000 });
+    record("intelligence_source_disclaimer", (await page.locator("#view-intelligence").innerText()).includes("not independently validated"), "Unverified evidence disclosed");
+    const proposalCards = await page.locator("#intel-ideas .intel-card").count();
+    const experimentPanels = await page.locator("#intel-ideas .hq-val-section").count();
+    record("intelligence_validation_lab_inline",
+      proposalCards > 0 && experimentPanels === proposalCards,
+      "Each product hypothesis has a source-independent validation panel, without performing a mutation");
+    await page.locator('.nav-item[data-view="headquarters"]').click();
     await page.locator('.nav-item[data-view="radar"]').click();
     await page.locator("#view-radar").waitFor({ state: "visible", timeout: 10000 });
     record("radar_workspace_rendered", await page.locator("#view-radar h1").count() === 1, "Opportunity Radar view is accessible");
@@ -149,7 +171,7 @@ async function run() {
 
     record("browser_page_errors", pageErrors.length === 0, pageErrors.length + " uncaught page errors");
   } catch (error) {
-    record("admin_browser_flow", false, "Browser flow failed; inspect the workflow step for the failure location.");
+    record("admin_browser_flow", false, "Browser flow failed at: " + String(error?.message || error).split("\n")[0].slice(0,180));
   } finally {
     if (context) await context.close();
     await browser.close();
@@ -167,6 +189,7 @@ async function run() {
   };
   await writeFile(reportPath, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report.summary));
+  if (failures.length) console.warn("Admin smoke failures: " + JSON.stringify(failures.map(item => ({ name: item.name, detail: item.detail }))));
   if (failures.length) process.exitCode = 1;
 }
 
