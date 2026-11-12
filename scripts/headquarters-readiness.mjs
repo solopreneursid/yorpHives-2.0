@@ -11,6 +11,9 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   "functions/api/admin/repair-jobs.ts",
   "functions/api/admin/repair-qa.ts",
   "functions/api/admin/release-evidence.ts",
+  "functions/_lib/yorpmind.js",
+  "functions/api/admin/yorpmind.ts",
+  "admin/yorpmind.js",
   "functions/api/admin/business-intelligence.ts",
   "admin-monitor/worker.js",
   "admin-agent/worker.js",
@@ -68,13 +71,13 @@ export async function assessHeadquarters(root) {
   } catch {
     // Report through the explicit migration check below.
   }
-  const expected = Array.from({ length: 20 }, (_, i) => i + 4);
+  const expected = Array.from({ length: 21 }, (_, i) => i + 4);
   const missing = expected.filter(number => !migrations.includes(number));
   const duplicates = migrations.filter((number, index) => migrations.indexOf(number) !== index);
   add("headquarters-migrations", missing.length === 0 && duplicates.length === 0,
     missing.length || duplicates.length ?
       "Missing migration IDs: " + missing.join(", ") + "; duplicate IDs: " + duplicates.join(", ") :
-      "Migrations 0004–0023 exist with unique IDs; application and restore tests remain mandatory");
+      "Migrations 0004–0024 exist with unique IDs; application and restore tests remain mandatory");
 
   let workflow = "";
   try {
