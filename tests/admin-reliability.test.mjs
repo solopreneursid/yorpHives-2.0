@@ -63,7 +63,7 @@ test("GitHub write-permission probe is owner-triggered, audited and automaticall
   assert.match(ui, /Emergency override will reclaim that stale lock/);
   assert.match(html, /verify-github-permissions/);
   assert.match(ui, /permissionProbeButton/);
-  assert.match(ui, /No files are merged/);
+  assert.match(ui, /Nothing is merged/);
 });
 
 test("admin health checks are read-only, same-origin and reject arbitrary targets and redirects", async () => {
