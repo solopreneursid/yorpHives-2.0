@@ -135,7 +135,7 @@ async function run() {
       actionUi.available && actionUi.untrusted_inert && actionUi.button_present,
       "HTML-shaped mission content is shown inertly, and review navigation is visible");
     // Return to real authenticated evidence after the browser-local synthetic fixture.
-    await page.evaluate(() => window.loadOwnerActionCenter?.());
+    await page.evaluate(() => window.loadOwnerActionCenter?.(true));
 
     // Verify the real private D1 schema before installing synthetic browser GET fixtures.
     const repairLinksResponse = await page.request.get(baseUrl + "/api/admin/repair-jobs", {
