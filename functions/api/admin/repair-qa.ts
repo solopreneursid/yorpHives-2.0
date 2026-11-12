@@ -3,7 +3,7 @@ import { adminJson, isAdminResponse, requireAdmin, type AdminRequestContext } fr
 type ReproductionStatus = "reproduced" | "not_reproduced";
 type FixStatus = "passed" | "failed" | "inconclusive";
 type RegressionStatus = "passed" | "failed" | "not_run";
-type RevisionStatus = "current" | "changed" | "unavailable" | "not_reviewed";
+type RevisionStatus = "current" | "changed" | "unavailable" | "not_reviewed" | "unverified";
 
 interface QaRequest {
   job_id?: string;
@@ -12,6 +12,7 @@ interface QaRequest {
   regression_status?: RegressionStatus;
   evidence?: string;
 }
+interface CiVerification { commit_sha: string; checks_json: string; verified_at: string; }
 interface RepairJob {
   id: string;
   status: string;
@@ -72,6 +73,12 @@ async function getJob(context: AdminRequestContext, jobId: string): Promise<Repa
   ).bind(jobId).first<RepairJob>();
 }
 
+async function getCi(context: AdminRequestContext, jobId: string): Promise<CiVerification | null> {
+  return context.env.DB!.prepare(
+    "SELECT commit_sha,checks_json,verified_at FROM admin_repair_ci_verifications WHERE job_id=?"
+  ).bind(jobId).first<CiVerification>();
+}
+
 async function githubHead(job: RepairJob): Promise<{ sha: string; number: number } | null> {
   const number = pullNumber(job.pull_request_url);
   if (!number || job.branch_name !== "build/agent/repair-" + job.id) return null;
@@ -94,10 +101,11 @@ async function githubHead(job: RepairJob): Promise<{ sha: string; number: number
   return { sha: pr.head.sha!.toLowerCase(), number };
 }
 
-function responseFor(jobId: string, qa: QaRow | null, head: { sha: string } | null): QaResponse {
-  const revision_status: RevisionStatus = !qa ? "not_reviewed" :
+function responseFor(jobId: string, qa: QaRow | null, head: { sha: string } | null, ciSha: string | null): QaResponse {
+  const revision_status: RevisionStatus = !ciSha ? "unverified" :
+    !qa ? "not_reviewed" :
     !head ? "unavailable" :
-    qa.commit_sha.toLowerCase() === head.sha ? "current" : "changed";
+    qa.commit_sha.toLowerCase() === head.sha && head.sha === ciSha.toLowerCase() ? "current" : "changed";
   const issue_specific_qa_complete = revision_status === "current" &&
     qa?.reproduction_status === "reproduced" &&
     qa.fix_status === "passed" && qa.regression_status === "passed";
@@ -155,16 +163,19 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   ).first<{ name: string }>();
   if (!hasSchema) return adminJson({ error: { code: "QA_MIGRATION_REQUIRED", message: "Repair QA records require migration 0023." } }, 503);
 
-  const qa = await context.env.DB!.prepare(
-    "SELECT job_id,commit_sha,pr_number,reproduction_status,fix_status,regression_status,evidence,reviewed_by,created_at,updated_at " +
-    "FROM admin_repair_qa_reports WHERE job_id=? ORDER BY updated_at DESC LIMIT 1"
-  ).bind(jobId).first<QaRow>();
+  const [qa, ci] = await Promise.all([
+    context.env.DB!.prepare(
+      "SELECT job_id,commit_sha,pr_number,reproduction_status,fix_status,regression_status,evidence,reviewed_by,created_at,updated_at " +
+      "FROM admin_repair_qa_reports WHERE job_id=? ORDER BY updated_at DESC LIMIT 1"
+    ).bind(jobId).first<QaRow>(),
+    getCi(context, jobId)
+  ]);
 
   let head: { sha: string } | null = null;
   if (qa && job.pull_request_url) {
     try { head = await githubHead(job); } catch { head = null; }
   }
-  const data = responseFor(jobId, qa, head);
+  const data = responseFor(jobId, qa, head, ci?.commit_sha || null);
   return context.request.headers.get("accept")?.includes("text/markdown") ? asMarkdown(data) : adminJson(data);
 }
 
@@ -202,12 +213,20 @@ export async function onRequestPost(context: AdminRequestContext): Promise<Respo
   ).first<{ name: string }>();
   if (!hasSchema) return adminJson({ error: { code: "QA_MIGRATION_REQUIRED", message: "Repair QA records require migration 0023." } }, 503);
 
+  const ci = await getCi(context, job.id);
+  if (!ci || !SHA.test(ci.commit_sha)) {
+    return adminJson({ error: { code: "CI_NOT_VERIFIED", message: "This repair has no recorded exact-commit CI attestation; QA cannot be certified." } }, 409);
+  }
+
   let head: { sha: string; number: number } | null;
   try { head = await githubHead(job); } catch (error) {
     return adminJson({ error: { code: "GITHUB_VERIFICATION_FAILED",
       message: error instanceof Error ? error.message : "GitHub verification unavailable." } }, 503);
   }
   if (!head) return adminJson({ error: { code: "UNVERIFIED_BRANCH", message: "No authorized repair pull request exists." } }, 409);
+  if (head.sha !== ci.commit_sha.toLowerCase()) {
+    return adminJson({ error: { code: "CI_REVISION_CHANGED", message: "The repair PR head no longer matches the exact CI-verified revision. Repeat independent verification before recording QA." } }, 409);
+  }
 
   if (body.fix_status === "passed" && body.reproduction_status !== "reproduced") {
     return adminJson({ error: { code: "REPRODUCTION_REQUIRED", message: "A fix cannot pass before the original issue is reproduced." } }, 400);
@@ -232,5 +251,5 @@ export async function onRequestPost(context: AdminRequestContext): Promise<Respo
     "SELECT job_id,commit_sha,pr_number,reproduction_status,fix_status,regression_status,evidence,reviewed_by,created_at,updated_at " +
     "FROM admin_repair_qa_reports WHERE job_id=? AND commit_sha=?"
   ).bind(job.id, head.sha).first<QaRow>();
-  return adminJson(responseFor(job.id, qa, head), 201);
+  return adminJson(responseFor(job.id, qa, head, ci.commit_sha), 201);
 }
