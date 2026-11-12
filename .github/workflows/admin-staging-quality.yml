@@ -26,6 +26,8 @@ jobs:
     name: Authenticated Admin browser smoke tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment:
+      name: staging-deployments
     env:
       CF_ACCOUNT_ID: 69234e51e08d8013980a7ff869746609
       PAGES_PROJECT_NAME: yorphives-admin-staging
@@ -43,11 +45,11 @@ jobs:
         shell: bash
         run: |
           if [ -z "$CF_API_TOKEN" ]; then
-            echo "::error::Add CLOUDFLARE_API_TOKEN as a repository secret with account-scoped Cloudflare Pages Edit permission."
+            echo "::error::Add CLOUDFLARE_API_TOKEN as an environment secret in the protected staging-deployments environment with account-scoped Cloudflare Pages Edit permission."
             exit 1
           fi
           if [ -z "$CF_ACCESS_CLIENT_ID" ] || [ -z "$CF_ACCESS_CLIENT_SECRET" ]; then
-            echo "::error::Add CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET as repository secrets, then authorize the token with a Service Auth policy on the YorpHives Admin deployment aliases Access application."
+            echo "::error::Add CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET as environment secrets in staging-deployments, then authorize the token with a Service Auth policy on the YorpHives Admin deployment aliases Access application."
             exit 1
           fi
       - name: Deploy the Admin feature branch to isolated Pages staging
