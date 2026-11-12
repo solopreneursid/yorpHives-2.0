@@ -18,7 +18,7 @@ window.HQToolActivity={
     " browser · "+data.registered_agent_tools+" private API";
    byId("activity-status").textContent=data.data_collected?
     "Recorded success events over "+data.from_day+" to "+data.to_day+
-    " · browser reports are unverified · agent calls require scoped Access":
+    " · browser reports may include previous QA · agent calls require scoped Access":
     "No successful tool actions have been recorded yet in this environment. Missing evidence is not zero demand.";
    const list=byId("activity-list");list.replaceChildren();
    if(!data.activity.length)list.append(node("p","hq-activity-empty",
