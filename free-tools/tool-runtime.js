@@ -46,6 +46,11 @@ for(const [key,label,type,defaultValue] of fields){
  values[key]=input;wrap.append(input);form.append(wrap);
 }
 const actions=make("div",{class:"page-actions"});const run=make("button",{class:"button button-primary",type:"button"},"Run tool ↗");const copy=make("button",{class:"button button-secondary",type:"button"},"Copy result");actions.append(run,copy);const output=make("pre",{class:"tool-output",id:"tool-result"},"Your result will appear here.");const status=make("p",{class:"tool-status"},"Runs locally in your browser. No sign-up required.");form.append(actions,status,output);root.replaceChildren(form);
+if(["word-counter","json-formatter","json-validator","json-minifier","uuid-generator","sha256-generator"].includes(id)){
+ const notice=make("p",{class:"tool-status"},
+  "Anonymous usage measurement: after a successful run, only this tool's identifier and a completion marker may be counted. Your inputs and results stay in your browser. Global Privacy Control and Do Not Track are respected.");
+ form.append(notice);
+}
 const v=k=>values[k]?.type==="checkbox"?values[k].checked:values[k]?.value??"";
 const num=k=>{const n=Number(v(k));if(!Number.isFinite(n))throw Error("Enter valid numbers in all numeric fields.");return n;};
 const fmt=n=>Number(n.toFixed(6)).toLocaleString();
@@ -82,6 +87,6 @@ const calc=async()=>{
  default:throw Error("This tool is not available yet.");
  }
 };
-run.addEventListener("click",async()=>{try{output.textContent=String(await calc());status.textContent="Completed locally in your browser.";status.dataset.state="success";}catch(e){output.textContent="";status.textContent=e.message;status.dataset.state="error";}});
+run.addEventListener("click",async()=>{try{output.textContent=String(await calc());status.textContent="Completed locally in your browser.";status.dataset.state="success";import("/free-tools/usage-telemetry.js").then(module=>module.reportToolSuccess(id)).catch(()=>{});}catch(e){output.textContent="";status.textContent=e.message;status.dataset.state="error";}});
 copy.addEventListener("click",async()=>{if(output.textContent)try{await navigator.clipboard.writeText(output.textContent);status.textContent="Copied to clipboard.";}catch{status.textContent="Clipboard access is unavailable in this browser.";}});
 }

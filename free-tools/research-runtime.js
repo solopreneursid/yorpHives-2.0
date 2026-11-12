@@ -22,6 +22,10 @@ const form=make("div","tool-form"),inputs={};
 for(const f of fields){const label=make("label","tool-field"),span=make("span","",f[1]);label.append(span);let input;if(f[2]==="textarea"){input=make("textarea","tool-textarea");input.rows=7;input.value=f[3];}else if(f[2]==="select"){input=make("select","tool-input");f[4].forEach(v=>{const o=make("option","",v);o.value=v;input.append(o);});input.value=f[3];}else{input=make("input","tool-input");input.type=f[2];if(f[3])input.value=f[3];}input.name=f[0];inputs[f[0]]=input;label.append(input);form.append(label);}
 const actions=make("div","page-actions"),run=make("button","button button-primary","Run tool ↗"),copy=make("button","button button-secondary","Copy result"),save=make("button","button button-secondary","Download result");run.type=copy.type=save.type="button";actions.append(run,copy,save);
 const status=make("p","tool-status","Runs in your browser. No account required."),out=make("pre","tool-output","Your result will appear here.");form.append(actions,status,out);root.replaceChildren(form);copy.disabled=save.disabled=true;
+if(["html-to-markdown","csv-to-markdown"].includes(id)){
+ form.append(make("p","tool-status",
+  "Anonymous usage measurement: only a successful tool-action count may be sent. Input and output stay in your browser. Global Privacy Control and Do Not Track are respected."));
+}
 const v=k=>inputs[k].value,n=k=>{const x=Number(v(k));if(!Number.isFinite(x))throw Error("Enter valid numbers.");return x;},fmt=x=>Number(x.toFixed(2)).toLocaleString();
 let result="",blob=null,filename="yorphives-result.txt";
 const download=(b,name)=>{const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1200);};
@@ -45,7 +49,7 @@ case "csv-to-markdown":{const rows=csvRows(v("source"));if(!rows.length)throw Er
 case "llms-txt-generator":{if(!v("site").trim()||!v("summary").trim())throw Error("Enter a website name and description.");const lines=v("pages").split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(line=>{const [url,title,desc]=line.split("|").map(x=>x.trim());let u;try{u=new URL(url);}catch{throw Error("Invalid page URL: "+url);}if(!["http:","https:"].includes(u.protocol))throw Error("Only HTTP(S) URLs are accepted.");return "- ["+(title||u.pathname||u.hostname)+"]("+u.href+")"+(desc?" — "+desc:"");}),out="# "+v("site").trim()+"\n\n> "+v("summary").trim()+"\n\n## Pages\n\n"+lines.join("\n")+"\n";blob=new Blob([out],{type:"text/markdown"});filename="llms.txt";return out+"\n\nReview URLs and descriptions. This tool does not crawl or verify pages.";}
 default:throw Error("Tool implementation unavailable.");
 }}
-run.addEventListener("click",async()=>{status.textContent="Working in your browser…";try{result=await execute();out.textContent=result;status.textContent="Complete. Review assumptions and output.";copy.disabled=save.disabled=false;}catch(e){result="";out.textContent="";status.textContent=e.message||"Unable to complete.";copy.disabled=save.disabled=true;}});
+run.addEventListener("click",async()=>{status.textContent="Working in your browser…";try{result=await execute();out.textContent=result;status.textContent="Complete. Review assumptions and output.";copy.disabled=save.disabled=false;import("/free-tools/usage-telemetry.js").then(module=>module.reportToolSuccess(id)).catch(()=>{});}catch(e){result="";out.textContent="";status.textContent=e.message||"Unable to complete.";copy.disabled=save.disabled=true;}});
 copy.addEventListener("click",async()=>{if(result)try{await navigator.clipboard.writeText(result);status.textContent="Result copied.";}catch{status.textContent="Clipboard access was blocked."; }});
 save.addEventListener("click",()=>{if(blob)download(blob,filename);else if(result)download(new Blob([result],{type:"text/plain"}),filename);});
 })();

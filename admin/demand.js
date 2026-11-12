@@ -159,7 +159,8 @@ window.loadDemand=async()=>{
   await Promise.allSettled([
    window.HQTrafficEvidence?.load(manifest),
    window.HQMarketSources?.load(),
-   window.HQNextActions?.load()
+   window.HQNextActions?.load(),
+   window.HQToolActivity?.load()
   ].filter(Boolean));
  }finally{loading=false;}
 };
