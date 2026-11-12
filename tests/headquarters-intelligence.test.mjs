@@ -257,6 +257,8 @@ test("model failure is recorded as a partial run, never a fabricated idea",async
    assert.equal(record.status,"partial");
    assert.ok(record.source_count>=4);
    assert.equal(record.model_calls,1);
+   const duplicate=db.prepare("UPDATE hq_intelligence_runs SET model_calls=1 WHERE run_id=? AND model_calls=0 RETURNING run_id").get(id);
+   assert.equal(duplicate,undefined,"repeat inference is blocked by the database");
    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_intelligence_ideas").get().n,0);
  }finally{globalThis.fetch=originalFetch;db.close();}
 });

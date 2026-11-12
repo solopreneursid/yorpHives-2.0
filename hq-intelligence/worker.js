@@ -111,9 +111,14 @@ export class ResearchWorkflow extends WorkflowEntrypoint {
    let modelProblem=null;
    if(count>=3&&this.env.AI){
      const result=await step.do("generate-bounded-product-hypotheses",{
-      timeout:"5 minutes",retries:{limit:0}
+      timeout:"5 minutes",retries:{limit:1,delay:"10 seconds",backoff:"linear"}
      },async()=>{
-      await this.env.DB.prepare("UPDATE hq_intelligence_runs SET model_calls=1 WHERE run_id=? AND model_calls=0").bind(id).run();
+      // Workflow retries must not trigger repeated paid inference. The
+      // database CAS grants exactly one attempt even if a step replays.
+      const attempt=await this.env.DB.prepare(
+        "UPDATE hq_intelligence_runs SET model_calls=1 WHERE run_id=? AND model_calls=0 RETURNING run_id"
+      ).bind(id).first();
+      if(!attempt?.run_id)return {ideas:[],error:"Inference already attempted; automatic repeated billing disabled."};
       try{return {ideas:await synthesizeIdeas(this.env.AI,collected.sources),error:null};}
       catch(error){return {ideas:[],error:"AI synthesis unavailable: "+message(error)};}
      });

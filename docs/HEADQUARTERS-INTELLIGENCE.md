@@ -39,7 +39,7 @@ Cloudflare Access-protected /admin/#intelligence
 
 - Outbound Worker requests are hard-coded to `hacker-news.firebaseio.com` and `api.github.com`, HTTPS only, no redirects, bounded response sizes, ≤8 second timeouts and bounded object counts. Source content is sanitized and treated as untrusted prompt data.
 - 11 Ask HN items, 11 Show HN items, and up to 16 GitHub public repositories per scan. News discussions and repositories are *inspiration*, not survey statistics.
-- Model output must cite actual source IDs collected **during that scan**. One model call generates up to three hypotheses. Every idea includes problem, audience, MVP, differentiation, distribution, validation experiment, monetization *hypothesis*, risks, and source references.
+- Model output must cite actual source IDs collected **during that scan**. One model attempt generates up to three hypotheses. A D1 compare-and-swap claim prevents repeat paid inference if a Workflow step replays. Every idea includes problem, audience, MVP, differentiation, distribution, validation experiment, monetization *hypothesis*, risks, and source references.
 - A deterministic 0–85 **triage priority** considers recency, source diversity and implementation shape. It is not market confidence, economic feasibility, conversion probability or expected revenue.
 - Persistent source and idea records are de-duplicated by public source identity and normalized idea title fingerprint. Owner decisions are not overwritten by later discoveries.
 - Failed providers, incomplete AI results and partial runs are recorded. If research fails, the interface does not fabricate replacement ideas. A scan is bounded by a Workflow quota and never runs without a database record.
