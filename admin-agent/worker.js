@@ -466,11 +466,17 @@ async function reviewProposal(env, base, proposal) {
   };
 }
 
-async function createDraftPullRequest(env, branch, jobId, requestedBy, requestText, summary, aiReview, checks) {
+async function createDraftPullRequest(env, branch, verifiedCommitSha, jobId, requestedBy, requestText, summary, aiReview, checks) {
+  // A branch could move between CI completion and PR creation.
+  const ref = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${branch}`);
+  assertVerifiedBranchHead({ branch, expectedSha: verifiedCommitSha, currentSha: ref.object?.sha });
   const existing = await github(env, `/repos/${REPOSITORY}/pulls?state=open&head=solopreneursid:${encodeURIComponent(branch)}&base=${encodeURIComponent(repairBase(env))}`);
-  if (existing.length) return existing[0];
+  if (existing.length) {
+    assertVerifiedBranchHead({ branch, expectedSha: verifiedCommitSha, currentSha: existing[0].head?.sha });
+    return existing[0];
+  }
   const checkLines = checks.map((check) => `- ${check.name}: ${check.conclusion}`).join("\n");
-  return github(env, `/repos/${REPOSITORY}/pulls`, "POST", {
+  const created = await github(env, `/repos/${REPOSITORY}/pulls`, "POST", {
     title: `[Agent] ${summary.slice(0, 150)}`,
     head: branch,
     base: repairBase(env),
@@ -504,6 +510,8 @@ async function createDraftPullRequest(env, branch, jobId, requestedBy, requestTe
       "This is a draft PR. Review the diff before accepting or merging."
     ].join("\n")
   });
+  assertVerifiedBranchHead({ branch, expectedSha: verifiedCommitSha, currentSha: created.head?.sha });
+  return created;
 }
 
 async function probeGithubWritePermissions(env) {
@@ -673,7 +681,7 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
       );
       const verification = await waitForChecks(this.env, step, ciTrigger.commitSha, branchCommit.branch);
       const pullRequest = await step.do("open-draft-pull-request", async () =>
-        createDraftPullRequest(this.env, branchCommit.branch, jobId, requestedBy, requestText, proposal.summary, aiReview, verification.checks)
+        createDraftPullRequest(this.env, branchCommit.branch, ciTrigger.commitSha, jobId, requestedBy, requestText, proposal.summary, aiReview, verification.checks)
       );
 
       await step.do("record-human-review-required", async () => {
