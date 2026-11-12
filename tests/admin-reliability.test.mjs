@@ -70,12 +70,12 @@ test("GitHub write-permission probe is owner-triggered, audited and automaticall
 test("Free Tools browser sweep recognizes real tool roots and hidden controls stay hidden", async () => {
   const quality = await read("../scripts/site-quality.mjs");
   const styles = await read("../styles.css");
-  assert.match(quality, /main \\[data-tool\\]:visible/);
-  assert.match(quality, /main \\#tool-app:visible/);
-  assert.match(quality, /main \\#advanced-tool:visible/);
+  assert.match(quality, /main \[data-tool\]:visible/);
+  assert.match(quality, /main #tool-app:visible/);
+  assert.match(quality, /main #advanced-tool:visible/);
   assert.match(quality, /keyboardFocusable/);
   assert.match(quality, /visible_control_count/);
-  assert.match(styles, /\\[hidden\\]\\s*\\{\\s*display:\\s*none\\s*!important/);
+  assert.match(styles, /\[hidden\]\s*\{\s*display:\s*none\s*!important/);
 });
 
 test("admin health checks are read-only, same-origin and reject arbitrary targets and redirects", async () => {
