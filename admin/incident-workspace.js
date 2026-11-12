@@ -105,8 +105,7 @@
         // Preparing this form is read-only. Dispatch still requires the founder to
         // submit the existing authenticated form after inspecting the proposed text.
         dialog.close();
-        actions.showView("agents");
-        await actions.loadAgents();
+        await actions.showView("agents");
         const select = byId("repair-finding");
         const option = Array.from(select.options).find(item => item.value === finding.id);
         // Only select an asset finding when staging has the source-qualified
