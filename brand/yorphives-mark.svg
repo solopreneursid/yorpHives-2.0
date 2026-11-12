@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 100 100" role="img" aria-label="YorpHives">
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08e0f7"/><stop offset="1" stop-color="#06aef5"/></linearGradient>
+ <linearGradient id="aqua" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#05d9da"/><stop offset="1" stop-color="#00a78b"/></linearGradient>
+ <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0abdf3"/><stop offset="1" stop-color="#0342e9"/></linearGradient>
+ <linearGradient id="deep" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#0039f9"/><stop offset="1" stop-color="#0021a7"/></linearGradient>
+</defs>
+<path fill="url(#sky)" d="M6 23 30 8 51 19 35 29 25 27 25 42 6 52Z"/>
+<path fill="url(#blue)" d="M6 52 25 42 25 52 45 64 45 78 25 66 6 56Z"/>
+<path fill="url(#deep)" d="M25 66 45 78 50 81 55 78 55 65 75 53 75 81 50 96 25 81Z"/>
+<path fill="url(#aqua)" d="M35 29 69 8 87 20 79 24 79 30 94 22 94 52 55 74 55 52 75 40 75 30 50 45Z"/>
+</svg>

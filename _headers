@@ -14,3 +14,6 @@
 
 /openapi.yaml
   Link: <https://yorphives.com/openapi.yaml>; rel="canonical"
+
+/brand/*
+  Cache-Control: public, max-age=2592000

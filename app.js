@@ -1,3 +1,13 @@
+// Keep the site icon consistent on catalogue, content, and free-tool pages.
+if (!document.head.querySelector('link[rel~="icon"]')) {
+  const icon = document.createElement("link");
+  icon.rel = "icon";
+  icon.type = "image/svg+xml";
+  icon.href = "/brand/yorphives-mark.svg";
+  document.head.append(icon);
+}
+document.querySelectorAll(".brand-mark").forEach((mark) => mark.setAttribute("aria-hidden", "true"));
+
 const menuButton = document.querySelector(".menu-toggle");
 const mobileNav = document.querySelector("#mobile-nav");
 

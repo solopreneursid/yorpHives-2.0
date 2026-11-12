@@ -27,3 +27,10 @@
 
 /* Preserve native hidden semantics even when component classes set display. */
 [hidden]{display:none!important}
+
+/* The official YorpHives three-band folded mark is shared by every public page. */
+.brand .brand-mark{display:block;flex:none;width:40px;height:40px;border:0;border-radius:0;background:transparent url('/brand/yorphives-logo.webp') center/contain no-repeat!important;color:transparent!important;font-size:0!important}
+.site-footer .brand .brand-mark{width:34px;height:34px}
+.request-core>span{background:transparent;border-radius:0;width:54px;height:54px}
+.request-core>span>img{display:block;width:54px;height:54px;object-fit:contain}
+@media(max-width:700px){.site-header .brand .brand-mark{width:36px;height:36px}}
