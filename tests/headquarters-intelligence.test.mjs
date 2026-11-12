@@ -38,6 +38,9 @@ const businessRouteURI=data((await file("../functions/api/admin/business-intelli
 const {onRequestGet:getBusinessBoard,onRequestPost:postBusinessReview}=await import(businessRouteURI);
 const synthesisURI=data(await file("../hq-intelligence/synthesis.js"));
 const {parseIdeas,synthesizeIdeas}=await import(synthesisURI);
+const patternsURI=data(await file("../functions/_lib/yorpmind-patterns.js"));
+const evolutionURI=data((await file("../hq-intelligence/yorpmind-evolution.js"))
+  .replace('"../functions/_lib/yorpmind-patterns.js"',JSON.stringify(patternsURI)));
 const workerURI=data((await file("../hq-intelligence/worker.js"))
   .replace('import { WorkflowEntrypoint } from "cloudflare:workers";',
     "class WorkflowEntrypoint { constructor() { this.env = {}; } }")
@@ -48,7 +51,9 @@ const workerURI=data((await file("../hq-intelligence/worker.js"))
   .replace('import { collectPublicSignals } from "./sources.js";',
     'import { collectPublicSignals } from '+JSON.stringify(sourcesURI)+";")
   .replace('import { MODEL, synthesizeIdeas } from "./synthesis.js";',
-    'import { MODEL, synthesizeIdeas } from '+JSON.stringify(synthesisURI)+";"));
+    'import { MODEL, synthesizeIdeas } from '+JSON.stringify(synthesisURI)+";")
+  .replace('import { scanYorpMindEvolution } from "./yorpmind-evolution.js";',
+    'import { scanYorpMindEvolution } from '+JSON.stringify(evolutionURI)+";"));
 const {ResearchWorkflow,default:worker}=await import(workerURI);
 const {collectPublicSignals}=await import(sourcesURI);
 

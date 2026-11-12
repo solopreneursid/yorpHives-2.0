@@ -559,6 +559,76 @@ async function run() {
     await page.locator("#hq-close").click();
     await page.unroute("**/api/admin/yorpmind-search?**");
 
+    // YorpMind self-evolution is source-backed and zero-inference. Read-only
+    // CI identity may inspect proposals but MUST NOT acknowledge or dismiss.
+    const evolutionResponse = await page.request.get(baseUrl + "/api/admin/yorpmind-evolution", {
+      headers: accessHeaders, timeout: 15000
+    });
+    const evolutionData = evolutionResponse.ok()
+      ? await evolutionResponse.json().catch(() => null) : null;
+    record("yorpmind_evolution_staging_private_policy",
+      evolutionResponse.status() === 200 &&
+      evolutionData?.name === "YorpMind" &&
+      evolutionData?.autonomous_skill_mutation === false &&
+      evolutionData?.deployment_enabled === false &&
+      evolutionData?.model_calls_per_scan === 0 &&
+      evolutionData?.maximum_proposals_per_day === 3,
+      "Private evolution D1 schema 0025 and no-execution policy; HTTP " + evolutionResponse.status());
+
+    const forbiddenEvolutionReview = await page.request.patch(baseUrl + "/api/admin/yorpmind-evolution", {
+      headers: { ...accessHeaders, origin: baseUrl, "content-type": "application/json" },
+      data: { proposal_id: "123e4567-e89b-42d3-a456-426614174000", decision: "acknowledge",
+        review_note: "Read-only CI identity must never acknowledge a private YorpMind proposal or mutate knowledge." },
+      timeout: 15000
+    });
+    record("yorpmind_evolution_ci_cannot_review",
+      forbiddenEvolutionReview.status() === 403,
+      "Read-only CI service identity denied evolution mutation: HTTP " + forbiddenEvolutionReview.status());
+
+    await page.route("**/api/admin/yorpmind-evolution", async route => {
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          name: "YorpMind", scope: "headquarters",
+          autonomous_proposal_detection: true, deployment_enabled: false,
+          autonomous_skill_mutation: false, model_calls_per_scan: 0,
+          maximum_proposals_per_day: 3,
+          pending_proposals: 1, reviewed_proposals: 0,
+          last_runs: [{ status: "completed", experiences_scanned: 2,
+            created_at: "2026-11-12T03:30:00Z", completed_at: "2026-11-12T03:30:05Z" }],
+          proposals: [{
+            proposal_id: "323e4567-e89b-42d3-a456-426614174000",
+            topic_key: "download-image", candidate_type: "new_reference_skill",
+            related_skill_id: null, status: "proposed",
+            evidence_ids: [
+              "123e4567-e89b-42d3-a456-426614174000",
+              "223e4567-e89b-42d3-a456-426614174000"
+            ],
+            evidence_count: 2,
+            rationale: "Repeated founder-reported repair topics could justify a reusable reference procedure. Verify source QA independently before drafting a skill.",
+            proposed_at: "2026-11-12T03:30:05Z"
+          }]
+        })
+      });
+    });
+    await page.locator('.nav-item[data-view="yorpmind"]').click();
+    // This tab was already loaded earlier in the smoke journey. Explicitly
+    // refresh to test the latest browser-local evolution fixture, not cached state.
+    await page.locator("#ym-evolution-refresh").click();
+    await page.locator(".ym-evolution-item").first().waitFor({ state: "visible", timeout: 10000 });
+    record("yorpmind_evolution_founder_proposals_visible",
+      (await page.locator("#ym-evolution-proposals").innerText()).includes("download image") &&
+      (await page.locator("#ym-evolution-proposals").innerText()).includes("2 separate historical QA observations") &&
+      (await page.locator("#ym-evolution-metrics").innerText()).includes("Extra AI calls"),
+      "Founder sees daily inferred patterns with explicit historical provenance and zero extra inference");
+    record("yorpmind_evolution_no_autoapproval",
+      (await page.locator("#view-yorpmind").innerText()).includes("No skill revisions or deployments") &&
+      (await page.locator("#ym-evolution-proposals").innerText()).includes("Acknowledge for planning") &&
+      (await page.locator("#ym-evolution-proposals button").allTextContents()).every(x =>
+        !/deploy|execute|approve skill|publish/i.test(x)),
+      "Review-only controls; no automatic skill execution, release or skill revision");
+    await page.unroute("**/api/admin/yorpmind-evolution");
+
     const unauthenticated = await request.newContext({ baseURL: baseUrl, maxRedirects: 0 });
     try {
       const anonymousResponse = await unauthenticated.get("/api/admin/overview", { timeout: 15000 });
@@ -573,6 +643,10 @@ async function run() {
       record("yorpmind_search_public_denied",
         [302,303,401,403].includes(anonymousYorpMindSearch.status()),
         "Anonymous users cannot search Headquarters memory; HTTP " + anonymousYorpMindSearch.status());
+      const anonymousEvolution = await unauthenticated.get("/api/admin/yorpmind-evolution", { timeout: 15000 });
+      record("yorpmind_evolution_public_access_denied",
+        [302,303,401,403].includes(anonymousEvolution.status()),
+        "Anonymous requests cannot read private self-evolution proposals: HTTP " + anonymousEvolution.status());
       const anonymousYorpMind = await unauthenticated.get("/api/admin/yorpmind", { timeout: 15000 });
       record("yorpmind_public_access_denied",
         [302, 303, 401, 403].includes(anonymousYorpMind.status()),

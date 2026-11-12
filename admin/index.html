@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/admin/incident-workspace.css">
 <link rel="stylesheet" href="/admin/release-evidence.css">
 <link rel="stylesheet" href="/admin/yorpmind.css">
+<link rel="stylesheet" href="/admin/yorpmind-evolution.css">
 <link rel="stylesheet" href="/admin/yorpmind-mission-planning.css">
 <link rel="stylesheet" href="/admin/business-intelligence.css">
 </head>
@@ -183,6 +184,22 @@
         </form>
         <p id="ym-search-status" class="ym-search-status" role="status" aria-live="polite">Search is limited to the 120 most recent eligible records of each type.</p>
         <div id="ym-search-results" class="ym-search-results"></div>
+      </section>
+      <section class="ym-evolution-panel" aria-labelledby="ym-evolution-title">
+        <header class="ym-evolution-header">
+          <div>
+            <span class="ym-eyebrow">AUTONOMOUS OBSERVATION · HUMAN-GOVERNED EVOLUTION</span>
+            <h2 id="ym-evolution-title">YorpMind Evolution</h2>
+            <p>Daily zero-inference scans detect recurring founder-reported repair patterns and propose improvements. No skill revisions or deployments happen automatically.</p>
+          </div>
+          <button class="button" id="ym-evolution-refresh" type="button">↻ Review discoveries</button>
+        </header>
+        <p class="ym-evolution-state" id="ym-evolution-status" role="status" aria-live="polite">Checking private evolution evidence…</p>
+        <div class="ym-evolution-metrics" id="ym-evolution-metrics" aria-label="Autonomous observation results"></div>
+        <div class="ym-evolution-proposals" id="ym-evolution-proposals">
+          <p class="ym-empty">Evolution proposals are not loaded.</p>
+        </div>
+        <p class="ym-evolution-disclaimer">Detection is not proof of a recurring defect. All lessons and skills remain reference data. Approving a proposal review never approves code, executes a skill, or creates a release.</p>
       </section>
       <div class="ym-stats" id="ym-stats" aria-label="YorpMind knowledge counters"></div>
       <div class="ym-workspace">
@@ -790,6 +807,7 @@
 <script src="/admin/incident-workspace.js" defer></script>
 <script src="/admin/release-evidence.js" defer></script>
 <script src="/admin/yorpmind.js" defer></script>
+<script src="/admin/yorpmind-evolution.js" defer></script>
 <script src="/admin/yorpmind-search.js" defer></script>
 <script src="/admin/headquarters.js" defer></script>
 <script type="module" src="/admin/yorpmind-mission-planning.js"></script>
