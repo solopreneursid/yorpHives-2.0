@@ -66,7 +66,7 @@
   function renderRelated(jobs, finding) {
     const node = byId("incident-related");
     node.replaceChildren();
-    const matches = jobs.filter(job => job.finding_id === finding.id);
+    const matches = jobs.filter(job => job.finding_id === finding.id && (job.finding_source || "monitor") === finding.source_type);
     if (!matches.length) {
       node.append(create("p", "incident-empty", "No linked repair job appears in the latest 50 recorded jobs. This does not prove none exists."));
       return;
@@ -109,14 +109,13 @@
         await actions.loadAgents();
         const select = byId("repair-finding");
         const option = Array.from(select.options).find(item => item.value === finding.id);
-        // The existing repair-job FK currently references monitor findings only.
-        // Asset findings must be sent as general investigations until a reviewed
-        // polymorphic link migration is deployed; never submit an invalid FK.
-        const linkable = finding.source_type === "monitor" && Boolean(option);
+        // Only select an asset finding when staging has the source-qualified
+        // link migration; otherwise preserve its evidence as a general request.
+        const linkable = Boolean(option && !option.disabled);
         select.value = linkable ? finding.id : "";
         byId("repair-message").textContent = linkable
-          ? "Finding selected. Submitting this form will start a separately authorized, quota-limited repair."
-          : "Asset finding prepared as a general investigation: no database link will be recorded yet.";
+          ? "Finding linked. Submitting this form starts a separately authorized, quota-limited repair."
+          : "Finding prepared as a general investigation; source evidence is preserved in the request.";
         const input = byId("repair-request");
         input.value = [
           "Finding ID: " + display(finding.id),
