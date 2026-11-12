@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/admin/headquarters.css">
 <link rel="stylesheet" href="/admin/admin.css">
 <link rel="stylesheet" href="/admin/incident-workspace.css">
+<link rel="stylesheet" href="/admin/release-evidence.css">
 <link rel="stylesheet" href="/admin/business-intelligence.css">
 </head>
 <body>
@@ -644,6 +645,15 @@
     </section>
 
     <section class="view" id="view-releases" data-title="Releases">
+      <section class="release-evidence-section" aria-labelledby="release-evidence-title">
+        <div class="release-evidence-head">
+          <div><span class="eyebrow">FIRST-PARTY RELEASE EVIDENCE</span><h2 id="release-evidence-title">Repair verification &amp; approvals</h2><p id="release-evidence-updated" role="status" aria-live="polite">Checking private evidence…</p></div>
+          <button class="button" id="release-evidence-refresh" type="button">Refresh evidence ↻</button>
+        </div>
+        <p class="release-evidence-notice"><strong>Production remains locked.</strong> This panel shows private D1 verification records, not live GitHub-branch validation or a production-release authorization. No automatic merges or deployments are available.</p>
+        <div class="release-evidence-metrics" id="release-evidence-summary" aria-label="Release evidence totals"></div>
+        <div class="release-evidence-list" id="release-evidence-list"><p class="release-evidence-empty">Reading recent repair records…</p></div>
+      </section>
       <div class="page-heading"><div><span class="eyebrow">OWNER APPROVAL GATE</span><h1>Releases</h1><p>Review proposed changes before anything reaches production.</p></div><span class="pill warning">Production locked</span></div>
       <div class="release-state"><div class="release-lock">▣</div><div><h2>Production deployment is disabled</h2><p>This Admin workspace can prepare and verify changes, but it does not have an enabled production deployment action. Keep release execution in your existing reviewed deployment process until the full approval gate is implemented and tested.</p></div></div>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">RELEASE CHECKLIST</span><h2>Required evidence</h2></div></div><div class="checklist"><div><span>01</span><div><strong>Reviewed pull request</strong><small>Changes and affected components inspected</small></div><b>Required</b></div><div><span>02</span><div><strong>CI and security checks</strong><small>Automated tests and dependency checks pass</small></div><b>Required</b></div><div><span>03</span><div><strong>Staging verification</strong><small>Preview tested on desktop and mobile</small></div><b>Required</b></div><div><span>04</span><div><strong>Owner approval</strong><small>Explicit release authorization</small></div><b>Required</b></div></div></section>
@@ -666,6 +676,7 @@
 
 <script src="/admin/admin.js" defer></script>
 <script src="/admin/incident-workspace.js" defer></script>
+<script src="/admin/release-evidence.js" defer></script>
 <script src="/admin/headquarters.js" defer></script>
 <script src="/admin/radar.js" defer></script>
 <script src="/admin/intelligence.js" defer></script>
