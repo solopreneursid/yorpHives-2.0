@@ -133,12 +133,12 @@ test("daily scan records immutable deduplicated proposals in D1 without inferenc
     db.exec("PRAGMA foreign_keys=ON;");
     db.exec("CREATE TABLE agent_departments(department_id TEXT PRIMARY KEY,name TEXT);");
     db.exec("CREATE TABLE agent_registry(agent_id TEXT PRIMARY KEY,display_name TEXT,department_id TEXT,status TEXT,enabled INTEGER,autonomy_level TEXT);");
-    db.exec("CREATE TABLE agent_jobs(job_id TEXT PRIMARY KEY,agent_id TEXT,job_type TEXT,title TEXT,status TEXT,priority TEXT,updated_at TEXT);");
+    db.exec("CREATE TABLE agent_jobs(job_id TEXT PRIMARY KEY,agent_id TEXT,job_type TEXT,title TEXT,status TEXT,priority TEXT,updated_at TEXT,result_json TEXT);");
     db.exec("CREATE TABLE agent_job_events(event_type TEXT,created_at TEXT);");
     db.exec(await readFile(new URL("../migrations/0027_yorpmind_team_management.sql",import.meta.url),"utf8"));
     db.prepare("INSERT INTO agent_departments VALUES (?,?)").run("engineering","Engineering");
     db.prepare("INSERT INTO agent_registry VALUES (?,?,?,?,?,?)").run("engineer","Engineer","engineering","ready",1,"recommend");
-    db.prepare("INSERT INTO agent_jobs VALUES (?,?,?,?,?,?,?)").run(
+    db.prepare("INSERT INTO agent_jobs(job_id,agent_id,job_type,title,status,priority,updated_at) VALUES (?,?,?,?,?,?,?)").run(
       "synthetic-job","engineer","owner_mission","Fix preview","awaiting_owner_approval","normal","2026-11-12T04:00:00.000Z");
     const adapter = sqliteD1(db);
     const first = await scanYorpMindTeam(adapter,time);
@@ -162,13 +162,13 @@ test("daily cap holds even with extra eligible changes and no autonomous privile
   try {
     db.exec("CREATE TABLE agent_departments(department_id TEXT PRIMARY KEY,name TEXT);");
     db.exec("CREATE TABLE agent_registry(agent_id TEXT PRIMARY KEY,display_name TEXT,department_id TEXT,status TEXT,enabled INTEGER,autonomy_level TEXT);");
-    db.exec("CREATE TABLE agent_jobs(job_id TEXT PRIMARY KEY,agent_id TEXT,job_type TEXT,title TEXT,status TEXT,priority TEXT,updated_at TEXT);");
+    db.exec("CREATE TABLE agent_jobs(job_id TEXT PRIMARY KEY,agent_id TEXT,job_type TEXT,title TEXT,status TEXT,priority TEXT,updated_at TEXT,result_json TEXT);");
     db.exec("CREATE TABLE agent_job_events(event_type TEXT,created_at TEXT);");
     db.exec(await readFile(new URL("../migrations/0027_yorpmind_team_management.sql",import.meta.url),"utf8"));
     db.prepare("INSERT INTO agent_departments VALUES (?,?)").run("research","Research");
     db.prepare("INSERT INTO agent_registry VALUES (?,?,?,?,?,?)").run("researcher","Researcher","research","ready",1,"recommend");
     for (let i=0; i<25; i++) {
-      db.prepare("INSERT INTO agent_jobs VALUES (?,?,?,?,?,?,?)").run(
+      db.prepare("INSERT INTO agent_jobs(job_id,agent_id,job_type,title,status,priority,updated_at) VALUES (?,?,?,?,?,?,?)").run(
         "job-" + i,"researcher","owner_mission","Research " + i,"failed","normal","2026-11-11T05:00:00.000Z");
     }
     const result=await scanYorpMindTeam(sqliteD1(db),time);
