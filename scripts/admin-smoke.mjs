@@ -63,6 +63,7 @@ async function run() {
 
     const readEndpoints = [
       "/api/admin/headquarters",
+      "/api/admin/action-center",
       "/api/admin/radar",
       "/api/admin/intelligence",
       "/api/admin/validation",
