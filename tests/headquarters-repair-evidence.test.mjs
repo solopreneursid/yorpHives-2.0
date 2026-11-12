@@ -30,7 +30,11 @@ test("only an exact-branch and exact-commit five-job release evidence passes", (
   assert.equal(result.issue_resolution_verified, false);
   assert.equal(result.production_approved, false);
   assert.equal(result.checks.length, 5);
-  for (const check of result.checks) assert.equal(check.commit_sha, commitSha);
+  for (const check of result.checks) {
+    assert.equal(check.commit_sha, commitSha);
+    assert.ok(check.name, "Every CI receipt must have a meaningful check name");
+    assert.ok(Number.isInteger(check.workflow_run_id));
+  }
 });
 
 test("other branch, other revision and PR event cannot qualify", () => {
