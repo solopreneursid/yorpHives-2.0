@@ -1,5 +1,18 @@
 PRAGMA foreign_keys = ON;
 
+
+-- Independent CI evidence is recorded by the private repair Worker only after
+-- GitHub has verified the exact branch/commit and all required QA workflows.
+CREATE TABLE IF NOT EXISTS admin_repair_ci_verifications (
+  job_id TEXT PRIMARY KEY REFERENCES admin_repair_jobs(id) ON DELETE CASCADE,
+  commit_sha TEXT NOT NULL CHECK(length(commit_sha) = 40),
+  checks_json TEXT NOT NULL CHECK(length(checks_json) BETWEEN 2 AND 8000),
+  verified_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_repair_ci_verified_at
+ON admin_repair_ci_verifications(verified_at DESC);
+
 -- Evidence of issue-specific QA, explicitly separate from CI and production release.
 -- Each QA report is pinned to a specific GitHub pull-request HEAD commit.
 -- Historical reports are retained if a repair branch moves to a later revision.
