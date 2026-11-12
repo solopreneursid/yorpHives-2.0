@@ -104,7 +104,7 @@
   };
 
   function start() {
-    el("owner-action-refresh")?.addEventListener("click", () => window.loadOwnerActionCenter());
+    el("owner-action-refresh")?.addEventListener("click", () => window.loadOwnerActionCenter(true));
   }
   if (document.readyState === "loading")
     document.addEventListener("DOMContentLoaded", start, { once: true });
