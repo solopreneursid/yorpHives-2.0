@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/admin/incident-workspace.css">
 <link rel="stylesheet" href="/admin/release-evidence.css">
 <link rel="stylesheet" href="/admin/yorpmind.css">
+<link rel="stylesheet" href="/admin/yorpmind-mission-planning.css">
 <link rel="stylesheet" href="/admin/business-intelligence.css">
 </head>
 <body>
@@ -105,6 +106,18 @@
             <label>Priority<select id="hq-priority" class="hq-input"><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option><option value="low">Low</option></select></label>
           </div>
           <label>Brief and acceptance criteria<textarea id="hq-brief" class="hq-input" rows="5" required minlength="10" maxlength="4000" placeholder="Describe the problem, target audience, constraints and how we will judge success."></textarea></label>
+          <div class="hq-memory-assist">
+            <div class="hq-memory-assist-head">
+              <div><span class="hq-kicker">YORPMIND / HISTORICAL EVIDENCE</span>
+                <p>Optional: review prior lessons and reference skills before saving this mission. No AI calls or automatic prompt injection.</p>
+              </div>
+              <button class="hq-button hq-button-secondary" id="hq-memory-review" type="button">Review past evidence</button>
+            </div>
+            <section id="hq-memory-panel" class="hq-memory-panel" hidden aria-label="YorpMind historical mission evidence">
+              <p id="hq-memory-status" class="hq-memory-status" role="status" aria-live="polite">No historical evidence has been looked up.</p>
+              <div id="hq-memory-results" class="hq-memory-results"></div>
+            </section>
+          </div>
           <div class="hq-form-actions"><span id="hq-form-status" role="status" aria-live="polite">Creation does not start a model or spend credits.</span><button type="submit" class="hq-button hq-button-primary" id="hq-save">Save planned mission ↗</button></div>
         </form>
       </section>
@@ -779,6 +792,7 @@
 <script src="/admin/yorpmind.js" defer></script>
 <script src="/admin/yorpmind-search.js" defer></script>
 <script src="/admin/headquarters.js" defer></script>
+<script type="module" src="/admin/yorpmind-mission-planning.js"></script>
 <script src="/admin/radar.js" defer></script>
 <script src="/admin/intelligence.js" defer></script>
 <script src="/admin/validation.js" defer></script>
