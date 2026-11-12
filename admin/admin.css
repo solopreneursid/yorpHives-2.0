@@ -218,3 +218,30 @@
 @media(max-width:1100px){.intel-hero{grid-template-columns:1fr}.intel-grid{grid-template-columns:minmax(0,1.25fr) minmax(260px,.8fr)}}
 @media(max-width:800px){.intel-grid{grid-template-columns:1fr}.intel-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:550px){.intel-hero{padding:22px}.intel-stats article{padding:14px}.intel-stats strong{font-size:29px}.intel-section-head{align-items:start;flex-direction:column}.intel-filters{width:100%}.intel-filters select{flex:1;min-width:0}.intel-card{padding:17px}.intel-card>h3{font-size:20px}.intel-hero-actions{flex-direction:column}.intel-hero-actions>*{width:100%}.intel-aside{padding:17px}}
+
+/* Owner-only research experiments stay visually distinct from AI hypotheses. */
+.hq-val-section{padding:15px;margin-top:22px;border:1px solid #355771;border-radius:12px;background:#101e31}
+.hq-val-heading{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;margin-bottom:12px}
+.hq-val-heading h4{font-size:10px;letter-spacing:.08em;color:#a9dfe4;font-weight:800}
+.hq-val-empty,.hq-val-legal{font-size:11px;line-height:1.7;color:#90b4c8}
+.hq-val-legal{margin-top:12px;font-size:9px;color:#b4c3a6}
+.hq-val-button{border:1px solid #496a91;color:#d6eaff;background:#223c57;padding:7px 9px;font-size:10px;font-weight:700;border-radius:7px;cursor:pointer}
+.hq-val-button:hover{border-color:#8baccd;background:#304965}
+.hq-val-record{padding:13px;border-radius:9px;background:#0d1929;border:1px solid #2b4962;margin-top:10px}
+.hq-val-record-top{display:flex;align-items:start;justify-content:space-between;gap:10px}
+.hq-val-record-top strong{font-size:12px;line-height:1.5;color:#d6eaf4}
+.hq-val-state{font-size:9px;letter-spacing:.07em;padding:4px 7px;border-radius:40px;border:1px solid #52748e;color:#b0dbe6;white-space:nowrap}
+.hq-val-active{color:#a6f0c9;border-color:#52977d}.hq-val-completed{color:#dec7a6}
+.hq-val-metric,.hq-val-result,.hq-val-note{font-size:10px;line-height:1.7;color:#abc1d4;margin-top:7px;overflow-wrap:anywhere}
+.hq-val-result{color:#bcd5ae}.hq-val-proof{display:inline-block;color:#9fe9e8;font-size:10px;margin-top:7px;text-decoration:underline}
+.hq-val-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.hq-val-dialog{color:#eff9ff;background:#122238;border:1px solid #60799b;border-radius:17px;max-width:min(530px,calc(100vw - 24px));width:100%;box-shadow:0 25px 80px #0009;padding:0}
+.hq-val-dialog::backdrop{background:#030b18b8;backdrop-filter:blur(5px)}
+.hq-val-form{padding:26px;display:grid;gap:15px;max-height:min(90vh,740px);overflow:auto}
+.hq-val-dialog-heading h2{font-size:23px;color:#f1faff;font-weight:780;letter-spacing:-.035em}
+.hq-val-dialog-heading p{font-size:11px;color:#9cbace;line-height:1.7;margin-top:7px}
+.hq-val-field{display:grid;gap:7px;font-size:11px;color:#b8d9e4}.hq-val-field .hq-input{width:100%;min-height:38px}
+.hq-val-field textarea.hq-input{resize:vertical;min-height:90px;line-height:1.6}
+.hq-val-disclosure{font-size:10px;line-height:1.7;color:#c4c09a}
+.hq-val-dialog-actions{display:flex;justify-content:flex-end;gap:9px}
+@media(max-width:550px){.hq-val-form{padding:18px}.hq-val-record-top{flex-direction:column}.hq-val-heading{align-items:start}}

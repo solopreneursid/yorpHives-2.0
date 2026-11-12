@@ -96,6 +96,7 @@
    if(!(idea.sources||[]).length)proof.append(node("p","","Source references unavailable: independent validation required."));
    proof.append(node("p","intel-evidence-legal","Region: unverified · Market size: unknown · Willingness to pay: unknown"));
    body.append(proof);
+   if(window.HQValidation)body.append(window.HQValidation.build(idea));
    detail.append(body);
    article.append(detail);
    const footer=node("div","intel-card-footer");
@@ -158,7 +159,7 @@
  window.loadIntelligence=async()=>{
    if(loading)return;
    loading=true;
-   try{state=await api("/api/admin/intelligence");render();}
+   try{state=await api("/api/admin/intelligence");if(window.HQValidation)await window.HQValidation.load();render();}
    finally{loading=false;}
  };
  $("intel-status").addEventListener("change",render);
