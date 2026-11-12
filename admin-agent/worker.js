@@ -337,7 +337,17 @@ async function triggerPlatformChecks(env, branch, jobId, baseCommitSha) {
   const query = `?ref=${encodeURIComponent(branch)}`;
   const existing = await githubMaybe(env, path + query);
   if (existing) {
+    // Workflow retries may reuse a receipt, but only if it is the exact
+    // CI-triggering commit descended directly from our reviewed repair commit.
+    const receiptText = existing.encoding === "base64" && typeof existing.content === "string"
+      ? decodeBase64Utf8(existing.content) : "";
+    const receipt = JSON.parse(receiptText);
+    assertReceipt({ receipt, jobId, sourceSha: baseCommitSha, repairSha: baseCommitSha });
     const ref = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${branch}`);
+    const commit = await github(env, `/repos/${REPOSITORY}/git/commits/${ref.object.sha}`);
+    if (commit.parents?.length !== 1 || commit.parents[0]?.sha !== baseCommitSha) {
+      throw new Error("Repair verification receipt was followed by unexpected commits.");
+    }
     return { commitSha: ref.object.sha };
   }
   const created = await github(env, path, "PUT", {
@@ -345,6 +355,7 @@ async function triggerPlatformChecks(env, branch, jobId, baseCommitSha) {
     content: btoa(JSON.stringify({
       job_id: jobId,
       base_commit_sha: baseCommitSha,
+      repair_commit_sha: baseCommitSha,
       purpose: "CI verification receipt",
       created_at: new Date().toISOString()
     }, null, 2)),
