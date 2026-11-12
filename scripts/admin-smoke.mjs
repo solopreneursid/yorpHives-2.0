@@ -226,6 +226,17 @@ async function run() {
         })
       });
     });
+    await page.route("**/api/admin/repair-qa?**", async route => {
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          job_id: "preview-repair-fixture", qa: null,
+          revision_status: "not_reviewed", issue_specific_qa_complete: false,
+          production_approved: false,
+          note: "No issue-specific QA evidence recorded."
+        })
+      });
+    });
     await page.locator('.nav-item[data-view="issues"]').click();
     await page.locator('#view-issues').waitFor({ state: "visible", timeout: 10000 });
     await page.getByRole("button", { name: "View incident evidence for Preview-only tool failure" }).click();
@@ -239,6 +250,15 @@ async function run() {
     record("incident_linked_repair_history",
       (await page.locator("#incident-related").innerText()).includes("Synthetic preview result"),
       "Related repair history is visible without owner mutations");
+    await page.getByRole("button", { name: "Record issue-specific QA" }).click();
+    record("repair_qa_dialog_accessible",
+      await page.getByRole("dialog", { name: "Verify repair outcome" }).isVisible(),
+      "Authenticated founder sees a dedicated revision-specific QA form");
+    record("repair_qa_clear_separate_approval",
+      (await page.locator("#repair-qa-dialog").innerText()).includes("This never publishes a release") &&
+      (await page.locator("#repair-qa-status").innerText()).includes("No issue-specific QA"),
+      "QA testing is separate from production approval; CI never submits QA evidence");
+    await page.locator("#repair-qa-close").click();
     await page.locator("#incident-prepare").click();
     await page.locator("#view-agents").waitFor({ state: "visible", timeout: 10000 });
     record("incident_prepare_does_not_dispatch",
@@ -249,6 +269,7 @@ async function run() {
       "Source-qualified asset finding appears in the prepared form; no repair is dispatched");
     await page.unroute("**/api/admin/findings*");
     await page.unroute("**/api/admin/repair-jobs");
+    await page.unroute("**/api/admin/repair-qa?**");
 
     const unauthenticated = await request.newContext({ baseURL: baseUrl, maxRedirects: 0 });
     try {
