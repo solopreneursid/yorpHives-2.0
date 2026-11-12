@@ -186,6 +186,23 @@ async function run() {
       timeout: 15000
     });
     record("ci_service_token_write_denied", deniedWrite.status() === 403, "HTTP " + deniedWrite.status());
+    const invalidQa = await page.request.get(baseUrl + "/api/admin/repair-qa?job_id=invalid", {
+      headers: accessHeaders, timeout: 15000
+    });
+    record("repair_qa_private_route_responds",
+      invalidQa.status() === 400 &&
+      (invalidQa.headers()["content-type"] || "").includes("application/json"),
+      "Authenticated read-only QA route validates job IDs without recording a review");
+    const deniedQaWrite = await page.request.post(baseUrl + "/api/admin/repair-qa", {
+      headers: accessHeaders, data: {
+        job_id: "123e4567-e89b-42d3-a456-426614174000",
+        reproduction_status: "reproduced", fix_status: "passed", regression_status: "passed",
+        evidence: "CI service identity must never write QA observations or publish releases."
+      }, timeout: 15000
+    });
+    record("ci_qa_write_denied", deniedQaWrite.status() === 403,
+      "Read-only CI token cannot submit issue-specific QA; HTTP " + deniedQaWrite.status());
+
     record("github_permission_probe_control_present", await page.locator("#verify-github-permissions").count() === 1, "Owner-only permission probe control is present");
 
     const agentsNav = page.locator('.nav-item[data-view="agents"]');
@@ -291,6 +308,10 @@ async function run() {
       const anonymousResponse = await unauthenticated.get("/api/admin/overview", { timeout: 15000 });
       const protectedStatus = [302, 303, 401, 403].includes(anonymousResponse.status());
       record("admin_api_requires_access", protectedStatus, "Unauthenticated HTTP " + anonymousResponse.status());
+      const anonymousQa = await unauthenticated.get("/api/admin/repair-qa?job_id=invalid", { timeout: 15000 });
+      record("repair_qa_requires_cloudflare_access",
+        [302, 303, 401, 403].includes(anonymousQa.status()),
+        "Anonymous QA request denied by Access: HTTP " + anonymousQa.status());
     } finally {
       await unauthenticated.dispose();
     }
