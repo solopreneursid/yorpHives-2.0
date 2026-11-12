@@ -7,9 +7,9 @@ import {
 interface MissionService {
   fetch(request: Request): Promise<Response>;
 }
-interface MissionEnvironment extends AdminRequestContext["env"] {
+type MissionEnvironment = AdminRequestContext["env"] & {
   HQ_ENGINE_SERVICE?: MissionService;
-}
+};
 interface MissionContext extends AdminRequestContext {
   env: MissionEnvironment;
 }
