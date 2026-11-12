@@ -73,7 +73,8 @@ async function run() {
       "/api/admin/assets",
       "/api/admin/findings",
       "/api/admin/audit",
-      "/api/admin/repair-jobs"
+      "/api/admin/repair-jobs",
+      "/api/admin/yorpmind"
     ];
     for (const endpoint of readEndpoints) {
       try {
@@ -358,6 +359,86 @@ async function run() {
       "Release status is explanatory only; no publishing action is enabled");
     await page.unroute("**/api/admin/release-evidence");
 
+    // YorpMind is first-party and private. Exercise its real read-only API with
+    // the existing Cloudflare Access service identity, then render synthetic
+    // browser-local GET fixtures. Never write memory or approve a skill in CI.
+    const realYorpMind = await page.request.get(baseUrl + "/api/admin/yorpmind", {
+      headers: accessHeaders, timeout: 15000
+    });
+    const realYorpMindData = realYorpMind.ok() ? await realYorpMind.json().catch(() => null) : null;
+    record("yorpmind_staging_schema_and_private_policy",
+      realYorpMind.status() === 200 &&
+      realYorpMindData?.name === "YorpMind" &&
+      realYorpMindData?.scope === "headquarters" &&
+      realYorpMindData?.policy?.public_access_enabled === false &&
+      realYorpMindData?.policy?.autonomous_skill_execution_enabled === false &&
+      realYorpMindData?.policy?.production_changes_enabled === false,
+      "Read-only Access identity sees schema 0024 and an explicitly disabled public/autonomous policy; HTTP " + realYorpMind.status());
+    const forbiddenYorpMindWrite = await page.request.post(baseUrl + "/api/admin/yorpmind", {
+      headers: { ...accessHeaders, origin: baseUrl, "content-type": "application/json" },
+      data: { action: "capture_repair_experience", repair_job_id: "123e4567-e89b-42d3-a456-426614174000",
+        title: "Blocked test memory", lesson: "This synthetic lesson must never be written by read-only CI test credentials." },
+      timeout: 15000
+    });
+    record("yorpmind_ci_identity_cannot_modify_memory",
+      forbiddenYorpMindWrite.status() === 403,
+      "Read-only CI service identity cannot save experiences or approve skills; HTTP " + forbiddenYorpMindWrite.status());
+
+    await page.route("**/api/admin/yorpmind", async route => {
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          schema_version: 1, name: "YorpMind", scope: "headquarters",
+          generated_at: "2026-11-12T14:45:00Z",
+          policy: {
+            approved_services: ["Cloudflare", "ChatGPT/OpenAI", "GitHub free capabilities"],
+            public_access_enabled: false, autonomous_learning_enabled: false,
+            autonomous_skill_execution_enabled: false, production_changes_enabled: false
+          },
+          counts: { experiences: 1, draft_skills: 1, approved_reference_skills: 0, retired_skills: 0 },
+          experiences: [{
+            experience_id: "123e4567-e89b-42d3-a456-426614174000",
+            scope: "headquarters", source_type: "repair_qa",
+            source_id: "123e4567-e89b-42d3-a456-426614174000",
+            source_commit_sha: "a".repeat(40), title: "Synthetic QR tool lesson",
+            lesson: "<img src=x onerror=alert(1)> — this untrusted text must never become executable HTML.",
+            evidence_level: "founder_reported_qa", status: "recorded",
+            recorded_by: "founder@example.com", created_at: "2026-11-12T14:00:00Z"
+          }],
+          skills: [{
+            skill_id: "8c3e4567-e89b-42d3-a456-426614174000",
+            slug: "diagnose-qr-tool", title: "Diagnose QR tool failures",
+            purpose: "Investigate reproducible QR output failures without production execution.",
+            status: "draft", current_revision: 1, approved_revision: null,
+            source_experience_id: "123e4567-e89b-42d3-a456-426614174000",
+            steps: ["Reproduce the original issue on an isolated preview.",
+              "Collect regression evidence and request independent QA review."],
+            created_at: "2026-11-12T14:05:00Z", updated_at: "2026-11-12T14:05:00Z"
+          }]
+        })
+      });
+    });
+    await page.locator('.nav-item[data-view="yorpmind"]').click();
+    await page.locator("#view-yorpmind").waitFor({ state: "visible", timeout: 10000 });
+    await page.locator("#ym-experience-list .ym-entry").first().waitFor({ state: "visible", timeout: 10000 });
+    record("yorpmind_founder_workspace_renders",
+      (await page.locator("#view-yorpmind").innerText()).includes("The intelligence behind YorpHives") &&
+      (await page.locator("#ym-experience-list").innerText()).includes("Synthetic QR tool lesson") &&
+      (await page.locator("#ym-skill-list").innerText()).includes("Diagnose QR tool failures"),
+      "YorpMind displays private memory and draft reference skills on desktop");
+    record("yorpmind_untrusted_content_is_inert",
+      (await page.locator("#ym-experience-list").innerText()).includes("<img src=x onerror=alert(1)>") &&
+      (await page.locator("#ym-experience-list img").count()) === 0,
+      "Stored untrusted lesson is rendered only with textContent; never parsed into HTML");
+    record("yorpmind_no_autonomous_controls",
+      (await page.locator("#view-yorpmind").innerText()).includes("PUBLIC ACCESS OFF") &&
+      (await page.locator("#view-yorpmind").innerText()).includes("PRODUCTION LOCKED") &&
+      (await page.locator("#ym-skill-list").innerText()).includes("REV 1") &&
+      (await page.locator("#view-yorpmind button").allTextContents()).every(label =>
+        !/run skill|deploy|publish to production/i.test(label)),
+      "Reference skills cannot execute themselves or publish production");
+    await page.unroute("**/api/admin/yorpmind");
+
     const unauthenticated = await request.newContext({ baseURL: baseUrl, maxRedirects: 0 });
     try {
       const anonymousResponse = await unauthenticated.get("/api/admin/overview", { timeout: 15000 });
@@ -367,6 +448,10 @@ async function run() {
       record("repair_qa_requires_cloudflare_access",
         [302, 303, 401, 403].includes(anonymousQa.status()),
         "Anonymous QA request denied by Access: HTTP " + anonymousQa.status());
+      const anonymousYorpMind = await unauthenticated.get("/api/admin/yorpmind", { timeout: 15000 });
+      record("yorpmind_public_access_denied",
+        [302, 303, 401, 403].includes(anonymousYorpMind.status()),
+        "Anonymous requests must not reveal YorpMind private experiences or skills; HTTP " + anonymousYorpMind.status());
       const anonymousReleases = await unauthenticated.get("/api/admin/release-evidence", { timeout: 15000 });
       record("release_evidence_requires_cloudflare_access",
         [302, 303, 401, 403].includes(anonymousReleases.status()),
