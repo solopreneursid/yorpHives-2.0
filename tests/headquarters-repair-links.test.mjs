@@ -79,7 +79,7 @@ test("asset finding uses an atomic source-specific link, not the monitor-only le
     assert.equal(row.finding_id, null);
     assert.equal(row.status, "dispatched");
     const link = database.prepare("SELECT finding_source,finding_id FROM admin_repair_finding_links WHERE job_id=?").get(row.id);
-    assert.deepEqual(link, { finding_source: "asset", finding_id: "same-id" });
+    assert.deepEqual({ ...link }, { finding_source: "asset", finding_id: "same-id" });
     assert.equal(database.prepare("SELECT COUNT(*) AS count FROM admin_audit_events").get().count, 2);
   } finally { database.close(); }
 });
