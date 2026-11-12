@@ -117,7 +117,9 @@
     el("ym-team-status").textContent = data.reporting_hierarchy.total_specialists +
       " registered bots · " + data.reporting_hierarchy.active_jobs +
       " active jobs · " + data.reporting_hierarchy.pending_jobs +
-      " pending jobs · zero additional AI calls for team monitoring.";
+      " pending jobs · mission budget " + data.shared_mission_budget.daily_used +
+      " / " + data.shared_mission_budget.daily_limit +
+      " today (UTC) · zero additional AI calls for team monitoring.";
   }
 
   window.loadYorpMindTeam = async () => {
