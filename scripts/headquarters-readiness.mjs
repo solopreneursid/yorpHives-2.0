@@ -93,7 +93,7 @@ export async function assessHeadquarters(root) {
   } catch {
     // Report through the explicit migration check below.
   }
-  const expected = Array.from({ length: 23 }, (_, i) => i + 4);
+  const expected = Array.from({ length: 24 }, (_, i) => i + 4);
   const missing = expected.filter(number => !migrations.includes(number));
   const duplicates = migrations.filter((number, index) => migrations.indexOf(number) !== index);
   add("headquarters-migrations", missing.length === 0 && duplicates.length === 0,
