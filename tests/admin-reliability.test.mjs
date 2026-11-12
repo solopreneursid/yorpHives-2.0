@@ -75,6 +75,7 @@ test("Free Tools browser sweep recognizes real tool roots and hidden controls st
   assert.match(quality, /main #advanced-tool:visible/);
   assert.match(quality, /keyboardFocusable/);
   assert.match(quality, /visible_control_count/);
+  assert.match(quality, /hidden_elements_visible/);
   assert.match(styles, /\[hidden\]\s*\{\s*display:\s*none\s*!important/);
 });
 
