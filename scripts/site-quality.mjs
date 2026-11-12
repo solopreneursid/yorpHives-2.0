@@ -228,33 +228,24 @@ async function run() {
   }
   record("internal_navigation_links", linkResults.length === 0, linkResults.slice(0, 20).map(item => `${item.path}: ${item.status}`).join("; ") || `${internalLinks.size} links passed`);
 
-  // Persist aggregate diagnostics only. Response bodies, remote titles, paths and
-  // exception messages are untrusted network data and stay out of filesystem reports.
+  // Keep tool-level diagnostics in the artifact so failures can be investigated without rerunning locally.
+  // No form values or page body text are collected; only structural and browser diagnostics are stored.
   const report = {
     generated_at: new Date().toISOString(),
     base_url: baseUrl,
     summary: { total: checks.length, passed: checks.filter(item => item.ok).length, failed: failures.length },
-    checks: checks.map(item => ({
-      name: item.name,
-      ok: Boolean(item.ok),
-      detail: "See workflow logs for diagnostic details."
-    })),
+    checks: checks.map(item => ({ name: item.name, ok: Boolean(item.ok), detail: item.detail })),
     sitemap_pages: {
       checked: sitemapResults.length,
       failed: sitemapResults.filter(item => !item.ok).length
     },
     tool_pages: {
       checked: toolResults.length,
-      failed: toolResults.filter(item => !item.ok).length
+      failed: toolResults.filter(item => !item.ok).length,
+      results: toolResults
     },
-    broken_internal_links: {
-      checked: internalLinks.size,
-      failed: linkResults.length
-    },
-    failures: failures.map(item => ({
-      name: item.name,
-      detail: "See workflow logs for diagnostic details."
-    }))
+    broken_internal_links: { checked: internalLinks.size, failed: linkResults.length },
+    failures: failures.map(item => ({ name: item.name, detail: item.detail }))
   };
   await writeFile(`${reportDir}/site-quality.json`, JSON.stringify(report, null, 2));
   await writeFile(`${reportDir}/site-quality.md`, [
@@ -270,10 +261,38 @@ async function run() {
     "",
     `Sitemap pages checked: ${report.sitemap_pages.checked}; failed: ${report.sitemap_pages.failed}.`,
     `Tool pages checked: ${report.tool_pages.checked}; failed: ${report.tool_pages.failed}.`,
+    "",
+    "## Individual tool-page diagnostics",
+    "",
+    ...toolResults.map(item => {
+      const reasons = [];
+      if (item.status !== 200) reasons.push(`HTTP ${item.status}`);
+      if (!item.visible_root_count) reasons.push("root not visible");
+      if (!item.visible_control_count) reasons.push("no visible controls");
+      if (!item.primary_heading_present) reasons.push("main h1 missing");
+      if (item.page_errors?.length) reasons.push(`page errors: ${item.page_errors.join(" | ")}`);
+      if (item.console_errors?.length) reasons.push(`console errors: ${item.console_errors.slice(0, 3).join(" | ")}`);
+      if (item.failed_requests?.length) reasons.push(`failed requests: ${item.failed_requests.map(request => request.url + " (" + request.error + ")").join(", ")}`);
+      if (item.http_errors?.length) reasons.push(`HTTP errors: ${item.http_errors.map(response => response.status + " " + response.url).join(", ")}`);
+      if (item.error) reasons.push(item.error);
+      return `- ${item.ok ? "PASS" : "FAIL"} **${item.slug}** — ${reasons.join("; ") || "rendered successfully"}`;
+    }),
+    "",
     `Internal links checked: ${report.broken_internal_links.checked}; failed: ${report.broken_internal_links.failed}.`,
     ""
   ].join("\n"));
-  console.log(JSON.stringify(report.summary));\n  console.log("Free Tools page sweep: " + toolResults.length + " checked, " + failedTools.length + " failed.");\n  for (const item of failedTools) console.error("[tool-page-failure] " + JSON.stringify({ slug: item.slug, path: item.path, status: item.status, stage: item.stage || null, root_count: item.root_count, visible_root_count: item.visible_root_count, control_count: item.control_count, visible_control_count: item.visible_control_count, primary_heading_present: item.primary_heading_present, page_errors: item.page_errors, console_errors: item.console_errors, failed_requests: item.failed_requests, http_errors: item.http_errors, error: item.error, screenshot: item.screenshot }));
+  console.log(JSON.stringify(report.summary));
+  console.log("Free Tools page sweep: " + toolResults.length + " checked, " + failedTools.length + " failed.");
+  for (const item of failedTools) {
+    console.error("[tool-page-failure] " + JSON.stringify({
+      slug: item.slug, path: item.path, status: item.status, stage: item.stage || null,
+      root_count: item.root_count, visible_root_count: item.visible_root_count,
+      control_count: item.control_count, visible_control_count: item.visible_control_count,
+      primary_heading_present: item.primary_heading_present, page_errors: item.page_errors,
+      console_errors: item.console_errors, failed_requests: item.failed_requests,
+      http_errors: item.http_errors, error: item.error, screenshot: item.screenshot
+    }));
+  }
   if (failures.length) process.exitCode = 1;
 }
 
