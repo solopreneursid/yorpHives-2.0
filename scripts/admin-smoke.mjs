@@ -612,6 +612,9 @@ async function run() {
       });
     });
     await page.locator('.nav-item[data-view="yorpmind"]').click();
+    // This tab was already loaded earlier in the smoke journey. Explicitly
+    // refresh to test the latest browser-local evolution fixture, not cached state.
+    await page.locator("#ym-evolution-refresh").click();
     await page.locator(".ym-evolution-item").first().waitFor({ state: "visible", timeout: 10000 });
     record("yorpmind_evolution_founder_proposals_visible",
       (await page.locator("#ym-evolution-proposals").innerText()).includes("download image") &&
