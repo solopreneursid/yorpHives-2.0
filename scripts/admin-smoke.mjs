@@ -82,6 +82,15 @@ async function run() {
 
     await page.waitForFunction(() => document.querySelector("#hq-storage")?.textContent === "Connected", null, { timeout: 20000 });
     record("headquarters_storage_connected", true, "Headquarters loaded the persistent registry");
+    if (process.env.PAGES_BRANCH === "build/headquarters-mission-execution") {
+      const engineResponse = await page.request.get(baseUrl + "/api/admin/headquarters", { headers: accessHeaders });
+      const engineSnapshot = engineResponse.ok() ? await engineResponse.json() : null;
+      record("private_engine_health", engineResponse.ok() && engineSnapshot?.engine_available === true,
+        "Authenticated read-only service identity can see a healthy private mission engine");
+      record("seven_brief_specialists", engineSnapshot?.specialists?.filter(a =>
+        a.enabled === 1 && a.status === "ready" && a.autonomy_level === "recommend").length === 7,
+        "Only seven recommendation specialists are enabled; engineering and QA still require verified runtimes");
+    }
     await page.locator("#hq-new").click();
     record("mission_composer_opens", await page.locator("#hq-compose").isVisible(), "New mission opens without submitting work");
     record("mission_specialists_loaded", await page.locator("#hq-agent option").count() === 9, "Nine persistent specialist definitions");
