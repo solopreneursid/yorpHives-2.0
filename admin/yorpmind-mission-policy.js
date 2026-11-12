@@ -63,7 +63,8 @@ export function formatMissionMemoryCitations(records) {
 }
 
 export function appendMissionMemoryCitations(existing, records, maximum = 4000) {
-  if (typeof existing !== "string" || !Number.isSafeInteger(maximum) || maximum < 500) return null;
+  if (typeof existing !== "string" || existing.trim().length < 10 ||
+      !Number.isSafeInteger(maximum) || maximum < 500) return null;
   const citation = formatMissionMemoryCitations(records);
   if (!citation) return null;
   // Do not rewrite mission content or remove user-authored text. Repeated clicks
