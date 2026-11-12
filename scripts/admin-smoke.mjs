@@ -68,6 +68,7 @@ async function run() {
       "/api/admin/market-sources",
       "/api/admin/next-actions",
       "/api/admin/tool-activity",
+      "/api/admin/business-intelligence",
       "/api/admin/overview",
       "/api/admin/assets",
       "/api/admin/findings",
@@ -108,7 +109,17 @@ async function run() {
         research.ideas.some(idea => idea.sources?.length && idea.sources.every(source => source.source_url?.startsWith("https://"))),
         "Stored hypotheses have legitimate public source links");
     }
+    await page.locator('.nav-item[data-view="business"]').click();
+    await page.locator("#view-business").waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForFunction(() => document.querySelector("#bi-status")?.textContent?.includes("candidates"), null, { timeout: 20000 });
+    record("business_intelligence_board", await page.locator("#bi-list").count() === 1,
+      "Source-qualified business board renders behind Cloudflare Access");
+    record("business_missing_integrations_explicit", (await page.locator("#bi-sources").innerText()).includes("Search Console"),
+      "Unavailable Search Console evidence is visible instead of fabricated");
+    record("business_owner_review_requires_human", await page.locator("#bi-review-dialog").count() === 1,
+      "Owner review form is present but CI does not mutate opportunity status");
     await page.locator('.nav-item[data-view="demand"]').click();
+
     await page.locator("#view-demand").waitFor({ state: "visible", timeout: 10000 });
     await page.waitForFunction(() => document.querySelector("#demand-status-line")?.textContent?.includes("opportunities"), null, { timeout: 20000 });
     record("demand_explorer_visible", await page.locator("#view-demand h1").count() === 1, "Open-ended Market Explorer is accessible");
