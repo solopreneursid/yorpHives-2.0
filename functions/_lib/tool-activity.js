@@ -3,7 +3,7 @@ export const CHANNELS=Object.freeze({
  BROWSER:"browser_client_reported",
  AGENT:"access_authenticated_agent_execution"
 });
-export const MAX_DAILY_ACTIVITY=10000;
+export const MAX_DAILY_ACTIVITY=1000;
 export function isAllowedSlug(slug){
  return typeof slug==="string"&&/^[a-z0-9](?:[a-z0-9-]{1,70}[a-z0-9])$/.test(slug);
 }

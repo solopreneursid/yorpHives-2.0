@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS hq_tool_activity_daily (
  activity_day TEXT NOT NULL CHECK(length(activity_day)=10),
  slug TEXT NOT NULL,
  channel TEXT NOT NULL CHECK(channel IN ('browser_client_reported','access_authenticated_agent_execution')),
- success_count INTEGER NOT NULL DEFAULT 0 CHECK(success_count BETWEEN 0 AND 10000),
+ success_count INTEGER NOT NULL DEFAULT 0 CHECK(success_count BETWEEN 0 AND 1000),
  last_recorded_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')),
  PRIMARY KEY (activity_day,slug,channel),
  FOREIGN KEY (slug,channel) REFERENCES hq_tool_activity_registry(slug,channel) ON DELETE RESTRICT

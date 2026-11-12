@@ -77,11 +77,11 @@ test("privacy-limited registry counts successful actions with separated channels
   assert.deepEqual(rows.map(r=>[r.slug,r.channel,r.success_count]),
    [["sha256-text","access_authenticated_agent_execution",1],
     ["word-counter","browser_client_reported",2]]);
-  db.prepare("UPDATE hq_tool_activity_daily SET success_count=10000 WHERE slug='word-counter'").run();
+  db.prepare("UPDATE hq_tool_activity_daily SET success_count=1000 WHERE slug='word-counter'").run();
   const limit=await recordActivity(DB,"word-counter",CHANNELS.BROWSER);
   assert.equal(limit.accepted,false);
   assert.equal(limit.reason,"daily_budget_exhausted");
-  assert.equal(db.prepare("SELECT success_count FROM hq_tool_activity_daily WHERE slug='word-counter'").get().success_count,10000);
+  assert.equal(db.prepare("SELECT success_count FROM hq_tool_activity_daily WHERE slug='word-counter'").get().success_count,1000);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_tool_activity_daily").get().n,2);
  }finally{db.close();}
 });

@@ -16,7 +16,7 @@ export interface BrowserActivityResponse {
 }
 function json(data:unknown,status:number):Response{
  return Response.json(data,{status,headers:{"cache-control":"no-store",
-  "x-content-type-options":"nosniff","access-control-allow-origin":"null"}});
+  "x-content-type-options":"nosniff"}});
 }
 export async function onRequestPost({request,env}:Context):Promise<Response>{
  if(!env.DB)return json({error:"Tool activity is not configured."},503);
