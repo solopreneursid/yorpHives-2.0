@@ -14,10 +14,13 @@ const routeURL = dataURL(
     .replace('"../../_lib/headquarters"', JSON.stringify(domainURL))
 );
 const { onRequestGet, onRequestPost, onRequestPatch } = await import(routeURL);
-const engineSource = (await source("../hq-engine/worker.js")).replace(
-  'import { WorkflowEntrypoint } from "cloudflare:workers";',
-  "class WorkflowEntrypoint { constructor() { this.env = {}; } }"
-);
+const retrievalURL = dataURL(await source("../functions/_lib/yorpmind-retrieval.js"));
+const missionContextURL = dataURL((await source("../hq-engine/yorpmind-context.js"))
+  .replace('"../functions/_lib/yorpmind-retrieval.js"', JSON.stringify(retrievalURL)));
+const engineSource = (await source("../hq-engine/worker.js"))
+  .replace('import { WorkflowEntrypoint } from "cloudflare:workers";',
+    "class WorkflowEntrypoint { constructor() { this.env = {}; } }")
+  .replace('"./yorpmind-context.js"', JSON.stringify(missionContextURL));
 const { MissionWorkflow, default: missionWorker } = await import(dataURL(engineSource));
 
 const key = await crypto.subtle.generateKey({
