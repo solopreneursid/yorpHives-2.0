@@ -130,7 +130,7 @@ export async function buildBusinessBoard(db:AdminD1Database,agentConfigured=fals
  const record=new Map<string,{http:number|null;browser:number|null;agent:number|null}>();
  for(const row of traffic.results)record.set(row.slug,{http:row.grouped_requests,browser:null,agent:null});
  for(const row of activity.results){
-  const group=record.get(row.slug)||{http:null,browser:null,agent:null};
+  const group:{http:number|null;browser:number|null;agent:number|null}=record.get(row.slug)||{http:null,browser:null,agent:null};
   if(row.channel==="browser_client_reported")group.browser=row.success_count;
   if(row.channel==="access_authenticated_agent_execution")group.agent=row.success_count;
   record.set(row.slug,group);

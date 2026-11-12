@@ -10,6 +10,7 @@
 <link rel="icon" type="image/svg+xml" href="/brand/yorphives-mark.svg">
 <link rel="stylesheet" href="/admin/headquarters.css">
 <link rel="stylesheet" href="/admin/admin.css">
+<link rel="stylesheet" href="/admin/business-intelligence.css">
 </head>
 <body>
 <div class="app-shell">
@@ -20,6 +21,7 @@
     <button class="nav-item active" data-view="headquarters"><span class="nav-icon">◇</span>Headquarters</button>
     <button class="nav-item" data-view="intelligence"><span class="nav-icon">✦</span>Ideas &amp; Intelligence</button>
     <button class="nav-item" data-view="demand"><span class="nav-icon">◉</span>Market Explorer</button>
+    <button class="nav-item" data-view="business"><span class="nav-icon">▤</span>Business Intelligence</button>
     <button class="nav-item" data-view="radar"><span class="nav-icon">◈</span>Opportunity Radar</button>
     <button class="nav-item" data-view="departments"><span class="nav-icon">▦</span>Departments</button>
     <button class="nav-item" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
@@ -126,6 +128,92 @@
         </aside>
       </div>
     </section>
+    <section class="view" id="view-business" data-title="Unified Business Intelligence">
+      <header class="bi-hero">
+        <div>
+          <span class="bi-eyebrow">YORPHIVES HEADQUARTERS / V8</span>
+          <h1>Evidence into <em>decisions.</em></h1>
+          <p>One source-aware opportunity board for existing YorpHives tools, internet software, public needs, agent services, and original ideas. Every recommendation shows what we know, what is missing, and what to investigate next.</p>
+          <div class="bi-hero-actions">
+            <button type="button" class="bi-btn bi-primary" id="bi-refresh">↻ Refresh evidence</button>
+            <a class="bi-btn bi-secondary" href="/api/admin/business-intelligence?format=markdown" target="_blank" rel="noopener noreferrer">Machine-readable intelligence ↗</a>
+          </div>
+        </div>
+        <aside class="bi-policy">
+          <span>DECISION STANDARD</span>
+          <strong>Evidence before investment.</strong>
+          <p>Traffic is not customers. Existing competitors are not market size. Browser reports are not authenticated humans. Shortlisting is not release approval.</p>
+          <small>NO AUTONOMOUS SPENDING · NO AUTOMATIC PRODUCTION RELEASES</small>
+        </aside>
+      </header>
+      <div class="bi-stats" aria-label="Business opportunity summary">
+        <article><span>VISIBLE OPPORTUNITIES</span><strong id="bi-stat-total">—</strong><small>Source-qualified investigation candidates</small></article>
+        <article><span>OBSERVED YORPHIVES ROUTES</span><strong id="bi-stat-tools">—</strong><small>Request and/or self-reported action evidence</small></article>
+        <article><span>EXISTING ONLINE PRODUCTS</span><strong id="bi-stat-public">—</strong><small>Publicly linked product examples</small></article>
+        <article><span>RESEARCH HYPOTHESES</span><strong id="bi-stat-ideas">—</strong><small>Original references required; not validated</small></article>
+      </div>
+      <section class="bi-integrations">
+        <div class="bi-section-heading">
+          <div>
+            <span class="bi-eyebrow">EVIDENCE HEALTH</span>
+            <h2>Know which sources are missing.</h2>
+            <p>A disconnected source is marked unavailable—not reported as zero traffic, search interest, or revenue.</p>
+          </div>
+          <a href="https://app.openseo.so/" target="_blank" rel="noopener noreferrer" class="bi-text-link">OpenSEO / connect Google →</a>
+        </div>
+        <div class="bi-integrations-grid" id="bi-sources" aria-label="Evidence source connections"></div>
+      </section>
+      <section class="bi-opportunities">
+        <div class="bi-section-heading">
+          <div><span class="bi-eyebrow">FOUNDER DECISION QUEUE</span>
+            <h2>What deserves investigation?</h2>
+            <p>Priority controls the order of research—not expected users, market size, profit, or probability of success.</p>
+          </div>
+          <div class="bi-controls">
+            <label for="bi-kind">Opportunity type</label>
+            <select id="bi-kind" class="hq-input">
+              <option value="all">All sources</option>
+              <option value="existing_tool_route">Existing YorpHives routes</option>
+              <option value="existing_public_product">Existing internet products</option>
+              <option value="public_problem">Public problems</option>
+              <option value="source_backed_hypothesis">Source-backed ideas</option>
+              <option value="private_agent_utility">Private agent services</option>
+            </select>
+            <label for="bi-review">Founder review</label>
+            <select id="bi-review" class="hq-input">
+              <option value="all">All review states</option>
+              <option value="unreviewed">Unreviewed</option>
+              <option value="watching">Watching</option>
+              <option value="investigating">Investigating</option>
+              <option value="shortlisted">Shortlisted</option>
+              <option value="dismissed">Dismissed</option>
+            </select>
+          </div>
+        </div>
+        <p id="bi-status" class="bi-status" role="status" aria-live="polite">Loading evidence-backed business opportunities…</p>
+        <div id="bi-list" class="bi-candidates"></div>
+      </section>
+      <dialog id="bi-review-dialog" class="bi-dialog" aria-label="Review business opportunity">
+        <form id="bi-review-form" method="dialog">
+          <h2 id="bi-review-title">Review an opportunity</h2>
+          <p>Research prioritization only. This does not validate demand, authorize engineering, spend funds or publish a product.</p>
+          <label for="bi-review-state">Research status</label>
+          <select id="bi-review-state" required class="hq-input">
+            <option value="watching">Watch for evidence</option>
+            <option value="investigating">Investigate now</option>
+            <option value="shortlisted">Shortlist for validation</option>
+            <option value="dismissed">Dismiss from active queue</option>
+          </select>
+          <label for="bi-review-note">Founder research note (optional; no personal data)</label>
+          <textarea id="bi-review-note" class="hq-input" maxlength="1000" rows="5" placeholder="Evidence to verify, product overlap, next experiment, operating constraints…"></textarea>
+          <div class="bi-dialog-actions">
+            <button type="button" id="bi-review-cancel" class="bi-btn bi-secondary">Cancel</button>
+            <button type="submit" id="bi-review-save" class="bi-btn bi-primary">Save research review</button>
+          </div>
+        </form>
+      </dialog>
+    </section>
+
     <section class="view" id="view-demand" data-title="Market Explorer">
       <div class="demand-hero">
         <div>
@@ -510,5 +598,6 @@
 <script src="/admin/market-sources.js" defer></script>
 <script src="/admin/next-actions.js" defer></script>
 <script src="/admin/tool-activity.js" defer></script>
+<script src="/admin/business-intelligence.js" defer></script>
 </body>
 </html>

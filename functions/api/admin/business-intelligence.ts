@@ -3,9 +3,7 @@ import {mutationGuard,readBoundedJson} from "../../_lib/headquarters";
 import {buildBusinessBoard,type BusinessBoardSnapshot,type BusinessReviewStatus}
  from "../../_lib/business-intelligence";
 
-interface BoardEnv extends AdminRequestContext["env"] {
- HQ_TOOL_SERVICE_TOKEN_IDS?:string;
-}
+type BoardEnv=AdminRequestContext["env"]&{HQ_TOOL_SERVICE_TOKEN_IDS?:string;};
 type BoardContext=Omit<AdminRequestContext,"env">&{env:BoardEnv};
 export interface BusinessReviewCommand {
  action:"review";
