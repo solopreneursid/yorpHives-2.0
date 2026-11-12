@@ -65,6 +65,7 @@ async function run() {
       "/api/admin/validation",
       "/api/admin/demand",
       "/api/admin/traffic-evidence",
+      "/api/admin/market-sources",
       "/api/admin/overview",
       "/api/admin/assets",
       "/api/admin/findings",

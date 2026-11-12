@@ -157,6 +157,7 @@ window.loadDemand=async()=>{
   inventoryReady=Array.isArray(inventory);
   render();
   if(window.HQTrafficEvidence)await window.HQTrafficEvidence.load(manifest);
+  if(window.HQMarketSources)await window.HQMarketSources.load();
  }finally{loading=false;}
 };
 byId("demand-origin").addEventListener("change",render);

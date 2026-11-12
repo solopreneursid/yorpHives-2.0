@@ -172,6 +172,23 @@
         <div id="traffic-rows" class="hq-traffic-rows"></div>
         <p class="hq-traffic-disclosure">The capture excludes individual identities and only stores aggregated production route paths. Cloudflare sampling and top-250 truncation can omit low-traffic tools. A missing path never means zero use.</p>
       </section>
+      <section class="hq-market-feed" aria-label="Observed public applications and problems">
+        <div class="hq-market-feed-head">
+          <div>
+            <span class="intel-overline">PUBLIC-SOURCE EVIDENCE · ROTATING SAMPLES</span>
+            <h2>Existing software &amp; questions people ask</h2>
+            <p>WordPress.org plugin listings show existing software. Stack Exchange questions show expressed problems. Neither proves worldwide search volume, profitable demand, or AI-agent invocations.</p>
+          </div>
+          <a class="hq-button hq-button-secondary" href="/api/admin/market-sources?format=markdown" target="_blank" rel="noopener noreferrer">Read as Markdown ↗</a>
+        </div>
+        <p class="hq-market-feed-status" id="market-feed-status" role="status" aria-live="polite">Loading public-market evidence…</p>
+        <div class="hq-market-feed-metrics">
+          <span><strong id="market-plugins-count">—</strong> public plugin records</span>
+          <span><strong id="market-questions-count">—</strong> public question records</span>
+          <span><strong id="market-last-run">—</strong> latest collection</span>
+        </div>
+        <div class="hq-market-feed-list" id="market-feed-list"></div>
+      </section>
       <div class="demand-workspace">
         <div class="demand-main">
           <div class="demand-heading">
@@ -459,5 +476,6 @@
 <script src="/admin/validation.js" defer></script>
 <script src="/admin/demand.js" defer></script>
 <script src="/admin/traffic-evidence.js" defer></script>
+<script src="/admin/market-sources.js" defer></script>
 </body>
 </html>
