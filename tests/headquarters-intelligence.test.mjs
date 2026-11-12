@@ -17,11 +17,20 @@ const validationURI=data((await file("../functions/api/admin/validation.ts"))
   .replace('"../../_lib/headquarters"',JSON.stringify(headquartersURI)));
 const {onRequestGet:getValidation,onRequestPost:postValidation}=await import(validationURI);
 const sourcesURI=data(await file("../hq-intelligence/sources.js"));
+const demandURI=data(await file("../hq-intelligence/demand.js"));
+const {indexDemand,DEMAND_CATEGORIES,demandMatches,researchPriority}=await import(demandURI);
+const demandRouteURI=data((await file("../functions/api/admin/demand.ts"))
+  .replace('"../../_lib/admin-auth"',JSON.stringify(authURI))
+  .replace('"../../_lib/headquarters"',JSON.stringify(headquartersURI))
+  .replace('"../../../hq-intelligence/demand.js"',JSON.stringify(demandURI)));
+const {onRequestGet:getDemand,onRequestPost:postDemand}=await import(demandRouteURI);
 const synthesisURI=data(await file("../hq-intelligence/synthesis.js"));
 const {parseIdeas,synthesizeIdeas}=await import(synthesisURI);
 const workerURI=data((await file("../hq-intelligence/worker.js"))
   .replace('import { WorkflowEntrypoint } from "cloudflare:workers";',
     "class WorkflowEntrypoint { constructor() { this.env = {}; } }")
+  .replace('import { indexDemand } from "./demand.js";',
+    'import { indexDemand } from '+JSON.stringify(demandURI)+";")
   .replace('import { collectPublicSignals } from "./sources.js";',
     'import { collectPublicSignals } from '+JSON.stringify(sourcesURI)+";")
   .replace('import { MODEL, synthesizeIdeas } from "./synthesis.js";',
@@ -54,7 +63,8 @@ async function database(){
   "../migrations/0013_headquarters_brief_review.sql",
   "../migrations/0014_headquarters_opportunity_radar.sql",
   "../migrations/0015_headquarters_global_intelligence.sql",
-  "../migrations/0016_headquarters_validation.sql"
+  "../migrations/0016_headquarters_validation.sql",
+  "../migrations/0017_headquarters_existing_tool_demand.sql"
  ])db.exec(await file(path));
  const DB={
    prepare(sql){
@@ -149,6 +159,7 @@ test("AI idea parser rejects fabricated source IDs and empty evidence",()=>{
  assert.ok(accepted[0].priority_score<90);
  assert.deepEqual(parseIdeas({response:JSON.stringify({ideas:[{...idea,source_ids:["fabricated:99"]}]})},sources),[]);
  assert.deepEqual(parseIdeas({response:JSON.stringify({ideas:[{...idea,source_ids:[]}]})},sources),[]);
+ assert.deepEqual(parseIdeas({response:JSON.stringify({ideas:[]})},sources),[],"Empty research is an honest outcome");
 });
 test("private Workflow records real public sources, one model call and a durable reviewable idea",async()=>{
  const {db,DB}=await database();
@@ -159,7 +170,7 @@ test("private Workflow records real public sources, one model call and a durable
     modelCalls++;
     assert.equal(model,"@cf/meta/llama-3.3-70b-instruct-fp8-fast");
     assert.equal(payload.response_format.type,"json_schema");
-    assert.equal(payload.response_format.json_schema.properties.ideas.minItems,2);
+    assert.equal(payload.response_format.json_schema.properties.ideas.minItems,0);
     assert.ok(payload.max_tokens>=2900);
     assert.ok(JSON.stringify(payload.messages).includes("YorpHives"));
     return {response:JSON.stringify({ideas:[idea]})};
@@ -327,5 +338,71 @@ test("Validation Lab enforces owner-only experiments, audit trail, and unverifie
    assert.equal(c.status,201);
   }
   assert.equal((await postValidation(context(env,"POST",{...candidate,question:"Can we attempt a ninth research experiment?"}))).status,409);
+ }finally{globalThis.fetch=originalFetch;db.close();}
+});
+
+test("Unknown technologies and industries are not excluded by the starter taxonomy",async()=>{
+ const {db,DB}=await database();
+ try {
+  const runId=crypto.randomUUID(),ideaId=crypto.randomUUID();
+  const sourceId="github:999019";
+  const unknownId="github:999020";
+  db.prepare("INSERT INTO hq_intelligence_runs(run_id,trigger_source,run_date,status) VALUES (?,'owner','2026-11-12','completed')").run(runId);
+  db.prepare("INSERT INTO hq_intelligence_sources(source_id,provider,external_id,title,excerpt,source_url) VALUES (?,'github_repo','999019','Aquaculture sonar observation logs','Ocean sensor management in remote fisheries','https://github.com/demo/aquatic-logs')").run(sourceId);
+  db.prepare("INSERT INTO hq_intelligence_sources(source_id,provider,external_id,title,excerpt,source_url) VALUES (?,'github_repo','999020','Future non-terrestrial agriculture','Research on high-altitude food-growing ecosystems','https://github.com/demo/high-atmosphere')").run(unknownId);
+  db.prepare(
+   "INSERT INTO hq_intelligence_ideas(idea_id,fingerprint,run_id,title,kind,audience,problem,solution,why_now,mvp,differentiation,validation_plan,monetization_hypothesis,distribution_hypothesis,risks,priority_score,source_count) VALUES (?,'unbounded-field',?,'Waterfront ecosystem intelligence','direction','Fishers','Unknown operational gaps','Investigate possible data sharing','Source raised the topic','Interview users','Only validated users','Talk to operators','Funding unspecified','Sector partnerships','Unknown demand',50,1)"
+  ).run(ideaId,runId);
+  db.prepare("INSERT INTO hq_intelligence_evidence(idea_id,source_id) VALUES (?,?)").run(ideaId,sourceId);
+  const unsupportedId=crypto.randomUUID();
+  db.prepare("INSERT INTO hq_intelligence_ideas(idea_id,fingerprint,run_id,title,kind,audience,problem,solution,why_now,mvp,differentiation,validation_plan,monetization_hypothesis,distribution_hypothesis,risks,priority_score,source_count) VALUES (?,'unsupported-idea',?,'Future scientific interface','direction','Researchers','Potential unknown need','Investigate the field','Research question','Interview experts','Research-first','Verify evidence','Unknown','Research partnerships','No verified interest',50,1)").run(unsupportedId,runId);
+  const sources=db.prepare("SELECT source_id,provider,title,excerpt,published_at FROM hq_intelligence_sources").all();
+  assert.equal(demandMatches(sources[0]).some(c=>c.key==="pdf_tools"),false);
+  assert.equal(researchPriority([]),null);
+  const receipt=await indexDemand(DB,sources,"research_workflow",runId);
+  assert.equal(receipt.category_ceiling,false);
+  assert.equal(receipt.ai_calls,0);
+  assert.equal(receipt.searches_performed,0);
+  assert.equal(receipt.demand_verified,false);
+  assert.equal(receipt.generated_candidates,1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_demand_categories WHERE origin='hypothesis'").get().n,1,"Uncited proposals must never enter the demand board");
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_demand_categories WHERE origin='reference'").get().n,DEMAND_CATEGORIES.length);
+  const dynamic=db.prepare("SELECT category_key,scale,origin,implementation_risk,research_status,origin_idea_id FROM hq_demand_categories WHERE category_key=?").get("hypothesis:"+ideaId);
+  assert.equal(dynamic.scale,"direction","free-tool categories must not be the only allowed type");
+  assert.equal(dynamic.origin,"hypothesis");
+  assert.equal(dynamic.origin_idea_id,ideaId);
+  assert.equal(dynamic.implementation_risk,"unknown");
+  assert.equal(dynamic.research_status,"watching");
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_demand_evidence WHERE category_key=? AND source_id=?").get(dynamic.category_key,sourceId).n,1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_demand_unclassified_sources WHERE source_id=?").get(unknownId).n,1);
+  const again=await indexDemand(DB,sources,"research_workflow",runId);
+  assert.equal(again.generated_candidates,0);
+  assert.equal(again.added_links,0);
+  assert.equal(again.refresh_id,null,"a replay must not multiply one run's ledger");
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_demand_refresh_runs WHERE research_run_id=?").get(runId).n,1);
+  const e=envFor(DB);
+  globalThis.fetch=stub;
+  const get=await getDemand(context(e));
+  assert.equal(get.status,200);
+  const value=await get.json();
+  assert.equal(value.category_ceiling,false);
+  assert.ok(value.opportunities.find(x=>x.category_key===dynamic.category_key));
+  assert.ok(value.unclassified_sources.find(x=>x.source_id===unknownId));
+  assert.equal(value.unclassified_total,1);
+  const markdown=await getDemand(context(e,"GET",undefined,{accept:"text/markdown"}));
+  assert.match(markdown.headers.get("content-type"),/text\/markdown/);
+  assert.match(await markdown.text(),/Unclassified signals/);
+  const forbidden=await postDemand(context(e,"POST",{action:"refresh"},{origin:"https://wrong.site"}));
+  assert.equal(forbidden.status,403);
+  const ci=await signedToken({email:undefined,sub:"",common_name:"ci-test",service_token_status:true});
+  assert.equal((await postDemand(context(e,"POST",{action:"refresh"},{"cf-access-jwt-assertion":ci}))).status,403);
+  assert.equal((await postDemand(context(e,"POST",{action:"investigate",category_key:dynamic.category_key,expected_revision:42}))).status,409);
+  const triage=await postDemand(context(e,"POST",{action:"investigate",category_key:dynamic.category_key,expected_revision:0}));
+  assert.equal(triage.status,200);
+  assert.equal((await triage.json()).status,"investigating");
+  const refreshed=await postDemand(context(e,"POST",{action:"refresh"}));
+  assert.equal(refreshed.status,200);
+  assert.equal(db.prepare("SELECT research_status FROM hq_demand_categories WHERE category_key=?").get(dynamic.category_key).research_status,"investigating","refresh never overwrites founder triage");
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM agent_approvals").get().n,0);
  }finally{globalThis.fetch=originalFetch;db.close();}
 });

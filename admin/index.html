@@ -19,6 +19,7 @@
   <nav class="side-nav" aria-label="Admin workspaces">
     <button class="nav-item active" data-view="headquarters"><span class="nav-icon">◇</span>Headquarters</button>
     <button class="nav-item" data-view="intelligence"><span class="nav-icon">✦</span>Ideas &amp; Intelligence</button>
+    <button class="nav-item" data-view="demand"><span class="nav-icon">◉</span>Market Explorer</button>
     <button class="nav-item" data-view="radar"><span class="nav-icon">◈</span>Opportunity Radar</button>
     <button class="nav-item" data-view="departments"><span class="nav-icon">▦</span>Departments</button>
     <button class="nav-item" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
@@ -125,6 +126,80 @@
         </aside>
       </div>
     </section>
+    <section class="view" id="view-demand" data-title="Market Explorer">
+      <div class="demand-hero">
+        <div>
+          <span class="intel-overline">OPEN-ENDED OPPORTUNITY INTELLIGENCE</span>
+          <h1>Explore <em>any market.</em></h1>
+          <p>YorpHives follows real problems and useful opportunities—not a predefined list of industries, product types or technologies. Discover existing tools worth improving, emerging directions worth researching, and source signals that do not fit any current category.</p>
+          <div class="demand-hero-actions">
+            <button type="button" class="hq-button hq-button-primary" id="demand-refresh">↻ Index stored research</button>
+            <a class="hq-button hq-button-secondary" href="/api/admin/demand?format=markdown" target="_blank" rel="noopener noreferrer">Markdown for agents ↗</a>
+          </div>
+          <small id="demand-refresh-note" class="demand-subnote">No external search or AI call occurs during indexing.</small>
+        </div>
+        <aside class="demand-hero-note">
+          <span class="intel-overline">DISCOVERY POLICY</span>
+          <strong>Categories are examples, not limits.</strong>
+          <p>Established tool types provide a useful starting point. A new field can enter directly from a source-backed hypothesis; unfamiliar source material is retained for investigation.</p>
+          <span>PUBLIC SOURCES ≠ VERIFIED MARKET DEMAND</span>
+        </aside>
+      </div>
+      <div class="demand-metrics" aria-label="Opportunity intelligence summary">
+        <article><span>REFERENCE CATEGORIES</span><strong id="demand-reference-count">—</strong><small>Not an allowed list</small></article>
+        <article><span>OPEN-ENDED DISCOVERIES</span><strong id="demand-dynamic-count">—</strong><small>Not restricted to predefined sectors</small></article>
+        <article><span>UNCLASSIFIED SIGNALS</span><strong id="demand-unclassified-count">—</strong><small>Public signals retained for review</small></article>
+        <article><span>LISTED FREE TOOLS</span><strong id="demand-inventory-count">—</strong><small>Catalogue inventory, not verified usage</small></article>
+      </div>
+      <div class="demand-workspace">
+        <div class="demand-main">
+          <div class="demand-heading">
+            <div><span class="intel-overline">INVESTIGATE WHAT MATTERS</span><h2>Existing tools &amp; new directions</h2>
+              <p>Research priority measures available source signals only. Search demand, agent traffic and monetization must be verified separately.</p></div>
+            <div class="demand-filters">
+              <label for="demand-origin">Explore</label>
+              <select id="demand-origin" class="hq-input">
+                <option value="all">All opportunities</option>
+                <option value="hypothesis">Open-ended discoveries</option>
+                <option value="reference">Established tool categories</option>
+                <option value="sourced">With public source links</option>
+              </select>
+              <label for="demand-status">Stage</label>
+              <select id="demand-status" class="hq-input">
+                <option value="all">All stages</option>
+                <option value="watching">Watching</option>
+                <option value="investigating">Investigating</option>
+                <option value="shortlisted">Shortlisted</option>
+                <option value="dismissed">Dismissed</option>
+              </select>
+            </div>
+          </div>
+          <div id="demand-status-line" class="demand-status-line" role="status" aria-live="polite">Loading source-linked opportunities…</div>
+          <div id="demand-cards" class="demand-cards"></div>
+        </div>
+        <aside class="demand-sidebar">
+          <section class="demand-panel">
+            <span class="intel-overline">UNCATEGORIZED RESEARCH</span>
+            <h2>Beyond current categories</h2>
+            <p>These public records did not match a known example and are not discarded. A new industry or technology can emerge here without a code or database schema change.</p>
+            <div id="demand-unknown-list" class="demand-unknown-list"></div>
+          </section>
+          <section class="demand-panel">
+            <span class="intel-overline">PRODUCT REUSE</span>
+            <h2>Improve before duplicating</h2>
+            <p>We compare opportunity names with the Free Tools manifest. Any overlap is a keyword hint, <strong>not a functional audit</strong> or proof that a tool is already implemented.</p>
+            <p id="demand-inventory-note">Checking the local product manifest…</p>
+          </section>
+          <section class="demand-panel">
+            <span class="intel-overline">EVIDENCE STANDARD</span>
+            <h2>What is actually known?</h2>
+            <p>A question, repository or product launch can show an existing solution or an expression of interest. None establishes international search volume, customer acquisition, paid conversion, or agent invocation traffic.</p>
+            <button class="hq-text-action" type="button" data-go="intelligence">Review structured AI ideas ↗</button>
+          </section>
+        </aside>
+      </div>
+    </section>
+
     <section class="view" id="view-intelligence" data-title="Global Intelligence">
       <div class="intel-hero">
         <div class="intel-intro">
@@ -361,5 +436,6 @@
 <script src="/admin/radar.js" defer></script>
 <script src="/admin/intelligence.js" defer></script>
 <script src="/admin/validation.js" defer></script>
+<script src="/admin/demand.js" defer></script>
 </body>
 </html>

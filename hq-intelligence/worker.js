@@ -1,6 +1,7 @@
 import { WorkflowEntrypoint } from "cloudflare:workers";
 import { collectPublicSignals } from "./sources.js";
 import { MODEL, synthesizeIdeas } from "./synthesis.js";
+import { indexDemand } from "./demand.js";
 
 const MAX_MANUAL_PER_DAY=2;
 const MAX_SOURCE_ROWS=42;
@@ -127,10 +128,15 @@ export class ResearchWorkflow extends WorkflowEntrypoint {
    }else modelProblem=count<3?"Insufficient public research sources.":"Workers AI binding unavailable.";
    const output=await step.do("persist-reviewable-opportunities",async()=>{
       created=await persistIdeas(this.env.DB,id,candidates,collected.sources);
+      // Index all source-backed proposals without restricting their industry,
+      // technology, product format or business model to the starter categories.
+      const demand=await indexDemand(this.env.DB,collected.sources,"research_workflow",id);
       const warnings=[...collected.errors,modelProblem].filter(Boolean);
       const partial=warnings.length>0||count===0||candidates.length===0;
       await setState(this.env.DB,id,partial?"partial":"completed",count,created,warnings.join("; ").slice(0,600)||null);
-      return {status:partial?"partial":"completed",source_count:count,new_ideas:created};
+      return {status:partial?"partial":"completed",source_count:count,new_ideas:created,
+        new_discovery_categories:demand.generated_candidates,
+        observed_category_matches:demand.observed_matches};
    });
    return {...output,run_id:id,verified_market_demand:false,model:MODEL};
   }catch(error){

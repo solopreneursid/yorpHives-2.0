@@ -63,6 +63,7 @@ async function run() {
       "/api/admin/radar",
       "/api/admin/intelligence",
       "/api/admin/validation",
+      "/api/admin/demand",
       "/api/admin/overview",
       "/api/admin/assets",
       "/api/admin/findings",
@@ -103,6 +104,12 @@ async function run() {
         research.ideas.some(idea => idea.sources?.length && idea.sources.every(source => source.source_url?.startsWith("https://"))),
         "Stored hypotheses have legitimate public source links");
     }
+    await page.locator('.nav-item[data-view="demand"]').click();
+    await page.locator("#view-demand").waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForFunction(() => document.querySelector("#demand-status-line")?.textContent?.includes("opportunities"), null, { timeout: 20000 });
+    record("demand_explorer_visible", await page.locator("#view-demand h1").count() === 1, "Open-ended Market Explorer is accessible");
+    record("demand_categories_are_optional", (await page.locator("#view-demand").innerText()).includes("Categories are examples, not limits"), "No fixed sector ceiling");
+    await page.locator('.nav-item[data-view="headquarters"]').click();
     await page.locator('.nav-item[data-view="intelligence"]').click();
     await page.locator("#view-intelligence").waitFor({ state: "visible", timeout: 10000 });
     record("intelligence_workspace_rendered", await page.locator("#view-intelligence h1").count() === 1, "Protected research UI renders");
