@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
 import {
-  teamLeadFor, describeTeam, recommendTeamActions, MAX_TEAM_REPORTS_PER_DAY
+  teamLeadFor, describeTeam, recommendTeamActions, inspectSpecialistBrief, MAX_TEAM_REPORTS_PER_DAY
 } from "../functions/_lib/yorpmind-team.js";
 import { scanYorpMindTeam } from "../hq-intelligence/yorpmind-team-scan.js";
 
@@ -62,6 +62,35 @@ test("manager escalates failed, stalled, and unverified results without executio
   assert.ok(advice.every(x => x.evidence.independent_qa_verified === false));
   assert.equal(advice.length <= MAX_TEAM_REPORTS_PER_DAY,true);
 });
+test("supervisor checks submitted brief shape without verifying its factual claims", () => {
+  const valid = JSON.stringify({
+    kind:"recommendation_brief", verified:false,
+    summary:"Investigate repeated QR failures",
+    recommended_approach:"Collect browser traces before a repair",
+    actions:["Reproduce issue in staging"],
+    risks:["Mobile preview may not match production"],
+    assumptions:["Browser log describes an authentic failure"],
+    verification_needed:["Run mobile regression","Cross-check the exact commit"]
+  });
+  const checked = inspectSpecialistBrief(valid);
+  assert.equal(checked.schema_valid,true);
+  assert.equal(checked.verification_steps,2);
+  assert.equal(checked.risks_listed,1);
+  assert.equal(checked.claims_verified,false);
+  const bad = JSON.stringify({
+    kind:"recommendation_brief", verified:true,
+    summary:"Deployed everything", recommended_approach:"Publish",
+    actions:["Immediately publish"], risks:[], assumptions:[], verification_needed:[]
+  });
+  assert.equal(inspectSpecialistBrief(bad).schema_valid,false);
+  assert.equal(inspectSpecialistBrief("<unsafe html>").schema_valid,false);
+  const advisory = recommendTeamActions(staff,agents,[
+    {...job("pending-review","awaiting_owner_approval"),result_json:valid}
+  ],departments,time(),{dailyMissionsUsed:0});
+  assert.equal(advisory[0].evidence.brief_review.schema_valid,true);
+  assert.equal(advisory[0].evidence.brief_review.claims_verified,false);
+});
+
 test("reuse historical work before spending; exhausted daily budget refuses routing", () => {
   const plans = [job("plan","planned"),job("complete","completed")];
   const suggested = recommendTeamActions(staff,agents,plans,departments,time(),{dailyMissionsUsed:0});
