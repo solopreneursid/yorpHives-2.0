@@ -39,6 +39,7 @@ test("admin routes verify user and CI service identities while keeping CI access
 
 test("GitHub write-permission probe is owner-triggered, audited and automatically cleaned up", async () => {
   const worker = await read("../admin-agent/worker.js");
+  const repairEvidence = await read("../admin-agent/repair-evidence.js");
   const route = await read("../functions/api/admin/repair-jobs.ts");
   const html = await read("../admin/index.html");
   const ui = await read("../admin/admin.js");
@@ -252,7 +253,7 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(route, /hasStructuredSecurityEvidence/);
   assert.match(worker, /WorkflowEntrypoint/);
   assert.match(reviewer, /refName\.startsWith\("build\/agentic-ops-"\)/);
-  assert.match(reviewer, /build\/yorphives-admin-reliability/);
+  assert.match(reviewer, /build\/headquarters-repair-verification/);
   assert.match(worker, /"user-agent": "YorpHives-Agentic-Operations\/1\.0"/);
   assert.match(worker, /repositoryWrite/);
   assert.match(worker, /repositoryContextAccess/);
@@ -265,11 +266,11 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(route, /workers_ai\?: boolean/);
   assert.match(worker, /identity = await github\(env, "\/user"\)/);
   assert.match(worker, /catch \{\s*authenticatedLogin = null;\s*\}/);
-  assert.match(worker, /job\.conclusion !== "success"/);
+  assert.match(repairEvidence, /job\.conclusion !== "success"/);
   assert.doesNotMatch(worker, /"success", "neutral", "skipped"/);
   assert.match(worker, /@cf\/qwen\/qwen3\.8-27b/);
   assert.match(worker, /build\/agent\/repair-/);
-  assert.match(worker, /YorpHives platform checks/);
+  assert.match(repairEvidence, /YorpHives platform checks/);
   assert.match(worker, /triggerPlatformChecks/);
   assert.match(worker, /repair-receipts/);
   assert.match(worker, /needs_review/);
