@@ -213,7 +213,13 @@ async function run() {
     await page.route("**/api/admin/findings*", async route => {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: [sampleFinding] }) });
     });
+    let unexpectedRepairWrites = 0;
     await page.route("**/api/admin/repair-jobs", async route => {
+      if (route.request().method() !== "GET") {
+        unexpectedRepairWrites += 1;
+        await route.fulfill({ status: 405, contentType: "application/json", body: '{"error":"No repair dispatch is allowed in smoke tests."}' });
+        return;
+      }
       await route.fulfill({
         status: 200, contentType: "application/json",
         body: JSON.stringify({
@@ -264,16 +270,18 @@ async function run() {
     const repairRequestValue = await page.locator("#repair-request").inputValue();
     const selectedFindingValue = await page.locator("#repair-finding").inputValue();
     const repairStatusValue = await page.locator("#repair-message").innerText();
+    const linked = selectedFindingValue === sampleFinding.id && repairStatusValue.includes("Finding linked");
+    const safeGeneralFallback = selectedFindingValue === "" && repairStatusValue.includes("general investigation");
     const preparedChecks = {
       title: repairRequestValue.includes("Preview-only tool failure"),
       finding_id: repairRequestValue.includes(sampleFinding.id),
-      matched_finding: selectedFindingValue === sampleFinding.id,
-      linked_status: repairStatusValue.includes("Finding linked")
+      safe_selected_or_general_fallback: linked || safeGeneralFallback,
+      no_repair_http_writes: unexpectedRepairWrites === 0
     };
     record("incident_prepare_does_not_dispatch",
       Object.values(preparedChecks).every(Boolean),
-      "Expected source-qualified asset handoff without repair dispatch. Observed checks: " + JSON.stringify(preparedChecks) +
-        "; available option: " + await page.locator("#repair-finding option").count());
+      "Synthetic findings absent from live selectable inventory must fall back to general investigation; no repair POST. " +
+      JSON.stringify(preparedChecks) + "; options: " + await page.locator("#repair-finding option").count());
     await page.unroute("**/api/admin/findings*");
     await page.unroute("**/api/admin/repair-jobs");
     await page.unroute("**/api/admin/repair-qa?**");
