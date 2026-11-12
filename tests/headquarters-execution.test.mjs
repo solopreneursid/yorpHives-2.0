@@ -287,3 +287,51 @@ test("owner can discard an AI planning brief without authorizing release", async
     database.close();
   }
 });
+
+test("owner AI mission dispatches stop at six per UTC day, including failed/completed jobs", async () => {
+  const { database, adapter } = createDb();
+  database.exec(await source("../migrations/0010_agentic_os_foundation.sql"));
+  database.exec(await source("../migrations/0011_headquarters_audit.sql"));
+  database.exec(await source("../migrations/0012_headquarters_execution.sql"));
+  database.exec(await source("../migrations/0013_headquarters_brief_review.sql"));
+  const env = {
+    DB: adapter,
+    HQ_ENGINE_SERVICE: {
+      async fetch(request) {
+        if (new URL(request.url).pathname === "/health") {
+          return Response.json({ ready: true, mode: "bounded_recommendation" });
+        }
+        return Response.json({ workflow_id: "mission-test", status: "queued" }, { status: 202 });
+      }
+    },
+    CF_ACCESS_TEAM_DOMAIN: "hq-test.cloudflareaccess.com",
+    CF_ACCESS_AUD: "hq-test",
+    ADMIN_ALLOWED_EMAILS: "owner@example.com"
+  };
+  globalThis.fetch = async () => Response.json({ keys: [jwk] });
+  try {
+    for (let i = 0; i < 6; i += 1) {
+      const mission = makeMission();
+      assert.equal((await onRequestPost(call(env, "POST", mission))).status, 201);
+      const { updated_at } = database.prepare("SELECT updated_at FROM agent_jobs WHERE job_id=?").get(mission.job_id);
+      const started = await onRequestPatch(call(env, "PATCH", {
+        job_id: mission.job_id, expected_updated_at: updated_at, action: "dispatch"
+      }));
+      assert.equal(started.status, 202, "Dispatch " + (i + 1) + " should fit the day budget");
+      database.prepare("UPDATE agent_jobs SET status='completed' WHERE job_id=?").run(mission.job_id);
+    }
+    const additional = makeMission();
+    assert.equal((await onRequestPost(call(env, "POST", additional))).status, 201);
+    const { updated_at } = database.prepare("SELECT updated_at FROM agent_jobs WHERE job_id=?").get(additional.job_id);
+    const refused = await onRequestPatch(call(env, "PATCH", {
+      job_id: additional.job_id, expected_updated_at: updated_at, action: "dispatch"
+    }));
+    assert.equal(refused.status, 429);
+    assert.match((await refused.json()).error.message, /Daily AI mission allowance/);
+    assert.equal(database.prepare("SELECT status FROM agent_jobs WHERE job_id=?").get(additional.job_id).status, "planned");
+    assert.equal(database.prepare("SELECT COUNT(*) AS n FROM agent_job_events WHERE event_type='mission_queued'").get().n, 6);
+  } finally {
+    globalThis.fetch = originalFetch;
+    database.close();
+  }
+});
