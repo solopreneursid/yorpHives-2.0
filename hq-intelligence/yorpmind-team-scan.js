@@ -14,7 +14,8 @@ export async function scanYorpMindTeam(db, clock = () => new Date()) {
     db.prepare("SELECT job_id,agent_id,job_type,title,status,priority,updated_at FROM agent_jobs ORDER BY updated_at DESC LIMIT ?").bind(MAX_TEAM_JOBS_SCANNED).all(),
     db.prepare("SELECT COUNT(*) AS used FROM agent_job_events WHERE event_type='mission_queued' AND substr(created_at,1,10)=date('now')").first()
   ]);
-  const recommendations = recommendTeamActions(staff.results || [], agents.results || [], jobs.results || [], departments.results || [], now);
+  const recommendations = recommendTeamActions(staff.results || [], agents.results || [], jobs.results || [], departments.results || [], now,
+    { dailyMissionsUsed: Number(daily?.used || 0) });
   let count = 0;
   for (const item of recommendations) {
     const inserted = await db.prepare(
