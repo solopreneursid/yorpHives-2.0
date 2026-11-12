@@ -39,7 +39,6 @@ test("admin routes verify user and CI service identities while keeping CI access
 
 test("GitHub write-permission probe is owner-triggered, audited and automatically cleaned up", async () => {
   const worker = await read("../admin-agent/worker.js");
-  const repairEvidence = await read("../admin-agent/repair-evidence.js");
   const route = await read("../functions/api/admin/repair-jobs.ts");
   const html = await read("../admin/index.html");
   const ui = await read("../admin/admin.js");
@@ -235,6 +234,7 @@ test("Admin findings support audited triage while fixed status remains verificat
 test("Cloudflare durable repair agent uses a private service binding and CI-gated draft PRs", async () => {
   const route = await read("../functions/api/admin/repair-jobs.ts");
   const worker = await read("../admin-agent/worker.js");
+  const repairEvidence = await read("../admin-agent/repair-evidence.js");
   const reviewer = await read("../scripts/agent-review.mjs");
   const config = JSON.parse(await read("../admin-agent/wrangler.jsonc"));
   assert.match(route, /ADMIN_AGENT_SERVICE/);
