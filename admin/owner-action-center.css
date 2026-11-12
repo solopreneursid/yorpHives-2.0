@@ -1,0 +1,28 @@
+.owner-console{margin:0 0 22px;padding:clamp(18px,2.5vw,30px);border:1px solid #285071;border-radius:18px;background:linear-gradient(145deg,#11243b,#0b1321 78%);color:#e2e8f0;box-shadow:0 16px 50px #02061733}
+.owner-console-header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:10px}
+.owner-kicker{font-size:.67rem;font-weight:750;color:#67e8f9;letter-spacing:.14em;text-transform:uppercase}
+.owner-console h2{margin:6px 0 8px;font-weight:800;font-size:clamp(1.3rem,2.5vw,1.85rem);letter-spacing:-.035em}
+.owner-console p{line-height:1.6}
+.owner-console-refresh{padding:10px 15px;border:1px solid #3c637e;border-radius:9px;background:#142e45;color:#d6f3ff;font-size:.85rem;font-weight:700;cursor:pointer;transition:background .2s,border-color .2s}
+.owner-console-refresh:hover,.owner-console-refresh:focus-visible{background:#1b496a;border-color:#7dd3fc}
+.owner-console-intro{color:#bdcbdc;font-size:.92rem}
+.owner-console-stat{font-size:.74rem;border:1px solid #2c6684;border-radius:100px;color:#67e8f9;padding:5px 10px;white-space:nowrap}
+.owner-console-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.owner-task-list{display:grid;gap:12px;margin-top:18px}
+.owner-task{border:1px solid #334a62;border-left:3px solid #38bdf8;border-radius:12px;padding:16px;background:#121e30}
+.owner-task-urgent{border-left-color:#fb7185}
+.owner-task-attention{border-left-color:#fbbf24}
+.owner-task-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.owner-task-rank{font-variant-numeric:tabular-nums;color:#7899b7;font-size:.74rem}
+.owner-task-heading strong{font-size:1.01rem;font-weight:750;color:#f8fafc}
+.owner-task-priority{font-size:.62rem;letter-spacing:.06em;color:#e2e8f0;background:#243349;border:1px solid #3c5470;padding:4px 7px;border-radius:100px}
+.owner-task-why{font-size:.87rem;color:#adbed0;margin-top:9px}
+.owner-task-next{margin-top:10px;font-size:.85rem;color:#e2e8f0}
+.owner-task-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:13px}
+.owner-task-note{color:#91a4bd;font-size:.73rem}
+.owner-task-button{cursor:pointer;background:#0891b2;color:white;font-weight:700;padding:9px 12px;border-radius:8px;border:1px solid #22d3ee55;font-size:.81rem;transition:background .2s,transform .2s}
+.owner-task-button:hover,.owner-task-button:focus-visible{background:#0e7490;transform:translateY(-1px)}
+.owner-console-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px;font-size:.72rem;color:#94a3b8}
+.owner-console-locked{color:#fbbf24}
+.owner-empty{background:#0f2033;border:1px solid #34506a;padding:16px;border-radius:10px;color:#cbd5e1}
+@media(max-width:600px){.owner-console{padding:17px}.owner-task{padding:14px}.owner-task-footer{align-items:stretch}.owner-task-button{width:100%;text-align:center}}
