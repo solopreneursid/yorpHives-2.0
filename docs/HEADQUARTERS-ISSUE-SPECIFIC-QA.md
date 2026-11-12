@@ -72,3 +72,16 @@ If migration 0023 is applied with Cloudflare's SQL API rather than Wrangler migr
 ## Release blocker
 
 A recorded owner QA report is **self-reported test evidence**, not a cryptographic proof of test execution or a substitute for independent regression testing. Even when the three observations pass, production publication requires a separately reviewed release, owner approval and rollback readiness.
+
+## Staging-only execution evidence — 12 November 2026
+
+Verified the connected Cloudflare database identity before making any change:
+
+- Database name: `yorphives-2-catalogue-preview`.
+- Database ID: `e8690813-b139-44a2-a1c7-bea2d2777ead`.
+- Confirmed neither QA table existed before migration.
+- Read a D1 Time Travel bookmark before the additive SQL migration.
+- Applied migration `0023` through the Cloudflare D1 SQL API (not production).
+- Read back and verified both tables `admin_repair_ci_verifications` and `admin_repair_qa_reports`, plus their indexes.
+
+This validates **schema presence only**. It does not prove the new repair Worker is deployed, that a real AI repair can finish, or that an authenticated founder has successfully submitted QA. The official Wrangler migration ledger may not reflect SQL-API-applied migrations and must be reconciled before release.
