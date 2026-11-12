@@ -45,6 +45,9 @@ interface MissionDispatchResponse {
   message: string;
 }
 const MAX_ACTIVE = 3;
+// Independent of active concurrency: limit paid model dispatches within each UTC day.
+// Queued mission audit events remain counted even if a later run fails.
+const MAX_DAILY_MISSIONS = 6;
 function validAction(value: unknown): value is CancelMissionRequest | DispatchMissionRequest | ReviewBriefRequest {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
@@ -155,12 +158,20 @@ export async function onRequestPatch(context: MissionContext): Promise<Response>
   ).first<{ count: number }>();
   if (Number(active?.count || 0) >= MAX_ACTIVE)
     return adminJson({ error: { message: "The mission engine is at capacity (3 active jobs). Review running missions first." } }, 429);
+  const daily = await db.prepare(
+    "SELECT COUNT(*) AS count FROM agent_job_events WHERE event_type='mission_queued' AND substr(created_at,1,10)=date('now')"
+  ).first<{ count: number }>();
+  if (Number(daily?.count || 0) >= MAX_DAILY_MISSIONS)
+    return adminJson({ error: { message: "Daily AI mission allowance reached (6 UTC-day dispatches). Existing monitoring and review remain available." } }, 429);
   if (!await missionEngineReady(engine)) return adminJson({ error: { message: "Mission engine is not healthy. No credits were spent and the mission remains planned." } }, 503);
   const updated = await db.prepare(
     "UPDATE agent_jobs SET status='queued',updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') " +
-    "WHERE job_id=? AND updated_at=? AND status='planned' AND job_type='owner_mission' AND created_by=? RETURNING job_id"
-  ).bind(body.job_id, body.expected_updated_at, identity.email).first<{ job_id: string }>();
-  if (!updated?.job_id) return adminJson({ error: { message: "Mission changed while starting. Refresh and try again." } }, 409);
+    "WHERE job_id=? AND updated_at=? AND status='planned' AND job_type='owner_mission' AND created_by=? " +
+    "AND (SELECT COUNT(*) FROM agent_jobs WHERE job_type='owner_mission' AND status IN ('queued','running')) < ? " +
+    "AND (SELECT COUNT(*) FROM agent_job_events WHERE event_type='mission_queued' AND substr(created_at,1,10)=date('now')) < ? " +
+    "RETURNING job_id"
+  ).bind(body.job_id, body.expected_updated_at, identity.email, MAX_ACTIVE, MAX_DAILY_MISSIONS).first<{ job_id: string }>();
+  if (!updated?.job_id) return adminJson({ error: { message: "Mission changed or the shared AI mission allowance was reached. Refresh and try again." } }, 409);
   try {
     const dispatched = await engine.fetch(new Request("https://hq-engine.internal/missions", {
       method: "POST",
