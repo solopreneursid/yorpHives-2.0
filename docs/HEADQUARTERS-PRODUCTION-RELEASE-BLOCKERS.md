@@ -31,7 +31,7 @@ The **Prepare investigation** action navigates to the existing repair form and f
 
 The original `admin_repair_jobs.finding_id` foreign key references `admin_findings` (monitor findings), but the Assets API also creates `admin_asset_findings`. A direct asset-finding ID could violate that foreign key during insert.
 
-To avoid breaking the investigation experience, the new UI safely prepares **asset** findings as a general investigation with the evidence and asset finding ID preserved in the editable description. It does not falsely claim a persisted relationship. Monitor findings retain the normal reference. A reviewed additive association model and migration are required before reliable source-to-repair linking can be declared complete.
+Migration `0022` now adds an explicit source-qualified repair association table, index and validation triggers without removing the old monitor-only FK. The new API atomically links monitor and asset requests when the migration is present; before migration it preserves monitor behavior and prepares asset requests as general investigations. The migration was applied and its table/triggers verified on **private staging D1 only**. Full production rollout and official Wrangler migration-ledger reconciliation remain release tasks.
 
 ### Browser QA
 
@@ -52,7 +52,7 @@ Therefore **actual billed costs are not verified**, and no dashboard or release 
 1. Independent security review of the whole diff since production `main`, including reconciliation of its diverged commits.
 2. Full private staging migration audit and tested backup/restore.
 3. Real repair-to-verified-preview rehearsal with independent QA; status must never imply that the repair is already verified.
-4. Reviewed persistent association of monitor and asset findings to repair jobs, if required for production.
+4. Verify source-qualified repair links end-to-end on authenticated staging, reconcile migration 0022 with the official Wrangler ledger, and rehearse production migration safely.
 5. Actual Cloudflare usage/billing visibility and cost controls across mission, research and repair Workers.
 6. Authenticated owner review and production-approval verification for the exact release commit.
 7. Staging desktop/mobile accessibility, performance and no-regression acceptance.
