@@ -178,6 +178,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   ];
   return adminJson({
     data: result.results,
+    finding_links_ready: linksAvailable,
     agentConfigured,
     github: agentHealth?.github || null,
     workflow: agentHealth?.workflow || null,
