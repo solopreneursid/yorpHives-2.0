@@ -235,8 +235,10 @@ test("missing migration, service identity and invalid approval form are all bloc
     const saved=await (await callOwner("POST")).json();
     assert.equal((await callStepup("POST",saved.delegation_id,{note:"too short"})).status,400);
     assert.equal((await callStepup("POST",saved.delegation_id,{headers:{origin:"https://attacker.example"}})).status,403);
-    db.prepare("UPDATE yorpmind_owner_delegations SET request_expires_at=?").run("2000-01-01T00:00:00Z");
-    assert.equal((await callStepup("POST",saved.delegation_id)).status,409);
+    assert.throws(() => db.prepare(
+      "UPDATE yorpmind_owner_delegations SET request_expires_at=?"
+    ).run("2000-01-01T00:00:00Z"), /Cannot change an owner-reviewed release candidate/);
+    assert.equal((await callStepup("GET",saved.delegation_id)).status,200);
     assert.equal(db.prepare("SELECT state FROM yorpmind_owner_delegations").get().state,"awaiting_mfa");
   }finally{globalThis.fetch=originalFetch;db.close();}
   const legacy=await fixture({migration:false});
