@@ -4,6 +4,7 @@ import { MODEL, synthesizeIdeas } from "./synthesis.js";
 import { indexDemand } from "./demand.js";
 import { collectMarketSources,storeMarketSources } from "./market-sources.js";
 import { scanYorpMindEvolution } from "./yorpmind-evolution.js";
+import { scanYorpMindTeam } from "./yorpmind-team-scan.js";
 
 const MAX_MANUAL_PER_DAY=2;
 const MAX_SOURCE_ROWS=42;
@@ -167,6 +168,14 @@ export class ResearchWorkflow extends WorkflowEntrypoint {
 }
 export default {
  async scheduled(controller,env){
+  // Resource review is deterministic, bounded, and does not dispatch or spend AI credits.
+  try {
+    const team = await scanYorpMindTeam(env.DB);
+    if (team.status === "completed" && team.reports_created > 0)
+      console.log(JSON.stringify({ event: "yorpmind_team_reported", reports: team.reports_created }));
+  } catch (error) {
+    console.warn(JSON.stringify({ event: "yorpmind_team_scan_unavailable", reason: String(error instanceof Error ? error.message : error).slice(0, 140) }));
+  }
   // Reference-only YorpMind self-evolution: no model calls, skill writes or deployments.
   try {
     const evolution = await scanYorpMindEvolution(env.DB);
