@@ -25,6 +25,9 @@ const failures = [];
 const record = (name, ok, detail) => {
   const result = { name, ok: Boolean(ok), detail: String(detail || "") };
   checks.push(result);
+  // Log only checkpoint names and pass/fail, never private API payloads,
+  // Cloudflare Access credentials, owner emails, OTPs or business evidence.
+  console.log(JSON.stringify({ checkpoint: result.name, ok: result.ok }));
   if (!result.ok) failures.push(result);
 };
 
