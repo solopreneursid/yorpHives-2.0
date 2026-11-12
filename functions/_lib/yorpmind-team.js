@@ -73,6 +73,36 @@ export function describeTeam(staff, agents, jobs, departments) {
   };
 }
 
+
+/**
+ * Verify the structural completeness of an existing model result.
+ * The brief's prose is untrusted and never copied into manager instructions.
+ * This is NOT independent factual verification or security attestation.
+ */
+export function inspectSpecialistBrief(value) {
+  if (typeof value !== "string" || value.length > 20000 || value.length === 0)
+    return { schema_valid: false, verification_steps: 0, risks_listed: 0, claims_verified: false };
+  let parsed;
+  try { parsed = JSON.parse(value); } catch {
+    return { schema_valid: false, verification_steps: 0, risks_listed: 0, claims_verified: false };
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+    return { schema_valid: false, verification_steps: 0, risks_listed: 0, claims_verified: false };
+  const sections = ["summary","recommended_approach"];
+  const lists = ["actions","risks","assumptions","verification_needed"];
+  const valid = parsed.kind === "recommendation_brief" && parsed.verified === false &&
+    sections.every(k => typeof parsed[k] === "string" && parsed[k].trim().length >= 3 && parsed[k].length <= 10000) &&
+    lists.every(k => Array.isArray(parsed[k]) && parsed[k].length <= 25 &&
+      parsed[k].every(item => typeof item === "string" && item.length <= 2500)) &&
+    parsed.actions.length >= 1 && parsed.verification_needed.length >= 1;
+  return {
+    schema_valid: Boolean(valid),
+    verification_steps: Array.isArray(parsed.verification_needed) ? Math.min(25,parsed.verification_needed.length) : 0,
+    risks_listed: Array.isArray(parsed.risks) ? Math.min(25,parsed.risks.length) : 0,
+    claims_verified: false
+  };
+}
+
 function makeAdvice(kind, severity, job, agent, managerId, summary) {
   return {
     report_key: kind + ":" + job.job_id,
@@ -87,7 +117,8 @@ function makeAdvice(kind, severity, job, agent, managerId, summary) {
       status: String(job.status), updated_at: String(job.updated_at || ""),
       manager_id: managerId, agent_enabled: agent?.enabled === 1,
       capability: String(agent?.autonomy_level || "unknown"),
-      independent_qa_verified: false, execution_authorized: false
+      independent_qa_verified: false, execution_authorized: false,
+      brief_review: job.status === "awaiting_owner_approval" ? inspectSpecialistBrief(job.result_json) : null
     }
   };
 }
