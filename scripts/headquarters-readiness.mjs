@@ -99,7 +99,7 @@ export async function assessHeadquarters(root) {
   add("headquarters-migrations", missing.length === 0 && duplicates.length === 0,
     missing.length || duplicates.length ?
       "Missing migration IDs: " + missing.join(", ") + "; duplicate IDs: " + duplicates.join(", ") :
-      "Migrations 0004–0026 exist with unique IDs; application and restore tests remain mandatory");
+      "Migrations 0004–0027 exist with unique IDs; application and restore tests remain mandatory");
 
   let workflow = "";
   try {
