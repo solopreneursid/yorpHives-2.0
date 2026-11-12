@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { DatabaseSync } from "node:sqlite";
 
 const migrationRoot = new URL("../migrations/", import.meta.url);
-const expectedMigrations = Array.from({ length: 22 }, (_, index) => index + 1);
+const expectedMigrations = Array.from({ length: 23 }, (_, index) => index + 1);
 
 test("complete D1 SQL migration chain can be restored from a disposable SQLite backup", async () => {
   const dir = await mkdtemp(join(tmpdir(), "yorphives-hq-restore-"));
