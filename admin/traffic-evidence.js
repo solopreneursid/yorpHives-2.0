@@ -61,6 +61,9 @@ window.HQTrafficEvidence={
     .map(p=>[p.slug,p.title]));
    state=await api("/api/admin/traffic-evidence");
    render();
+  }catch(error){
+   $("traffic-availability").textContent=
+    "Cloudflare Analytics evidence temporarily unavailable; no traffic result is assumed. "+error.message;
   }finally{loading=false;}
  }
 };

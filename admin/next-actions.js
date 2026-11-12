@@ -20,7 +20,7 @@ window.HQNextActions={
    byId("hq-next-actions-status").textContent=
     data.recommendations.length+" evidence-qualified investigative actions · "+
     "first-party capture "+(counts.traffic_capture_exists?"available":"missing")+
-    " · "+counts.public_market_source_count+" public source records · "+
+    " · "+counts.public_market_source_count+" public source records examined · "+
     "zero independent approval to build";
    if(!data.recommendations.length){
     area.append(create("p","hq-decision-empty",
