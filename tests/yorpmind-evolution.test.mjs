@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
+import { stripTypeScriptTypes } from "node:module";
 import { detectYorpMindPatterns, patternTerms } from "../functions/_lib/yorpmind-patterns.js";
 import { scanYorpMindEvolution } from "../hq-intelligence/yorpmind-evolution.js";
 import { missionMemoryContext } from "../hq-engine/yorpmind-context.js";
@@ -28,7 +29,22 @@ async function setup() {
     };
     return stmt;
   };
-  return { db, adapter: { prepare } };
+  const adapter = {
+    prepare,
+    async batch(statements) {
+      db.exec("BEGIN");
+      try {
+        const output = [];
+        for (const statement of statements) output.push(await statement.run());
+        db.exec("COMMIT");
+        return output;
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
+    }
+  };
+  return { db, adapter };
 }
 function addExperience(db, n, title) {
   const eid = experienceId(n), rid = repairId(n);
@@ -142,5 +158,102 @@ test("specialists receive only historical IDs, not untrusted lesson text, with z
     assert.equal(result.references[0].verified_current, false);
     assert.ok(!JSON.stringify(result).includes(lesson));
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM yorpmind_evolution_proposals").get().n, 0);
+  } finally { db.close(); }
+});
+
+const asModule = code => "data:text/javascript;base64," + Buffer.from(code).toString("base64");
+const authStub = asModule(`
+  export const adminJson = (body, status = 200) => Response.json(body, { status });
+  export const isAdminResponse = value => value instanceof Response;
+  export const requireAdmin = async context =>
+    context.request.headers.has("x-ci-token")
+      ? new Response("CI identities are read-only", { status: 403 })
+      : context.request.headers.has("x-denied")
+        ? new Response("Access required", { status: 401 })
+        : { email: "founder@example.com", serviceToken: false };
+`);
+const routeText = (await migration("../functions/api/admin/yorpmind-evolution.ts"))
+  .replace('"../../_lib/admin-auth"', JSON.stringify(authStub));
+const { onRequestGet, onRequestPatch } = await import(asModule(stripTypeScriptTypes(routeText)));
+
+function callEvolution(adapter, method = "GET", payload = null, opts = {}) {
+  const origin = "https://hq-staging.example.com";
+  const headers = {
+    accept: opts.accept || "application/json",
+    "content-type": "application/json",
+    ...(method === "PATCH" ? { origin: opts.origin || origin } : {}),
+    ...(opts.headers || {})
+  };
+  return (method === "GET" ? onRequestGet : onRequestPatch)({
+    env: { DB: adapter },
+    request: new Request(origin + "/api/admin/yorpmind-evolution", {
+      method, headers, ...(method === "PATCH" ? { body: JSON.stringify(payload) } : {})
+    })
+  });
+}
+
+test("private evolution API exposes evidence and owner review cannot mutate skills or releases", async () => {
+  const { db, adapter } = await setup();
+  try {
+    addExperience(db, 1, "Image download regression");
+    addExperience(db, 2, "Image download fails browser");
+    await scanYorpMindEvolution(adapter, day("2026-11-12T03:30:00Z"));
+    const read = await callEvolution(adapter);
+    assert.equal(read.status, 200);
+    const data = await read.json();
+    assert.equal(data.autonomous_proposal_detection, true);
+    assert.equal(data.autonomous_skill_mutation, false);
+    assert.equal(data.model_calls_per_scan, 0);
+    assert.equal(data.deployment_enabled, false);
+    assert.equal(data.pending_proposals, 1);
+    const proposal = data.proposals[0];
+    assert.deepEqual(proposal.evidence_ids.sort(), [experienceId(1), experienceId(2)].sort());
+    assert.equal(proposal.evidence_json, undefined);
+    assert.equal((await callEvolution(adapter, "GET", null, { headers: { "x-denied": "1" } })).status, 401);
+    assert.equal((await callEvolution(adapter, "PATCH", {
+      proposal_id: proposal.proposal_id, decision: "acknowledge",
+      review_note: "The repeated QA cases warrant a draft procedure, subject to independent source verification."
+    }, { headers: { "x-ci-token": "1" } })).status, 403);
+    const payload = {
+      proposal_id: proposal.proposal_id, decision: "acknowledge",
+      review_note: "The repeated QA cases warrant a draft procedure, subject to independent source verification."
+    };
+    assert.equal((await callEvolution(adapter, "PATCH", payload, { origin: "https://attacker.example" })).status, 403);
+    const written = await callEvolution(adapter, "PATCH", payload);
+    assert.equal(written.status, 200);
+    const result = await written.json();
+    assert.equal(result.status, "acknowledged");
+    assert.equal(result.creates_skill, false);
+    assert.equal(result.executes_skill, false);
+    assert.equal(result.production_approved, false);
+    assert.equal((await callEvolution(adapter, "PATCH", payload)).status, 409);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM yorpmind_skills").get().n, 0);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM yorpmind_skill_reviews").get().n, 0);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n, 1);
+    const snapshot = await (await callEvolution(adapter)).json();
+    assert.equal(snapshot.pending_proposals, 0);
+    assert.equal(snapshot.reviewed_proposals, 1);
+    const md = await callEvolution(adapter, "GET", null, { accept: "text/markdown" });
+    assert.equal(md.status, 200);
+    assert.match(md.headers.get("content-type"), /text\/markdown/);
+    assert.match(await md.text(), /Autonomous skill mutation: DISABLED/);
+  } finally { db.close(); }
+});
+
+test("evolution API rejects malformed or non-owner approval attempts", async () => {
+  const { db, adapter } = await setup();
+  try {
+    assert.equal((await callEvolution(adapter, "PATCH", {
+      proposal_id: experienceId(8), decision: "approve_and_deploy",
+      review_note: "This purported proposal should never grant publishing authority or execute arbitrary code."
+    })).status, 400);
+    assert.equal((await callEvolution(adapter, "PATCH", {
+      proposal_id: experienceId(8), decision: "acknowledge", review_note: "short"
+    })).status, 400);
+    assert.equal((await callEvolution(adapter, "PATCH", {
+      proposal_id: experienceId(8), decision: "dismiss",
+      review_note: "A reviewed operation may only edit a proposal label, not alter source data.",
+    })).status, 409);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n, 0);
   } finally { db.close(); }
 });
