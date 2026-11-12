@@ -158,6 +158,7 @@ window.loadDemand=async()=>{
   render();
   if(window.HQTrafficEvidence)await window.HQTrafficEvidence.load(manifest);
   if(window.HQMarketSources)await window.HQMarketSources.load();
+  if(window.HQNextActions)await window.HQNextActions.load();
  }finally{loading=false;}
 };
 byId("demand-origin").addEventListener("change",render);

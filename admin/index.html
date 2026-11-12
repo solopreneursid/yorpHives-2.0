@@ -190,6 +190,18 @@
         </div>
         <div class="hq-market-feed-list" id="market-feed-list"></div>
       </section>
+      <section class="hq-decision-queue" aria-label="Evidence-based next actions">
+        <div class="hq-decision-heading">
+          <div><span class="intel-overline">FOUNDER PRIORITY QUEUE · DETERMINISTIC</span>
+            <h2>What should Headquarters investigate next?</h2>
+            <p>Decisions combine available first-party HTTP evidence, existing product listings, public questions, and research hypotheses. Priority measures investigative work sequencing—not audience size, demand or projected revenue.</p>
+          </div>
+          <a class="hq-button hq-button-secondary" href="/api/admin/next-actions?format=markdown" target="_blank" rel="noopener noreferrer">Agent-readable queue ↗</a>
+        </div>
+        <p class="hq-decision-status" id="hq-next-actions-status" role="status" aria-live="polite">Loading evidence-backed next actions…</p>
+        <div class="hq-decision-grid" id="hq-next-actions"></div>
+        <small class="hq-decision-disclaimer">Nothing here can authorize expenditure, source-code changes, product release, or independent market-demand verification.</small>
+      </section>
       <div class="demand-workspace">
         <div class="demand-main">
           <div class="demand-heading">
@@ -478,5 +490,6 @@
 <script src="/admin/demand.js" defer></script>
 <script src="/admin/traffic-evidence.js" defer></script>
 <script src="/admin/market-sources.js" defer></script>
+<script src="/admin/next-actions.js" defer></script>
 </body>
 </html>

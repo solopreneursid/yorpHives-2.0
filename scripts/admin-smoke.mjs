@@ -66,6 +66,7 @@ async function run() {
       "/api/admin/demand",
       "/api/admin/traffic-evidence",
       "/api/admin/market-sources",
+      "/api/admin/next-actions",
       "/api/admin/overview",
       "/api/admin/assets",
       "/api/admin/findings",
@@ -112,6 +113,8 @@ async function run() {
     record("demand_explorer_visible", await page.locator("#view-demand h1").count() === 1, "Open-ended Market Explorer is accessible");
     record("demand_categories_are_optional", (await page.locator("#view-demand").innerText()).includes("Categories are examples, not limits"), "No fixed sector ceiling");
     await page.waitForFunction(() => document.querySelector("#traffic-availability")?.textContent?.includes("Cloudflare"), null, { timeout: 20000 });
+    record("headquarters_decision_queue", await page.locator("#hq-next-actions").count() === 1,
+      "Evidence-backed founder actions are visible without authorizing product releases");
     record("first_party_traffic_evidence_ui", await page.locator("#traffic-rows").count() === 1,
       "First-party request evidence is available without granting mutation rights to CI");
     await page.locator('.nav-item[data-view="headquarters"]').click();
