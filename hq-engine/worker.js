@@ -117,8 +117,10 @@ export class MissionWorkflow extends WorkflowEntrypoint {
               content: JSON.stringify({ specialist: job.agent, department: job.department, mission_title: job.title, mission_brief: job.brief })
             }
           ],
-          max_tokens: 2300,
-          temperature: 0.2
+          max_completion_tokens: 1800,
+          reasoning_effort: "low",
+          chat_template_kwargs: { enable_thinking: false },
+          temperature: 0.6
         });
         const output =
           response?.response ??

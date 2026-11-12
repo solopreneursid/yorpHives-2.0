@@ -26,3 +26,7 @@ This phase extends the existing founder workspace without replacing the verified
 `GET /api/admin/headquarters` supports JSON and Markdown negotiation and exposes `engine_available` based on its binding. `PATCH /api/admin/headquarters` accepts `cancel` or `dispatch` with a mission ID and version timestamp. Dispatch is limited to the requesting human owner; status cannot be set directly.
 
 The AI provider is Workers AI model `@cf/qwen/qwen3.8-27b`. Calls consume actual inference usage; no cost or research capability is claimed until measured. Production change authority remains with the founder.
+
+## Inference budget
+
+The Qwen 3.8 27B model is configured with low reasoning effort, disabled internal thinking for bounded founder briefs, and a completion-token cap of 1,800. This reduces latency and usage relative to the model's default xhigh reasoning. These settings do not establish a guaranteed price or completion time; inspect actual Workers AI billing and Workflow executions before raising concurrency.

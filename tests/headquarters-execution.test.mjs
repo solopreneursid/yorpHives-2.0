@@ -99,7 +99,15 @@ test("mission execution requires authenticated owner, allowed specialist and hea
   };
   const workerEnv = {
     DB: adapter,
-    AI: { run: async () => ({ choices: [{ message: { content: JSON.stringify(brief()) } }] }) },
+    AI: {
+      run: async (model, params) => {
+        assert.equal(model, "@cf/qwen/qwen3.8-27b");
+        assert.equal(params.reasoning_effort, "low");
+        assert.equal(params.chat_template_kwargs.enable_thinking, false);
+        assert.equal(params.max_completion_tokens, 1800);
+        return { choices: [{ message: { content: JSON.stringify(brief()) } }] };
+      }
+    },
     MISSION_WORKFLOW: {
       async create({ id, params }) {
         assert.equal(params.kind, "mission_brief");
