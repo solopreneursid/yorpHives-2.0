@@ -21,11 +21,11 @@ export async function scanYorpMindTeam(db, clock = () => new Date()) {
     const inserted = await db.prepare(
       "INSERT OR IGNORE INTO yorpmind_team_reports " +
       "(report_id,report_day,report_key,manager_id,subject_agent_id,source_job_id,recommendation,severity,summary,evidence_json,state,created_at) " +
-      "VALUES(?,?,?,?,?,?,?,?,?,?,'proposed',?) RETURNING report_id"
+      "SELECT ?,?,?,?,?,?,?,?,?,?,'proposed',? WHERE (SELECT COUNT(*) FROM yorpmind_team_reports WHERE report_day=?) < 8 RETURNING report_id"
     ).bind(
       crypto.randomUUID(), date, item.report_key, item.manager_id,
       item.subject_agent_id, item.source_job_id, item.recommendation, item.severity,
-      item.summary, JSON.stringify(item.evidence), now.toISOString()
+      item.summary, JSON.stringify(item.evidence), now.toISOString(), date
     ).first();
     if (inserted?.report_id) count++;
   }
