@@ -16,7 +16,9 @@ const day = text => () => new Date(text);
 async function setup() {
   const db = new DatabaseSync(":memory:");
   db.exec("PRAGMA foreign_keys=ON");
-  db.exec("CREATE TABLE admin_repair_jobs(id TEXT PRIMARY KEY);");
+  db.exec("CREATE TABLE admin_repair_jobs(id TEXT PRIMARY KEY); " +
+    "CREATE TABLE admin_audit_events(id TEXT PRIMARY KEY,actor TEXT NOT NULL,action TEXT NOT NULL," +
+    "resource_type TEXT NOT NULL,resource_id TEXT NOT NULL,details_json TEXT NOT NULL,created_at TEXT NOT NULL);");
   db.exec(await migration("../migrations/0024_yorpmind_foundation.sql"));
   db.exec(await migration("../migrations/0025_yorpmind_evolution.sql"));
   const prepare = sql => {
