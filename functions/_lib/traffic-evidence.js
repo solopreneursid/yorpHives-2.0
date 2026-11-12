@@ -83,19 +83,19 @@ export async function queryToolTraffic(token,zoneId,now=new Date(),send=fetch){
 }
 export async function saveTrafficCapture(db,observation,actor){
  const captureId=crypto.randomUUID();
- const row=await db.prepare(
+ // D1 batch is transactional: a failed detail insert cannot leave behind
+ // a misleading "complete" snapshot. A same-day race fails the UNIQUE guard.
+ const statements=[db.prepare(
   "INSERT INTO hq_traffic_captures(capture_id,capture_day,observed_start,observed_end,tool_paths,grouped_requests,candidate_groups,recorded_by) "+
-  "VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(capture_day) DO NOTHING RETURNING capture_id"
+  "VALUES (?,?,?,?,?,?,?,?)"
  ).bind(captureId,observation.capture_day,observation.start,observation.end,
   observation.tools.length,Math.min(MAX_REQUESTS,observation.request_count),
-  observation.candidate_groups,actor).first();
- if(!row?.capture_id)return {created:false,capture_id:null};
- // A capture is published only after all path rows succeed. The API does not
- // infer missing data as zero traffic for specific listed tools.
+  observation.candidate_groups,actor)];
  for(const tool of observation.tools){
-  await db.prepare(
+  statements.push(db.prepare(
    "INSERT INTO hq_traffic_tool_paths(capture_id,slug,path,grouped_requests) VALUES (?,?,?,?)"
-  ).bind(captureId,tool.slug,tool.path,tool.grouped_requests).run();
+  ).bind(captureId,tool.slug,tool.path,tool.grouped_requests));
  }
+ await db.batch(statements);
  return {created:true,capture_id:captureId};
 }
