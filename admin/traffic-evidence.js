@@ -15,6 +15,14 @@ function render(){
  $("traffic-observed").textContent=state.latest?String(state.latest.tool_paths):"—";
  $("traffic-requests").textContent=state.latest?pretty(state.latest.grouped_requests):"—";
  $("traffic-captured").textContent=state.latest?state.latest.capture_day:"—";
+ const notInStaging=state.tools.filter(t=>!names.has(t.slug));
+ const warning=$("traffic-catalogue-warning");
+ warning.hidden=notInStaging.length===0;
+ warning.textContent=notInStaging.length?
+  notInStaging.length+" observed production route(s) are absent from this preview's Free Tools manifest. "+
+  "This is a catalogue reconciliation finding, NOT proof that those products do not exist or are unused. "+
+  "Compare against the actual production catalogue before approving a duplicate product build.":"";
+
  $("traffic-availability").textContent=!state.configured?
   "Cloudflare Analytics is not configured for this environment. No traffic metrics have been assumed.":
   state.latest?"Cloudflare Analytics connected · captured "+state.latest.observed_start.slice(0,10)+
@@ -38,7 +46,7 @@ function render(){
     meta.append(link);
   }else meta.append(div("strong","",tool.slug));
   meta.append(div("small","",names.has(tool.slug)?
-    "Found in Free Tools manifest":"Unmatched route — verify before assuming a product exists"));
+    "Found in Free Tools manifest":"Not in this preview manifest — production inventory may differ"));
   row.append(meta,div("strong","hq-traffic-count",pretty(tool.grouped_requests)+" grouped HTTP requests"));
   board.append(row);
  }

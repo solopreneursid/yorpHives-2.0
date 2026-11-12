@@ -87,6 +87,7 @@ test("Traffic normalization excludes assets, previews and identifiers and merges
  assert.equal(actual.tools.length,2);
  assert.equal(actual.accepted_groups,3);
  assert.equal(actual.request_count,214);
+ assert.equal(actual.tools.every(x=>x.path.startsWith("/free-tools/")),true);
  assert.deepEqual(actual.tools.map(x=>({slug:x.slug,count:x.grouped_requests})),
   [{slug:"word-counter",count:150},{slug:"json-formatter",count:64}]);
  assert.throws(()=>normalizeTrafficPayload({errors:[{message:"Invalid Analytics zone"}]}),/Invalid Analytics zone/);
