@@ -30,7 +30,7 @@ Add one encrypted Worker secret:
 | --- | --- | --- |
 | `GITHUB_TOKEN` | Fine-grained token, repository `solopreneursid/yorpHives-2.0` only | Contents: Read and write; Pull requests: Read and write; Checks: Read. Allows the agent to create an isolated branch, read CI results, and open a draft PR. |
 
-The Worker uses the Cloudflare Workers AI binding and does not require an external model-provider key. It uses `@cf/qwen/qwen3.8-27b`, one bounded inference call per job, a 3,500-token output cap, and a maximum of two repair jobs per 24 hours. Workers AI has a daily free allocation; usage beyond the included allowance can incur charges.
+The Worker uses the Cloudflare Workers AI binding and does not require an external model-provider key. It uses `@cf/qwen/qwen3.8-27b` with up to two bounded Workers AI calls per repair attempt (one patch proposal and one independent AI review), a 3,500-token generation cap, and a maximum of two repair jobs per 24 hours. Actual model billing must be verified separately; a job count is not a spending cap. Workers AI has a daily free allocation; usage beyond the included allowance can incur charges.
 
 The Pages project must have the `ADMIN_AGENT_SERVICE` Service binding pointing to `yorphives-admin-agent` in both its preview and production environment configurations. The Worker has no `workers.dev` hostname or public route; it is reachable only through the Pages Service binding. In this architecture, “production” refers only to the production environment of the separate Admin staging Pages project; it does not refer to the public YorpHives site.
 
@@ -41,7 +41,7 @@ The Pages project must have the `ADMIN_AGENT_SERVICE` Service binding pointing t
 3. The Workflow loads a bounded set of eligible source files and asks Workers AI for complete replacement contents in a strict JSON format.
 4. The agent rejects changes outside its allowlist. It cannot edit tests, `.github/`, migrations, authentication, Cloudflare Access, release controls, deployment configuration, monitoring infrastructure, or secrets.
 5. It creates a branch named `build/agent/repair-<job-id>`. The existing repository platform-check workflow runs on that branch.
-6. The Workflow adds a small verification receipt under `admin-agent/repair-receipts/` on the isolated branch to emit a GitHub push event, then waits for the platform contract checks on that exact commit. Only when they pass does it open a draft PR against `build/yorphives-admin-reliability`.
+6. The Workflow adds a verification receipt under `admin-agent/repair-receipts/` on the isolated branch and waits for GitHub Actions runs associated with the **exact branch and receipt commit**. The platform checks, isolated Pages preview deployment, browser/SEO tests, code review and Lighthouse job must all pass. Missing, failed, mismatched or incomplete evidence cannot count as approval. Only when they pass does it open a draft PR against the reviewed branch configured by the Worker `REPAIR_BASE_BRANCH` variable. The current staging candidate is `build/headquarters-repair-verification`; this is not the public production branch.
 7. D1 records the branch, PR URL, verification summary, and audit event. The job enters `needs_review`; no merge or deployment occurs.
 
 A failed inference, invalid patch, failed CI run, or CI timeout leaves a failed job record and does not open a PR.
@@ -61,3 +61,7 @@ A failed inference, invalid patch, failed CI run, or CI timeout leaves a failed 
 - Use Cloudflare Workflows for durable orchestration and Workers AI's included daily allocation where eligible.
 - Use the existing public repository's GitHub Actions checks; no third-party agent platform or always-on compute service is required.
 - Limit agent execution to two jobs per 24 hours and one inference request per job.
+
+## Current production verification limitation
+
+Passing CI verifies the tested revision, preview deployment and specified browser/performance checks; it does **not** prove the incident was reproduced or resolved. A separate issue-specific reproduction test, independent QA, and authenticated founder review are required before any production publication. The repair worker can only create a draft PR and must not merge it. The Worker refuses unreviewed or missing `REPAIR_BASE_BRANCH` configuration.
