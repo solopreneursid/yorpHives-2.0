@@ -6,7 +6,7 @@ const REPOSITORY = "solopreneursid/yorpHives-2.0";
 // a browser request or an AI model. Fail closed on absent or unsafe settings.
 function repairBase(env) {
   const branch = env.REPAIR_BASE_BRANCH;
-  if (typeof branch !== "string" || !/^build\\/headquarters-[a-z0-9-]{3,80}$/.test(branch)) {
+  if (typeof branch !== "string" || !/^build\/headquarters-[a-z0-9-]{3,80}$/.test(branch)) {
     throw new Error("A reviewed build/headquarters-* REPAIR_BASE_BRANCH Worker setting is required.");
   }
   return branch;
