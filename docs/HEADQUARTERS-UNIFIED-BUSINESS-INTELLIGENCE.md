@@ -24,7 +24,7 @@ External data sources are not retroactively normalized into an invented universa
 
 The board explicitly reports whether each evidence stream is observed, missing a collection, an unverified proxy, restricted, or **not ingested**. Crucially, it reports **Search Console**, **GA4** and **revenue/AdSense/billing** as *not ingested*. They receive no fabricated zero-valued metrics.
 
-A new YorpHives OpenSEO project has been set up, but at verification time OpenSEO listed **zero connected Google accounts**. The owner must connect a Google account and select the authorized GSC and/or GA4 properties within OpenSEO; no connector token or personal Search Console credential is stored in this repository. OpenSEO's connector data is **not automatically imported into Headquarters**. A future provider bridge must be designed and independently verified before these provider statuses change.
+YorpHives Headquarters must not depend on OpenSEO or any new third-party subscription. The prior OpenSEO experiment is **not a production dependency**. Search Console, GA4 and verified advertising/billing data remain **not ingested**. The owner must explicitly authorize any future integration, including any Google property connection, before engineering begins that integration. First-party Cloudflare observations and first-party product events remain the supported baseline.
 
 ### Founder review
 
@@ -59,7 +59,7 @@ The responsive dark-mode **Business Intelligence** workspace contains:
 
 ## Current limitations and next work
 
-- GSC and GA4 are **not ingested**; the connected OpenSEO organization has a YorpHives project but no linked Google account.
+- GSC and GA4 are **not ingested**. No new Google or third-party provider integration is authorized for the production Headquarters.
 - No verified AdSense, subscriptions, transaction or profit data is available to Headquarters yet.
 - Existing public-source collectors require further independently verified international and nondeveloper coverage.
 - First-party Cloudflare Analytics has produced read-only real-zone observations, but the owner-controlled staging capture ledger is separate and must not be forged by an automated actor.
@@ -67,4 +67,4 @@ The responsive dark-mode **Business Intelligence** workspace contains:
 - Instrumented private agent service tools are not public MCP products and do not prove paid autonomous-agent traffic.
 - Review actions are decisions to **investigate**, not approval to build.
 
-The next milestone is to connect an explicitly authorized first-party Google property and financial source, strengthen evidence verification, reconcile real production tool inventory, and turn shortlisted opportunities into independently validated experiments—without waiving founder approvals or manufacturing demand.
+The next milestone is to strengthen first-party evidence verification, reconcile real production tool inventory, verify actual operations and AI costs, and turn shortlisted opportunities into independently validated experiments. External search or financial integrations remain blocked pending explicit founder approval.
