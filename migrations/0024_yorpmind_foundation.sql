@@ -57,6 +57,16 @@ CREATE TABLE IF NOT EXISTS yorpmind_skill_reviews (
   FOREIGN KEY(skill_id,revision) REFERENCES yorpmind_skill_revisions(skill_id,revision) ON DELETE RESTRICT
 );
 
+CREATE TRIGGER IF NOT EXISTS yorpmind_skill_review_current_draft
+BEFORE INSERT ON yorpmind_skill_reviews
+WHEN NOT EXISTS (
+  SELECT 1 FROM yorpmind_skills
+  WHERE skill_id=NEW.skill_id AND current_revision=NEW.revision AND status='draft'
+)
+BEGIN
+  SELECT RAISE(ABORT, 'YorpMind skills may only be reviewed at their current draft revision');
+END;
+
 CREATE INDEX IF NOT EXISTS idx_yorpmind_skills_status
 ON yorpmind_skills(status, updated_at DESC);
 
