@@ -504,6 +504,7 @@ async function probeGithubWritePermissions(env) {
   const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 12);
   const branch = "tmp/agentic-ops-permission-probe-" + suffix;
   const markerPath = ".github/agentic-ops-permission-probes/" + suffix + ".json";
+  let branchAttempted = false;
   let branchCreated = false;
   let pullRequestNumber = null;
   let contentsWrite = false;
@@ -515,6 +516,7 @@ async function probeGithubWritePermissions(env) {
 
   try {
     const sourceRef = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${BASE_BRANCH}`);
+    branchAttempted = true;
     await github(env, `/repos/${REPOSITORY}/git/refs`, "POST", {
       ref: "refs/heads/" + branch,
       sha: sourceRef.object.sha
@@ -546,6 +548,18 @@ async function probeGithubWritePermissions(env) {
       if (!pullRequestsWrite) throw new Error("GitHub did not return a valid temporary pull request number.");
     } catch (probeError) {
       error = probeError instanceof Error ? probeError.message.slice(0, 300) : "Pull request permission probe failed.";
+      try {
+        const possiblePullRequests = await github(env, `/repos/${REPOSITORY}/pulls?state=open&head=${encodeURIComponent("solopreneursid:" + branch)}&per_page=10`);
+        const createdPullRequest = Array.isArray(possiblePullRequests)
+          ? possiblePullRequests.find(item => item.head?.ref === branch)
+          : null;
+        if (createdPullRequest?.number) {
+          pullRequestNumber = Number(createdPullRequest.number);
+          pullRequestsWrite = true;
+        }
+      } catch (lookupError) {
+        cleanupErrors.push("Could not determine whether GitHub created the temporary PR: " + (lookupError instanceof Error ? lookupError.message.slice(0, 180) : "unknown lookup error"));
+      }
     }
   } catch (probeError) {
     error = probeError instanceof Error ? probeError.message.slice(0, 300) : "Contents permission probe failed.";
@@ -559,7 +573,7 @@ async function probeGithubWritePermissions(env) {
         cleanupErrors.push(cleanupError instanceof Error ? cleanupError.message.slice(0, 240) : "Could not close temporary pull request.");
       }
     }
-    if (branchCreated) {
+    if (branchAttempted) {
       try {
         await github(env, `/repos/${REPOSITORY}/git/refs/heads/${branch}`, "DELETE");
         branchDeleted = true;
