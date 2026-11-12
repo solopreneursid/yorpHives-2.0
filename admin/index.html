@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/admin/admin.css">
 <link rel="stylesheet" href="/admin/incident-workspace.css">
 <link rel="stylesheet" href="/admin/release-evidence.css">
+<link rel="stylesheet" href="/admin/yorpmind.css">
 <link rel="stylesheet" href="/admin/business-intelligence.css">
 </head>
 <body>
@@ -21,6 +22,7 @@
   <div class="workspace-label">WORKSPACE</div>
   <nav class="side-nav" aria-label="Admin workspaces">
     <button class="nav-item active" data-view="headquarters"><span class="nav-icon">◇</span>Headquarters</button>
+    <button class="nav-item" data-view="yorpmind"><span class="nav-icon">✺</span>YorpMind</button>
     <button class="nav-item" data-view="intelligence"><span class="nav-icon">✦</span>Ideas &amp; Intelligence</button>
     <button class="nav-item" data-view="demand"><span class="nav-icon">◉</span>Market Explorer</button>
     <button class="nav-item" data-view="business"><span class="nav-icon">▤</span>Business Intelligence</button>
@@ -130,6 +132,84 @@
           </section>
         </aside>
       </div>
+    </section>
+    <section class="view" id="view-yorpmind" data-title="YorpMind">
+      <header class="ym-hero">
+        <div class="ym-hero-main">
+          <span class="ym-eyebrow">YORPHIVES / INTELLIGENCE SYSTEM · FOUNDATION V1</span>
+          <h1>Yorp<span>Mind.</span></h1>
+          <p>The intelligence behind YorpHives. Capture lessons from reviewed repairs, turn them into versioned skills, and retain useful knowledge without giving agents permission to execute procedures or publish code.</p>
+          <div class="ym-hero-actions">
+            <button class="button primary" id="ym-refresh" type="button">↻ Refresh YorpMind</button>
+            <a class="button" href="/api/admin/yorpmind" target="_blank" rel="noopener noreferrer">View private JSON ↗</a>
+          </div>
+          <p class="ym-updated" id="ym-updated" role="status" aria-live="polite">Reading private D1 knowledge…</p>
+        </div>
+        <aside class="ym-hero-policy">
+          <span class="ym-eyebrow">SECURITY BOUNDARY</span>
+          <strong>Knowledge before autonomy.</strong>
+          <p>Only founder-reviewed evidence enters memory. Skills are documentation, not executable commands.</p>
+          <div class="ym-policy-lock">PUBLIC ACCESS OFF · AI EXECUTION OFF · PRODUCTION LOCKED</div>
+        </aside>
+      </header>
+      <div class="ym-stats" id="ym-stats" aria-label="YorpMind knowledge counters"></div>
+      <div class="ym-workspace">
+        <section class="ym-panel" aria-labelledby="ym-memory-title">
+          <div class="ym-panel-header">
+            <span class="ym-eyebrow">01 · EXPERIENCE MEMORY</span>
+            <h2 id="ym-memory-title">Capture a verified-workflow lesson</h2>
+            <p>A lesson can only reference a repair with five attested CI checks and matching founder-recorded QA. It is labeled owner-reported evidence, not independent proof.</p>
+          </div>
+          <form id="ym-memory-form" class="ym-form">
+            <label for="ym-repair-id">Reviewed repair job UUID</label>
+            <input id="ym-repair-id" required minlength="36" maxlength="36" spellcheck="false" autocomplete="off" placeholder="Paste the repair job ID">
+            <label for="ym-memory-title-input">Lesson title</label>
+            <input id="ym-memory-title-input" required minlength="8" maxlength="180" placeholder="What did the team learn?">
+            <label for="ym-memory-lesson">Verified-workflow lesson</label>
+            <textarea id="ym-memory-lesson" required minlength="30" maxlength="1800" rows="5" placeholder="Describe the failure, evidence, reproducible solution and what should be checked next time."></textarea>
+            <button class="button primary" id="ym-save-memory" type="submit">Record experience</button>
+            <p id="ym-memory-status" class="ym-form-status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+        <section class="ym-panel" aria-labelledby="ym-skills-title">
+          <div class="ym-panel-header">
+            <span class="ym-eyebrow">02 · VERSIONED SKILLS</span>
+            <h2 id="ym-skills-title">Propose a reusable procedure</h2>
+            <p>Every skill must link to a recorded experience. Proposals are drafts until you review the exact revision.</p>
+          </div>
+          <form id="ym-skill-form" class="ym-form">
+            <label for="ym-skill-source">Source experience</label>
+            <select id="ym-skill-source" required><option value="">Record an experience first</option></select>
+            <label for="ym-skill-title">Skill title</label>
+            <input id="ym-skill-title" required minlength="5" maxlength="120" placeholder="Diagnose a broken Free Tool">
+            <label for="ym-skill-slug">Unique skill identifier</label>
+            <input id="ym-skill-slug" required minlength="3" maxlength="64" pattern="[a-z][a-z0-9]*(-[a-z0-9]+)*" spellcheck="false" placeholder="diagnose-broken-tool">
+            <label for="ym-skill-purpose">Purpose</label>
+            <textarea id="ym-skill-purpose" rows="2" required minlength="20" maxlength="600" placeholder="What problem does this skill help solve?"></textarea>
+            <label for="ym-skill-steps">Procedure (one step per line, 2–8 steps)</label>
+            <textarea id="ym-skill-steps" rows="6" required placeholder="Reproduce the failure on an isolated preview.&#10;Collect expected versus observed behavior.&#10;Request an independently reviewed patch and regression test."></textarea>
+            <button class="button primary" id="ym-propose-skill" type="submit">Create draft skill</button>
+            <p id="ym-skill-status" class="ym-form-status" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+      </div>
+      <div class="ym-workspace ym-knowledge">
+        <section class="ym-panel" aria-labelledby="ym-experiences-heading">
+          <div class="ym-panel-header">
+            <span class="ym-eyebrow">RECORDED EXPERIENCE</span>
+            <h2 id="ym-experiences-heading">What YorpMind remembers</h2>
+          </div>
+          <div id="ym-experience-list" class="ym-list"><p class="ym-empty">No experience records loaded.</p></div>
+        </section>
+        <section class="ym-panel" aria-labelledby="ym-skill-library-heading">
+          <div class="ym-panel-header">
+            <span class="ym-eyebrow">SKILL LIBRARY</span>
+            <h2 id="ym-skill-library-heading">Procedures awaiting review</h2>
+          </div>
+          <div id="ym-skill-list" class="ym-list"><p class="ym-empty">No skills recorded yet.</p></div>
+        </section>
+      </div>
+      <p class="ym-footer-note">YorpMind Foundation uses existing Cloudflare D1 and GitHub verification evidence. No autonomous memory ingestion, public agent tool, AI inference, or extra paid provider is enabled.</p>
     </section>
     <section class="view" id="view-business" data-title="Unified Business Intelligence">
       <header class="bi-hero">
@@ -677,6 +757,7 @@
 <script src="/admin/admin.js" defer></script>
 <script src="/admin/incident-workspace.js" defer></script>
 <script src="/admin/release-evidence.js" defer></script>
+<script src="/admin/yorpmind.js" defer></script>
 <script src="/admin/headquarters.js" defer></script>
 <script src="/admin/radar.js" defer></script>
 <script src="/admin/intelligence.js" defer></script>
