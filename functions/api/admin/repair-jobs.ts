@@ -47,6 +47,7 @@ interface RepairEnv {
 interface RepairJobRow {
   id: string;
   finding_id: string | null;
+  finding_source: "monitor" | "asset" | null;
   requested_by: string;
   request_text: string;
   status: string;
@@ -59,6 +60,7 @@ interface RepairJobRow {
 }
 interface CreateRepairJobRequest {
   finding_id?: string | null;
+  finding_source?: "monitor" | "asset";
   request_text?: string;
   permission_probe?: boolean;
   confirm?: boolean;
@@ -105,9 +107,19 @@ function specialistState(health: AgentHealth | null, jobName: string) {
 export async function onRequestGet(context: AdminRequestContext): Promise<Response> {
   const identity = await requireAdmin(context);
   if (isAdminResponse(identity)) return identity;
-  const result = await context.env.DB!.prepare(
-    "SELECT id,finding_id,requested_by,request_text,status,agent_name,branch_name,pull_request_url,result_summary,created_at,updated_at FROM admin_repair_jobs WHERE id!='github-permission-probe-singleton' ORDER BY created_at DESC LIMIT 50"
-  ).all<RepairJobRow>();
+  const linksAvailable = Boolean(await context.env.DB!.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='admin_repair_finding_links'"
+  ).first<{ name: string }>());
+  const sql = linksAvailable
+    ? "SELECT j.id,COALESCE(l.finding_id,j.finding_id) AS finding_id," +
+      "COALESCE(l.finding_source,CASE WHEN j.finding_id IS NOT NULL THEN 'monitor' ELSE NULL END) AS finding_source," +
+      "j.requested_by,j.request_text,j.status,j.agent_name,j.branch_name,j.pull_request_url,j.result_summary,j.created_at,j.updated_at " +
+      "FROM admin_repair_jobs j LEFT JOIN admin_repair_finding_links l ON l.job_id=j.id " +
+      "WHERE j.id!='github-permission-probe-singleton' ORDER BY j.created_at DESC LIMIT 50"
+    : "SELECT id,finding_id,CASE WHEN finding_id IS NOT NULL THEN 'monitor' ELSE NULL END AS finding_source," +
+      "requested_by,request_text,status,agent_name,branch_name,pull_request_url,result_summary,created_at,updated_at " +
+      "FROM admin_repair_jobs WHERE id!='github-permission-probe-singleton' ORDER BY created_at DESC LIMIT 50";
+  const result = await context.env.DB!.prepare(sql).all<RepairJobRow>();
   const env = context.env as RepairEnv;
   let agentHealth: AgentHealth | null = null;
   if (env.ADMIN_AGENT_SERVICE) {
@@ -166,6 +178,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   ];
   return adminJson({
     data: result.results,
+    finding_links_ready: linksAvailable,
     agentConfigured,
     github: agentHealth?.github || null,
     workflow: agentHealth?.workflow || null,
@@ -257,11 +270,22 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
   if (!requestText || requestText.length > 4000) {
     return adminJson({ error: { code: "INVALID_REQUEST", message: "Describe the repair in 1–4000 characters." } }, 400);
   }
-  const findingId = body?.finding_id || null;
+  const findingId = body?.finding_id == null || body.finding_id === "" ? null : body.finding_id;
+  const findingSource = body?.finding_source ?? "monitor";
+  if (!["monitor", "asset"].includes(findingSource) || (findingId !== null && (typeof findingId !== "string" || findingId.length > 150)) ||
+      (findingId === null && body?.finding_source !== undefined)) {
+    return adminJson({ error: { code: "INVALID_FINDING", message: "Specify a valid finding ID and its monitor or asset source." } }, 400);
+  }
   if (findingId) {
-    const finding = await context.env.DB!.prepare("SELECT id FROM admin_findings WHERE id = ?").bind(findingId).first<{ id: string }>();
-    const assetFinding = finding ? null : await context.env.DB!.prepare("SELECT id FROM admin_asset_findings WHERE id = ?").bind(findingId).first<{ id: string }>();
-    if (!finding && !assetFinding) return adminJson({ error: { code: "FINDING_NOT_FOUND", message: "The selected finding does not exist." } }, 404);
+    const table = findingSource === "asset" ? "admin_asset_findings" : "admin_findings";
+    const finding = await context.env.DB!.prepare("SELECT id FROM " + table + " WHERE id = ?").bind(findingId).first<{ id: string }>();
+    if (!finding) return adminJson({ error: { code: "FINDING_NOT_FOUND", message: "The selected " + findingSource + " finding does not exist." } }, 404);
+  }
+  const linkSchemaReady = Boolean(await context.env.DB!.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='admin_repair_finding_links'"
+  ).first<{ name: string }>());
+  if (findingId && findingSource === "asset" && !linkSchemaReady) {
+    return adminJson({ error: { code: "REPAIR_LINK_MIGRATION_REQUIRED", message: "Asset finding linkage is unavailable until staging migration 0022 is applied." } }, 503);
   }
 
   const agent = context.env.ADMIN_AGENT_SERVICE;
@@ -279,10 +303,20 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
 
   const jobId = id();
   const timestamp = now();
-  await context.env.DB!.prepare(
+  const insert = context.env.DB!.prepare(
     "INSERT INTO admin_repair_jobs (id,finding_id,requested_by,request_text,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)"
-  ).bind(jobId, findingId, identity.email, requestText, "queued", timestamp, timestamp).run();
-  await audit(context, identity.email, "repair_requested", jobId, { finding_id: findingId, request_text: requestText });
+  ).bind(jobId, findingSource === "monitor" ? findingId : null, identity.email, requestText, "queued", timestamp, timestamp);
+  if (findingId && linkSchemaReady) {
+    const link = context.env.DB!.prepare(
+      "INSERT INTO admin_repair_finding_links(job_id,finding_source,finding_id) VALUES (?,?,?)"
+    ).bind(jobId, findingSource, findingId);
+    await context.env.DB!.batch([insert, link]);
+  } else {
+    await insert.run();
+  }
+  await audit(context, identity.email, "repair_requested", jobId, {
+    finding_id: findingId, finding_source: findingId ? findingSource : null, request_text: requestText
+  });
 
   try {
     const dispatch = await agent.fetch(new Request("https://admin-agent.internal/instances", {

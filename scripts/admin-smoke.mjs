@@ -89,6 +89,15 @@ async function run() {
       }
     }
 
+    // Verify the real private D1 schema before installing synthetic browser GET fixtures.
+    const repairLinksResponse = await page.request.get(baseUrl + "/api/admin/repair-jobs", {
+      headers: accessHeaders, timeout: 20000
+    });
+    const repairLinksSnapshot = repairLinksResponse.ok() ? await repairLinksResponse.json().catch(() => null) : null;
+    record("staging_asset_repair_schema_ready",
+      repairLinksResponse.status() === 200 && repairLinksSnapshot?.finding_links_ready === true,
+      "Private staging D1 migration 0022 is live and the Admin API acknowledges source-qualified repair links");
+
     await page.waitForFunction(() => document.querySelector("#hq-storage")?.textContent === "Connected", null, { timeout: 20000 });
     record("headquarters_storage_connected", true, "Headquarters loaded the persistent registry");
     if (process.env.PAGES_BRANCH === "build/headquarters-mission-execution") {
@@ -208,12 +217,12 @@ async function run() {
       await route.fulfill({
         status: 200, contentType: "application/json",
         body: JSON.stringify({
-          data: [{ id: "preview-repair-fixture", finding_id: sampleFinding.id,
+          data: [{ id: "preview-repair-fixture", finding_id: sampleFinding.id, finding_source: "asset",
             request_text: "Investigate synthetic failure", status: "needs_review",
             result_summary: "Synthetic preview result only; no actual repair.",
             updated_at: "2026-11-12T00:15:00Z",
             pull_request_url: "https://github.com/solopreneursid/yorpHives-2.0/pull/22" }],
-          agentConfigured: false, agents: [], summary: {}
+          finding_links_ready: true, agentConfigured: false, agents: [], summary: {}
         })
       });
     });
@@ -232,12 +241,18 @@ async function run() {
       "Related repair history is visible without owner mutations");
     await page.locator("#incident-prepare").click();
     await page.locator("#view-agents").waitFor({ state: "visible", timeout: 10000 });
+    const preparedText = await page.locator("#repair-request").inputValue();
+    const preparedFinding = await page.locator("#repair-finding").inputValue();
+    const preparedStatus = await page.locator("#repair-message").innerText();
     record("incident_prepare_does_not_dispatch",
-      (await page.locator("#repair-request").inputValue()).includes("Preview-only tool failure") &&
-      (await page.locator("#repair-request").inputValue()).includes(sampleFinding.id) &&
-      (await page.locator("#repair-finding").inputValue()) === "" &&
-      (await page.locator("#repair-message").innerText()).includes("general investigation"),
-      "Asset finding preparation preserves evidence without submitting an invalid monitor-only foreign key or dispatching AI");
+      preparedText.includes("Preview-only tool failure") &&
+      preparedText.includes(sampleFinding.id) &&
+      preparedFinding === sampleFinding.id &&
+      preparedStatus.includes("Finding linked"),
+      "Prepared asset=" + (preparedFinding === sampleFinding.id) +
+      "; evidence=" + preparedText.includes(sampleFinding.id) +
+      "; review message=" + preparedStatus.slice(0, 140) +
+      "; no POST or AI repair dispatch");
     await page.unroute("**/api/admin/findings*");
     await page.unroute("**/api/admin/repair-jobs");
 

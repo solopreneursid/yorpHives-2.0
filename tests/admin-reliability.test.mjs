@@ -234,6 +234,7 @@ test("Admin findings support audited triage while fixed status remains verificat
 test("Cloudflare durable repair agent uses a private service binding and CI-gated draft PRs", async () => {
   const route = await read("../functions/api/admin/repair-jobs.ts");
   const worker = await read("../admin-agent/worker.js");
+  const repairEvidence = await read("../admin-agent/repair-evidence.js");
   const reviewer = await read("../scripts/agent-review.mjs");
   const config = JSON.parse(await read("../admin-agent/wrangler.jsonc"));
   assert.match(route, /ADMIN_AGENT_SERVICE/);
@@ -252,7 +253,7 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(route, /hasStructuredSecurityEvidence/);
   assert.match(worker, /WorkflowEntrypoint/);
   assert.match(reviewer, /refName\.startsWith\("build\/agentic-ops-"\)/);
-  assert.match(reviewer, /build\/yorphives-admin-reliability/);
+  assert.match(reviewer, /build\/headquarters-repair-verification/);
   assert.match(worker, /"user-agent": "YorpHives-Agentic-Operations\/1\.0"/);
   assert.match(worker, /repositoryWrite/);
   assert.match(worker, /repositoryContextAccess/);
@@ -265,16 +266,18 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(route, /workers_ai\?: boolean/);
   assert.match(worker, /identity = await github\(env, "\/user"\)/);
   assert.match(worker, /catch \{\s*authenticatedLogin = null;\s*\}/);
-  assert.match(worker, /job\.conclusion !== "success"/);
+  assert.match(repairEvidence, /job\.conclusion !== "success"/);
   assert.doesNotMatch(worker, /"success", "neutral", "skipped"/);
   assert.match(worker, /@cf\/qwen\/qwen3\.8-27b/);
   assert.match(worker, /build\/agent\/repair-/);
-  assert.match(worker, /YorpHives platform checks/);
+  assert.match(repairEvidence, /YorpHives platform checks/);
   assert.match(worker, /triggerPlatformChecks/);
   assert.match(worker, /repair-receipts/);
   assert.match(worker, /needs_review/);
   assert.match(worker, /draft: true/);
   assert.doesNotMatch(worker, /mergePullRequest|productionDeploy|wrangler deploy/);
+  assert.equal(config.vars.REPAIR_BASE_BRANCH, "build/headquarters-repair-verification");
+  assert.match(worker, /repairBase\(env\)/);
   assert.equal(config.name, "yorphives-admin-agent");
   assert.equal(config.workflows[0].class_name, "AdminRepairWorkflow");
   assert.equal(config.d1_databases[0].database_id, "e8690813-b139-44a2-a1c7-bea2d2777ead");

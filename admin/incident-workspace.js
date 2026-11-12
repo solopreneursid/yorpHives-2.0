@@ -66,7 +66,7 @@
   function renderRelated(jobs, finding) {
     const node = byId("incident-related");
     node.replaceChildren();
-    const matches = jobs.filter(job => job.finding_id === finding.id);
+    const matches = jobs.filter(job => job.finding_id === finding.id && (job.finding_source || "monitor") === finding.source_type);
     if (!matches.length) {
       node.append(create("p", "incident-empty", "No linked repair job appears in the latest 50 recorded jobs. This does not prove none exists."));
       return;
@@ -105,18 +105,32 @@
         // Preparing this form is read-only. Dispatch still requires the founder to
         // submit the existing authenticated form after inspecting the proposed text.
         dialog.close();
-        actions.showView("agents");
-        await actions.loadAgents();
+        await actions.showView("agents");
         const select = byId("repair-finding");
-        const option = Array.from(select.options).find(item => item.value === finding.id);
-        // The existing repair-job FK currently references monitor findings only.
-        // Asset findings must be sent as general investigations until a reviewed
-        // polymorphic link migration is deployed; never submit an invalid FK.
-        const linkable = finding.source_type === "monitor" && Boolean(option);
-        select.value = linkable ? finding.id : "";
+        // Check the authenticated API's actual D1 migration state instead of
+        // trusting a possibly stale dropdown populated by another async view.
+        const capabilities = await actions.api("/api/admin/repair-jobs");
+        const source = finding.source_type;
+        const linkable = source === "monitor" ||
+          (source === "asset" && capabilities.finding_links_ready === true);
+        if (linkable) {
+          let option = Array.from(select.options).find(item =>
+            item.value === finding.id && item.dataset.source === source
+          );
+          if (!option) {
+            option = create("option", "", "[" + display(finding.severity) + "] " + display(finding.title));
+            option.value = finding.id;
+            option.dataset.source = source;
+            select.append(option);
+          }
+          option.disabled = false;
+          option.selected = true;
+        } else {
+          select.value = "";
+        }
         byId("repair-message").textContent = linkable
-          ? "Finding selected. Submitting this form will start a separately authorized, quota-limited repair."
-          : "Asset finding prepared as a general investigation: no database link will be recorded yet.";
+          ? "Finding linked. Submitting this form starts a separately authorized, quota-limited repair."
+          : "Finding prepared as a general investigation; source evidence is preserved in the request.";
         const input = byId("repair-request");
         input.value = [
           "Finding ID: " + display(finding.id),

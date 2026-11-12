@@ -12,6 +12,8 @@ const refName = process.env.GITHUB_REF_NAME || "";
 // detects *new* risks introduced by the branch; the full stack must still
 // receive founder/security review before any production release.
 const STACKED_BASES = Object.freeze({
+ "build/headquarters-repair-verification":"build/headquarters-lineage-incidents",
+ "build/headquarters-lineage-incidents":"build/headquarters-preview-cost-guardrails",
  "build/headquarters-preview-cost-guardrails":"build/headquarters-production-readiness-gate",
  "build/headquarters-production-readiness-gate":"build/headquarters-unified-business-intelligence",
  "build/headquarters-unified-business-intelligence":"build/headquarters-usage-agent-metrics",
@@ -36,7 +38,7 @@ async function resolveBase() {
     return `origin/${baseRef}`;
   }
   if (refName.startsWith("build/agent/repair-") || refName.startsWith("build/agentic-ops-")) {
-    const repairBase = "build/yorphives-admin-reliability";
+    const repairBase = "build/headquarters-repair-verification";
     await git(["fetch", "--no-tags", "origin", repairBase]);
     return `origin/${repairBase}`;
   }
