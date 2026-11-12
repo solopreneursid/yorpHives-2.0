@@ -24,8 +24,8 @@ export function teamLeadFor(departmentId, departmentName = "") {
   if (/secur|quality|assurance|audit|compliance|test/.test(source)) return "yorpmind5";
   if (/engineer|operat|reliab|infrastructure|platform|develop|technical/.test(source)) return "yorpmind1";
   if (/research|innov|intelligen|market|discover|trend|opportunit/.test(source)) return "yorpmind2";
-  if (/product|growth|marketing|design|experien|customer/.test(source)) return "yorpmind3";
   if (/revenue|business|monetiz|finance|sales|commercial|partner/.test(source)) return "yorpmind4";
+  if (/product|growth|marketing|design|experien|customer/.test(source)) return "yorpmind3";
   return "yorpmind";
 }
 
