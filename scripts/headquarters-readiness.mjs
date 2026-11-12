@@ -9,6 +9,8 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   "functions/_lib/admin-auth.ts",
   "functions/api/admin/headquarters.ts",
   "functions/api/admin/repair-jobs.ts",
+  "functions/api/admin/repair-qa.ts",
+  "functions/api/admin/release-evidence.ts",
   "functions/api/admin/business-intelligence.ts",
   "admin-monitor/worker.js",
   "admin-agent/worker.js",
