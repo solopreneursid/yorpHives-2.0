@@ -129,7 +129,7 @@ import {
 
     action.addEventListener("click", () => {
       const currentTitle = byId("hq-title")?.value || "";
-      if (prepareMissionMemoryQuery(currentTitle) !== options.query) {
+      if (currentTitle.trim() !== options.sourceTitle || prepareMissionMemoryQuery(currentTitle) !== options.query) {
         status.textContent = "Mission title changed. Refresh evidence before attaching references.";
         action.disabled = true;
         return;
@@ -165,7 +165,7 @@ import {
     try {
       const data = await fetchReferences(query, controller.signal);
       if (!host.isConnected || controller.signal.aborted) return current;
-      renderResults(host, status, data, { ...options, query });
+      renderResults(host, status, data, { ...options, query, sourceTitle: queryText.trim() });
     } catch (error) {
       if (!controller.signal.aborted && host.isConnected) {
         host.replaceChildren();
