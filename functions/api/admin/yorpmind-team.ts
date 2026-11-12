@@ -5,7 +5,7 @@ import { mutationGuard, readBoundedJson } from "../../_lib/headquarters";
 interface Staff { staff_id: string; display_name: string; tier: string; domain: string; reports_to: string | null; max_parallel_reviews: number; enabled: number; }
 interface Specialist { agent_id: string; display_name: string; department_id: string; status: string; enabled: number; autonomy_level: string; }
 interface Department { department_id: string; name: string; }
-interface Job { job_id: string; agent_id: string; job_type: string; title: string; status: string; priority: string; updated_at: string; }
+interface Job { job_id: string; agent_id: string; job_type: string; title: string; status: string; priority: string; updated_at: string; result_json: string | null; }
 interface Report {
   report_id: string; report_day: string; report_key: string; manager_id: string;
   subject_agent_id: string; source_job_id: string; recommendation: string;
