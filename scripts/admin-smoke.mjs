@@ -241,12 +241,18 @@ async function run() {
       "Related repair history is visible without owner mutations");
     await page.locator("#incident-prepare").click();
     await page.locator("#view-agents").waitFor({ state: "visible", timeout: 10000 });
+    const preparedText = await page.locator("#repair-request").inputValue();
+    const preparedFinding = await page.locator("#repair-finding").inputValue();
+    const preparedStatus = await page.locator("#repair-message").innerText();
     record("incident_prepare_does_not_dispatch",
-      (await page.locator("#repair-request").inputValue()).includes("Preview-only tool failure") &&
-      (await page.locator("#repair-request").inputValue()).includes(sampleFinding.id) &&
-      (await page.locator("#repair-finding").inputValue()) === sampleFinding.id &&
-      (await page.locator("#repair-message").innerText()).includes("Finding linked"),
-      "Source-qualified asset finding appears in the prepared form; no repair is dispatched");
+      preparedText.includes("Preview-only tool failure") &&
+      preparedText.includes(sampleFinding.id) &&
+      preparedFinding === sampleFinding.id &&
+      preparedStatus.includes("Finding linked"),
+      "Prepared asset=" + (preparedFinding === sampleFinding.id) +
+      "; evidence=" + preparedText.includes(sampleFinding.id) +
+      "; review message=" + preparedStatus.slice(0, 140) +
+      "; no POST or AI repair dispatch");
     await page.unroute("**/api/admin/findings*");
     await page.unroute("**/api/admin/repair-jobs");
 
