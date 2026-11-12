@@ -86,3 +86,6 @@
 @media(max-width:560px){.agent-roster{grid-template-columns:1fr}}
 /* Headquarters shares the existing operations shell. */
 #hq-compose[hidden]{display:none}.content{max-width:1600px;margin:auto}.page-heading h1{letter-spacing:-.045em}.nav-item:focus-visible,.button:focus-visible{outline:2px solid #67e8f9;outline-offset:3px}#view-headquarters .panel,#view-departments article{box-shadow:0 10px 35px #00000012}.sidebar .brand small{letter-spacing:.17em}.repair-form label{display:flex;flex-direction:column;gap:7px}.field{min-width:0}button:disabled{cursor:wait;opacity:.6}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* Shared YorpHives identity; preserve Headquarters typography and Access UI. */
+.sidebar .brand .brand-mark{display:block;flex:none;width:44px;height:44px;border-radius:0;border:0;background:transparent url('/brand/yorphives-logo.webp') center/contain no-repeat!important;color:transparent!important;font-size:0!important}

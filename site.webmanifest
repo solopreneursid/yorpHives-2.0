@@ -1,0 +1,24 @@
+{
+  "name": "YorpHives",
+  "short_name": "YorpHives",
+  "description": "Tools and applications built for people and AI agents.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090b10",
+  "theme_color": "#090b10",
+  "icons": [
+    {
+      "src": "/brand/yorphives-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/yorphives-logo.webp",
+      "sizes": "64x64",
+      "type": "image/webp",
+      "purpose": "any"
+    }
+  ]
+}
