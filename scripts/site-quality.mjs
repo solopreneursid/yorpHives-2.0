@@ -111,12 +111,14 @@ async function run() {
           // image #image-tool, research #research-tool, and newer #next-tool.
           // Prefer the explicit data-tool contract so the smoke test follows the page itself.
           const rootSelector = "main [data-tool], main #tool-app, main #advanced-tool, main .tool-workspace";
-          const root = toolPage.locator(rootSelector).first();
+          const visibleRootSelector = "main [data-tool]:visible, main #tool-app:visible, main #advanced-tool:visible, main .tool-workspace:visible";
           rootCount = await toolPage.locator(rootSelector).count();
+          visibleRootCount = await toolPage.locator(visibleRootSelector).count();
+          const root = toolPage.locator(visibleRootSelector).first();
           try {
             await root.waitFor({ state: "visible", timeout: 5000 });
           } catch {}
-          visibleRootCount = await toolPage.locator(rootSelector + ":visible").count();
+          visibleRootCount = await toolPage.locator(visibleRootSelector).count();
           stage = "interactive-controls";
           const controlSelector = "input:not([type=hidden]), textarea, select, button, [role=button], a.button";
           controls = await root.locator(controlSelector).count().catch(() => 0);
@@ -124,13 +126,21 @@ async function run() {
             await root.locator("input:not([type=hidden]):visible, textarea:visible, select:visible, button:visible, [role=button]:visible, a.button:visible").first().waitFor({ state: "visible", timeout: 5000 });
           } catch {}
           visibleControls = await root.locator("input:not([type=hidden]):visible, textarea:visible, select:visible, button:visible, [role=button]:visible, a.button:visible").count().catch(() => 0);
+          let keyboardFocusable = false;
+          if (visibleControls > 0) {
+            const firstControl = root.locator("input:not([type=hidden]):visible, textarea:visible, select:visible, button:visible, [role=button]:visible, a.button:visible").first();
+            keyboardFocusable = await firstControl.evaluate(element => {
+              element.focus();
+              return document.activeElement === element;
+            }).catch(() => false);
+          }
           stage = "primary-heading";
           heading = (await toolPage.locator("main h1").first().textContent().catch(() => "")) || "";
-          const ok = responseStatus === 200 && visibleRootCount > 0 && visibleControls > 0 && Boolean(heading.trim()) && pageErrorsForTool.length === 0;
+          const ok = responseStatus === 200 && visibleRootCount > 0 && visibleControls > 0 && keyboardFocusable && Boolean(heading.trim()) && pageErrorsForTool.length === 0;
           const result = {
             slug: tool.slug, title: tool.title, path: tool.url, status: responseStatus, final_url: finalUrl,
             root_count: rootCount, visible_root_count: visibleRootCount,
-            control_count: controls, visible_control_count: visibleControls,
+            control_count: controls, visible_control_count: visibleControls, keyboard_focusable: keyboardFocusable,
             primary_heading_present: Boolean(heading.trim()),
             page_errors: pageErrorsForTool, console_errors: consoleErrors,
             failed_requests: failedRequests, http_errors: httpErrors,
@@ -149,7 +159,7 @@ async function run() {
             slug: tool.slug, title: tool.title, path: tool.url, status: responseStatus,
             final_url: toolPage.url(), stage, root_count: rootCount,
             visible_root_count: visibleRootCount, control_count: controls,
-            visible_control_count: visibleControls, primary_heading_present: Boolean(heading.trim()),
+            visible_control_count: visibleControls, keyboard_focusable: false, primary_heading_present: Boolean(heading.trim()),
             page_errors: pageErrorsForTool, console_errors: consoleErrors,
             failed_requests: failedRequests, http_errors: httpErrors,
             duration_ms: Date.now() - startedAt,
@@ -174,6 +184,7 @@ async function run() {
       if (item.status !== 200) reasons.push(`HTTP ${item.status}`);
       if (!item.visible_root_count) reasons.push("tool root not visible");
       if (!item.visible_control_count) reasons.push("no visible controls");
+      if (!item.keyboard_focusable) reasons.push("no keyboard-focusable control");
       if (!item.primary_heading_present) reasons.push("main h1 missing");
       if (item.page_errors?.length) reasons.push(`pageerror: ${item.page_errors.join(" | ")}`);
       if (item.console_errors?.length) reasons.push(`console: ${item.console_errors.slice(0, 2).join(" | ")}`);
@@ -280,6 +291,7 @@ async function run() {
       if (item.status !== 200) reasons.push(`HTTP ${item.status}`);
       if (!item.visible_root_count) reasons.push("root not visible");
       if (!item.visible_control_count) reasons.push("no visible controls");
+      if (!item.keyboard_focusable) reasons.push("no keyboard-focusable control");
       if (!item.primary_heading_present) reasons.push("main h1 missing");
       if (item.page_errors?.length) reasons.push(`page errors: ${item.page_errors.join(" | ")}`);
       if (item.console_errors?.length) reasons.push(`console errors: ${item.console_errors.slice(0, 3).join(" | ")}`);
@@ -299,6 +311,7 @@ async function run() {
       slug: item.slug, path: item.path, status: item.status, stage: item.stage || null,
       root_count: item.root_count, visible_root_count: item.visible_root_count,
       control_count: item.control_count, visible_control_count: item.visible_control_count,
+      keyboard_focusable: item.keyboard_focusable,
       primary_heading_present: item.primary_heading_present, page_errors: item.page_errors,
       console_errors: item.console_errors, failed_requests: item.failed_requests,
       http_errors: item.http_errors, error: item.error, screenshot: item.screenshot
