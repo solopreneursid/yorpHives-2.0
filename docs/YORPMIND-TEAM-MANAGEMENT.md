@@ -19,6 +19,7 @@ These are coordination roles, not six new paid AI inference sessions or privileg
 
 - Additive private D1 migration 0027: staff hierarchy, immutable evidence-based supervisor reports, owner review state and per-day deduplication.
 - Deterministic allocation planner: classify agent department, aggregate active work, detect failed/stalled/waiting jobs, recommend reuse of previous same-title mission results without assuming correctness, and recommend prospective dispatch only under existing capacity rules.
+- Supervisor inspection of saved AI mission briefs checks that the expected schema, verification steps and risk sections are present. The result is structural advice only; it does not verify whether model-generated claims are true.
 - At most 100 recent jobs and 80 existing bots analyzed per view or daily scan. Maximum three global active recommendation jobs and six owner AI dispatches per UTC day remain authoritative. Per-agent and per-manager limits are additionally considered. If quota is unknown, routing advice fails closed.
 - Existing intelligence cron records up to eight daily, non-executable D1 recommendations. SQL enforces the per-day cap and duplicate key restriction. The scan performs no AI inference, retry, code change, new paid service, or deployment.
 - Existing private Headquarters YorpMind UI gains a responsive staff chart, current routing advice and daily report inbox.
