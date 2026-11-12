@@ -20,5 +20,8 @@
       "binding": "ADMIN_REPAIR_WORKFLOW",
       "class_name": "AdminRepairWorkflow"
     }
-  ]
+  ],
+  "vars": {
+    "REPAIR_BASE_BRANCH": "build/headquarters-repair-verification"
+  }
 }
