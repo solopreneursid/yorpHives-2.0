@@ -2,6 +2,7 @@ import { runAdminHealthChecks } from "./admin-health.js";
 import { captureProductionSnapshots } from "./change-monitor.js";
 import { runAssetIntelligence } from "./asset-intelligence.js";
 import { runSecurityAudit } from "./security-auditor.js";
+import { syncRadarFromObservations } from "../functions/_lib/opportunity-radar.ts";
 
 export default {
   async scheduled(controller, env) {
@@ -11,6 +12,18 @@ export default {
       const changes = await captureProductionSnapshots(env.DB);
       const assets = await runAssetIntelligence(env.DB);
       const security = await runSecurityAudit(env.DB);
+      // Radar ingestion is observational. Failure must not interrupt platform
+      // health, asset monitoring, snapshots or security checks.
+      let radar = {status:"unavailable", observed_count:0, inserted_count:0};
+      try {
+        const receipt = await syncRadarFromObservations(env.DB,"scheduled");
+        radar = {status:"complete", observed_count:receipt.observed_count, inserted_count:receipt.inserted_count};
+      } catch (error) {
+        console.error(JSON.stringify({
+          event:"opportunity_radar_ingestion_failed",
+          message:error instanceof Error ? error.message : "Unknown radar ingestion error"
+        }));
+      }
       console.log(JSON.stringify({
         event: "scheduled_reliability_cycle_completed",
         scheduled_time: scheduledTime,
@@ -31,7 +44,8 @@ export default {
         security_target_count: security.target_count,
         security_errors: security.errors,
         security_skipped: security.skipped,
-        security_findings: security.findings
+        security_findings: security.findings,
+        opportunity_radar:radar
       }));
       if (health.run.failed_count > 0 || changes.results.some(result => !result.ok) || assets.unavailable > 0 || assets.degraded > 0 || assets.manifest_error || assets.sitemap_error || assets.catalogue_error || assets.openapi_error || security.status !== "complete") {
         console.warn(JSON.stringify({ event: "reliability_cycle_warnings", health_failures: health.run.failed_count, snapshot_results: changes.results, asset_results: assets.results, manifest_error: assets.manifest_error, sitemap_error: assets.sitemap_error, catalogue_error: assets.catalogue_error, openapi_error: assets.openapi_error, inventory_truncated: assets.inventory_truncated, security_results: security.results }));
