@@ -2,7 +2,7 @@ PRAGMA foreign_keys=ON;
 -- No IPs, cookies, session IDs, user agents, content, file names,
 -- agent identities or payloads are retained. Counts are daily aggregates.
 CREATE TABLE IF NOT EXISTS hq_tool_activity_registry (
- slug TEXT PRIMARY KEY CHECK(length(slug) BETWEEN 3 AND 72 AND slug NOT GLOB '*[^a-z0-9-]*'),
+ slug TEXT NOT NULL CHECK(length(slug) BETWEEN 3 AND 72 AND slug NOT GLOB '*[^a-z0-9-]*'),
  channel TEXT NOT NULL CHECK(channel IN ('browser_client_reported','access_authenticated_agent_execution')),
  enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0,1)),
  created_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')),
