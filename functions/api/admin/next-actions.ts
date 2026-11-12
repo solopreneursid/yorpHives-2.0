@@ -1,7 +1,7 @@
 import {adminJson,isAdminResponse,requireAdmin,type AdminRequestContext} from "../../_lib/admin-auth";
 
-type DecisionKind="measure_first_party"|"audit_existing_tool"|"compare_existing_software"|"investigate_public_problem"|"validate_hypothesis"|"verify_source_collection";
-type EvidenceType="none_yet"|"first_party_http_requests"|"existing_public_software"|"public_question"|"public_research_proxy";
+type DecisionKind="measure_first_party"|"audit_existing_tool"|"compare_existing_software"|"investigate_public_problem"|"validate_hypothesis"|"verify_source_collection"|"measure_tool_completions"|"audit_reported_completion"|"audit_authenticated_agent_execution";
+type EvidenceType="none_yet"|"first_party_http_requests"|"existing_public_software"|"public_question"|"public_research_proxy"|"browser_client_reported"|"access_authenticated_agent_execution";
 export interface HeadquartersNextAction {
  id:string;kind:DecisionKind;title:string;next_step:string;why:string;
  priority:number;priority_type:"workflow_triage_not_market_demand";
@@ -18,6 +18,7 @@ interface TrafficRow {slug:string;grouped_requests:number;}
 interface MarketRow {signal_key:string;provider:string;evidence_kind:string;title:string;
  source_url:string;public_metric_label:string;public_metric_value:number;}
 interface IdeaRow {category_key:string;title:string;research_status:string;source_count:number;}
+interface ActivityRow {slug:string;channel:"browser_client_reported"|"access_authenticated_agent_execution";success_count:number;}
 const DISCLAIMER="This is a read-only, deterministic investigation queue. Scores indicate work sequencing, not verified popularity, customer demand, forecast revenue, investment advice, or AI-agent adoption. No recommendation authorizes a build, spend, payment, deployment or release.";
 const PRIORITY_TYPE="workflow_triage_not_market_demand" as const;
 const base=(id:string,kind:DecisionKind,title:string,next_step:string,why:string,
@@ -27,7 +28,7 @@ const base=(id:string,kind:DecisionKind,title:string,next_step:string,why:string
  evidence_value,evidence_unit,source_url,verified_demand:false,authorized_for_build:false
 });
 export async function nextActionsSnapshot(db:NonNullable<AdminRequestContext["env"]["DB"]>):Promise<HeadquartersNextActionsResponse>{
- const [latest,market,ideas,experiments]=await Promise.all([
+ const [latest,market,ideas,experiments,activity]=await Promise.all([
   db.prepare("SELECT capture_id FROM hq_traffic_captures ORDER BY capture_day DESC LIMIT 1")
    .first<{capture_id:string}>(),
   db.prepare("SELECT signal_key,provider,evidence_kind,title,source_url,public_metric_label,public_metric_value "+
@@ -37,9 +38,36 @@ export async function nextActionsSnapshot(db:NonNullable<AdminRequestContext["en
    "WHERE c.origin='hypothesis' AND c.research_status!='dismissed' "+
    "GROUP BY c.category_key ORDER BY CASE c.research_status WHEN 'shortlisted' THEN 0 WHEN 'investigating' THEN 1 ELSE 2 END,source_count DESC LIMIT 10").all<IdeaRow>(),
   db.prepare("SELECT COUNT(*) AS total FROM hq_validation_experiments WHERE status IN ('active','completed')")
-   .first<{total:number}>()
+   .first<{total:number}>(),
+  db.prepare("SELECT slug,channel,SUM(success_count) AS success_count FROM hq_tool_activity_daily "+
+   "WHERE activity_day>=date('now','-6 days') GROUP BY slug,channel "+
+   "ORDER BY success_count DESC,slug LIMIT 12").all<ActivityRow>()
  ]);
  const actions:HeadquartersNextAction[]=[];
+ const browserReported=activity.results.filter(r=>r.channel==="browser_client_reported");
+ const authenticatedAgents=activity.results.filter(r=>r.channel==="access_authenticated_agent_execution");
+ if(!browserReported.length){
+  actions.push(base("measurement:tool-success","measure_tool_completions",
+   "Verify successful browser-tool execution measurements",
+   "After an approved release, test privacy-limited success reporting in real browsers. Do not submit sensitive file contents or fabricate activity.",
+   "No client-reported tool-completion events have been recorded in this environment; missing counts are not evidence of zero product usage.",
+   66,"none_yet",null,"not_measured",null));
+ }else{
+  for(const item of browserReported.slice(0,4))actions.push(base(
+   "success:"+item.slug,"audit_reported_completion",
+   "Audit client-reported completions: "+item.slug,
+   "Independently test the action, verify error handling, and compare usability with real user sessions under appropriate consent; avoid computing a conversion ratio from sampled HTTP requests.",
+   "These are client-side successful-action reports. They can be spoofed and do not independently prove human use.",
+   57,"browser_client_reported",item.success_count,"client_reported_successes",null));
+ }
+ for(const item of authenticatedAgents.slice(0,2))actions.push(base(
+  "agent-execution:"+item.slug,"audit_authenticated_agent_execution",
+  "Review authenticated tool execution: "+item.slug,
+  "Verify the calling service's permission scope, payload privacy, execution success and quota. Independently establish external agent demand before commercializing the API.",
+  "A signed Access token accompanied a server-executed private tool. This proves neither autonomous-agent identity nor public market demand.",
+  54,"access_authenticated_agent_execution",item.success_count,
+  "access_authenticated_executions",null));
+
  if(!latest){
   actions.push(base("evidence:capture-first-party","measure_first_party",
    "Measure existing YorpHives Free Tools usage",
