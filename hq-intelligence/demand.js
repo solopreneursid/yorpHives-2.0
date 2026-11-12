@@ -114,6 +114,13 @@ export async function indexDemand(db,sources,trigger="research_workflow",researc
  );
  const ideas=researchRunId?await query.bind(researchRunId).all():await query.all();
  for(const idea of ideas.results){
+   const evidence=await db.prepare(
+     "SELECT e.source_id,s.provider FROM hq_intelligence_evidence e "+
+     "JOIN hq_intelligence_sources s ON s.source_id=e.source_id "+
+     "WHERE e.idea_id=? LIMIT 3"
+   ).bind(idea.idea_id).all();
+   // Never promote an AI hypothesis unless actual source references survive.
+   if(evidence.results.length===0)continue;
    const key="hypothesis:"+idea.idea_id;
    const record=await db.prepare(
      "INSERT INTO hq_demand_categories(category_key,title,summary,scale,origin,origin_idea_id,"+
@@ -124,11 +131,6 @@ export async function indexDemand(db,sources,trigger="research_workflow",researc
      "Agent use not established; verify explicit use cases and authorization.",
      "Unverified hypothesis: "+idea.monetization_hypothesis).first();
    if(record?.category_key)candidates++;
-   const evidence=await db.prepare(
-     "SELECT e.source_id,s.provider FROM hq_intelligence_evidence e "+
-     "JOIN hq_intelligence_sources s ON s.source_id=e.source_id "+
-     "WHERE e.idea_id=? LIMIT 3"
-   ).bind(idea.idea_id).all();
    for(const source of evidence.results){
      const inserted=await db.prepare(
        "INSERT INTO hq_demand_evidence(category_key,source_id,evidence_kind) VALUES (?,?,?) "+

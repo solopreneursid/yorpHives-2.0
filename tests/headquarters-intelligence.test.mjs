@@ -353,6 +353,8 @@ test("Unknown technologies and industries are not excluded by the starter taxono
    "INSERT INTO hq_intelligence_ideas(idea_id,fingerprint,run_id,title,kind,audience,problem,solution,why_now,mvp,differentiation,validation_plan,monetization_hypothesis,distribution_hypothesis,risks,priority_score,source_count) VALUES (?,'unbounded-field',?,'Waterfront ecosystem intelligence','direction','Fishers','Unknown operational gaps','Investigate possible data sharing','Source raised the topic','Interview users','Only validated users','Talk to operators','Funding unspecified','Sector partnerships','Unknown demand',50,1)"
   ).run(ideaId,runId);
   db.prepare("INSERT INTO hq_intelligence_evidence(idea_id,source_id) VALUES (?,?)").run(ideaId,sourceId);
+  const unsupportedId=crypto.randomUUID();
+  db.prepare("INSERT INTO hq_intelligence_ideas(idea_id,fingerprint,run_id,title,kind,audience,problem,solution,why_now,mvp,differentiation,validation_plan,monetization_hypothesis,distribution_hypothesis,risks,priority_score,source_count) VALUES (?,'unsupported-idea',?,'Future scientific interface','direction','Researchers','Potential unknown need','Investigate the field','Research question','Interview experts','Research-first','Verify evidence','Unknown','Research partnerships','No verified interest',50,1)").run(unsupportedId,runId);
   const sources=db.prepare("SELECT source_id,provider,title,excerpt,published_at FROM hq_intelligence_sources").all();
   assert.equal(demandMatches(sources[0]).some(c=>c.key==="pdf_tools"),false);
   assert.equal(researchPriority([]),null);
@@ -362,6 +364,7 @@ test("Unknown technologies and industries are not excluded by the starter taxono
   assert.equal(receipt.searches_performed,0);
   assert.equal(receipt.demand_verified,false);
   assert.equal(receipt.generated_candidates,1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_demand_categories WHERE origin='hypothesis'").get().n,1,"Uncited proposals must never enter the demand board");
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_demand_categories WHERE origin='reference'").get().n,DEMAND_CATEGORIES.length);
   const dynamic=db.prepare("SELECT category_key,scale,origin,implementation_risk,research_status,origin_idea_id FROM hq_demand_categories WHERE category_key=?").get("hypothesis:"+ideaId);
   assert.equal(dynamic.scale,"direction","free-tool categories must not be the only allowed type");
@@ -384,6 +387,7 @@ test("Unknown technologies and industries are not excluded by the starter taxono
   assert.equal(value.category_ceiling,false);
   assert.ok(value.opportunities.find(x=>x.category_key===dynamic.category_key));
   assert.ok(value.unclassified_sources.find(x=>x.source_id===unknownId));
+  assert.equal(value.unclassified_total,1);
   const markdown=await getDemand(context(e,"GET",undefined,{accept:"text/markdown"}));
   assert.match(markdown.headers.get("content-type"),/text\/markdown/);
   assert.match(await markdown.text(),/Unclassified signals/);

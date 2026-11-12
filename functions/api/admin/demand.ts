@@ -27,7 +27,7 @@ interface DemandRun {
  added_links:number;generated_candidates:number;completed_at:string;
 }
 export interface DemandSnapshot {
- opportunities:DemandCategory[];unclassified_sources:UnclassifiedSignal[];
+ opportunities:DemandCategory[];unclassified_sources:UnclassifiedSignal[];unclassified_total:number;
  latest_refresh:DemandRun|null;category_ceiling:false;provenance:string;
  generated_at:string;
 }
@@ -54,7 +54,7 @@ function validCommand(input:unknown):input is DemandCommand {
   value.expected_revision>=0&&value.expected_revision<=100000;
 }
 export async function demandSnapshot(db:NonNullable<AdminRequestContext["env"]["DB"]>):Promise<DemandSnapshot> {
- const [rows,unclassified,latest]=await Promise.all([
+ const [rows,unclassified,latest,unclassifiedCount]=await Promise.all([
   db.prepare(`
    SELECT c.category_key,c.title,c.summary,c.scale,c.origin,c.origin_idea_id,c.user_job,
     c.agent_job,c.monetization_model,c.implementation_risk,c.research_status,
@@ -80,7 +80,8 @@ export async function demandSnapshot(db:NonNullable<AdminRequestContext["env"]["
    "SELECT refresh_id,trigger_source,source_count,observed_matches,added_links,"+
    "generated_candidates,completed_at FROM hq_demand_refresh_runs "+
    "ORDER BY completed_at DESC LIMIT 1"
-  ).first<DemandRun>()
+  ).first<DemandRun>(),
+  db.prepare("SELECT COUNT(*) AS total FROM hq_demand_unclassified_sources").first<{total:number}>()
  ]);
  return {opportunities:rows.results.map(row=>{
    const {sources_json,...other}=row;
@@ -88,7 +89,7 @@ export async function demandSnapshot(db:NonNullable<AdminRequestContext["env"]["
    try{const parsed=JSON.parse(sources_json);if(Array.isArray(parsed))sources=parsed.slice(0,30);}catch{}
    return {...other,sources,source_count:sources.length,research_priority:researchPriority(sources),
     evidence_status:"public_interest_proxy_not_verified" as const};
-  }),unclassified_sources:unclassified.results,latest_refresh:latest,
+  }),unclassified_sources:unclassified.results,unclassified_total:Number(unclassifiedCount?.total||0),latest_refresh:latest,
   category_ceiling:false,generated_at:new Date().toISOString(),
   provenance:"Open-ended opportunity taxonomy. Reference categories are examples, not limits. Hypotheses may span any lawful technology, industry, location, business model or emerging format. Original public posts and repositories are unverified interest proxies, not search traffic, agent usage, revenue, or market validation."
  };

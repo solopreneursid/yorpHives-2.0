@@ -130,7 +130,7 @@ function render(){
  }
  byId("demand-reference-count").textContent=String(opportunities.filter(x=>x.origin==="reference").length);
  byId("demand-dynamic-count").textContent=String(opportunities.filter(x=>x.origin==="hypothesis").length);
- byId("demand-unclassified-count").textContent=String(snapshot.unclassified_sources.length);
+ byId("demand-unclassified-count").textContent=String(snapshot.unclassified_total);
  byId("demand-inventory-count").textContent=inventoryReady?String(manifest.length):"—";
  byId("demand-inventory-note").textContent=inventoryReady?
   manifest.length+" tool entries found in the local Free Tools manifest. Matching is a preliminary overlap hint, not proof of deployed functionality.":
