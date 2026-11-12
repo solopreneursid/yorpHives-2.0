@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   deploy-preview:
+    if: github.event_name != 'pull_request'
     name: Deploy isolated Cloudflare Pages preview
     runs-on: ubuntu-latest
     outputs:
@@ -40,6 +41,7 @@ jobs:
         run: echo "url=https://yorphives.com" >> "$GITHUB_OUTPUT"
 
   browser-and-seo:
+    if: github.event_name != 'pull_request'
     needs: deploy-preview
     env:
       SITE_BASE_URL: ${{ needs.deploy-preview.outputs.url }}
@@ -110,6 +112,7 @@ jobs:
           retention-days: 30
 
   lighthouse:
+    if: github.event_name != 'pull_request'
     needs: deploy-preview
     env:
       SITE_BASE_URL: ${{ needs.deploy-preview.outputs.url }}
