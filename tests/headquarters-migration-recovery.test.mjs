@@ -27,6 +27,7 @@ test("complete D1 SQL migration chain can be restored from a disposable SQLite b
     }
 
     assert.equal(databaseHas(db, "admin_repair_finding_links"), true);
+    assert.equal(databaseHas(db, "admin_repair_qa_reports"), true);
     assert.equal(databaseHas(db, "agent_jobs"), true);
     assert.equal(databaseHas(db, "admin_audit_events"), true);
     const before = db.prepare("PRAGMA foreign_key_check").all();
