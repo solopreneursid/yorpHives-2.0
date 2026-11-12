@@ -1,0 +1,4 @@
+@import "tailwindcss" source(none);
+@source "../index.html";
+@source "../headquarters.js";
+@theme { --font-sans: Inter, ui-sans-serif, system-ui, sans-serif; }

@@ -7,7 +7,7 @@ const setText = (id, value) => {
 const date = (value) => value ? new Date(value).toLocaleString() : "—";
 const number = (value) => new Intl.NumberFormat().format(Number(value || 0));
 const text = (value) => String(value ?? "—");
-const state = { view: "overview", loaded: new Set(), assets: [], findings: [], dependencies: [], range: "7d", findingFilter: "active", assetFilter: "all", assetQuery: "", dependencyQuery: "" };
+const state = { view: "headquarters", loaded: new Set(), assets: [], findings: [], dependencies: [], range: "7d", findingFilter: "active", assetFilter: "all", assetQuery: "", dependencyQuery: "" };
 let repairAgentReady = false;
 let analyticsSnapshot = null;
 
@@ -90,6 +90,7 @@ function showView(name) {
   const view = document.getElementById("view-" + name);
   if (!view) return;
   state.view = name;
+  history.replaceState(null, "", "#" + name);
   document.querySelectorAll(".view").forEach(item => item.classList.toggle("active", item === view));
   document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === name));
   setText("breadcrumb", view.dataset.title || name);
@@ -100,6 +101,8 @@ function showView(name) {
 }
 async function loadView(name) {
   const loaders = {
+    headquarters: () => window.loadHeadquarters(),
+    departments: () => window.loadHeadquarters(),
     overview: loadOverview,
     monitoring: loadMonitoring,
     analytics: loadAnalytics,
@@ -562,4 +565,8 @@ setInterval(()=>{
     if(state.view==="overview"){state.overviewData=null;state.loaded.delete("overview");loadOverview();}
   }
 },60000);
-loadView("overview");
+window.addEventListener("DOMContentLoaded", () => {
+  const requested = location.hash.slice(1);
+  showView(document.getElementById("view-" + requested) ? requested : "headquarters");
+  api("/api/admin/overview").then(data => { setText("identity", data.identity); setText("sidebar-identity", data.identity); }).catch(() => {});
+});
