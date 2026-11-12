@@ -281,8 +281,34 @@ function parseModelResponse(output, files) {
 
 async function createBranchCommit(env, jobId, base, changes) {
   const branch = `build/agent/repair-${jobId}`;
+  const sourceRef = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${repairBase(env)}`);
+  if (sourceRef.object?.sha !== base.baseSha) {
+    throw new Error("Reviewed Headquarters source changed while repair was prepared. Restart this job against the new revision.");
+  }
+
   const existing = await githubMaybe(env, `/repos/${REPOSITORY}/git/ref/heads/${branch}`);
-  if (existing?.object?.sha) return { branch, commitSha: existing.object.sha };
+  if (existing?.object?.sha) {
+    const commitSha = existing.object.sha;
+    const [commit, diff] = await Promise.all([
+      github(env, `/repos/${REPOSITORY}/git/commits/${commitSha}`),
+      github(env, `/repos/${REPOSITORY}/compare/${base.baseSha}...${commitSha}`)
+    ]);
+    if (diff.status !== "ahead" || diff.ahead_by !== 1 || !Array.isArray(diff.files)) {
+      throw new Error("Existing repair branch has unexpected history.");
+    }
+    assertRepairReplay({ branch, sourceSha: base.baseSha,
+      commit: { ...commit, sha: commitSha }, changedPaths: diff.files, proposedChanges: changes });
+    for (const change of changes) {
+      const path = change.path.split("/").map(encodeURIComponent).join("/");
+      const actual = await github(env, `/repos/${REPOSITORY}/contents/${path}?ref=${encodeURIComponent(branch)}`);
+      if (actual.encoding !== "base64" || typeof actual.content !== "string" ||
+          decodeBase64Utf8(actual.content) !== change.content) {
+        throw new Error("Existing repair branch content does not match the AI-reviewed patch.");
+      }
+    }
+    return { branch, commitSha };
+  }
+
   const tree = [];
   for (const change of changes) {
     const blob = await github(env, `/repos/${REPOSITORY}/git/blobs`, "POST", {
@@ -292,8 +318,7 @@ async function createBranchCommit(env, jobId, base, changes) {
     tree.push({ path: change.path, mode: "100644", type: "blob", sha: blob.sha });
   }
   const newTree = await github(env, `/repos/${REPOSITORY}/git/trees`, "POST", {
-    base_tree: base.baseTreeSha,
-    tree
+    base_tree: base.baseTreeSha, tree
   });
   const commit = await github(env, `/repos/${REPOSITORY}/git/commits`, "POST", {
     message: `fix: automated Admin repair ${jobId.slice(0, 8)}`,
