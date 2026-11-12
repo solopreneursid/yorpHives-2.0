@@ -1,5 +1,6 @@
 import { WorkflowEntrypoint } from "cloudflare:workers";
 import { missionMemoryContext } from "./yorpmind-context.js";
+import { parseMissionBrief } from "./brief-output.js";
 
 const MODEL = "@cf/qwen/qwen3.8-27b";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -16,35 +17,6 @@ function json(body, status = 200) {
 function cleanText(value, max = 1200) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
-function cleanItems(value) {
-  if (!Array.isArray(value)) return [];
-  return value.filter(item => typeof item === "string" && item.trim()).slice(0, 8).map(item => cleanText(item, 600));
-}
-function parseBrief(modelOutput) {
-  if (typeof modelOutput !== "string") throw new Error("AI did not return a readable response.");
-  const raw = modelOutput.trim().replace(/^\`\`\`(?:json)?\s*/i, "").replace(/\s*\`\`\`$/, "");
-  let candidate;
-  try {
-    candidate = JSON.parse(raw);
-  } catch {
-    const start = raw.indexOf("{"), end = raw.lastIndexOf("}");
-    if (start < 0 || end <= start) throw new Error("AI response did not contain valid JSON.");
-    try { candidate = JSON.parse(raw.slice(start, end + 1)); }
-    catch { throw new Error("AI response did not contain valid JSON."); }
-  }
-  const brief = {
-    summary: cleanText(candidate?.summary, 900),
-    recommended_approach: cleanText(candidate?.recommended_approach, 1600),
-    actions: cleanItems(candidate?.actions),
-    risks: cleanItems(candidate?.risks),
-    assumptions: cleanItems(candidate?.assumptions),
-    verification_needed: cleanItems(candidate?.verification_needed)
-  };
-  if (!brief.summary || !brief.recommended_approach || !brief.actions.length || !brief.verification_needed.length) {
-    throw new Error("AI response lacked the minimum required decision fields.");
-  }
-  return brief;
-}
 async function missionRecord(db, id) {
   return db.prepare(
     "SELECT j.job_id,j.agent_id,j.title,j.request_summary,j.created_by,j.status,a.autonomy_level,a.enabled,a.status AS agent_status,a.display_name,a.department_id " +
@@ -54,11 +26,12 @@ async function missionRecord(db, id) {
 function eligible(job) {
   return Boolean(job && job.autonomy_level === "recommend" && job.enabled === 1 && job.agent_status === "ready");
 }
-async function failMission(db, id, reason) {
+async function failMission(db, id, reason, code = "MISSION_EXECUTION_FAILED") {
   await db.prepare(
     "UPDATE agent_jobs SET status='failed',result_json=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now'),completed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') " +
     "WHERE job_id=? AND job_type='owner_mission' AND status IN ('queued','running')"
-  ).bind(JSON.stringify({ error: cleanText(reason, 900), verified: false }), id).run();
+  ).bind(JSON.stringify({ error: cleanText(reason, 900), code, verified: false,
+    operator_action: "Inspect this failure in Headquarters. No automatic retry or production change was attempted." }), id).run();
 }
 
 /** Runs a bounded, durable, single-model recommendation; it does not browse, edit code, publish, or spend with third parties. */
@@ -102,8 +75,19 @@ export class MissionWorkflow extends WorkflowEntrypoint {
       });
       const brief = await step.do("generate-reviewable-mission-brief", {
         timeout: "3 minutes",
-        retries: { limit: 1, delay: "10 seconds", backoff: "linear" }
+        retries: { limit: 0, delay: "10 seconds", backoff: "constant" }
       }, async () => {
+        // Persistent compare-and-set: a resumed or restarted step cannot
+        // charge a second Workers AI attempt for the same mission.
+        // No retry when a claim is lost: the owner must initiate new work.
+        const attempted = await this.env.DB.prepare(
+          "UPDATE agent_jobs SET input_json=json_set(input_json,'$.model_attempt_started_at',?) " +
+          "WHERE job_id=? AND job_type='owner_mission' AND status='running' " +
+          "AND json_extract(input_json,'$.model_attempt_started_at') IS NULL RETURNING job_id"
+        ).bind(new Date().toISOString(), jobId).first();
+        if (!attempted?.job_id) {
+          throw new Error("This mission has already claimed its one permitted AI attempt.");
+        }
         const response = await this.env.AI.run(MODEL, {
           messages: [
             {
@@ -129,12 +113,7 @@ export class MissionWorkflow extends WorkflowEntrypoint {
           chat_template_kwargs: { enable_thinking: false },
           temperature: 0.6
         });
-        const output =
-          response?.response ??
-          response?.choices?.[0]?.message?.content ??
-          response?.result?.response ??
-          response?.result?.choices?.[0]?.message?.content;
-        return parseBrief(output);
+        return parseMissionBrief(response);
       });
       await step.do("persist-brief-and-review-gate", async () => {
         const saved = await this.env.DB.prepare(
@@ -171,7 +150,9 @@ export class MissionWorkflow extends WorkflowEntrypoint {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Mission workflow failed.";
       await step.do("persist-mission-failure", async () => {
-        await failMission(this.env.DB, jobId, message);
+        await failMission(this.env.DB, jobId, message,
+          error && typeof error === "object" && typeof error.code === "string" &&
+          /^BRIEF_[A-Z_]+$/.test(error.code) ? error.code : "MISSION_EXECUTION_FAILED");
         return { failed: true };
       });
       throw error;
