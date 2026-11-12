@@ -107,6 +107,7 @@ function fakePublic(url){
 }
 const stub=async(url,options)=>{
  if(String(url).includes("/cdn-cgi/access/certs"))return Response.json({keys:[jwk]});
+ assert.equal(options?.redirect,"manual","External sources must never follow redirects");
  return fakePublic(String(url));
 };
 const envFor=(DB,service)=>({

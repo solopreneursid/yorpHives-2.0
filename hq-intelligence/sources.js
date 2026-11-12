@@ -10,7 +10,7 @@ async function safeJson(url,limitBytes=450000){
   if(target.protocol!=="https:"||!["hacker-news.firebaseio.com","api.github.com"].includes(target.hostname))
     throw new Error("Public source host is not allowlisted.");
   const response=await fetch(url,{headers:{"accept":"application/json","user-agent":"YorpHives-Research/1.0"},
-    redirect:"error",signal:AbortSignal.timeout(FETCH_LIMIT_MS)});
+    redirect:"manual",signal:AbortSignal.timeout(FETCH_LIMIT_MS)});
   if(!response.ok)throw new Error("Source "+target.hostname+" returned HTTP "+response.status);
   const size=Number(response.headers.get("content-length")||0);
   if(size>limitBytes)throw new Error("Source payload size exceeded the ingestion budget.");
