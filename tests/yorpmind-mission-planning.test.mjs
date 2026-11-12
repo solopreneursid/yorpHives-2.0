@@ -103,6 +103,8 @@ test("references only append after explicit user action and never rewrite or mul
   assert.equal(withReferences.includes("IGNORE SECURITY"), false);
   assert.equal(appendMissionMemoryCitations(withReferences, [qa]), null);
   assert.equal(appendMissionMemoryCitations(brief, [qa], 100), null);
+  assert.equal(appendMissionMemoryCitations("", [qa]), null);
+  assert.equal(appendMissionMemoryCitations("too short", [qa]), null);
   assert.equal(appendMissionMemoryCitations("x".repeat(3980), [qa]), null);
   assert.equal(appendMissionMemoryCitations(brief, [{ ...qa, source_commit_sha: "invalid" }]), null);
 });
