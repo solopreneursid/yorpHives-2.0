@@ -1,0 +1,22 @@
+.ym-team-panel{margin:24px 0;padding:24px;border:1px solid #334155;border-radius:16px;background:linear-gradient(140deg,#131f32,#0b1322);color:#e2e8f0}
+.ym-team-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px;flex-wrap:wrap}
+.ym-team-head h2{margin:5px 0 8px;font-size:clamp(1.25rem,2vw,1.7rem);letter-spacing:-.03em}
+.ym-team-head p,.ym-team-muted{color:#a8b6ce;line-height:1.55;font-size:.9rem}
+.ym-team-status{padding:11px 14px;border:1px solid #1e4664;border-radius:9px;color:#a5f3fc;background:#09263a;margin:12px 0 19px}
+.ym-team-subhead{margin:22px 0 12px;font-size:1.06rem;font-weight:700}
+.ym-team-people{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.ym-team-person,.ym-team-report,.ym-team-advice{border:1px solid #334155;border-radius:12px;background:#111e31;padding:16px}
+.ym-team-person-head,.ym-team-report-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ym-team-person-head strong,.ym-team-report-head strong{font-weight:750;color:#f8fafc}
+.ym-team-tag{font-size:.67rem;white-space:nowrap;letter-spacing:.055em;border:1px solid #3b5c78;color:#93c5fd;background:#142c45;border-radius:100px;padding:4px 8px}
+.ym-team-person p,.ym-team-report p{margin:9px 0}
+.ym-team-bots{display:flex;gap:6px;flex-wrap:wrap;margin-top:13px}
+.ym-team-bot{font-size:.73rem;background:#1e3049;border:1px solid #314563;color:#cbd5e1;border-radius:8px;padding:6px 9px}
+.ym-team-current,.ym-team-reports{display:grid;gap:10px}
+.ym-team-advice{color:#cbd5e1;font-size:.89rem;line-height:1.6;border-left:3px solid #38bdf8}
+.ym-team-form{display:grid;gap:10px;margin-top:15px}
+.ym-team-form label{font-size:.85rem;color:#e2e8f0}
+.ym-team-form textarea{display:block;width:100%;margin-top:7px;background:#091626;color:#f8fafc;padding:11px;border:1px solid #475569;border-radius:9px;resize:vertical;font:inherit}
+.ym-team-report-actions{display:flex;gap:9px;flex-wrap:wrap}
+.ym-team-guard{margin-top:16px;padding:12px;border:1px solid #765b38;background:#2d241a;border-radius:9px;color:#fde68a;font-size:.85rem}
+@media(max-width:600px){.ym-team-panel{padding:16px}.ym-team-person-head,.ym-team-report-head{align-items:flex-start;flex-wrap:wrap}}
