@@ -18,6 +18,7 @@
   <div class="workspace-label">WORKSPACE</div>
   <nav class="side-nav" aria-label="Admin workspaces">
     <button class="nav-item active" data-view="headquarters"><span class="nav-icon">◇</span>Headquarters</button>
+    <button class="nav-item" data-view="radar"><span class="nav-icon">◈</span>Opportunity Radar</button>
     <button class="nav-item" data-view="departments"><span class="nav-icon">▦</span>Departments</button>
     <button class="nav-item" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
     <button class="nav-item" data-view="monitoring"><span class="nav-icon">⌁</span>Monitoring</button>
@@ -123,6 +124,64 @@
         </aside>
       </div>
     </section>
+    <section class="view" id="view-radar" data-title="Opportunity Radar">
+      <div class="radar-hero">
+        <div class="radar-hero-main">
+          <span class="radar-eyebrow"><span class="radar-live"></span> YORPHIVES INTELLIGENCE · PRIVATE</span>
+          <h1>Signals into <em>action.</em></h1>
+          <p>Convert observed platform problems into traceable decisions. Every signal originates in a first-party monitoring record, not an AI guess or an invented market statistic.</p>
+          <div class="radar-buttons">
+            <button type="button" class="hq-button hq-button-primary" id="radar-sync">↻ Sync monitoring records</button>
+            <a class="hq-button hq-button-secondary" href="/api/admin/radar?format=markdown" target="_blank" rel="noopener noreferrer">Agent-readable signals ↗</a>
+          </div>
+        </div>
+        <div class="radar-source-note">
+          <span class="radar-eyebrow">SOURCE TRANSPARENCY</span>
+          <strong>First-party evidence only</strong>
+          <p>Health checks, asset quality, security and discoverability observations. External demand research, revenue analytics and independent verification have not been connected to this feed.</p>
+          <small id="radar-last-sync" aria-live="polite">Checking last ingestion…</small>
+        </div>
+      </div>
+      <div class="radar-metrics" aria-label="Opportunity Radar summary">
+        <article><span>ACTIVE SIGNALS</span><strong id="radar-active">—</strong><small>Open observations needing action</small></article>
+        <article><span>NEW TO TRIAGE</span><strong id="radar-new">—</strong><small>Not yet investigated</small></article>
+        <article><span>PLANNED MISSIONS</span><strong id="radar-promoted">—</strong><small>Created from evidence</small></article>
+        <article><span>RESOLVED SOURCES</span><strong id="radar-resolved">—</strong><small>Retained for audit, not current issues</small></article>
+      </div>
+      <div class="radar-controlbar">
+        <div>
+          <span class="radar-eyebrow">EVIDENCE BOARD</span>
+          <h2>What deserves attention?</h2>
+          <p>Ranked by observed severity and recency. This is triage, not an automated product opportunity forecast.</p>
+        </div>
+        <div class="radar-controls">
+          <label for="radar-filter">Show</label>
+          <select class="hq-input" id="radar-filter">
+            <option value="active">Active signals</option>
+            <option value="new">New</option>
+            <option value="investigating">Investigating</option>
+            <option value="promoted">Planned missions</option>
+            <option value="dismissed">Dismissed</option>
+            <option value="all">All observations</option>
+          </select>
+          <label for="radar-category">Area</label>
+          <select class="hq-input" id="radar-category">
+            <option value="all">All areas</option>
+            <option value="reliability">Reliability</option>
+            <option value="security">Security</option>
+            <option value="discoverability">Agent discovery &amp; SEO</option>
+            <option value="product_quality">Product quality</option>
+          </select>
+        </div>
+      </div>
+      <div class="radar-status" id="radar-status" role="status" aria-live="polite">Connecting to the monitoring ledger…</div>
+      <div class="radar-cards" id="radar-list"></div>
+      <div class="radar-footer">
+        <span>NO SYNTHETIC METRICS · NO SILENT EXECUTION · AUDITABLE OWNER DECISIONS</span>
+        <button type="button" class="hq-text-action" data-go="headquarters">Open Mission Control ↗</button>
+      </div>
+    </section>
+
     <section class="view" id="view-departments" data-title="Departments"><div class="page-heading"><div><span class="eyebrow">ORGANIZATION</span><h1>A focused team for every function.</h1><p>Responsibilities, availability and permission boundaries from the shared registry.</p></div></div><div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="hq-team"></div></section>
 
     <section class="view" id="view-overview" data-title="Overview">
@@ -223,5 +282,6 @@
 
 <script src="/admin/admin.js" defer></script>
 <script src="/admin/headquarters.js" defer></script>
+<script src="/admin/radar.js" defer></script>
 </body>
 </html>
