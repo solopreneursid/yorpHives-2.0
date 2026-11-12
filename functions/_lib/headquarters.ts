@@ -3,10 +3,12 @@ export interface Department { department_id: string; name: string; mission: stri
 export interface Specialist { agent_id: string; display_name: string; department_id: string; description: string; status: string; enabled: number; autonomy_level: string; }
 export interface Mission { job_id: string; title: string; request_summary: string; status: string; priority: string; agent_id: string | null; created_at: string; updated_at: string; started_at: string | null; completed_at: string | null; result_json: string | null; evidence_json: string; }
 export interface MissionEvent { event_id: string; job_id: string; actor_id: string; event_type: string; details_json: string; created_at: string; }
-export interface HeadquartersSnapshot { departments: Department[]; specialists: Specialist[]; missions: Mission[]; events: MissionEvent[]; generated_at: string; execution: string; engine_available: boolean; }
+export interface MissionBudget { window: "utc_day"; limit: number; used: number; remaining: number; actual_cost_usd: null; }
+export interface HeadquartersSnapshot { departments: Department[]; specialists: Specialist[]; missions: Mission[]; events: MissionEvent[]; generated_at: string; execution: string; engine_available: boolean; mission_budget: MissionBudget; }
 export interface CreateMissionRequest { job_id: string; title: string; request_summary: string; agent_id: string; priority: string; }
 export interface CancelMissionRequest { job_id: string; expected_updated_at: string; action: "cancel"; }
 export interface MissionMutationResponse { success: boolean; job_id: string; status: string; replayed?: boolean; }
+export const DAILY_AI_MISSION_LIMIT = 6;
 export const missionColumns = "job_id,title,request_summary,status,priority,agent_id,created_at,updated_at,started_at,completed_at,result_json,evidence_json";
 export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export function validMission(value: unknown): value is CreateMissionRequest {
@@ -43,13 +45,15 @@ export function mutationGuard(request: Request): Response | null {
   return null;
 }
 export async function headquartersSnapshot(db: AdminD1Database, engineAvailable = false): Promise<HeadquartersSnapshot> {
-  const [departments, specialists, missions, events] = await Promise.all([
+  const [departments, specialists, missions, events, dispatched] = await Promise.all([
     db.prepare("SELECT department_id,name,mission FROM agent_departments ORDER BY sort_order").all<Department>(),
     db.prepare("SELECT agent_id,display_name,department_id,description,status,enabled,autonomy_level FROM agent_registry ORDER BY display_name").all<Specialist>(),
     db.prepare(`SELECT ${missionColumns} FROM agent_jobs ORDER BY created_at DESC LIMIT 100`).all<Mission>(),
-    db.prepare("SELECT event_id,job_id,actor_id,event_type,details_json,created_at FROM agent_job_events ORDER BY created_at DESC LIMIT 50").all<MissionEvent>()
+    db.prepare("SELECT event_id,job_id,actor_id,event_type,details_json,created_at FROM agent_job_events ORDER BY created_at DESC LIMIT 50").all<MissionEvent>(),
+    db.prepare("SELECT COUNT(*) AS used FROM agent_job_events WHERE event_type='mission_queued' AND substr(created_at,1,10)=date('now')").first<{ used: number }>()
   ]);
-  return { departments: departments.results, specialists: specialists.results, missions: missions.results, events: events.results, generated_at: new Date().toISOString(), engine_available: engineAvailable, execution: engineAvailable ? "AI recommendation briefs available for enabled specialists. Outputs are unverified until independently checked; no production or financial actions are performed." : "Mission storage is available. This deployment has no private AI mission engine binding; execution is disabled." };
+  const used = Number(dispatched?.used || 0);
+  return { departments: departments.results, specialists: specialists.results, missions: missions.results, events: events.results, mission_budget: { window: "utc_day", limit: DAILY_AI_MISSION_LIMIT, used, remaining: Math.max(0, DAILY_AI_MISSION_LIMIT - used), actual_cost_usd: null }, generated_at: new Date().toISOString(), engine_available: engineAvailable, execution: engineAvailable ? "AI recommendation briefs available for enabled specialists. Outputs are unverified until independently checked; no production or financial actions are performed." : "Mission storage is available. This deployment has no private AI mission engine binding; execution is disabled." };
 }
 export function headquartersResponse(request: Request, snapshot: HeadquartersSnapshot): Response {
   const format = new URL(request.url).searchParams.get("format");
@@ -60,6 +64,6 @@ export function headquartersResponse(request: Request, snapshot: HeadquartersSna
     return response;
   }
   const clean = (text: string) => text.replace(/[\r\n]/g, " ").replace(/[\\`*_{}\[\]<>#|]/g, "\\$&");
-  const body = ["# YorpHives Headquarters", "", snapshot.execution, "", "## Departments", ...snapshot.departments.map(d => `- ${clean(d.name)}: ${clean(d.mission)}`), "", "## Specialists", ...snapshot.specialists.map(a => `- ${clean(a.display_name)}: ${a.status}; ${a.enabled ? "enabled" : "disabled"}`), "", "## Missions (latest 100)", ...snapshot.missions.map(j => `- ${clean(j.title)} — ${j.status}, ${j.priority}\n  ${clean(j.request_summary)}`), "", `Generated: ${snapshot.generated_at}`].join("\n");
+  const body = ["# YorpHives Headquarters", "", snapshot.execution, "", "AI mission brief dispatch allowance (UTC day): " + snapshot.mission_budget.used + "/" + snapshot.mission_budget.limit + ". This is an execution count, not a billing amount. Repair and research workloads have separate limits.", "", "## Departments", ...snapshot.departments.map(d => `- ${clean(d.name)}: ${clean(d.mission)}`), "", "## Specialists", ...snapshot.specialists.map(a => `- ${clean(a.display_name)}: ${a.status}; ${a.enabled ? "enabled" : "disabled"}`), "", "## Missions (latest 100)", ...snapshot.missions.map(j => `- ${clean(j.title)} — ${j.status}, ${j.priority}\n  ${clean(j.request_summary)}`), "", `Generated: ${snapshot.generated_at}`].join("\n");
   return new Response(body, { headers: { "content-type": "text/markdown; charset=utf-8", "cache-control": "no-store", vary: "Accept", "x-content-type-options": "nosniff" } });
 }
