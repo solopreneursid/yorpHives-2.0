@@ -419,3 +419,22 @@ test("Security Auditor does not resolve prior findings from redirects or failed 
     globalThis.fetch = originalFetch;
   }
 });
+
+
+test("public Pages responses include conservative HSTS and existing clickjacking protections", async () => {
+  const headers = await read("../_headers");
+  assert.match(headers, /^  Strict-Transport-Security: max-age=31536000$/m);
+  assert.doesNotMatch(headers, /includeSubDomains|preload/i);
+  assert.match(headers, /^  X-Frame-Options: DENY$/m);
+  assert.match(headers, /frame-ancestors 'none'/);
+  assert.match(headers, /rel="canonical"/);
+});
+
+test("Security Auditor checks clickjacking only on HTML and requires an actual frame-ancestors directive", async () => {
+  const auditor = await read("../admin-monitor/security-auditor.js");
+  assert.match(auditor, /contentType\.includes\("text\/html"\)/);
+  assert.match(auditor, /hasFrameAncestors/);
+  assert.match(auditor, /frame-ancestors\\b/i);
+  assert.match(auditor, /!response\.headers\.get\("x-frame-options"\)/);
+  assert.match(auditor, /await closeVerifiedFindings\(db, asset\.id, detected, startedAt\)/);
+});
