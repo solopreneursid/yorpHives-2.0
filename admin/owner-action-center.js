@@ -75,8 +75,9 @@
       " · " + data.recorded_jobs_scanned + " missions inspected · read-only";
   }
 
-  window.loadOwnerActionCenter = async () => {
-    if (fetching) return;
+  window.loadOwnerActionCenter = async (force = false) => {
+    if (fetching || (!force && Date.now() - lastAttemptAt < RECHECK_MS)) return;
+    lastAttemptAt = Date.now();
     fetching = true;
     try {
       const data = await api("/api/admin/action-center");
