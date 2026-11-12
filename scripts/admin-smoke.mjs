@@ -93,6 +93,15 @@ async function run() {
         a.enabled === 1 && a.status === "ready" && a.autonomy_level === "recommend").length === 7,
         "Only seven recommendation specialists are enabled; engineering and QA still require verified runtimes");
     }
+    if (process.env.PAGES_BRANCH === "build/headquarters-global-intelligence") {
+      const researchResponse = await page.request.get(baseUrl + "/api/admin/intelligence", { headers: accessHeaders });
+      const research = researchResponse.ok() ? await researchResponse.json() : null;
+      record("intelligence_private_worker_health", researchResponse.ok() && research?.engine_available === true,
+        "Private Research Worker is healthy through preview-only service binding");
+      record("intelligence_live_source_provenance", Boolean(research?.ideas?.length) &&
+        research.ideas.some(idea => idea.sources?.length && idea.sources.every(source => source.source_url?.startsWith("https://"))),
+        "Stored hypotheses have legitimate public source links");
+    }
     await page.locator('.nav-item[data-view="intelligence"]').click();
     await page.locator("#view-intelligence").waitFor({ state: "visible", timeout: 10000 });
     record("intelligence_workspace_rendered", await page.locator("#view-intelligence h1").count() === 1, "Protected research UI renders");
@@ -156,7 +165,7 @@ async function run() {
 
     record("browser_page_errors", pageErrors.length === 0, pageErrors.length + " uncaught page errors");
   } catch (error) {
-    record("admin_browser_flow", false, "Browser flow failed; inspect the workflow step for the failure location.");
+    record("admin_browser_flow", false, "Browser flow failed at: " + String(error?.message || error).split("\n")[0].slice(0,180));
   } finally {
     if (context) await context.close();
     await browser.close();
@@ -174,6 +183,7 @@ async function run() {
   };
   await writeFile(reportPath, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report.summary));
+  if (failures.length) console.warn("Admin smoke failures: " + JSON.stringify(failures.map(item => ({ name: item.name, detail: item.detail }))));
   if (failures.length) process.exitCode = 1;
 }
 
