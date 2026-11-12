@@ -95,7 +95,9 @@
       const footer = make("div", "hq-mission-footer");
       footer.append(make("span", "", date(mission.created_at)));
       if (mission.status === "planned") {
-        const permitted = Boolean(snapshot.engine_available && agent?.enabled === 1 && agent?.status === "ready" && agent?.autonomy_level === "recommend");
+        const supported = Boolean(snapshot.engine_available && agent?.enabled === 1 && agent?.status === "ready" && agent?.autonomy_level === "recommend");
+        const remaining = Number(snapshot.mission_budget?.remaining ?? 0);
+        const permitted = supported && remaining > 0;
         const buttons = make("div", "hq-mission-actions");
         if (permitted) {
           const dispatch = make("button", "hq-small-primary", "Start AI brief ↗");
@@ -106,7 +108,7 @@
           });
           buttons.append(dispatch);
         } else {
-          buttons.append(make("span", "hq-no-engine", agent?.autonomy_level === "sandbox_execute" ? "Execution runtime not enabled" : "Brief engine unavailable or specialist disabled"));
+          buttons.append(make("span", "hq-no-engine", supported && remaining <= 0 ? "Today’s AI brief allowance is exhausted. Planning and monitoring remain available." : agent?.autonomy_level === "sandbox_execute" ? "Execution runtime not enabled" : "Brief engine unavailable or specialist disabled"));
         }
         const cancel = make("button", "hq-small-muted", "Cancel");
         cancel.type = "button";
@@ -197,6 +199,8 @@
       el("hq-storage").textContent = "Connected";
       el("hq-updated").textContent = "Last synced · " + date(snapshot.generated_at);
       el("hq-execution").textContent = snapshot.execution;
+      const budget = snapshot.mission_budget;
+      el("hq-mission-budget").textContent = budget ? "AI recommendation briefs today (UTC): " + budget.used + " / " + budget.limit + " · " + budget.remaining + " remaining · excludes research and repair costs" : "AI mission budget unavailable";
       const missions = snapshot.missions;
       el("hq-open").textContent = missions.filter(m => !closed.has(m.status)).length;
       el("hq-running").textContent = missions.filter(m => ["queued", "running"].includes(m.status)).length;
