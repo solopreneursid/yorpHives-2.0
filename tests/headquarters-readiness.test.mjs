@@ -19,7 +19,7 @@ async function fixture() {
     devDependencies: { "@tailwindcss/cli": "4.3.5", tailwindcss: "4.3.5" }
   }));
   await mkdir(join(dir, "migrations"), { recursive: true });
-  for (let i = 4; i <= 22; i++) {
+  for (let i = 4; i <= 23; i++) {
     await writeFile(join(dir, "migrations", String(i).padStart(4, "0") + "_test.sql"), "SELECT 1;");
   }
   return dir;
@@ -56,7 +56,7 @@ test("unapproved direct package fails the gate", async () => {
 test("missing migration and missing CI checks are independently reported", async () => {
   const dir = await fixture();
   try {
-    await rm(join(dir, "migrations", "0022_test.sql"));
+    await rm(join(dir, "migrations", "0023_test.sql"));
     await writeFile(join(dir, ".github/workflows/ci.yml"), "on: push");
     const report = await assessHeadquarters(dir);
     assert.equal(report.static_checks_passed, false);
