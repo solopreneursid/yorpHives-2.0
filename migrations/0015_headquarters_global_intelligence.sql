@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS hq_intelligence_ideas (
   CHECK(status IN ('proposed','shortlisted','dismissed','promoted')),
  linked_job_id TEXT REFERENCES agent_jobs(job_id) ON DELETE SET NULL,
  owner_note TEXT NOT NULL DEFAULT '',
+ revision INTEGER NOT NULL DEFAULT 0,
  created_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')),
  last_seen_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now')),
  updated_at TEXT NOT NULL DEFAULT(strftime('%Y-%m-%dT%H:%M:%fZ','now'))
@@ -95,7 +96,7 @@ AFTER INSERT ON agent_jobs
 WHEN NEW.origin_type='research_idea' AND NEW.origin_ref IS NOT NULL
 BEGIN
  UPDATE hq_intelligence_ideas
- SET status='promoted',linked_job_id=NEW.job_id,
+ SET status='promoted',linked_job_id=NEW.job_id,revision=revision+1,
      updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')
  WHERE idea_id=NEW.origin_ref AND status IN ('proposed','shortlisted');
  INSERT INTO hq_intelligence_events(event_id,idea_id,actor,action,details_json)
