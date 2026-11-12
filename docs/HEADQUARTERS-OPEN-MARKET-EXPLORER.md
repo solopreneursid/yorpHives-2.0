@@ -47,3 +47,7 @@ The internal research priority is a deterministic source-diversity and recency h
 The current research adapters are **not comprehensive** and disproportionately reflect English-speaking developers. Connecting verified search-demand indicators, first-party traffic, multi-language communities, independent user research, agent invocation data, compliant competitor intelligence, and industry-specific sources is still pending. Do not claim that the platform now monitors all world technologies. The architecture accepts new sectors and product types; gathering representative demand evidence remains a separate technical and research challenge.
 
 Better future decisions require linking discovery to catalogue inventory, SEO rank and impressions, real tool launches, retention, acquisition costs, revenue, infrastructure cost and release QA. Instrument these with privacy and user consent, and distinguish proxies from audited measurements.
+
+## Open-world AI synthesis policy
+
+There is **no required number of ideas per research scan**. The structured model can return 0–3 proposals with verified-in-ledger public source IDs. A zero-candidate run is a valid research result, not an instruction to fabricate opportunities. Industry, technology, country, user type, business model and product-size examples in prompts are **illustrative**, never a whitelist. Private operational access and legal/security constraints still apply. The retrieval/source adapters themselves are currently limited, so coverage of all international markets is **not** claimed.

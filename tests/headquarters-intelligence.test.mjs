@@ -159,6 +159,7 @@ test("AI idea parser rejects fabricated source IDs and empty evidence",()=>{
  assert.ok(accepted[0].priority_score<90);
  assert.deepEqual(parseIdeas({response:JSON.stringify({ideas:[{...idea,source_ids:["fabricated:99"]}]})},sources),[]);
  assert.deepEqual(parseIdeas({response:JSON.stringify({ideas:[{...idea,source_ids:[]}]})},sources),[]);
+ assert.deepEqual(parseIdeas({response:JSON.stringify({ideas:[]})},sources),[],"Empty research is an honest outcome");
 });
 test("private Workflow records real public sources, one model call and a durable reviewable idea",async()=>{
  const {db,DB}=await database();
@@ -169,7 +170,7 @@ test("private Workflow records real public sources, one model call and a durable
     modelCalls++;
     assert.equal(model,"@cf/meta/llama-3.3-70b-instruct-fp8-fast");
     assert.equal(payload.response_format.type,"json_schema");
-    assert.equal(payload.response_format.json_schema.properties.ideas.minItems,2);
+    assert.equal(payload.response_format.json_schema.properties.ideas.minItems,0);
     assert.ok(payload.max_tokens>=2900);
     assert.ok(JSON.stringify(payload.messages).includes("YorpHives"));
     return {response:JSON.stringify({ideas:[idea]})};
