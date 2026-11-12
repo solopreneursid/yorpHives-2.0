@@ -52,3 +52,21 @@ Search Console query impressions/clicks and landing-page attribution, measured t
 Future scoring should separate `existing_product`, `public_problem`, `first_party_http_requests`, `verified_search_clicks`, `tool_completion`, `agent_invocation`, and `revenue` as independently identified metrics. Never collapse those types into an arbitrary "proven demand" score.
 
 Where Cloudflare Analytics is not configured or the API fails, the UI must report missing evidence rather than zero traffic. The protected owner capture is intentional: production traffic data should not silently enter a new AI pipeline without its data-quality and privacy controls being verified.
+
+## Post-review stabilization and Founder Decision Queue
+
+- The Cloudflare GraphQL variable `zoneTag` uses the documented `string!` scalar. The exact 24-hour and seven-day aggregate queries were successfully tested read-only against the real YorpHives zone via the connected Cloudflare account (without storing visitor identifiers).
+- Sampled 7-day Cloudflare `httpRequestsAdaptiveGroups` results exposed 54 canonical Free Tools route slugs and 8,256 grouped requests in the observed top 250 grouped records. These are **not users, conversions, verified demand or evidence of human-only traffic**. The default product list under the feature branch did **not** contain many observed production path slugs. Treat this as a catalogue-drift risk. Without verifying the live production catalogue, never conclude those URLs are unbuilt products.
+- `GET /api/admin/next-actions` returns a deterministic, read-only investigative queue with evidence type, source links, bounded priority, and explicit `verified_demand:false`, `authorized_for_build:false` for every item. It recommends measuring first-party traffic, verifying existing tool functionality, investigating public questions and competitor listings, and running independent Validation Lab experiments. Priority is an **investigation sequencing** score, never estimated market demand or revenue.
+- Empty valid Workers AI output now counts as a successfully completed research scan unless a collector or model actually failed. Do not require daily idea quotas.
+- Market Explorer panels load independently. A Cloudflare Analytics error cannot suppress public-source findings or founder next actions.
+- `scripts/agent-review.mjs` now uses the branch's explicit stacked draft-PR parent for incremental static-risk checks. The full chain still requires separate human/security review before production merge; passing incremental review **does not** approve inherited changes. No critical/high finding is suppressed for changes actually introduced by the current branch.
+- Source collection and authorized first-party capture remain separate from internal Cloudflare Console read-only QA. No first-party snapshot has been inserted into the protected D1 ledger via an impersonated owner session.
+
+## Remaining founder and integration gates (not waived)
+
+1. Verify a **real** scheduled 03:30 UTC research run after deployment of the source adapters. Inspect `hq_public_market_runs`, original WordPress/Stack Exchange source links and any explicit upstream errors. Current tests use fixed successful API fixtures.
+2. Perform owner-authenticated click-through for the `Capture 7-day traffic` action and idea/validation triage. A CI service identity intentionally cannot submit these writes.
+3. Verify market-source quality and source diversity with actual market research; current worldwide search-demand coverage is incomplete.
+4. Reconcile the production/preview catalogue lineage and audit the full stacked PR chain before production releases.
+5. Obtain first-party Search Console queries and measured tool-completion/agent API events through a properly consented integration. Public HTTP request counts and user-agent-like crawler queries do not establish real human or agent product usage.
