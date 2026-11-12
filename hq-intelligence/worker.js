@@ -4,6 +4,7 @@ import { MODEL, synthesizeIdeas } from "./synthesis.js";
 import { indexDemand } from "./demand.js";
 import { collectMarketSources,storeMarketSources } from "./market-sources.js";
 import { scanYorpMindEvolution } from "./yorpmind-evolution.js";
+import { scanYorpMindTeam } from "./yorpmind-team-scan.js";
 
 const MAX_MANUAL_PER_DAY=2;
 const MAX_SOURCE_ROWS=42;
