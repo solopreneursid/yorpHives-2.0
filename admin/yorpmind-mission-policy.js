@@ -83,5 +83,10 @@ export function validateMissionMemorySearchResult(payload) {
     payload.execution?.skills_executable === false &&
     payload.execution?.production_approved === false &&
     Array.isArray(payload.results) && payload.results.length <= 8 &&
-    payload.results.every(record => validMissionMemoryReference(record)));
+    payload.results.every(record => validMissionMemoryReference(record) &&
+      typeof record.title === "string" && record.title.length >= 3 && record.title.length <= 180 &&
+      typeof record.summary === "string" && record.summary.length <= 1800 &&
+      Array.isArray(record.matched_terms) && record.matched_terms.length >= 1 &&
+      record.matched_terms.length <= 6 &&
+      record.matched_terms.every(term => typeof term === "string" && term.length >= 3 && term.length <= 32)));
 }
