@@ -14,10 +14,14 @@ export interface AdminEnv {
   CF_ACCESS_AUD?: string;
   ADMIN_ALLOWED_EMAILS?: string;
   ADMIN_CI_SERVICE_TOKEN_IDS?: string;
+  CF_ACCESS_STEP_UP_AUD?: string;
+  CF_ACCESS_STEP_UP_MFA_POLICY_CONFIRMED?: string;
 }
 export interface AdminIdentity {
   email: string;
   serviceToken?: boolean;
+  authenticatedAt?: number;
+  expiresAt?: number;
 }
 export interface AdminRequestContext {
   request: Request;
@@ -60,12 +64,12 @@ async function getAccessKeys(teamDomain: string): Promise<JsonWebKey[]> {
   cachedKeys = { keys: data.keys, expiresAt: now + 5 * 60 * 1000 };
   return data.keys;
 }
-export async function verifyAdminAccess(request: Request, env: AdminEnv): Promise<AdminIdentity | null> {
+export async function verifyAdminAccess(request: Request, env: AdminEnv, audienceOverride?: string): Promise<AdminIdentity | null> {
   let teamDomain = (env.CF_ACCESS_TEAM_DOMAIN || "").trim();
   if (teamDomain.startsWith("https://")) teamDomain = teamDomain.slice(8);
   if (teamDomain.startsWith("http://")) teamDomain = teamDomain.slice(7);
   teamDomain = teamDomain.replace(/\/$/, "");
-  const expectedAudiences = new Set((env.CF_ACCESS_AUD || "").split(",").map((value) => value.trim()).filter(Boolean));
+  const expectedAudiences = new Set((audienceOverride === undefined ? (env.CF_ACCESS_AUD || "") : audienceOverride).split(",").map((value) => value.trim()).filter(Boolean));
   const allowedEmails = new Set((env.ADMIN_ALLOWED_EMAILS || "").split(",").map((email) => email.trim().toLowerCase()).filter(Boolean));
   const allowedServiceTokenIds = new Set((env.ADMIN_CI_SERVICE_TOKEN_IDS || "").split(",").map((value) => value.trim()).filter(Boolean));
   if (!teamDomain || expectedAudiences.size === 0 || (allowedEmails.size === 0 && allowedServiceTokenIds.size === 0)) return null;
@@ -93,10 +97,43 @@ export async function verifyAdminAccess(request: Request, env: AdminEnv): Promis
     const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", publicKey, decodeBase64Url(parts[2]), signedContent);
     if (!valid) return null;
     return isAllowedServiceToken
-      ? { email: "github-actions@yorphives.internal", serviceToken: true }
-      : { email };
+      ? { email: "github-actions@yorphives.internal", serviceToken: true, authenticatedAt: claims.iat, expiresAt: claims.exp }
+      : { email, authenticatedAt: claims.iat, expiresAt: claims.exp };
   } catch { return null; }
 }
+export async function requireOwnerStepUp(context: AdminRequestContext): Promise<AdminIdentity | Response> {
+  if (!context.env.DB) return adminJson({
+    error: { code: "ADMIN_DATABASE_UNAVAILABLE", message: "The private D1 database is unavailable." }
+  }, 503);
+  const aud = (context.env.CF_ACCESS_STEP_UP_AUD || "").trim();
+  const baseAudiences = new Set((context.env.CF_ACCESS_AUD || "").split(",").map(value => value.trim()));
+  if (!aud || baseAudiences.has(aud) ||
+      context.env.CF_ACCESS_STEP_UP_MFA_POLICY_CONFIRMED !== "yes") {
+    return adminJson({
+      error: { code: "STEP_UP_NOT_CONFIGURED",
+        message: "A distinct Cloudflare Access MFA-protected application must be configured and independently tested." }
+    }, 503);
+  }
+  const identity = await verifyAdminAccess(context.request, context.env, aud);
+  if (!identity || identity.serviceToken) {
+    return adminJson({
+      error: { code: "STEP_UP_REQUIRED",
+        message: "Complete the independent Cloudflare Access MFA challenge using the separate approval application." }
+    }, 403);
+  }
+  const now = Math.floor(Date.now() / 1000);
+  if (!Number.isSafeInteger(identity.authenticatedAt) ||
+      !Number.isSafeInteger(identity.expiresAt) ||
+      identity.authenticatedAt > now + 30 ||
+      identity.authenticatedAt < now - 300 ||
+      identity.expiresAt <= now ||
+      identity.expiresAt - identity.authenticatedAt > 600) {
+    return adminJson({ error: { code: "FRESH_STEP_UP_REQUIRED",
+      message: "The MFA-protected session must be fresh and short-lived. Sign in again." } }, 403);
+  }
+  return identity;
+}
+
 export async function requireAdmin(context: AdminRequestContext): Promise<AdminIdentity | Response> {
   if (!context.env.DB) return Response.json({ error: { code: "ADMIN_DATABASE_UNAVAILABLE", message: "The admin database is not configured." } }, { status: 503, headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" } });
   const identity = await verifyAdminAccess(context.request, context.env);
