@@ -72,7 +72,8 @@ async function database(){
   "../migrations/0016_headquarters_validation.sql",
   "../migrations/0017_headquarters_existing_tool_demand.sql",
   "../migrations/0018_headquarters_traffic_evidence.sql",
-  "../migrations/0019_headquarters_public_market_sources.sql"
+  "../migrations/0019_headquarters_public_market_sources.sql",
+  "../migrations/0020_headquarters_tool_activity.sql"
  ])db.exec(await file(path));
  const DB={
    prepare(sql){
@@ -439,6 +440,8 @@ test("Read-only HQ next actions distinguish source types and do not invent deman
   assert.ok(pending.recommendations.some(x=>x.kind==="measure_first_party"));
   assert.ok(pending.recommendations.some(x=>x.kind==="verify_source_collection"));
   assert.equal(pending.coverage.traffic_capture_exists,false);
+  assert.ok(pending.recommendations.some(x=>x.kind==="measure_tool_completions"));
+  assert.equal(pending.recommendations.every(x=>!x.authorized_for_build),true);
   assert.equal(pending.coverage.public_market_source_count,0);
   assert.ok(pending.recommendations.every(x=>!x.verified_demand&&!x.authorized_for_build));
   const captureId=crypto.randomUUID();
@@ -446,12 +449,16 @@ test("Read-only HQ next actions distinguish source types and do not invent deman
   db.prepare("INSERT INTO hq_traffic_tool_paths(capture_id,slug,path,grouped_requests) VALUES (?,'file-studio','/free-tools/file-studio/',81)").run(captureId);
   db.prepare("INSERT INTO hq_public_market_signals(signal_key,provider,evidence_kind,source_id,source_query,title,excerpt,source_url,public_metric_label,public_metric_value) VALUES ('wordpress:document-tool','wordpress_plugins','existing_product','document-tool','pdf','Document Utility','A public plugin.','https://wordpress.org/plugins/document-tool/','active_install_band',5000)").run();
   db.prepare("INSERT INTO hq_public_market_signals(signal_key,provider,evidence_kind,source_id,source_query,title,excerpt,source_url,public_metric_label,public_metric_value) VALUES ('stackexchange:webapps:4881','stackexchange_questions','public_question','webapps:4881','webapps','How can I convert reports?','A public question.','https://webapps.stackexchange.com/questions/4881','question_score',2)").run();
+  db.prepare("INSERT INTO hq_tool_activity_daily(activity_day,slug,channel,success_count) VALUES (date('now'),'json-formatter','browser_client_reported',5)").run();
+  db.prepare("INSERT INTO hq_tool_activity_daily(activity_day,slug,channel,success_count) VALUES (date('now'),'sha256-text','access_authenticated_agent_execution',2)").run();
   const response=await getNextActions(context(e));
   const snapshot=await response.json();
   assert.equal(snapshot.coverage.traffic_capture_exists,true);
   assert.equal(snapshot.coverage.public_market_source_count,2);
   assert.equal(snapshot.recommendations.some(x=>x.kind==="measure_first_party"),false);
   assert.ok(snapshot.recommendations.some(x=>x.kind==="audit_existing_tool"&&x.evidence_type==="first_party_http_requests"&&x.evidence_value===81));
+  assert.ok(snapshot.recommendations.some(x=>x.kind==="audit_reported_completion"&&x.evidence_type==="browser_client_reported"&&x.evidence_value===5));
+  assert.ok(snapshot.recommendations.some(x=>x.kind==="audit_authenticated_agent_execution"&&x.evidence_type==="access_authenticated_agent_execution"&&x.evidence_value===2));
   assert.ok(snapshot.recommendations.some(x=>x.kind==="compare_existing_software"&&x.evidence_unit==="active_install_band"));
   assert.ok(snapshot.recommendations.some(x=>x.kind==="investigate_public_problem"&&x.evidence_unit==="question_score"));
   assert.ok(snapshot.recommendations.every(x=>!x.verified_demand&&!x.authorized_for_build));
