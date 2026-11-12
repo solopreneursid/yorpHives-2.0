@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS hq_traffic_captures (
 CREATE INDEX IF NOT EXISTS idx_hq_traffic_captures_recent ON hq_traffic_captures(recorded_at DESC);
 CREATE TABLE IF NOT EXISTS hq_traffic_tool_paths (
  capture_id TEXT NOT NULL REFERENCES hq_traffic_captures(capture_id) ON DELETE CASCADE,
- slug TEXT NOT NULL CHECK(length(slug) BETWEEN 1 AND 72),
+ slug TEXT NOT NULL CHECK(length(slug) BETWEEN 1 AND 72 AND slug NOT GLOB '*[^a-z0-9-]*'),
  path TEXT NOT NULL,
  grouped_requests INTEGER NOT NULL CHECK(grouped_requests BETWEEN 0 AND 1000000000),
  PRIMARY KEY(capture_id,slug)
