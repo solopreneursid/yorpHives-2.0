@@ -2,8 +2,15 @@ import { WorkflowEntrypoint } from "cloudflare:workers";
 import { evaluateRepairEvidence } from "./repair-evidence.js";
 
 const REPOSITORY = "solopreneursid/yorpHives-2.0";
-// Pin repair proposals to the latest Headquarters integration candidate; never target production main.
-const BASE_BRANCH = "build/headquarters-repair-verification";
+// The source branch is provided by the reviewed Worker configuration, not by
+// a browser request or an AI model. Fail closed on absent or unsafe settings.
+function repairBase(env) {
+  const branch = env.REPAIR_BASE_BRANCH;
+  if (typeof branch !== "string" || !/^build\\/headquarters-[a-z0-9-]{3,80}$/.test(branch)) {
+    throw new Error("A reviewed build/headquarters-* REPAIR_BASE_BRANCH Worker setting is required.");
+  }
+  return branch;
+}
 const MODEL = "@cf/qwen/qwen3.8-27b";
 const MAX_CONTEXT_CHARS = 32000;
 const MAX_CHANGED_FILES = 8;
@@ -96,8 +103,8 @@ async function checkGithubAccess(env) {
     let repositoryContextAccess = false;
     try {
       const [baseRef, sourceFile] = await Promise.all([
-        github(env, `/repos/${REPOSITORY}/git/ref/heads/${BASE_BRANCH}`),
-        github(env, `/repos/${REPOSITORY}/contents/admin-agent/worker.js?ref=${encodeURIComponent(BASE_BRANCH)}`)
+        github(env, `/repos/${REPOSITORY}/git/ref/heads/${repairBase(env)}`),
+        github(env, `/repos/${REPOSITORY}/contents/admin-agent/worker.js?ref=${encodeURIComponent(repairBase(env))}`)
       ]);
       repositoryContextAccess = Boolean(
         baseRef.object?.sha &&
@@ -220,7 +227,7 @@ async function updateJob(db, jobId, status, values = {}) {
 }
 
 async function loadRepositoryContext(env, requestText) {
-  const baseRef = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${BASE_BRANCH}`);
+  const baseRef = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${repairBase(env)}`);
   const baseSha = baseRef.object.sha;
   const commit = await github(env, `/repos/${REPOSITORY}/git/commits/${baseSha}`);
   const baseTreeSha = commit.tree.sha;
@@ -241,7 +248,7 @@ async function loadRepositoryContext(env, requestText) {
   for (const item of candidates) {
     if (selected.length >= 12 || total >= MAX_CONTEXT_CHARS) break;
     const encodedPath = item.path.split("/").map(encodeURIComponent).join("/");
-    const file = await github(env, `/repos/${REPOSITORY}/contents/${encodedPath}?ref=${BASE_BRANCH}`);
+    const file = await github(env, `/repos/${REPOSITORY}/contents/${encodedPath}?ref=${repairBase(env)}`);
     if (file.encoding !== "base64" || typeof file.content !== "string") continue;
     const content = decodeBase64Utf8(file.content);
     if (content.length > 16000 || total + content.length > MAX_CONTEXT_CHARS) continue;
@@ -432,13 +439,13 @@ async function reviewProposal(env, base, proposal) {
 }
 
 async function createDraftPullRequest(env, branch, jobId, requestedBy, requestText, summary, aiReview, checks) {
-  const existing = await github(env, `/repos/${REPOSITORY}/pulls?state=open&head=solopreneursid:${encodeURIComponent(branch)}&base=${encodeURIComponent(BASE_BRANCH)}`);
+  const existing = await github(env, `/repos/${REPOSITORY}/pulls?state=open&head=solopreneursid:${encodeURIComponent(branch)}&base=${encodeURIComponent(repairBase(env))}`);
   if (existing.length) return existing[0];
   const checkLines = checks.map((check) => `- ${check.name}: ${check.conclusion}`).join("\n");
   return github(env, `/repos/${REPOSITORY}/pulls`, "POST", {
     title: `[Agent] ${summary.slice(0, 150)}`,
     head: branch,
-    base: BASE_BRANCH,
+    base: repairBase(env),
     draft: true,
     body: [
       "## Automated repair proposal",
@@ -455,8 +462,9 @@ async function createDraftPullRequest(env, branch, jobId, requestedBy, requestTe
       "### Verification",
       "- The patch was restricted to the agent's source-file allowlist.",
       "- Independent Workers AI code review passed; no critical/high AI findings were accepted.",
-      "- Contract tests, real-browser journeys, automated static-risk review and Lighthouse performance audit completed on the isolated branch.",
+      "- Exact-commit CI, isolated Pages preview deployment, browser smoke checks, independent code review, and Lighthouse completed on the repair branch.",
       "- No production deployment or merge was performed.",
+      "- Passing CI does not prove the original incident was reproduced or fixed; independent issue-specific QA and owner approval are still required.",
       "",
       "### Independent AI code review",
       aiReview.summary,
@@ -485,7 +493,7 @@ async function probeGithubWritePermissions(env) {
   let error = null;
 
   try {
-    const sourceRef = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${BASE_BRANCH}`);
+    const sourceRef = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${repairBase(env)}`);
     branchAttempted = true;
     await github(env, `/repos/${REPOSITORY}/git/refs`, "POST", {
       ref: "refs/heads/" + branch,
@@ -509,7 +517,7 @@ async function probeGithubWritePermissions(env) {
       const pullRequest = await github(env, `/repos/${REPOSITORY}/pulls`, "POST", {
         title: "[temporary] Agentic Operations permission probe " + suffix,
         head: branch,
-        base: BASE_BRANCH,
+        base: repairBase(env),
         body: "Temporary draft PR used to verify the Agent Worker's Pull requests:write permission. It will be closed and its branch deleted automatically. No changes will be merged.",
         draft: true
       });
