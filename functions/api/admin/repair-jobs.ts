@@ -62,6 +62,7 @@ interface CreateRepairJobRequest {
   request_text?: string;
   permission_probe?: boolean;
   confirm?: boolean;
+  emergency_override?: boolean;
 }
 const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();
