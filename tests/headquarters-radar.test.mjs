@@ -154,3 +154,19 @@ test("authenticated owner can triage and promote once, but cannot approve a rele
     assert.equal(database.prepare("SELECT source_status FROM hq_opportunity_signals WHERE signal_id=?").get(signal.signal_id).source_status,"fixed");
   } finally {globalThis.fetch=originalFetch;database.close();}
 });
+
+test("resolved source never creates a new mission from current radar evidence",async()=>{
+  const {database,adapter}=await setup();
+  globalThis.fetch=async()=>Response.json({keys:[jwk]});
+  try {
+    seed(database);
+    await syncRadarFromObservations(adapter,"owner");
+    database.prepare("UPDATE admin_asset_findings SET status='fixed' WHERE id='asset-finding-1'").run();
+    await syncRadarFromObservations(adapter,"owner");
+    const row=database.prepare("SELECT updated_at FROM hq_opportunity_signals WHERE signal_id='asset:asset-finding-1'").get();
+    const mutation={action:"create_mission",signal_id:"asset:asset-finding-1",expected_updated_at:row.updated_at};
+    const response=await onRequestPost(ctx(env(adapter),"POST",mutation));
+    assert.equal(response.status,409);
+    assert.equal(database.prepare("SELECT COUNT(*) AS n FROM agent_jobs WHERE origin_type='opportunity_signal'").get().n,0);
+  } finally {globalThis.fetch=originalFetch;database.close();}
+});

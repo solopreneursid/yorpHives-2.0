@@ -126,7 +126,6 @@ export async function onRequestPost(context: AdminRequestContext): Promise<Respo
     return adminJson(response,201);
   }
   const target = body.action === "investigate" ? "investigating" : body.action === "dismiss" ? "dismissed" : "new";
-  const from = body.action === "investigate" ? "new" : body.action === "dismiss" ? "new','investigating" : "dismissed";
   // SQL clause is a fixed program string, never derived from untrusted input.
   const statusClause = body.action === "dismiss" ? "('new','investigating')" :
                        body.action === "reopen" ? "('dismissed')" : "('new')";
