@@ -15,12 +15,14 @@ const routeURL = dataURL(
 );
 const { onRequestGet, onRequestPost, onRequestPatch } = await import(routeURL);
 const retrievalURL = dataURL(await source("../functions/_lib/yorpmind-retrieval.js"));
+const briefOutputURL = dataURL(await source("../hq-engine/brief-output.js"));
 const missionContextURL = dataURL((await source("../hq-engine/yorpmind-context.js"))
   .replace('"../functions/_lib/yorpmind-retrieval.js"', JSON.stringify(retrievalURL)));
 const engineSource = (await source("../hq-engine/worker.js"))
   .replace('import { WorkflowEntrypoint } from "cloudflare:workers";',
     "class WorkflowEntrypoint { constructor() { this.env = {}; } }")
-  .replace('"./yorpmind-context.js"', JSON.stringify(missionContextURL));
+  .replace('"./yorpmind-context.js"', JSON.stringify(missionContextURL))
+  .replace('"./brief-output.js"', JSON.stringify(briefOutputURL));
 const { MissionWorkflow, default: missionWorker } = await import(dataURL(engineSource));
 
 const key = await crypto.subtle.generateKey({
@@ -180,6 +182,8 @@ test("mission execution requires authenticated owner, allowed specialist and hea
     assert.equal(completed.status, "awaiting_owner_approval");
     const record = database.prepare("SELECT status,result_json,evidence_json FROM agent_jobs WHERE job_id=?").get(mission.job_id);
     assert.equal(record.status, "awaiting_owner_approval");
+    const firstAttempt = database.prepare("SELECT json_extract(input_json,'$.model_attempt_started_at') AS attempted FROM agent_jobs WHERE job_id=?").get(mission.job_id);
+    assert.ok(firstAttempt.attempted, "The one paid AI attempt must be recorded in D1");
     assert.equal(JSON.parse(record.result_json).verified, false);
     assert.deepEqual(JSON.parse(record.result_json).actions, brief().actions);
     assert.equal(JSON.parse(record.evidence_json)[0].source_count, 0);
@@ -234,6 +238,8 @@ test("failed AI inference is recorded without marking a mission verified", async
     await assert.rejects(workflow.run({ payload: { kind: "mission_brief", job_id: mission.job_id } }, step), /Model unavailable/);
     const record = database.prepare("SELECT status,result_json FROM agent_jobs WHERE job_id=?").get(mission.job_id);
     assert.equal(record.status, "failed");
+    assert.equal(JSON.parse(record.result_json).code, "MISSION_EXECUTION_FAILED");
+    assert.ok(database.prepare("SELECT json_extract(input_json,'$.model_attempt_started_at') AS started FROM agent_jobs WHERE job_id=?").get(mission.job_id).started);
     assert.equal(JSON.parse(record.result_json).verified, false);
   } finally { database.close(); }
 });
