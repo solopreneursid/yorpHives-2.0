@@ -46,6 +46,11 @@ for(const [key,label,type,defaultValue] of fields){
  values[key]=input;wrap.append(input);form.append(wrap);
 }
 const actions=make("div",{class:"page-actions"});const run=make("button",{class:"button button-primary",type:"button"},"Run tool ↗");const copy=make("button",{class:"button button-secondary",type:"button"},"Copy result");actions.append(run,copy);const output=make("pre",{class:"tool-output",id:"tool-result"},"Your result will appear here.");const status=make("p",{class:"tool-status"},"Runs locally in your browser. No sign-up required.");form.append(actions,status,output);root.replaceChildren(form);
+if(["word-counter","json-formatter","json-validator","json-minifier","uuid-generator","sha256-generator"].includes(id)){
+ const notice=make("p",{class:"tool-status"},
+  "Anonymous usage measurement: after a successful run, only this tool's identifier and a completion marker may be counted. Your inputs and results stay in your browser. Global Privacy Control and Do Not Track are respected.");
+ form.append(notice);
+}
 const v=k=>values[k]?.type==="checkbox"?values[k].checked:values[k]?.value??"";
 const num=k=>{const n=Number(v(k));if(!Number.isFinite(n))throw Error("Enter valid numbers in all numeric fields.");return n;};
 const fmt=n=>Number(n.toFixed(6)).toLocaleString();

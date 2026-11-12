@@ -22,6 +22,10 @@ const form=make("div","tool-form"),inputs={};
 for(const f of fields){const label=make("label","tool-field"),span=make("span","",f[1]);label.append(span);let input;if(f[2]==="textarea"){input=make("textarea","tool-textarea");input.rows=7;input.value=f[3];}else if(f[2]==="select"){input=make("select","tool-input");f[4].forEach(v=>{const o=make("option","",v);o.value=v;input.append(o);});input.value=f[3];}else{input=make("input","tool-input");input.type=f[2];if(f[3])input.value=f[3];}input.name=f[0];inputs[f[0]]=input;label.append(input);form.append(label);}
 const actions=make("div","page-actions"),run=make("button","button button-primary","Run tool ↗"),copy=make("button","button button-secondary","Copy result"),save=make("button","button button-secondary","Download result");run.type=copy.type=save.type="button";actions.append(run,copy,save);
 const status=make("p","tool-status","Runs in your browser. No account required."),out=make("pre","tool-output","Your result will appear here.");form.append(actions,status,out);root.replaceChildren(form);copy.disabled=save.disabled=true;
+if(["html-to-markdown","csv-to-markdown"].includes(id)){
+ form.append(make("p","tool-status",
+  "Anonymous usage measurement: only a successful tool-action count may be sent. Input and output stay in your browser. Global Privacy Control and Do Not Track are respected."));
+}
 const v=k=>inputs[k].value,n=k=>{const x=Number(v(k));if(!Number.isFinite(x))throw Error("Enter valid numbers.");return x;},fmt=x=>Number(x.toFixed(2)).toLocaleString();
 let result="",blob=null,filename="yorphives-result.txt";
 const download=(b,name)=>{const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1200);};
