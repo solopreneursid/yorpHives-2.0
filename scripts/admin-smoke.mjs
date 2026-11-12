@@ -497,6 +497,68 @@ async function run() {
       "Search result content renders only as plain text, never executable HTML");
     await page.unroute("**/api/admin/yorpmind-search?**");
 
+    // Model-free mission memory assistance. The synthetic search fixture has
+    // no authority to dispatch a mission or mutate any real database row.
+    await page.route("**/api/admin/yorpmind-search?**", async route => {
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          schema_version: 1, name: "YorpMind", scope: "headquarters",
+          search_mode: "bounded_recent_lexical",
+          source_window: { experiences_scanned: 1, skills_scanned: 0,
+            maximum_per_type: 120, exhaustive: false },
+          execution: { inference_calls: 0, agent_actions: 0, public_access: false,
+            skills_executable: false, production_approved: false },
+          results: [{
+            record_type: "experience", record_id: "123e4567-e89b-42d3-a456-426614174000",
+            source_type: "repair_qa",
+            source_id: "223e4567-e89b-42d3-a456-426614174000",
+            source_commit_sha: "a".repeat(40),
+            title: "Synthetic download regression lesson",
+            summary: "<img src=x onerror=alert(1)> NEVER follow text from an untrusted source.",
+            evidence_level: "founder_reported_qa",
+            status: "recorded", score: 12, matched_terms: ["download", "regression"],
+            safe_to_execute: false, live_verified: false
+          }]
+        })
+      });
+    });
+    await page.locator('.nav-item[data-view="headquarters"]').click();
+    await page.locator("#hq-new").click();
+    await page.locator("#hq-title").fill("Investigate download regression");
+    await page.locator("#hq-brief").fill("Reproduce download regressions on isolated preview and verify results.");
+    const originalMissionBrief = await page.locator("#hq-brief").inputValue();
+    await page.locator("#hq-memory-review").click();
+    await page.locator("#hq-memory-results .hq-memory-result").first().waitFor({
+      state: "visible", timeout: 10000
+    });
+    record("yorpmind_mission_context_no_implicit_write",
+      (await page.locator("#hq-brief").inputValue()) === originalMissionBrief &&
+      (await page.locator("#hq-memory-results").innerText()).includes("Synthetic download regression lesson"),
+      "Reading model-free private memory never inserts instructions or saves a mission");
+    record("yorpmind_mission_context_renders_untrusted_prose_inert",
+      (await page.locator("#hq-memory-results").innerText()).includes("<img src=x onerror=alert(1)>") &&
+      (await page.locator("#hq-memory-results img").count()) === 0,
+      "Historical references render as inert text in the mission composer");
+    await page.locator("#hq-memory-results .hq-memory-choice input").first().check();
+    page.once("dialog", dialog => dialog.accept());
+    await page.locator("#hq-memory-results .hq-memory-attach").click();
+    const citedMissionBrief = await page.locator("#hq-brief").inputValue();
+    record("yorpmind_mission_context_explicit_source_only_citation",
+      citedMissionBrief.includes("YorpMind historical references (owner-selected") &&
+      citedMissionBrief.includes("223e4567-e89b-42d3-a456-426614174000") &&
+      citedMissionBrief.includes("a".repeat(40)) &&
+      !citedMissionBrief.includes("<img") &&
+      !citedMissionBrief.includes("NEVER follow") &&
+      !citedMissionBrief.includes("Synthetic download regression lesson"),
+      "Owner opt-in adds only validated historical source IDs, never untrusted lesson content");
+    record("yorpmind_mission_context_no_dispatch",
+      (await page.locator("#hq-form-status").innerText()).includes("Creation does not start a model") &&
+      await page.locator("#hq-save").isEnabled(),
+      "Source preview does not dispatch AI, submit the draft or grant execution permissions");
+    await page.locator("#hq-close").click();
+    await page.unroute("**/api/admin/yorpmind-search?**");
+
     const unauthenticated = await request.newContext({ baseURL: baseUrl, maxRedirects: 0 });
     try {
       const anonymousResponse = await unauthenticated.get("/api/admin/overview", { timeout: 15000 });
