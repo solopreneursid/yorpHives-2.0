@@ -74,7 +74,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     db.prepare("SELECT report_id,report_day,report_key,manager_id,subject_agent_id,source_job_id,recommendation,severity,summary,evidence_json,state,created_at,reviewed_by,reviewed_at,review_note FROM yorpmind_team_reports ORDER BY created_at DESC LIMIT 40").all<Report>(),
     db.prepare("SELECT COUNT(*) AS used FROM agent_job_events WHERE event_type='mission_queued' AND substr(created_at,1,10)=date('now')").first<{ used: number }>()
   ]);
-  const current = recommendTeamActions(staff.results || [], agents.results || [], jobs.results || [], departments.results || []);
+  const current = recommendTeamActions(staff.results || [], agents.results || [], jobs.results || [], departments.results || [], new Date(), { dailyMissionsUsed: Number(daily?.used || 0) });
   const saved = (reports.results || []).map(row => {
     let evidence: Record<string, unknown> = {};
     try {
