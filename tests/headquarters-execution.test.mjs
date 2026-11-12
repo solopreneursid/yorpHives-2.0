@@ -93,6 +93,7 @@ test("mission execution requires authenticated owner, allowed specialist and hea
   database.exec(await source("../migrations/0010_agentic_os_foundation.sql"));
   database.exec(await source("../migrations/0011_headquarters_audit.sql"));
   database.exec(await source("../migrations/0012_headquarters_execution.sql"));
+  database.exec(await source("../migrations/0013_headquarters_brief_review.sql"));
   globalThis.fetch = async url => {
     assert.equal(url, "https://hq-test.cloudflareaccess.com/cdn-cgi/access/certs");
     return Response.json({ keys: [jwk] });
@@ -163,6 +164,18 @@ test("mission execution requires authenticated owner, allowed specialist and hea
     const eventNames = database.prepare("SELECT event_type FROM agent_job_events WHERE job_id=? ORDER BY created_at").all(mission.job_id).map(row => row.event_type);
     for (const name of ["mission_created", "mission_queued", "mission_running", "mission_awaiting_owner_approval"]) assert.ok(eventNames.includes(name), name);
 
+    const current = database.prepare("SELECT updated_at FROM agent_jobs WHERE job_id=?").get(mission.job_id);
+    const review = { action: "review_brief", job_id: mission.job_id, expected_updated_at: current.updated_at };
+    const reviewed = await onRequestPatch(call(env, "PATCH", review));
+    assert.equal(reviewed.status, 200);
+    assert.equal((await reviewed.json()).verified, false);
+    assert.equal((await onRequestPatch(call(env, "PATCH", review))).status, 409);
+    const reviewedMission = database.prepare("SELECT status,result_json FROM agent_jobs WHERE job_id=?").get(mission.job_id);
+    assert.equal(reviewedMission.status, "completed");
+    assert.equal(JSON.parse(reviewedMission.result_json).verified, false);
+    assert.ok(database.prepare("SELECT 1 FROM agent_job_events WHERE job_id=? AND event_type='brief_review_acknowledged'").get(mission.job_id));
+    assert.equal(database.prepare("SELECT COUNT(*) AS count FROM agent_approvals WHERE job_id=?").get(mission.job_id).count, 0);
+
     const engineer = makeMission("engineering-lead");
     assert.equal((await onRequestPost(call(env, "POST", engineer))).status, 201);
     const engineerRow = database.prepare("SELECT updated_at FROM agent_jobs WHERE job_id=?").get(engineer.job_id);
@@ -179,6 +192,7 @@ test("failed AI inference is recorded without marking a mission verified", async
   const { database, adapter } = createDb();
   database.exec(await source("../migrations/0010_agentic_os_foundation.sql"));
   database.exec(await source("../migrations/0012_headquarters_execution.sql"));
+  database.exec(await source("../migrations/0013_headquarters_brief_review.sql"));
   const mission = makeMission("innovation-scout");
   database.prepare(
     "INSERT INTO agent_jobs (job_id,agent_id,job_type,title,request_summary,status,priority,created_by) VALUES (?,?, 'owner_mission',?,?, 'queued',?,?)"
@@ -200,6 +214,7 @@ test("mission Worker refuses unqueued or unregistered direct dispatches", async 
   const { database, adapter } = createDb();
   database.exec(await source("../migrations/0010_agentic_os_foundation.sql"));
   database.exec(await source("../migrations/0012_headquarters_execution.sql"));
+  database.exec(await source("../migrations/0013_headquarters_brief_review.sql"));
   const calls = { count: 0 };
   const env = {
     DB: adapter,
@@ -222,6 +237,7 @@ test("resume a mission claimed by an earlier durable step attempt", async () => 
   const { database, adapter } = createDb();
   database.exec(await source("../migrations/0010_agentic_os_foundation.sql"));
   database.exec(await source("../migrations/0012_headquarters_execution.sql"));
+  database.exec(await source("../migrations/0013_headquarters_brief_review.sql"));
   const mission = makeMission("innovation-scout");
   database.prepare(
     "INSERT INTO agent_jobs (job_id,agent_id,job_type,title,request_summary,status,priority,created_by,started_at) VALUES (?,?,'owner_mission',?,?,'running',?,?,'2026-11-12T01:00:00.000Z')"
@@ -235,6 +251,39 @@ test("resume a mission claimed by an earlier durable step attempt", async () => 
     assert.equal(result.status, "awaiting_owner_approval");
     assert.equal(JSON.parse(result.result_json).verified, false);
   } finally {
+    database.close();
+  }
+});
+
+test("owner can discard an AI planning brief without authorizing release", async () => {
+  const { database, adapter } = createDb();
+  database.exec(await source("../migrations/0010_agentic_os_foundation.sql"));
+  database.exec(await source("../migrations/0011_headquarters_audit.sql"));
+  database.exec(await source("../migrations/0012_headquarters_execution.sql"));
+  database.exec(await source("../migrations/0013_headquarters_brief_review.sql"));
+  const mission = makeMission();
+  database.prepare(
+    "INSERT INTO agent_jobs(job_id,agent_id,job_type,title,request_summary,status,priority,created_by,result_json) VALUES (?,?, 'owner_mission',?,?, 'awaiting_owner_approval',?, ?,?)"
+  ).run(mission.job_id, mission.agent_id, mission.title, mission.request_summary, mission.priority, "owner@example.com", JSON.stringify({ kind: "recommendation_brief", verified: false, summary: "Test" }));
+  const env = {
+    DB: adapter,
+    CF_ACCESS_TEAM_DOMAIN: "hq-test.cloudflareaccess.com",
+    CF_ACCESS_AUD: "hq-test",
+    ADMIN_ALLOWED_EMAILS: "owner@example.com"
+  };
+  globalThis.fetch = async () => Response.json({ keys: [jwk] });
+  try {
+    const row = database.prepare("SELECT updated_at FROM agent_jobs WHERE job_id=?").get(mission.job_id);
+    const action = { job_id: mission.job_id, expected_updated_at: row.updated_at, action: "discard_brief" };
+    const response = await onRequestPatch(call(env, "PATCH", action));
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).verified, false);
+    const state = database.prepare("SELECT status FROM agent_jobs WHERE job_id=?").get(mission.job_id);
+    assert.equal(state.status, "cancelled");
+    assert.equal((await onRequestPatch(call(env, "PATCH", action))).status, 409);
+    assert.equal(database.prepare("SELECT COUNT(*) AS n FROM agent_approvals").get().n, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
     database.close();
   }
 });

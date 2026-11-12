@@ -30,3 +30,7 @@ The AI provider is Workers AI model `@cf/qwen/qwen3.8-27b`. Calls consume actual
 ## Inference budget
 
 The Qwen 3.8 27B model is configured with low reasoning effort, disabled internal thinking for bounded founder briefs, and a completion-token cap of 1,800. This reduces latency and usage relative to the model's default xhigh reasoning. These settings do not establish a guaranteed price or completion time; inspect actual Workers AI billing and Workflow executions before raising concurrency.
+
+## Closing a founder review
+
+The `review_brief` and `discard_brief` PATCH actions accept the mission UUID and current `updated_at`. They operate only on the requesting owner's `awaiting_owner_approval` AI recommendation briefs. `review_brief` acknowledges a planning artifact and moves it to `completed`; it does **not** verify its claims. `discard_brief` closes it as `cancelled`. A database trigger records acknowledgements. Neither action inserts into `agent_approvals`, grants production permissions, or authorizes spending. Apply migration `0013_headquarters_brief_review.sql` after `0012` on the private preview D1 database.

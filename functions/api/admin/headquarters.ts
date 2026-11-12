@@ -18,6 +18,11 @@ interface DispatchMissionRequest {
   action: "dispatch";
   expected_updated_at: string;
 }
+interface ReviewBriefRequest {
+  job_id: string;
+  action: "review_brief" | "discard_brief";
+  expected_updated_at: string;
+}
 interface AgentMission {
   job_id: string;
   status: string;
@@ -40,10 +45,10 @@ interface MissionDispatchResponse {
   message: string;
 }
 const MAX_ACTIVE = 3;
-function validAction(value: unknown): value is CancelMissionRequest | DispatchMissionRequest {
+function validAction(value: unknown): value is CancelMissionRequest | DispatchMissionRequest | ReviewBriefRequest {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
-  return (v.action === "cancel" || v.action === "dispatch") &&
+  return (v.action === "cancel" || v.action === "dispatch" || v.action === "review_brief" || v.action === "discard_brief") &&
     typeof v.job_id === "string" && uuidPattern.test(v.job_id) &&
     typeof v.expected_updated_at === "string" &&
     v.expected_updated_at.length > 0 && v.expected_updated_at.length <= 40;
@@ -110,11 +115,31 @@ export async function onRequestPatch(context: MissionContext): Promise<Response>
     const result = await db.prepare(
       "UPDATE agent_jobs SET status='cancelled',updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')," +
       "completed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') " +
-      "WHERE job_id=? AND updated_at=? AND status='planned' AND job_type='owner_mission' AND created_by=?"
-    ).bind(body.job_id, body.expected_updated_at, identity.email).run();
-    if (!result.meta?.changes) return adminJson({ error: { message: "Mission changed, is not yours, or is no longer planned. Refresh and try again." } }, 409);
+      "WHERE job_id=? AND updated_at=? AND status='planned' AND job_type='owner_mission' AND created_by=? RETURNING job_id"
+    ).bind(body.job_id, body.expected_updated_at, identity.email).first<{ job_id: string }>();
+    if (!result?.job_id) return adminJson({ error: { message: "Mission changed, is not yours, or is no longer planned. Refresh and try again." } }, 409);
     const response: MissionMutationResponse = { success: true, job_id: body.job_id, status: "cancelled" };
     return adminJson(response);
+  }
+  if (body.action === "review_brief" || body.action === "discard_brief") {
+    // Owner acknowledgement closes a planning artifact only. It never verifies
+    // the AI's factual claims or authorizes a release, spend, or security change.
+    const targetStatus = body.action === "review_brief" ? "completed" : "cancelled";
+    const reviewed = await db.prepare(
+      "UPDATE agent_jobs SET status=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')," +
+      "completed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') " +
+      "WHERE job_id=? AND updated_at=? AND status='awaiting_owner_approval' " +
+      "AND job_type='owner_mission' AND created_by=? AND json_extract(result_json,'$.kind')='recommendation_brief' " +
+      "RETURNING job_id"
+    ).bind(targetStatus, body.job_id, body.expected_updated_at, identity.email).first<{ job_id: string }>();
+    if (!reviewed?.job_id) return adminJson({ error: { message: "Brief changed, is not yours, or is no longer awaiting review." } }, 409);
+    return adminJson({
+      success: true, job_id: body.job_id, status: targetStatus,
+      verified: false,
+      message: targetStatus === "completed"
+        ? "Planning brief acknowledged; factual claims and release permissions remain unverified."
+        : "Planning brief discarded. No subsequent action was authorized."
+    });
   }
   const engine = context.env.HQ_ENGINE_SERVICE;
   if (!engine) return adminJson({ error: { message: "This environment has no private mission engine configured." } }, 503);

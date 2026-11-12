@@ -13,7 +13,7 @@
   };
   const labels = {
     planned: "Planned", queued: "Queued", running: "Generating",
-    awaiting_owner_approval: "Review brief", completed: "Completed",
+    awaiting_owner_approval: "Review brief", completed: "Brief reviewed",
     cancelled: "Cancelled", failed: "Failed"
   };
   const closed = new Set(["completed", "cancelled", "failed", "rolled_back"]);
@@ -60,7 +60,7 @@
   async function transition(mission, action, button) {
     button.disabled = true;
     const original = button.textContent;
-    button.textContent = action === "dispatch" ? "Starting…" : "Cancelling…";
+    button.textContent = ({ dispatch: "Starting…", cancel: "Cancelling…", review_brief: "Recording review…", discard_brief: "Discarding…" })[action] || "Updating…";
     try {
       const payload = { job_id: mission.job_id, action, expected_updated_at: mission.updated_at };
       await api("/api/admin/headquarters", { method: "PATCH", body: JSON.stringify(payload) });
@@ -118,6 +118,29 @@
       }
       if (mission.status === "queued" || mission.status === "running") {
         footer.append(make("span", "hq-inprogress", "The durable workflow is processing this request."));
+      }
+      if (mission.status === "awaiting_owner_approval" && mission.result_json) {
+        const actions = make("div", "hq-mission-actions");
+        const review = make("button", "hq-small-primary", "Mark brief reviewed ✓");
+        review.type = "button";
+        review.title = "Acknowledge receiving this unverified planning brief. No code, financial or production approval is granted.";
+        review.addEventListener("click", () => {
+          if (confirm("Acknowledge this planning brief? This does NOT fact-check AI claims or authorize any production or financial action.")) {
+            transition(mission, "review_brief", review);
+          }
+        });
+        const discard = make("button", "hq-small-muted", "Discard brief");
+        discard.type = "button";
+        discard.addEventListener("click", () => {
+          if (confirm("Discard this AI planning brief without authorizing further action?")) {
+            transition(mission, "discard_brief", discard);
+          }
+        });
+        actions.append(review, discard);
+        footer.append(actions);
+      }
+      if (mission.status === "completed" && mission.result_json) {
+        footer.append(make("span", "hq-inprogress", "Brief acknowledged · model claims still unverified."));
       }
       card.append(footer);
       const result = renderResult(mission);
