@@ -2,6 +2,7 @@ import { WorkflowEntrypoint } from "cloudflare:workers";
 import { collectPublicSignals } from "./sources.js";
 import { MODEL, synthesizeIdeas } from "./synthesis.js";
 import { indexDemand } from "./demand.js";
+import { collectMarketSources,storeMarketSources } from "./market-sources.js";
 
 const MAX_MANUAL_PER_DAY=2;
 const MAX_SOURCE_ROWS=42;
@@ -108,6 +109,20 @@ export class ResearchWorkflow extends WorkflowEntrypoint {
       await setState(this.env.DB,id,"synthesizing",count,0,collected.errors.join("; ").slice(0,500)||null);
       return {source_count:count};
    });
+   // Public problem and existing-product evidence is independent of AI.
+   // A failed provider never becomes a fabricated finding or stops the
+   // existing planning workflow.
+   const external=await step.do("collect-public-problems-and-existing-tools",{
+     timeout:"3 minutes",retries:{limit:1,delay:"15 seconds",backoff:"linear"}
+   },async()=>{
+     try{return await collectMarketSources();}
+     catch(error){return {signals:[],warnings:["Public market collection failed: "+message(error)],requests:0};}
+   });
+   const market=await step.do("save-public-market-evidence",async()=>{
+     try{return await storeMarketSources(this.env.DB,id,external);}
+     catch(error){return {observed_count:0,inserted_count:0,
+       warnings:["Could not save market evidence: "+message(error)]};}
+   });
    let candidates=[];
    let modelProblem=null;
    if(count>=3&&this.env.AI){
@@ -131,12 +146,13 @@ export class ResearchWorkflow extends WorkflowEntrypoint {
       // Index all source-backed proposals without restricting their industry,
       // technology, product format or business model to the starter categories.
       const demand=await indexDemand(this.env.DB,collected.sources,"research_workflow",id);
-      const warnings=[...collected.errors,modelProblem].filter(Boolean);
+      const warnings=[...collected.errors,...market.warnings,modelProblem].filter(Boolean);
       const partial=warnings.length>0||count===0||candidates.length===0;
       await setState(this.env.DB,id,partial?"partial":"completed",count,created,warnings.join("; ").slice(0,600)||null);
       return {status:partial?"partial":"completed",source_count:count,new_ideas:created,
         new_discovery_categories:demand.generated_candidates,
-        observed_category_matches:demand.observed_matches};
+        observed_category_matches:demand.observed_matches,
+        external_market_signals:market.observed_count};
    });
    return {...output,run_id:id,verified_market_demand:false,model:MODEL};
   }catch(error){
@@ -158,7 +174,7 @@ export default {
   if(request.method==="GET"&&pathname==="/health"){
     const ready=Boolean(env.DB&&env.RESEARCH_WORKFLOW&&env.AI);
     return respond({ready,engine:"yorphives-global-intelligence",
-      model:MODEL,mode:"bounded_public_research",sources:["hn_ask","hn_show","github_repo"],
+      model:MODEL,mode:"bounded_public_research",sources:["hn_ask","hn_show","github_repo","wordpress_plugins","stackexchange_questions"],
       max_model_calls_per_run:1,manual_runs_per_day:MAX_MANUAL_PER_DAY,public_route:false},ready?200:503);
   }
   if(request.method!=="POST"||pathname!=="/scans")return respond({error:"Not found."},404);

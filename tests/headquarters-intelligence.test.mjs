@@ -17,6 +17,7 @@ const validationURI=data((await file("../functions/api/admin/validation.ts"))
   .replace('"../../_lib/headquarters"',JSON.stringify(headquartersURI)));
 const {onRequestGet:getValidation,onRequestPost:postValidation}=await import(validationURI);
 const sourcesURI=data(await file("../hq-intelligence/sources.js"));
+const marketURI=data(await file("../hq-intelligence/market-sources.js"));
 const demandURI=data(await file("../hq-intelligence/demand.js"));
 const {indexDemand,DEMAND_CATEGORIES,demandMatches,researchPriority}=await import(demandURI);
 const demandRouteURI=data((await file("../functions/api/admin/demand.ts"))
@@ -31,6 +32,8 @@ const workerURI=data((await file("../hq-intelligence/worker.js"))
     "class WorkflowEntrypoint { constructor() { this.env = {}; } }")
   .replace('import { indexDemand } from "./demand.js";',
     'import { indexDemand } from '+JSON.stringify(demandURI)+";")
+  .replace('import { collectMarketSources,storeMarketSources } from "./market-sources.js";',
+    'import { collectMarketSources,storeMarketSources } from '+JSON.stringify(marketURI)+";")
   .replace('import { collectPublicSignals } from "./sources.js";',
     'import { collectPublicSignals } from '+JSON.stringify(sourcesURI)+";")
   .replace('import { MODEL, synthesizeIdeas } from "./synthesis.js";',
@@ -64,7 +67,8 @@ async function database(){
   "../migrations/0014_headquarters_opportunity_radar.sql",
   "../migrations/0015_headquarters_global_intelligence.sql",
   "../migrations/0016_headquarters_validation.sql",
-  "../migrations/0017_headquarters_existing_tool_demand.sql"
+  "../migrations/0017_headquarters_existing_tool_demand.sql",
+  "../migrations/0019_headquarters_public_market_sources.sql"
  ])db.exec(await file(path));
  const DB={
    prepare(sql){
@@ -117,6 +121,15 @@ function fakePublic(url){
      html_url:"https://github.com/developer/agent-links",
      description:"Open-source metadata link checker",created_at:"2026-10-01T00:00:00Z",
      stargazers_count:14}]});
+ }
+ if(url.startsWith("https://api.wordpress.org/plugins/info/1.2/")){
+   return Response.json({plugins:[{slug:"image-compression-lab",name:"Image Compression Lab",
+      short_description:"A public image compressor extension",active_installs:10000,
+      last_updated:"2026-11-01 12:00pm GMT"}]});
+ }
+ if(url.startsWith("https://api.stackexchange.com/2.3/questions")){
+   return Response.json({items:[{question_id:91411,title:"How can I convert documents securely?",
+     score:3,creation_date:1794450000,tags:["conversion","security"]}]});
  }
  throw Error("Unexpected public fetch URL: "+url);
 }
@@ -202,6 +215,8 @@ test("private Workflow records real public sources, one model call and a durable
    assert.ok(run.source_count>=4);
    assert.equal(run.idea_count,1);
    assert.equal(run.model_calls,1);
+   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_public_market_signals").get().n>=2,true);
+   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_public_market_runs WHERE run_id=?").get(receipt.run_id).n,1);
    const stored=db.prepare("SELECT * FROM hq_intelligence_ideas LIMIT 1").get();
    assert.equal(stored.evidence_level,"unvalidated_hypothesis");
    assert.equal(stored.region_scope,"unverified");

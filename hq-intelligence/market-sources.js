@@ -79,7 +79,7 @@ function stackExchangeSite(site,send){
     evidence_kind:"public_question",source_id:site+":"+id,source_query:site,
     title:clean(question.title,220),
     excerpt:clean(Array.isArray(question.tags)?question.tags.join(", "):"",350),
-    source_url:"https://"+site+".stackexchange.com/questions/"+id,
+    source_url:site==="superuser"?"https://superuser.com/questions/"+id:"https://"+site+".stackexchange.com/questions/"+id,
     published_at:asTime(question.creation_date),
     public_metric_label:"question_score",
     public_metric_value:n(question.score,-10000,1000000000),
@@ -113,6 +113,7 @@ export async function collectMarketSources(now=new Date(),send=fetch){
 export async function storeMarketSources(db,runId,collection){
  let inserted=0;
  for(const record of collection.signals.slice(0,LIMIT)){
+  const already=await db.prepare("SELECT 1 AS found FROM hq_public_market_signals WHERE signal_key=?").bind(record.signal_key).first();
   const row=await db.prepare(
    "INSERT INTO hq_public_market_signals(signal_key,provider,evidence_kind,source_id,source_query,title,"+
    "excerpt,source_url,published_at,public_metric_label,public_metric_value,is_exact_metric) "+
@@ -125,7 +126,7 @@ export async function storeMarketSources(db,runId,collection){
    record.source_query,record.title,record.excerpt,record.source_url,record.published_at,
    record.public_metric_label,record.public_metric_value,record.is_exact_metric).first();
   if(!row?.signal_key)throw Error("Could not store market evidence.");
-  if(row.first_seen_at===row.last_seen_at)inserted++;
+  if(!already)inserted++;
  }
  await db.prepare(
   "INSERT INTO hq_public_market_runs(run_id,observed_count,inserted_count,warnings_json) "+
