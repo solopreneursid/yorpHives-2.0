@@ -214,6 +214,35 @@ async function run() {
       Number(releaseData?.counts?.production_authorized) === 0,
       "Staging D1 Release board must provide authenticated read-only, permanently locked evidence: HTTP " + privateReleases.status());
 
+    // Owner delegation read-side verification: the CI identity cannot prepare
+    // an approval, cannot satisfy MFA, and never writes real staging release data.
+    const ownerDelegationResponse = await page.request.get(baseUrl + "/api/admin/owner-delegations", {
+      headers: accessHeaders, timeout: 15000
+    });
+    const ownerDelegationData = ownerDelegationResponse.ok()
+      ? await ownerDelegationResponse.json().catch(() => null) : null;
+    record("yorpmind_owner_delegation_schema_and_policy",
+      ownerDelegationResponse.status() === 200 &&
+      ownerDelegationData?.name === "YorpMind" &&
+      ownerDelegationData?.execution_enabled === false &&
+      ownerDelegationData?.mechanism === "preview_review_then_owner_mfa_then_scoped_delegation",
+      "Private 0026 delegation schema is readable; automatic production execution stays locked: HTTP " + ownerDelegationResponse.status());
+
+    const forbiddenDelegation = await page.request.post(baseUrl + "/api/admin/owner-delegations", {
+      headers: { ...accessHeaders, origin: baseUrl, "content-type": "application/json" },
+      data: { action: "deploy_verified_release", repair_job_id: "123e4567-e89b-42d3-a456-426614174000" },
+      timeout: 15000
+    });
+    record("yorpmind_ci_cannot_prepare_owner_delegation", forbiddenDelegation.status() === 403,
+      "Read-only CI identity denied owner release approval preparation; HTTP " + forbiddenDelegation.status());
+
+    const ciStepUp = await page.request.get(baseUrl + "/api/admin/step-up/owner-delegations?id=123e4567-e89b-42d3-a456-426614174000", {
+      headers: accessHeaders, timeout: 15000, maxRedirects: 0
+    });
+    record("yorpmind_ci_cannot_pass_mfa_step_up",
+      [302,303,401,403,503].includes(ciStepUp.status()),
+      "Service credentials cannot satisfy founder MFA; disabled policy rejects at runtime: HTTP " + ciStepUp.status());
+
     record("github_permission_probe_control_present", await page.locator("#verify-github-permissions").count() === 1, "Owner-only permission probe control is present");
 
     const agentsNav = page.locator('.nav-item[data-view="agents"]');
@@ -348,6 +377,13 @@ async function run() {
     await page.locator('.nav-item[data-view="releases"]').click();
     await page.locator("#view-releases").waitFor({ state: "visible", timeout: 10000 });
     await page.locator(".release-evidence-card").first().waitFor({ state: "visible", timeout: 10000 });
+    record("yorpmind_owner_approval_requires_review_not_otp",
+      await page.locator("#owner-delegation-form").isVisible() &&
+      (await page.locator("#owner-delegation-form input[type=checkbox]").count()) === 6 &&
+      (await page.locator("#owner-delegation-form input[name*=otp]").count()) === 0 &&
+      (await page.locator("#owner-delegation-panel").count()) === 0 &&
+      (await page.locator(".owner-delegation-notice").innerText()).includes("Do not enter OTP"),
+      "Founder sees exact commit and six review requirements without any OTP collection field");
     record("release_evidence_board_founder_visible",
       (await page.locator("#release-evidence-summary").innerText()).includes("Recent investigations") &&
       (await page.locator("#release-evidence-list").innerText()).includes("Synthetic preview repair verification"),
@@ -651,6 +687,10 @@ async function run() {
       record("yorpmind_public_access_denied",
         [302, 303, 401, 403].includes(anonymousYorpMind.status()),
         "Anonymous requests must not reveal YorpMind private experiences or skills; HTTP " + anonymousYorpMind.status());
+      const anonymousDelegations = await unauthenticated.get("/api/admin/owner-delegations", { timeout: 15000 });
+      record("yorpmind_owner_delegation_requires_access",
+        [302,303,401,403].includes(anonymousDelegations.status()),
+        "Anonymous clients must not inspect delegated admin intent: HTTP " + anonymousDelegations.status());
       const anonymousReleases = await unauthenticated.get("/api/admin/release-evidence", { timeout: 15000 });
       record("release_evidence_requires_cloudflare_access",
         [302, 303, 401, 403].includes(anonymousReleases.status()),
