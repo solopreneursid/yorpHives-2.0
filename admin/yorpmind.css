@@ -54,3 +54,24 @@
 @media(max-width:1080px){.ym-hero{grid-template-columns:1fr}.ym-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:770px){.ym-workspace{grid-template-columns:1fr}.ym-hero{padding:21px}.ym-panel{padding:17px}}
 @media(max-width:480px){.ym-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-stat{padding:13px}.ym-entry-head{flex-direction:column;align-items:flex-start}.ym-hero-actions .button{width:100%;text-align:center}}
+
+/* YorpMind v2 — bounded evidence search without a separate UI framework. */
+.ym-search-panel{margin-bottom:20px;padding:22px;border:1px solid #31506a;border-radius:14px;background:linear-gradient(115deg,#14293b,#101a2e)}
+.ym-search-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+.ym-search-head h2{font-size:1.18rem;margin:9px 0 8px;color:#e3faff;letter-spacing:-.025em}
+.ym-search-head p{font-size:.8rem;color:#a6b8cf;line-height:1.6;max-width:760px}
+.ym-search-badge{display:inline-flex;flex-shrink:0;padding:8px 11px;color:#a5f3fc;background:#102f36;border:1px solid #34616d;border-radius:99px;font-size:.69rem;font-weight:700;white-space:nowrap}
+.ym-search-form{margin-top:22px;display:grid;gap:9px}
+.ym-search-form label{color:#d0e1f2;font-size:.77rem;font-weight:680}
+.ym-search-controls{display:flex;align-items:stretch;gap:9px}
+.ym-search-controls input{flex:1;min-width:0;background:#0b192b;color:#ecfeff;padding:11px 14px;border-radius:9px;border:1px solid #3a6075;font:inherit;font-size:.87rem}
+.ym-search-controls button{white-space:nowrap}
+.ym-search-status{font-size:.75rem;color:#adc4d8;line-height:1.6;margin:13px 0 0}
+.ym-search-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:15px}
+.ym-search-result{min-width:0;padding:16px;border:1px solid #34516a;border-radius:10px;background:#101f33}
+.ym-search-result h3{color:#e4f9ff;font-size:.92rem;line-height:1.5;overflow-wrap:anywhere;margin:0}
+.ym-search-result .ym-source{margin-top:9px}
+.ym-search-controls :is(input,button):focus-visible{outline:2px solid #67e8f9;outline-offset:3px}
+.ym-search-controls button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:870px){.ym-search-results{grid-template-columns:1fr}}
+@media(max-width:540px){.ym-search-panel{padding:15px}.ym-search-head{flex-direction:column}.ym-search-controls{flex-direction:column}.ym-search-controls button{width:100%}}

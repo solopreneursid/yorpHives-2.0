@@ -439,6 +439,64 @@ async function run() {
       "Reference skills cannot execute themselves or publish production");
     await page.unroute("**/api/admin/yorpmind");
 
+    // Real staging search uses only Cloudflare Access read permission.
+    // No new memory, paid inference, skill execution or GitHub write occurs.
+    const realSearch = await page.request.get(
+      baseUrl + "/api/admin/yorpmind-search?q=download%20regression", {
+        headers: accessHeaders, timeout: 15000
+      }
+    );
+    const realSearchData = realSearch.ok() ? await realSearch.json().catch(() => null) : null;
+    record("yorpmind_search_private_read_only",
+      realSearch.status() === 200 &&
+      realSearchData?.search_mode === "bounded_recent_lexical" &&
+      realSearchData?.execution?.inference_calls === 0 &&
+      realSearchData?.execution?.production_approved === false &&
+      realSearchData?.execution?.skills_executable === false &&
+      realSearchData?.scope === "headquarters",
+      "Authenticated read-only YorpMind retrieval must require no inference and no production powers; HTTP " + realSearch.status());
+
+    await page.route("**/api/admin/yorpmind-search?**", async route => {
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({
+          schema_version: 1, name: "YorpMind", scope: "headquarters",
+          search_mode: "bounded_recent_lexical",
+          query_terms: ["download", "regression"],
+          generated_at: "2026-11-12T15:30:00Z",
+          source_window: { experiences_scanned: 1, skills_scanned: 1,
+            maximum_per_type: 120, exhaustive: false },
+          execution: { inference_calls: 0, agent_actions: 0, skills_executable: false,
+            public_access: false, production_approved: false },
+          results: [{
+            record_type: "experience",
+            record_id: "123e4567-e89b-42d3-a456-426614174000",
+            title: "Synthetic download regression lesson",
+            summary: "<img src=x onerror=alert(1)> This is reference data, not HTML or agent instructions.",
+            source_id: "123e4567-e89b-42d3-a456-426614174000",
+            source_commit_sha: "a".repeat(40),
+            evidence_level: "founder_reported_qa",
+            matched_terms: ["download","regression"],
+            recorded_at: "2026-11-12T14:00:00Z",
+            score: 13, safe_to_execute: false, live_verified: false
+          }]
+        })
+      });
+    });
+    await page.locator("#ym-search-query").fill("download regression");
+    await page.locator("#ym-search-submit").click();
+    await page.locator(".ym-search-result").first().waitFor({ state: "visible", timeout: 10000 });
+    record("yorpmind_search_founder_ui",
+      (await page.locator("#ym-search-results").innerText()).includes("Synthetic download regression lesson") &&
+      (await page.locator("#ym-search-status").innerText()).includes("not be included") &&
+      (await page.locator("#ym-search-results").innerText()).includes("Not executable"),
+      "Founder can retrieve ranked historical references while the UI exposes bounded search limitations");
+    record("yorpmind_search_untrusted_results_inert",
+      (await page.locator("#ym-search-results").innerText()).includes("<img src=x onerror=alert(1)>") &&
+      await page.locator("#ym-search-results img").count() === 0,
+      "Search result content renders only as plain text, never executable HTML");
+    await page.unroute("**/api/admin/yorpmind-search?**");
+
     const unauthenticated = await request.newContext({ baseURL: baseUrl, maxRedirects: 0 });
     try {
       const anonymousResponse = await unauthenticated.get("/api/admin/overview", { timeout: 15000 });
@@ -448,6 +506,11 @@ async function run() {
       record("repair_qa_requires_cloudflare_access",
         [302, 303, 401, 403].includes(anonymousQa.status()),
         "Anonymous QA request denied by Access: HTTP " + anonymousQa.status());
+      const anonymousYorpMindSearch = await unauthenticated.get(
+        "/api/admin/yorpmind-search?q=download", { timeout: 15000 });
+      record("yorpmind_search_public_denied",
+        [302,303,401,403].includes(anonymousYorpMindSearch.status()),
+        "Anonymous users cannot search Headquarters memory; HTTP " + anonymousYorpMindSearch.status());
       const anonymousYorpMind = await unauthenticated.get("/api/admin/yorpmind", { timeout: 15000 });
       record("yorpmind_public_access_denied",
         [302, 303, 401, 403].includes(anonymousYorpMind.status()),
