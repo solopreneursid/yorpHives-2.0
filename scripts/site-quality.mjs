@@ -61,32 +61,96 @@ async function run() {
     const toolManifest = await manifestResponse.json();
     record("tool_manifest_valid", Array.isArray(toolManifest) && toolManifest.length >= 1, Array.isArray(toolManifest) ? toolManifest.length + " tools listed" : "Manifest was not an array");
 
+
     let toolCursor = 0;
     async function checkToolPage() {
       while (toolCursor < toolManifest.length) {
         const tool = toolManifest[toolCursor++];
         const toolPage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-        const errors = [];
-        toolPage.on("pageerror", error => errors.push(error.message));
+        const pageErrorsForTool = [];
+        const consoleErrors = [];
+        const failedRequests = [];
+        const httpErrors = [];
+        const startedAt = Date.now();
+        let responseStatus = 0;
+        let finalUrl = "";
+        let rootCount = 0;
+        let visibleRootCount = 0;
+        let controls = 0;
+        let visibleControls = 0;
+        let heading = "";
+        let stage = "navigation";
+        toolPage.on("pageerror", error => pageErrorsForTool.push(error.message.slice(0, 500)));
+        toolPage.on("console", message => {
+          if (message.type() === "error") consoleErrors.push(message.text().slice(0, 500));
+        });
+        toolPage.on("requestfailed", request => {
+          let target = "";
+          try {
+            const url = new URL(request.url());
+            target = url.origin + url.pathname;
+          } catch { target = "unparseable-request-url"; }
+          failedRequests.push({ url: target, error: (request.failure()?.errorText || "request failed").slice(0, 250) });
+        });
+        toolPage.on("response", item => {
+          if (item.status() >= 400) {
+            let target = "";
+            try {
+              const url = new URL(item.url());
+              target = url.origin + url.pathname;
+            } catch { target = "unparseable-response-url"; }
+            httpErrors.push({ url: target, status: item.status() });
+          }
+        });
         try {
           const response = await toolPage.goto(absolute(tool.url), { waitUntil: "domcontentloaded", timeout: 25000 });
+          responseStatus = response?.status() || 0;
+          finalUrl = toolPage.url();
+          stage = "tool-root";
           const root = toolPage.locator("#tool-app, #advanced-tool").first();
-          await root.waitFor({ state: "visible", timeout: 12000 });
-          await root.locator("input, textarea, select, button").first().waitFor({ state: "attached", timeout: 12000 });
-          const controls = await root.locator("input, textarea, select, button").count();
-          const heading = await toolPage.locator("main h1").first().textContent().catch(() => "");
-          toolResults.push({
-            slug: tool.slug,
-            title: tool.title,
-            status: response?.status() || 0,
-            root: await root.count() > 0,
-            controls,
-            heading: Boolean(heading?.trim()),
-            page_errors: errors,
-            ok: response?.status() === 200 && controls > 0 && Boolean(heading?.trim()) && errors.length === 0
-          });
+          rootCount = await toolPage.locator("#tool-app, #advanced-tool").count();
+          visibleRootCount = await toolPage.locator("#tool-app:visible, #advanced-tool:visible").count();
+          stage = "interactive-controls";
+          controls = await root.locator("input, textarea, select, button").count().catch(() => 0);
+          visibleControls = await root.locator("input:visible, textarea:visible, select:visible, button:visible").count().catch(() => 0);
+          stage = "primary-heading";
+          heading = (await toolPage.locator("main h1").first().textContent().catch(() => "")) || "";
+          const ok = responseStatus === 200 && visibleRootCount > 0 && visibleControls > 0 && Boolean(heading.trim()) && pageErrorsForTool.length === 0;
+          const result = {
+            slug: tool.slug, title: tool.title, path: tool.url, status: responseStatus, final_url: finalUrl,
+            root_count: rootCount, visible_root_count: visibleRootCount,
+            control_count: controls, visible_control_count: visibleControls,
+            primary_heading_present: Boolean(heading.trim()),
+            page_errors: pageErrorsForTool, console_errors: consoleErrors,
+            failed_requests: failedRequests, http_errors: httpErrors,
+            duration_ms: Date.now() - startedAt, ok
+          };
+          if (!ok) {
+            await mkdir(`${reportDir}/tool-page-failures`, { recursive: true });
+            result.screenshot = `tool-page-failures/${tool.slug}.png`;
+            await toolPage.screenshot({ path: `${reportDir}/${result.screenshot}`, fullPage: true, timeout: 10000 }).catch(error => {
+              result.screenshot_error = error instanceof Error ? error.message.slice(0, 250) : String(error);
+            });
+          }
+          toolResults.push(result);
         } catch (error) {
-          toolResults.push({ slug: tool.slug, title: tool.title, status: 0, controls: 0, ok: false, error: error instanceof Error ? error.message : String(error), page_errors: errors });
+          const result = {
+            slug: tool.slug, title: tool.title, path: tool.url, status: responseStatus,
+            final_url: toolPage.url(), stage, root_count: rootCount,
+            visible_root_count: visibleRootCount, control_count: controls,
+            visible_control_count: visibleControls, primary_heading_present: Boolean(heading.trim()),
+            page_errors: pageErrorsForTool, console_errors: consoleErrors,
+            failed_requests: failedRequests, http_errors: httpErrors,
+            duration_ms: Date.now() - startedAt,
+            error: error instanceof Error ? error.message.slice(0, 1000) : String(error).slice(0, 1000),
+            ok: false
+          };
+          await mkdir(`${reportDir}/tool-page-failures`, { recursive: true });
+          result.screenshot = `tool-page-failures/${tool.slug}.png`;
+          await toolPage.screenshot({ path: `${reportDir}/${result.screenshot}`, fullPage: true, timeout: 10000 }).catch(screenshotError => {
+            result.screenshot_error = screenshotError instanceof Error ? screenshotError.message.slice(0, 250) : String(screenshotError);
+          });
+          toolResults.push(result);
         } finally {
           await toolPage.close();
         }
@@ -94,9 +158,21 @@ async function run() {
     }
     await Promise.all(Array.from({ length: 4 }, checkToolPage));
     const failedTools = toolResults.filter(item => !item.ok);
+    const failureSummary = failedTools.map(item => {
+      const reasons = [];
+      if (item.status !== 200) reasons.push(`HTTP ${item.status}`);
+      if (!item.visible_root_count) reasons.push("tool root not visible");
+      if (!item.visible_control_count) reasons.push("no visible controls");
+      if (!item.primary_heading_present) reasons.push("main h1 missing");
+      if (item.page_errors?.length) reasons.push(`pageerror: ${item.page_errors.join(" | ")}`);
+      if (item.console_errors?.length) reasons.push(`console: ${item.console_errors.slice(0, 2).join(" | ")}`);
+      if (item.failed_requests?.length) reasons.push(`failed requests: ${item.failed_requests.slice(0, 3).map(request => request.url + " (" + request.error + ")").join(", ")}`);
+      if (item.http_errors?.length) reasons.push(`HTTP errors: ${item.http_errors.slice(0, 3).map(response => response.status + " " + response.url).join(", ")}`);
+      if (item.error) reasons.push(`${item.stage || "render"}: ${item.error}`);
+      return `${item.slug}: ${reasons.join("; ") || "interactive rendering contract failed"}`;
+    });
     record("all_free_tools_render_and_controls", failedTools.length === 0,
-      failedTools.slice(0, 20).map(item => item.slug + ": " + (item.error || "HTTP " + item.status + ", controls " + item.controls + ", JS errors " + item.page_errors.join("|"))).join("; ") ||
-      toolResults.length + " tools loaded with an interactive control and no page errors");
+      failureSummary.join("\\n") || `${toolResults.length} tools loaded with visible controls and no uncaught page errors`);
 
     record("browser_console_errors", pageErrors.length === 0, pageErrors.join(" | "));
   } catch (error) {
@@ -197,7 +273,7 @@ async function run() {
     `Internal links checked: ${report.broken_internal_links.checked}; failed: ${report.broken_internal_links.failed}.`,
     ""
   ].join("\n"));
-  console.log(JSON.stringify(report.summary));
+  console.log(JSON.stringify(report.summary));\n  console.log("Free Tools page sweep: " + toolResults.length + " checked, " + failedTools.length + " failed.");\n  for (const item of failedTools) console.error("[tool-page-failure] " + JSON.stringify({ slug: item.slug, path: item.path, status: item.status, stage: item.stage || null, root_count: item.root_count, visible_root_count: item.visible_root_count, control_count: item.control_count, visible_control_count: item.visible_control_count, primary_heading_present: item.primary_heading_present, page_errors: item.page_errors, console_errors: item.console_errors, failed_requests: item.failed_requests, http_errors: item.http_errors, error: item.error, screenshot: item.screenshot }));
   if (failures.length) process.exitCode = 1;
 }
 
