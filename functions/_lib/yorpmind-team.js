@@ -92,7 +92,7 @@ function makeAdvice(kind, severity, job, agent, managerId, summary) {
   };
 }
 
-export function recommendTeamActions(staff, agents, jobs, departments, now = new Date()) {
+export function recommendTeamActions(staff, agents, jobs, departments, now = new Date(), limits = {}) {
   const members = new Set((staff || []).filter(x => x.enabled === 1).map(x => x.staff_id));
   const agentById = new Map((agents || []).map(a => [a.agent_id, a]));
   const deptNames = new Map((departments || []).map(d => [d.department_id, d.name]));
