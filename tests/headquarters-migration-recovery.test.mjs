@@ -33,6 +33,8 @@ test("complete D1 SQL migration chain can be restored from a disposable SQLite b
     assert.equal(databaseHas(db, "yorpmind_evolution_runs"), true);
     assert.equal(databaseHas(db, "yorpmind_evolution_proposals"), true);
     assert.equal(databaseHas(db, "yorpmind_owner_delegations"), true);
+    assert.equal(databaseHas(db, "yorpmind_staff"), true);
+    assert.equal(databaseHas(db, "yorpmind_team_reports"), true);
     assert.equal(databaseHas(db, "agent_jobs"), true);
     assert.equal(databaseHas(db, "admin_audit_events"), true);
     const before = db.prepare("PRAGMA foreign_key_check").all();
