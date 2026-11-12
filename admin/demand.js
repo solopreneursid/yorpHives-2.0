@@ -156,6 +156,7 @@ window.loadDemand=async()=>{
    typeof x?.slug==="string"&&typeof x?.url==="string"): [];
   inventoryReady=Array.isArray(inventory);
   render();
+  if(window.HQTrafficEvidence)await window.HQTrafficEvidence.load(manifest);
  }finally{loading=false;}
 };
 byId("demand-origin").addEventListener("change",render);

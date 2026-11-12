@@ -151,6 +151,27 @@
         <article><span>UNCLASSIFIED SIGNALS</span><strong id="demand-unclassified-count">—</strong><small>Public signals retained for review</small></article>
         <article><span>LISTED FREE TOOLS</span><strong id="demand-inventory-count">—</strong><small>Catalogue inventory, not verified usage</small></article>
       </div>
+      <section class="hq-traffic-panel" aria-label="First-party Free Tools traffic evidence">
+        <div class="hq-traffic-header">
+          <div>
+            <span class="intel-overline">FIRST-PARTY TRAFFIC EVIDENCE</span>
+            <h2>What is YorpHives actually serving?</h2>
+            <p>Cloudflare grouped HTTP requests on exact Free Tools page routes. Not unique visitors, confirmed tool use, paid customers, human-only traffic or AI-agent activity.</p>
+          </div>
+          <div class="hq-traffic-buttons">
+            <button id="traffic-capture" type="button" class="hq-button hq-button-primary">Capture 7-day traffic</button>
+            <a class="hq-button hq-button-secondary" href="/api/admin/traffic-evidence?format=markdown" target="_blank" rel="noopener noreferrer">Agent-readable evidence ↗</a>
+          </div>
+        </div>
+        <div id="traffic-availability" class="hq-traffic-status" role="status" aria-live="polite">Checking private Cloudflare analytics connection…</div>
+        <div class="hq-traffic-kpis">
+          <article><span>OBSERVED TOOL ROUTES</span><strong id="traffic-observed">—</strong><small>Canonical routes with reported HTTP requests</small></article>
+          <article><span>GROUPED HTTP REQUESTS</span><strong id="traffic-requests">—</strong><small>Sampled source; not users or actions</small></article>
+          <article><span>CAPTURE DATE</span><strong id="traffic-captured">—</strong><small>One bounded capture per UTC day</small></article>
+        </div>
+        <div id="traffic-rows" class="hq-traffic-rows"></div>
+        <p class="hq-traffic-disclosure">The capture excludes individual identities and only stores aggregated production route paths. Cloudflare sampling and top-250 truncation can omit low-traffic tools. A missing path never means zero use.</p>
+      </section>
       <div class="demand-workspace">
         <div class="demand-main">
           <div class="demand-heading">
@@ -437,5 +458,6 @@
 <script src="/admin/intelligence.js" defer></script>
 <script src="/admin/validation.js" defer></script>
 <script src="/admin/demand.js" defer></script>
+<script src="/admin/traffic-evidence.js" defer></script>
 </body>
 </html>
