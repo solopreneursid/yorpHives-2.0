@@ -41,6 +41,47 @@ interface SkillRecord {
   approved_revision: number;
   updated_at: string;
 }
+interface RetrievedReference {
+  record_type: "experience" | "reference_skill";
+  record_id: string;
+  title: string;
+  summary: string;
+  evidence_level: "founder_reported_qa" | "founder_approved_reference_text";
+  source_type: "repair_qa" | "founder_approved_skill";
+  source_id: string;
+  source_commit_sha?: string;
+  revision?: number;
+  steps?: string[];
+  recorded_at: string;
+  status: "recorded" | "approved_reference_only";
+  score: number;
+  matched_terms: string[];
+  safe_to_execute: false;
+  live_verified: false;
+}
+interface RetrievalResponse {
+  schema_version: 1;
+  name: "YorpMind";
+  scope: "headquarters";
+  generated_at: string;
+  query_terms: string[];
+  search_mode: "bounded_recent_lexical";
+  source_window: {
+    experiences_scanned: number;
+    skills_scanned: number;
+    maximum_per_type: number;
+    exhaustive: false;
+  };
+  execution: {
+    inference_calls: 0;
+    agent_actions: 0;
+    skills_executable: false;
+    public_access: false;
+    production_approved: false;
+  };
+  evidence_warning: string;
+  results: RetrievedReference[];
+}
 interface RetrievalErrorResponse {
   error: { code: string; message: string };
   production_approved: false;
@@ -113,7 +154,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     }
   }
 
-  const result = yorpmindRetrievalResponse(query, experienceRows.results || [], skills, limit);
+  const result = yorpmindRetrievalResponse(query, experienceRows.results || [], skills, limit) as RetrievalResponse;
   if (context.request.headers.get("accept")?.includes("text/markdown")) {
     return new Response(yorpmindRetrievalMarkdown(result), {
       headers: {
