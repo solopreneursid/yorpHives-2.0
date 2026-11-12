@@ -261,12 +261,19 @@ async function run() {
     await page.locator("#repair-qa-close").click();
     await page.locator("#incident-prepare").click();
     await page.locator("#view-agents").waitFor({ state: "visible", timeout: 10000 });
+    const repairRequestValue = await page.locator("#repair-request").inputValue();
+    const selectedFindingValue = await page.locator("#repair-finding").inputValue();
+    const repairStatusValue = await page.locator("#repair-message").innerText();
+    const preparedChecks = {
+      title: repairRequestValue.includes("Preview-only tool failure"),
+      finding_id: repairRequestValue.includes(sampleFinding.id),
+      matched_finding: selectedFindingValue === sampleFinding.id,
+      linked_status: repairStatusValue.includes("Finding linked")
+    };
     record("incident_prepare_does_not_dispatch",
-      (await page.locator("#repair-request").inputValue()).includes("Preview-only tool failure") &&
-      (await page.locator("#repair-request").inputValue()).includes(sampleFinding.id) &&
-      (await page.locator("#repair-finding").inputValue()) === sampleFinding.id &&
-      (await page.locator("#repair-message").innerText()).includes("Finding linked"),
-      "Source-qualified asset finding appears in the prepared form; no repair is dispatched");
+      Object.values(preparedChecks).every(Boolean),
+      "Expected source-qualified asset handoff without repair dispatch. Observed checks: " + JSON.stringify(preparedChecks) +
+        "; available option: " + await page.locator("#repair-finding option").count());
     await page.unroute("**/api/admin/findings*");
     await page.unroute("**/api/admin/repair-jobs");
     await page.unroute("**/api/admin/repair-qa?**");
