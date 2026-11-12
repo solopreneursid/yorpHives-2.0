@@ -12,6 +12,10 @@ const routeURI=data((await file("../functions/api/admin/intelligence.ts"))
   .replace('"../../_lib/admin-auth"',JSON.stringify(authURI))
   .replace('"../../_lib/headquarters"',JSON.stringify(headquartersURI)));
 const {onRequestGet,onRequestPost}=await import(routeURI);
+const validationURI=data((await file("../functions/api/admin/validation.ts"))
+  .replace('"../../_lib/admin-auth"',JSON.stringify(authURI))
+  .replace('"../../_lib/headquarters"',JSON.stringify(headquartersURI)));
+const {onRequestGet:getValidation,onRequestPost:postValidation}=await import(validationURI);
 const sourcesURI=data(await file("../hq-intelligence/sources.js"));
 const synthesisURI=data(await file("../hq-intelligence/synthesis.js"));
 const {parseIdeas,synthesizeIdeas}=await import(synthesisURI);
@@ -49,7 +53,8 @@ async function database(){
   "../migrations/0012_headquarters_execution.sql",
   "../migrations/0013_headquarters_brief_review.sql",
   "../migrations/0014_headquarters_opportunity_radar.sql",
-  "../migrations/0015_headquarters_global_intelligence.sql"
+  "../migrations/0015_headquarters_global_intelligence.sql",
+  "../migrations/0016_headquarters_validation.sql"
  ])db.exec(await file(path));
  const DB={
    prepare(sql){
@@ -262,5 +267,65 @@ test("model failure is recorded as a partial run, never a fabricated idea",async
    const duplicate=db.prepare("UPDATE hq_intelligence_runs SET model_calls=1 WHERE run_id=? AND model_calls=0 RETURNING run_id").get(id);
    assert.equal(duplicate,undefined,"repeat inference is blocked by the database");
    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_intelligence_ideas").get().n,0);
+ }finally{globalThis.fetch=originalFetch;db.close();}
+});
+
+test("Validation Lab enforces owner-only experiments, audit trail, and unverified outcomes",async()=>{
+ const {db,DB}=await database();
+ globalThis.fetch=stub;
+ const runId=crypto.randomUUID(),ideaId=crypto.randomUUID();
+ db.prepare("INSERT INTO hq_intelligence_runs(run_id,trigger_source,run_date,status) VALUES (?,'owner','2026-11-12','completed')").run(runId);
+ db.prepare(
+  "INSERT INTO hq_intelligence_ideas(idea_id,fingerprint,run_id,title,kind,audience,problem,solution,why_now,mvp,differentiation,validation_plan,monetization_hypothesis,distribution_hypothesis,risks,priority_score,source_count) "+
+  "VALUES (?, 'validation-test',?,'Pilot Idea','tool','developers','Need a tool','Build prototype','Recent issue','MVP','Niche','User interviews','Trial paid plan','Docs','Bias',60,1)"
+ ).run(ideaId,runId);
+ try{
+  const env=envFor(DB);
+  const candidate={action:"create",idea_id:ideaId,question:"Can 10 developers reliably use this prototype?",
+   method:"user_interview",success_metric:"interviews",target_count:10,timebox_days:14};
+  assert.equal((await getValidation(context(env,"GET",undefined,{"cf-access-jwt-assertion":""}))).status,401);
+  const serviceToken=await signedToken({email:undefined,sub:"",common_name:"ci-test",service_token_status:true});
+  assert.equal((await postValidation(context(env,"POST",candidate,{"cf-access-jwt-assertion":serviceToken}))).status,403);
+  assert.equal((await postValidation(context(env,"POST",candidate,{origin:"https://not-hq.example"}))).status,403);
+  assert.equal((await postValidation(context(env,"POST",{...candidate,question:"too short"}))).status,400);
+  const created=await postValidation(context(env,"POST",candidate));
+  assert.equal(created.status,201);
+  const row=await created.json();
+  assert.equal(row.status,"planned");
+  assert.equal(row.verified,false);
+  assert.ok(row.experiment_id);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_validation_events WHERE experiment_id=? AND action='experiment_planned'").get(row.experiment_id).n,1);
+  assert.equal((await postValidation(context(env,"POST",{action:"start",experiment_id:row.experiment_id,expected_revision:4}))).status,409);
+  const active=await postValidation(context(env,"POST",{action:"start",experiment_id:row.experiment_id,expected_revision:0}));
+  assert.equal(active.status,200);
+  assert.equal((await active.json()).revision,1);
+  assert.equal((await postValidation(context(env,"POST",{action:"start",experiment_id:row.experiment_id,expected_revision:0}))).status,409);
+  const base={action:"record_result",experiment_id:row.experiment_id,expected_revision:1,
+   observed_count:12,result_note:"We interviewed twelve developers and recorded which workflow each person could use."};
+  assert.equal((await postValidation(context(env,"POST",{...base,evidence_url:"http://unsafe.example"}))).status,400);
+  assert.equal((await postValidation(context(env,"POST",{...base,result_note:"not enough"}))).status,400);
+  const complete=await postValidation(context(env,"POST",{...base,evidence_url:"https://example.org/research/experiment"}));
+  assert.equal(complete.status,200);
+  const result=await complete.json();
+  assert.equal(result.verified,false);
+  assert.equal(result.outcome,"target_met_owner_reported");
+  assert.equal((await postValidation(context(env,"POST",base))).status,409);
+  assert.equal((await postValidation(context(env,"POST",{action:"cancel",experiment_id:row.experiment_id,expected_revision:2}))).status,409);
+  const persisted=db.prepare("SELECT status,observed_count,evidence_status,revision,outcome,evidence_url FROM hq_validation_experiments WHERE experiment_id=?").get(row.experiment_id);
+  assert.equal(persisted.status,"completed");
+  assert.equal(persisted.observed_count,12);
+  assert.equal(persisted.evidence_status,"unverified_owner_report");
+  assert.equal(persisted.outcome,"target_met_owner_reported");
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM hq_validation_events WHERE experiment_id=?").get(row.experiment_id).n,3);
+  assert.equal(db.prepare("SELECT status FROM hq_intelligence_ideas WHERE idea_id=?").get(ideaId).status,"proposed");
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM agent_approvals").get().n,0);
+  const markdown=await getValidation(context(env,"GET",undefined,{accept:"text/markdown"}));
+  assert.match(markdown.headers.get("content-type"),/text\/markdown/);
+  assert.match(await markdown.text(),/not independently verified/);
+  for(let i=0;i<7;i++){
+   const c=await postValidation(context(env,"POST",{...candidate,question:"Can we test demand safely for group "+i+"?"}));
+   assert.equal(c.status,201);
+  }
+  assert.equal((await postValidation(context(env,"POST",{...candidate,question:"Can we attempt a ninth research experiment?"}))).status,409);
  }finally{globalThis.fetch=originalFetch;db.close();}
 });
