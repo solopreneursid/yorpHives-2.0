@@ -6,10 +6,9 @@ import { readFile } from "node:fs/promises";
 
 const read = path => readFile(new URL(path, import.meta.url), "utf8");
 const dataURL = source => "data:text/javascript;base64," + Buffer.from(source).toString("base64");
-const helper = dataURL(await read("../functions/_lib/owner-delegation.js")
-  .then(source => source.replace('"./release-evidence.js"', JSON.stringify(dataURL(
-    await read("../functions/_lib/release-evidence.js")
-  )))));
+const evidenceModule = dataURL(await read("../functions/_lib/release-evidence.js"));
+const helper = dataURL((await read("../functions/_lib/owner-delegation.js"))
+  .replace('"./release-evidence.js"', JSON.stringify(evidenceModule)));
 const { validatePreviewUrl, validateOwnerDelegationInput,
   releaseEvidenceReady, OWNER_DELEGATION_EXECUTOR_ENABLED } = await import(helper);
 
@@ -207,7 +206,7 @@ test("separate MFA checkpoint validates current revision, grants only this scope
     assert.ok(new Date(row.authorization_expires_at).getTime()-new Date(row.authorized_at).getTime()<=600001);
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n,2);
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM admin_repair_jobs").get().n,1);
-    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM yorpmind_skill_reviews").get?.()?.n??0,0);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM yorpmind_owner_delegations").get().n,1);
   }finally{globalThis.fetch=originalFetch;db.close();}
 });
 
