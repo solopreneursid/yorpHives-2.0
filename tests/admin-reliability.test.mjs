@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { checkMonitor } from "../admin-monitor/admin-health.js";
+import { runSecurityAudit } from "../admin-monitor/security-auditor.js";
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 const extractApprovedHosts = (source) => {
   const block = source.match(/const APPROVED_HOSTS = new Set\(\[([\s\S]*?)\]\)/)?.[1] || "";
@@ -16,7 +17,7 @@ test("admin reliability migration creates isolated monitoring and findings table
   assert.equal(new URL(productionUrl).hostname, ["yorphives", "com"].join("."));
 });
 
-test("admin routes require a signed Cloudflare Access identity and explicit email allowlist", async () => {
+test("admin routes verify user and CI service identities while keeping CI access read-only", async () => {
   const auth = await read("../functions/_lib/admin-auth.ts");
   const route = await read("../functions/admin/[[path]].ts");
   assert.match(auth, /cf-access-jwt-assertion/);
@@ -25,9 +26,59 @@ test("admin routes require a signed Cloudflare Access identity and explicit emai
   assert.match(auth, /expectedAudiences/);
   assert.match(auth, /tokenAudiences\.some/);
   assert.match(auth, /ADMIN_ALLOWED_EMAILS/);
+  assert.match(auth, /ADMIN_CI_SERVICE_TOKEN_IDS/);
+  assert.match(auth, /claims\.common_name/);
+  assert.match(auth, /claims\.service_token_status === true/);
+  assert.match(auth, /claims\.sub === ""/);
   assert.match(auth, /claims\.exp/);
   assert.match(auth, /claims\.iss/);
+  assert.match(auth, /identity\.serviceToken && !\["GET", "HEAD"\]/);
+  assert.match(auth, /ADMIN_CI_READ_ONLY/);
   assert.match(route, /requireAdmin/);
+});
+
+test("GitHub write-permission probe is owner-triggered, audited and automatically cleaned up", async () => {
+  const worker = await read("../admin-agent/worker.js");
+  const route = await read("../functions/api/admin/repair-jobs.ts");
+  const html = await read("../admin/index.html");
+  const ui = await read("../admin/admin.js");
+  const probeRoute = route.slice(route.indexOf("if (body?.permission_probe"), route.indexOf("const requestText"));
+  assert.match(worker, /probeGithubWritePermissions/);
+  assert.match(worker, /pull_requests_write/);
+  assert.match(worker, /pull_request_closed/);
+  assert.match(worker, /branch_deleted/);
+  assert.match(worker, /x-yorphives-internal-probe/);
+  assert.match(probeRoute, /permission_probe/);
+  assert.match(probeRoute, /github-permission-probe-singleton/);
+  assert.match(probeRoute, /UPDATE admin_repair_jobs SET status='running'/);
+  assert.match(probeRoute, /emergencyOverride/);
+  assert.match(probeRoute, /updated_at<\?/);
+  assert.match(probeRoute, /UPDATE admin_repair_jobs SET status='completed'/);
+  assert.match(probeRoute, /PROBE_ALREADY_RUNNING/);
+  assert.doesNotMatch(probeRoute, /PROBE_RATE_LIMIT|60 \* 60 \* 1000/);
+  assert.match(worker, /branchAttempted/);
+  assert.match(worker, /possiblePullRequests/);
+  assert.match(worker, /cleanupErrors\.push/);
+  assert.match(ui, /emergency_override:emergencyOverride/);
+  assert.match(ui, /Emergency override will reclaim that stale lock/);
+  assert.match(html, /verify-github-permissions/);
+  assert.match(ui, /permissionProbeButton/);
+  assert.match(ui, /Nothing is merged/);
+});
+
+
+test("Free Tools browser sweep recognizes real tool roots and hidden controls stay hidden", async () => {
+  const quality = await read("../scripts/site-quality.mjs");
+  const styles = await read("../styles.css");
+  assert.match(quality, /main \[data-tool\]:visible/);
+  assert.match(quality, /main #tool-app:visible/);
+  assert.match(quality, /main #advanced-tool:visible/);
+  assert.match(quality, /keyboardFocusable/);
+  assert.match(quality, /visible_control_count/);
+  assert.match(quality, /let failedTools = \[\]/);
+  assert.match(quality, /failedTools = toolResults\.filter/);
+  assert.match(quality, /hidden_elements_visible/);
+  assert.match(styles, /\[hidden\]\s*\{\s*display:\s*none\s*!important/);
 });
 
 test("admin health checks are read-only, same-origin and reject arbitrary targets and redirects", async () => {
@@ -54,6 +105,8 @@ test("scheduled monitor uses the existing D1 binding and a single six-hour cron"
   assert.match(worker, /runAdminHealthChecks\(env\.DB, "scheduled"\)/);
   assert.match(worker, /captureProductionSnapshots\(env\.DB\)/);
   assert.match(worker, /runAssetIntelligence\(env\.DB\)/);
+  assert.match(worker, /security\.status !== "complete"/);
+  assert.match(worker, /security_errors: security\.errors/);
   assert.equal(config.name, "yorphives-admin-monitor");
   assert.equal(config.workers_dev, false);
   assert.equal(config.preview_urls, false);
@@ -181,21 +234,42 @@ test("Admin findings support audited triage while fixed status remains verificat
 test("Cloudflare durable repair agent uses a private service binding and CI-gated draft PRs", async () => {
   const route = await read("../functions/api/admin/repair-jobs.ts");
   const worker = await read("../admin-agent/worker.js");
+  const reviewer = await read("../scripts/agent-review.mjs");
   const config = JSON.parse(await read("../admin-agent/wrangler.jsonc"));
   assert.match(route, /ADMIN_AGENT_SERVICE/);
   const adminUi = await read("../admin/admin.js");
   const adminHtml = await read("../admin/index.html");
   assert.match(adminUi, /Cloudflare repair agent ready/);
   assert.match(adminUi, /setInterval\(\(\)=>/);
-  assert.match(adminHtml, /draft pull request with CI evidence/);
+  assert.match(adminHtml, /open draft PRs and inspect CI results/);
   assert.match(route, /admin-agent\.internal\/health/);
   assert.match(route, /AGENT_DAILY_LIMIT/);
   assert.match(route, /admin-agent\.internal\/instances/);
+  assert.match(route, /security_audit_partial/);
+  assert.match(route, /securityEvidence.checked === securityEvidence.target_count/);
+  assert.match(route, /securityFresh/);
+  assert.match(route, /older evidence format/);
+  assert.match(route, /hasStructuredSecurityEvidence/);
   assert.match(worker, /WorkflowEntrypoint/);
-  assert.match(worker, /ready: Boolean\(env\.GITHUB_TOKEN\)/);
+  assert.match(reviewer, /refName\.startsWith\("build\/agentic-ops-"\)/);
+  assert.match(reviewer, /build\/yorphives-admin-reliability/);
+  assert.match(worker, /"user-agent": "YorpHives-Agentic-Operations\/1\.0"/);
+  assert.match(worker, /repositoryWrite/);
+  assert.match(worker, /repositoryContextAccess/);
+  assert.match(worker, /contents\/admin-agent\/worker\.js/);
+  assert.match(route, /repository_context_access\?: boolean/);
+  assert.match(worker, /jobs_access/);
+  assert.match(worker, /workers_ai: Boolean\(env\.AI\)/);
+  assert.match(worker, /durable_workflow: Boolean\(env\.ADMIN_REPAIR_WORKFLOW\)/);
+  assert.match(worker, /missingDependencies/);
+  assert.match(route, /workers_ai\?: boolean/);
+  assert.match(worker, /identity = await github\(env, "\/user"\)/);
+  assert.match(worker, /catch \{\s*authenticatedLogin = null;\s*\}/);
+  assert.match(worker, /job\.conclusion !== "success"/);
+  assert.doesNotMatch(worker, /"success", "neutral", "skipped"/);
   assert.match(worker, /@cf\/qwen\/qwen3\.8-27b/);
   assert.match(worker, /build\/agent\/repair-/);
-  assert.match(worker, /yorphives platform checks/);
+  assert.match(worker, /YorpHives platform checks/);
   assert.match(worker, /triggerPlatformChecks/);
   assert.match(worker, /repair-receipts/);
   assert.match(worker, /needs_review/);
@@ -265,4 +339,128 @@ test("private Admin gate monitors treat Cloudflare Access 401 and 403 denials as
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+
+function createSecurityAuditDb(events = []) {
+  return {
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            first: async () => sql.includes("SELECT id FROM admin_assets")
+              ? { id: "asset-" + values[0] }
+              : null,
+            all: async () => ({ results: [] }),
+            run: async () => {
+              if (sql.includes("INSERT INTO admin_audit_events")) {
+                events.push({ action: values[2], details: JSON.parse(values[5]) });
+              }
+              return { success: true };
+            }
+          };
+        }
+      };
+    }
+  };
+}
+
+test("Security Auditor marks a run complete only when every configured target returns 2xx", async () => {
+  const originalFetch = globalThis.fetch;
+  const events = [];
+  try {
+    globalThis.fetch = async (url) => new Response(null, {
+      status: 200,
+      headers: {
+        "content-type": String(url).endsWith("/") ? "text/html; charset=utf-8" : "application/json",
+        "strict-transport-security": "max-age=31536000",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "content-security-policy": "default-src 'self'; frame-ancestors 'none'"
+      }
+    });
+    const result = await runSecurityAudit(createSecurityAuditDb(events));
+    assert.equal(result.status, "complete");
+    assert.equal(result.checked, 7);
+    assert.equal(result.target_count, 7);
+    assert.equal(result.errors, 0);
+    assert.equal(result.skipped, 0);
+    assert.equal(events.at(-1).action, "security_audit_completed");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Security Auditor records partial evidence when targets fail instead of reporting a clean audit", async () => {
+  const originalFetch = globalThis.fetch;
+  const events = [];
+  try {
+    globalThis.fetch = async () => {
+      throw new Error("simulated network failure");
+    };
+    const result = await runSecurityAudit(createSecurityAuditDb(events));
+    assert.equal(result.status, "partial");
+    assert.equal(result.checked, 0);
+    assert.equal(result.errors, 7);
+    assert.equal(result.skipped, 0);
+    assert.equal(events.at(-1).action, "security_audit_partial");
+    assert.equal(events.at(-1).details.status, "partial");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Security Auditor does not resolve prior findings from redirects or failed HTTP responses", async () => {
+  const originalFetch = globalThis.fetch;
+  const events = [];
+  let resolutionQueries = 0;
+  const db = createSecurityAuditDb(events);
+  const originalPrepare = db.prepare;
+  db.prepare = (sql) => {
+    if (sql.includes("SELECT finding_key FROM admin_asset_findings")) resolutionQueries += 1;
+    return originalPrepare(sql);
+  };
+  try {
+    let request = 0;
+    globalThis.fetch = async () => {
+      request += 1;
+      if (request === 1) return new Response(null, { status: 302, headers: { location: "https://yorphives.com/redirected" } });
+      if (request === 2) return new Response(null, { status: 503 });
+      return new Response(null, {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "strict-transport-security": "max-age=31536000",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "strict-origin-when-cross-origin"
+        }
+      });
+    };
+    const result = await runSecurityAudit(db);
+    assert.equal(result.status, "partial");
+    assert.equal(result.skipped, 1);
+    assert.equal(result.errors, 1);
+    assert.equal(resolutionQueries, 5);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+
+test("public Pages responses include conservative HSTS and existing clickjacking protections", async () => {
+  const headers = await read("../_headers");
+  assert.match(headers, /^  Strict-Transport-Security: max-age=31536000$/m);
+  assert.doesNotMatch(headers, /includeSubDomains|preload/i);
+  assert.match(headers, /^  X-Frame-Options: DENY$/m);
+  assert.match(headers, /frame-ancestors 'none'/);
+  assert.match(headers, /rel="canonical"/);
+});
+
+test("Security Auditor checks clickjacking only on HTML and requires an actual frame-ancestors directive", async () => {
+  const auditor = await read("../admin-monitor/security-auditor.js");
+  assert.match(auditor, /contentType\.includes\("text\/html"\)/);
+  assert.match(auditor, /hasFrameAncestors/);
+  assert.match(auditor, /frame-ancestors\b/i);
+  assert.match(auditor, /!response\.headers\.get\("x-frame-options"\)/);
+  assert.match(auditor, /await closeVerifiedFindings\(db, asset\.id, detected, startedAt\)/);
 });

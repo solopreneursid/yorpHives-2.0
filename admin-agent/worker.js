@@ -23,6 +23,7 @@ async function github(env, path, method = "GET", body) {
     method,
     headers: {
       authorization: "Bearer " + env.GITHUB_TOKEN,
+      "user-agent": "YorpHives-Agentic-Operations/1.0",
       accept: "application/vnd.github+json",
       "content-type": "application/json",
       "X-GitHub-Api-Version": "2022-11-28"
@@ -54,6 +55,7 @@ async function githubMaybe(env, path) {
   const response = await fetch("https://api.github.com" + path, {
     headers: {
       authorization: "Bearer " + env.GITHUB_TOKEN,
+      "user-agent": "YorpHives-Agentic-Operations/1.0",
       accept: "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28"
     },
@@ -66,19 +68,53 @@ async function githubMaybe(env, path) {
 }
 
 async function checkGithubAccess(env) {
-  if (!env.GITHUB_TOKEN) return { ready: false, error: "GITHUB_TOKEN secret is not configured." };
-  if (githubHealthCache && Date.now() - githubHealthCache.checkedAt < 120000) return githubHealthCache.value;
+  if (!env.GITHUB_TOKEN) {
+    return { ready: false, error: "GITHUB_TOKEN Worker secret is not configured." };
+  }
+  if (githubHealthCache && Date.now() - githubHealthCache.checkedAt < 120000) {
+    return githubHealthCache.value;
+  }
 
   try {
-    const [user, repository] = await Promise.all([
-      github(env, "/user"),
-      github(env, `/repos/${REPOSITORY}`)
-    ]);
+    const repository = await github(env, `/repos/${REPOSITORY}`);
     if (repository.full_name?.toLowerCase() !== REPOSITORY.toLowerCase()) {
       throw new Error("The configured token resolved to an unexpected repository.");
     }
 
-    let workflow = { access: false, latest_run: null, jobs: [], detail: "Actions read permission is unavailable or no workflow run exists." };
+    let authenticatedLogin = null;
+    try {
+      const identity = await github(env, "/user");
+      if (typeof identity.login === "string") authenticatedLogin = identity.login;
+    } catch {
+      authenticatedLogin = null;
+    }
+
+    const hasAuthenticatedPermissions = Boolean(repository.permissions && typeof repository.permissions === "object");
+    const repositoryWrite = repository.permissions?.push === true;
+    let repositoryContextAccess = false;
+    try {
+      const [baseRef, sourceFile] = await Promise.all([
+        github(env, `/repos/${REPOSITORY}/git/ref/heads/${BASE_BRANCH}`),
+        github(env, `/repos/${REPOSITORY}/contents/admin-agent/worker.js?ref=${encodeURIComponent(BASE_BRANCH)}`)
+      ]);
+      repositoryContextAccess = Boolean(
+        baseRef.object?.sha &&
+        sourceFile.type === "file" &&
+        sourceFile.encoding === "base64" &&
+        typeof sourceFile.content === "string"
+      );
+    } catch {
+      repositoryContextAccess = false;
+    }
+
+    let workflow = {
+      access: false,
+      jobs_access: false,
+      latest_run: null,
+      jobs: [],
+      detail: "GitHub Actions read permission has not been verified."
+    };
+
     try {
       const runs = await github(env, `/repos/${REPOSITORY}/actions/workflows/site-quality.yml/runs?per_page=1`);
       const latest = runs.workflow_runs?.[0] || null;
@@ -86,6 +122,7 @@ async function checkGithubAccess(env) {
         const jobResult = await github(env, `/repos/${REPOSITORY}/actions/runs/${latest.id}/jobs?per_page=30`);
         workflow = {
           access: true,
+          jobs_access: true,
           latest_run: {
             id: latest.id,
             status: latest.status,
@@ -101,30 +138,59 @@ async function checkGithubAccess(env) {
             started_at: job.started_at,
             completed_at: job.completed_at
           })),
-          detail: "GitHub Actions run metadata is readable."
+          detail: "GitHub Actions workflow-run and job metadata are readable."
         };
       } else {
-        workflow = { ...workflow, access: true, detail: "Actions access is available; the specialist workflow has not run yet." };
+        workflow = {
+          access: true,
+          jobs_access: false,
+          latest_run: null,
+          jobs: [],
+          detail: "Actions workflow-run listing is readable, but no run exists to verify job-read access."
+        };
       }
     } catch (error) {
       const detail = error instanceof Error ? error.message.slice(0, 240) : "Unknown GitHub Actions API error.";
-      workflow = { ...workflow, access: false, detail: "GitHub Actions check failed: " + detail };
+      workflow = {
+        access: false,
+        jobs_access: false,
+        latest_run: null,
+        jobs: [],
+        detail: "GitHub Actions check failed: " + detail
+      };
     }
 
-    const ready = workflow.access === true;
+    const ready = hasAuthenticatedPermissions && repositoryWrite && repositoryContextAccess && workflow.access && workflow.jobs_access;
+    const error = !hasAuthenticatedPermissions
+      ? "GitHub authenticated repository permissions were not returned; token identity and write access are unverified."
+      : !repositoryWrite
+        ? "The token can read the repository, but GitHub does not report repository push permission."
+        : !repositoryContextAccess
+          ? "The repair base branch or source-file read access could not be verified."
+          : !workflow.access || !workflow.jobs_access
+          ? workflow.detail
+          : undefined;
+
     const value = {
       ready,
-      github: { authenticated: true, login: user.login, repository_access: true, repository: repository.full_name },
+      github: {
+        authenticated: hasAuthenticatedPermissions,
+        login: authenticatedLogin,
+        repository_access: true,
+        repository: repository.full_name,
+        repository_write: repositoryWrite,
+        repository_context_access: repositoryContextAccess
+      },
       workflow,
-      ...(ready ? {} : { error: workflow.detail || "GitHub Actions read permission is required to verify specialist job results and gate repair pull requests." })
+      ...(error ? { error } : {})
     };
     githubHealthCache = { checkedAt: Date.now(), value };
     return value;
   } catch (error) {
     const value = {
       ready: false,
-      github: { authenticated: false, repository_access: false },
-      error: error instanceof Error ? error.message.slice(0, 300) : "GitHub authentication check failed."
+      github: { authenticated: false, repository_access: false, repository_write: false },
+      error: error instanceof Error ? error.message.slice(0, 300) : "GitHub repository authentication check failed."
     };
     githubHealthCache = { checkedAt: Date.now(), value };
     return value;
@@ -297,12 +363,15 @@ async function waitForChecks(env, step, commitSha) {
 
     const failed = required
       .map(item => ({ expected: item, job: jobsByKey.get(item.key) }))
-      .filter(item => item.job?.status === "completed" && !["success", "neutral", "skipped"].includes(item.job.conclusion));
+      .filter(item => item.job?.status === "completed" && item.job.conclusion !== "success");
     if (failed.length) {
-      throw new Error("Repository verification failed: " + failed.map(item => `${item.expected.key}=${item.job.conclusion}`).join(", "));
+      throw new Error("Repository verification failed: " + failed.map(item => `${item.expected.key}=${item.job.conclusion || "missing conclusion"}`).join(", "));
     }
 
-    if (required.every(item => jobsByKey.get(item.key)?.status === "completed")) {
+    if (required.every(item => {
+      const job = jobsByKey.get(item.key);
+      return job?.status === "completed" && job.conclusion === "success";
+    })) {
       return {
         passed: true,
         checks: required.map(item => ({
@@ -431,6 +500,103 @@ async function createDraftPullRequest(env, branch, jobId, requestedBy, requestTe
   });
 }
 
+async function probeGithubWritePermissions(env) {
+  const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 12);
+  const branch = "tmp/agentic-ops-permission-probe-" + suffix;
+  const markerPath = ".github/agentic-ops-permission-probes/" + suffix + ".json";
+  let branchAttempted = false;
+  let branchCreated = false;
+  let pullRequestNumber = null;
+  let contentsWrite = false;
+  let pullRequestsWrite = false;
+  let pullRequestClosed = true;
+  let branchDeleted = true;
+  const cleanupErrors = [];
+  let error = null;
+
+  try {
+    const sourceRef = await github(env, `/repos/${REPOSITORY}/git/ref/heads/${BASE_BRANCH}`);
+    branchAttempted = true;
+    await github(env, `/repos/${REPOSITORY}/git/refs`, "POST", {
+      ref: "refs/heads/" + branch,
+      sha: sourceRef.object.sha
+    });
+    branchCreated = true;
+
+    const marker = {
+      purpose: "temporary GitHub token permission verification",
+      created_at: new Date().toISOString(),
+      probe_id: suffix
+    };
+    await github(env, `/repos/${REPOSITORY}/contents/${markerPath}?branch=${encodeURIComponent(branch)}`, "PUT", {
+      message: "chore: temporary Agentic Operations permission probe",
+      content: btoa(JSON.stringify(marker) + "\n"),
+      branch
+    });
+    contentsWrite = true;
+
+    try {
+      const pullRequest = await github(env, `/repos/${REPOSITORY}/pulls`, "POST", {
+        title: "[temporary] Agentic Operations permission probe " + suffix,
+        head: branch,
+        base: BASE_BRANCH,
+        body: "Temporary draft PR used to verify the Agent Worker's Pull requests:write permission. It will be closed and its branch deleted automatically. No changes will be merged.",
+        draft: true
+      });
+      pullRequestNumber = Number(pullRequest.number);
+      pullRequestsWrite = Number.isInteger(pullRequestNumber) && pullRequestNumber > 0;
+      if (!pullRequestsWrite) throw new Error("GitHub did not return a valid temporary pull request number.");
+    } catch (probeError) {
+      error = probeError instanceof Error ? probeError.message.slice(0, 300) : "Pull request permission probe failed.";
+      try {
+        const possiblePullRequests = await github(env, `/repos/${REPOSITORY}/pulls?state=open&head=${encodeURIComponent("solopreneursid:" + branch)}&per_page=10`);
+        const createdPullRequest = Array.isArray(possiblePullRequests)
+          ? possiblePullRequests.find(item => item.head?.ref === branch)
+          : null;
+        if (createdPullRequest?.number) {
+          pullRequestNumber = Number(createdPullRequest.number);
+          pullRequestsWrite = true;
+        }
+      } catch (lookupError) {
+        cleanupErrors.push("Could not determine whether GitHub created the temporary PR: " + (lookupError instanceof Error ? lookupError.message.slice(0, 180) : "unknown lookup error"));
+      }
+    }
+  } catch (probeError) {
+    error = probeError instanceof Error ? probeError.message.slice(0, 300) : "Contents permission probe failed.";
+  } finally {
+    if (pullRequestNumber) {
+      try {
+        await github(env, `/repos/${REPOSITORY}/pulls/${pullRequestNumber}`, "PATCH", { state: "closed" });
+        pullRequestClosed = true;
+      } catch (cleanupError) {
+        pullRequestClosed = false;
+        cleanupErrors.push(cleanupError instanceof Error ? cleanupError.message.slice(0, 240) : "Could not close temporary pull request.");
+      }
+    }
+    if (branchAttempted) {
+      try {
+        await github(env, `/repos/${REPOSITORY}/git/refs/heads/${branch}`, "DELETE");
+        branchDeleted = true;
+      } catch (cleanupError) {
+        branchDeleted = false;
+        cleanupErrors.push(cleanupError instanceof Error ? cleanupError.message.slice(0, 240) : "Could not delete temporary branch.");
+      }
+    }
+  }
+
+  const ready = contentsWrite && pullRequestsWrite && pullRequestClosed && branchDeleted;
+  return {
+    ready,
+    contents_write: contentsWrite,
+    pull_requests_write: pullRequestsWrite,
+    cleanup: { pull_request_closed: pullRequestClosed, branch_deleted: branchDeleted },
+    ...(error ? { error } : {}),
+    ...(cleanupErrors.length ? { cleanup_errors: cleanupErrors } : {}),
+    ...(!branchDeleted ? { remaining_branch: branch } : {}),
+    ...(!pullRequestClosed && pullRequestNumber ? { remaining_pull_request: pullRequestNumber } : {})
+  };
+}
+
 export class AdminRepairWorkflow extends WorkflowEntrypoint {
   async run(event, step) {
     const payload = event.payload || {};
@@ -533,17 +699,60 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (!((request.method === "GET" && url.pathname === "/health") || (request.method === "POST" && url.pathname === "/instances"))) {
+    if (!((request.method === "GET" && url.pathname === "/health") || (request.method === "POST" && (url.pathname === "/instances" || url.pathname === "/permission-probe")))) {
       return new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } });
     }
     if (request.method === "GET") {
-      const health = await checkGithubAccess(env);
-      return Response.json(health, {
-        status: health.ready ? 200 : 503,
+      const githubHealth = await checkGithubAccess(env);
+      const dependencies = {
+        database: Boolean(env.DB),
+        workers_ai: Boolean(env.AI),
+        durable_workflow: Boolean(env.ADMIN_REPAIR_WORKFLOW)
+      };
+      const missing = Object.entries(dependencies)
+        .filter(([, available]) => !available)
+        .map(([name]) => name);
+      const ready = githubHealth.ready === true && missing.length === 0;
+      return Response.json({
+        ...githubHealth,
+        ready,
+        dependencies,
+        ...(missing.length ? {
+          error: githubHealth.error || "Required Worker bindings are missing: " + missing.join(", ")
+        } : {})
+      }, {
+        status: ready ? 200 : 503,
         headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" }
       });
     }
-    if (!env.GITHUB_TOKEN) return Response.json({ error: "GITHUB_TOKEN Worker secret is not configured." }, { status: 503 });
+    if (request.method === "POST" && url.pathname === "/permission-probe") {
+      if (request.headers.get("x-yorphives-internal-probe") !== "1") {
+        return new Response("Forbidden", { status: 403, headers: { "cache-control": "no-store" } });
+      }
+      if (!env.GITHUB_TOKEN) {
+        return Response.json({ ready: false, contents_write: false, pull_requests_write: false, error: "GITHUB_TOKEN Worker secret is not configured." }, { status: 503 });
+      }
+      const confirmation = await request.json().catch(() => null);
+      if (confirmation?.confirm !== true) {
+        return Response.json({ error: "Explicit confirmation is required." }, { status: 400 });
+      }
+      const result = await probeGithubWritePermissions(env);
+      return Response.json(result, {
+        status: 200,
+        headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" }
+      });
+    }
+    const missingDependencies = [
+      !env.GITHUB_TOKEN ? "GITHUB_TOKEN" : null,
+      !env.DB ? "DB" : null,
+      !env.AI ? "AI" : null,
+      !env.ADMIN_REPAIR_WORKFLOW ? "ADMIN_REPAIR_WORKFLOW" : null
+    ].filter(Boolean);
+    if (missingDependencies.length) {
+      return Response.json({
+        error: "Required repair Worker configuration is missing: " + missingDependencies.join(", ")
+      }, { status: 503, headers: { "cache-control": "no-store" } });
+    }
     const payload = await request.json().catch(() => null);
     if (!payload || !/^[0-9a-f-]{36}$/i.test(String(payload.job_id || "")) ||
         typeof payload.request_text !== "string" || payload.request_text.length > 4000) {

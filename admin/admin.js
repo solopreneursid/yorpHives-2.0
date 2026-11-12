@@ -405,7 +405,7 @@ async function loadAgents(refresh=true) {
     }
     repairAgentReady=jobs.agentConfigured===true;
     const status=$("agent-state");
-    if(status){status.textContent=repairAgentReady?"GitHub connected · @"+(jobs.github?.login||"verified"):"GitHub or Actions read permission not verified";status.classList.toggle("ready",repairAgentReady);}
+    if(status){status.textContent=repairAgentReady?"Cloudflare repair agent ready · GitHub @"+(jobs.github?.login||"verified"):"Repair agent blocked · GitHub, Actions or Worker dependencies not verified";status.classList.toggle("ready",repairAgentReady);}
     if($("repair-submit"))$("repair-submit").disabled=!repairAgentReady;
     if($("agent-count"))$("agent-count").textContent=repairAgentReady?"Ready": "Setup";
     if($("agent-summary"))$("agent-summary").textContent=(jobs.data||[]).length+" recorded repair jobs";
@@ -523,6 +523,39 @@ document.querySelectorAll("[data-finding-filter]").forEach(button=>button.addEve
 }));
 $("refresh-agents").addEventListener("click",()=>loadAgents());
 $("refresh-agent-registry").addEventListener("click",()=>loadAgents());
+const permissionProbeButton=$("verify-github-permissions");
+if(permissionProbeButton)permissionProbeButton.addEventListener("click",async()=>{
+  if(!confirm("Run the GitHub permission test now? It creates a temporary branch and marker commit, opens a draft PR, then closes the PR and deletes the branch. Nothing is merged."))return;
+  const status=$("github-permission-status");
+  permissionProbeButton.disabled=true;
+  if(status){status.textContent="Running temporary GitHub permission probe…";status.classList.remove("is-error","is-success");}
+  const runProbe=async(emergencyOverride)=>api("/api/admin/repair-jobs",{method:"POST",body:JSON.stringify({permission_probe:true,confirm:true,emergency_override:emergencyOverride})});
+  try{
+    let result;
+    try{
+      result=await runProbe(false);
+    }catch(error){
+      if(!String(error.message||error).includes("Another GitHub permission probe is still running"))throw error;
+      if(!confirm("The probe lock appears stale (more than ten minutes old). Emergency override will reclaim that stale lock and start a new probe. Continue?"))throw error;
+      result=await runProbe(true);
+    }
+    const probe=result.probe||{};
+    const cleanup=probe.cleanup||{};
+    const contents=probe.contents_write===true?"verified":"not verified";
+    const pullRequests=probe.pull_requests_write===true?"verified":"not verified";
+    const clean=cleanup.pull_request_closed===true&&cleanup.branch_deleted===true;
+    if(status){
+      status.textContent="Contents:write "+contents+" · Pull requests:write "+pullRequests+" · Cleanup "+(clean?"complete":"requires attention")+(probe.error?" · "+probe.error:"")+(probe.cleanup_errors?.length?" · "+probe.cleanup_errors.join("; "):"")+(probe.remaining_branch?" · Remaining branch: "+probe.remaining_branch:"")+(probe.remaining_pull_request?" · Remaining PR: #"+probe.remaining_pull_request:"");
+      status.classList.toggle("is-success",probe.ready===true);
+      status.classList.toggle("is-error",probe.ready!==true);
+    }
+    await loadAgents();
+  }catch(error){
+    if(status){status.textContent="Permission probe failed: "+error.message;status.classList.add("is-error");}
+  }finally{
+    permissionProbeButton.disabled=false;
+  }
+});
 setInterval(()=>{
   if(document.visibilityState==="visible"){
     if(state.view==="agents")loadAgents();

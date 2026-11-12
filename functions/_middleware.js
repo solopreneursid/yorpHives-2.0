@@ -16,6 +16,16 @@ Contact: connect@yorphives.com
 Website: https://yorphives.com/
 `;
 
+function applyTransportSecurity(response) {
+  const headers = new Headers(response.headers);
+  headers.set("Strict-Transport-Security", "max-age=31536000");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
 export async function onRequest(context) {
   const { request, next } = context;
   const url = new URL(request.url);
@@ -26,15 +36,15 @@ export async function onRequest(context) {
       accept.includes("text/markdown"));
 
   if (wantsMarkdown && request.method === "GET") {
-    return new Response(OVERVIEW, {
+    return applyTransportSecurity(new Response(OVERVIEW, {
       headers: {
         "content-type": "text/markdown; charset=utf-8",
         "cache-control": "public, max-age=300",
         "x-content-type-options": "nosniff",
         "vary": "Accept",
       },
-    });
+    }));
   }
 
-  return next();
+  return applyTransportSecurity(await next());
 }

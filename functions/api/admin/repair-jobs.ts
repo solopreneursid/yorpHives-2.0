@@ -6,15 +6,23 @@ interface AgentService {
 }
 interface AgentHealth {
   ready?: boolean;
+  dependencies?: {
+    database?: boolean;
+    workers_ai?: boolean;
+    durable_workflow?: boolean;
+  };
   error?: string;
   github?: {
     authenticated?: boolean;
     login?: string;
     repository_access?: boolean;
     repository?: string;
+    repository_write?: boolean;
+    repository_context_access?: boolean;
   };
   workflow?: {
     access?: boolean;
+    jobs_access?: boolean;
     latest_run?: {
       id: number;
       status: string;
@@ -52,6 +60,9 @@ interface RepairJobRow {
 interface CreateRepairJobRequest {
   finding_id?: string | null;
   request_text?: string;
+  permission_probe?: boolean;
+  confirm?: boolean;
+  emergency_override?: boolean;
 }
 const now = () => new Date().toISOString();
 const id = () => crypto.randomUUID();
@@ -95,7 +106,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   const identity = await requireAdmin(context);
   if (isAdminResponse(identity)) return identity;
   const result = await context.env.DB!.prepare(
-    "SELECT id,finding_id,requested_by,request_text,status,agent_name,branch_name,pull_request_url,result_summary,created_at,updated_at FROM admin_repair_jobs ORDER BY created_at DESC LIMIT 50"
+    "SELECT id,finding_id,requested_by,request_text,status,agent_name,branch_name,pull_request_url,result_summary,created_at,updated_at FROM admin_repair_jobs WHERE id!='github-permission-probe-singleton' ORDER BY created_at DESC LIMIT 50"
   ).all<RepairJobRow>();
   const env = context.env as RepairEnv;
   let agentHealth: AgentHealth | null = null;
@@ -108,25 +119,50 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     }
   }
   const agentConfigured = agentHealth?.ready === true;
-  const [scheduled, security, openSecurity, queuedJobs] = await Promise.all([
+  const [scheduled, securityAudit, openSecurity, queuedJobs] = await Promise.all([
     context.env.DB!.prepare("SELECT MAX(started_at) AS last_run_at FROM admin_runs WHERE trigger_source='scheduled' AND status='completed'").first<{last_run_at:string|null}>(),
-    context.env.DB!.prepare("SELECT MAX(created_at) AS last_run_at FROM admin_audit_events WHERE action='security_audit_completed'").first<{last_run_at:string|null}>(),
+    context.env.DB!.prepare("SELECT action,details_json,created_at AS last_run_at FROM admin_audit_events WHERE action IN ('security_audit_completed','security_audit_partial') ORDER BY created_at DESC LIMIT 1").first<{action:string;details_json:string|null;last_run_at:string|null}>(),
     context.env.DB!.prepare("SELECT COUNT(*) AS count FROM admin_asset_findings WHERE category='security' AND status IN ('open','investigating','awaiting_approval')").first<{count:number}>(),
-    context.env.DB!.prepare("SELECT COUNT(*) AS count FROM admin_repair_jobs WHERE status IN ('queued','dispatched','running','needs_review')").first<{count:number}>()
+    context.env.DB!.prepare("SELECT COUNT(*) AS count FROM admin_repair_jobs WHERE id!='github-permission-probe-singleton' AND status IN ('queued','dispatched','running','needs_review')").first<{count:number}>()
   ]);
   const scheduledFresh = Boolean(scheduled?.last_run_at && Date.now()-Date.parse(scheduled.last_run_at)<8*60*60*1000);
-  const securityFresh = Boolean(security?.last_run_at && Date.now()-Date.parse(security.last_run_at)<8*60*60*1000);
+  let securityEvidence: {status?:string;checked?:number;target_count?:number;errors?:number;skipped?:number}|null = null;
+  try {
+    securityEvidence = securityAudit?.details_json ? JSON.parse(securityAudit.details_json) : null;
+  } catch {
+    securityEvidence = null;
+  }
+  const securityComplete = securityAudit?.action === "security_audit_completed" &&
+    securityEvidence?.status === "complete" &&
+    securityEvidence.checked === securityEvidence.target_count &&
+    securityEvidence.errors === 0 &&
+    securityEvidence.skipped === 0;
+  const securityFresh = Boolean(securityComplete && securityAudit?.last_run_at &&
+    Date.now()-Date.parse(securityAudit.last_run_at)<8*60*60*1000);
+  const hasStructuredSecurityEvidence = typeof securityEvidence?.target_count === "number" &&
+    typeof securityEvidence.checked === "number" &&
+    typeof securityEvidence.errors === "number" &&
+    typeof securityEvidence.skipped === "number";
+  const securityDetail = !securityAudit
+    ? "No security audit has run yet."
+    : !hasStructuredSecurityEvidence
+      ? "The last audit used an older evidence format; full target coverage cannot be verified. Waiting for a complete audit cycle."
+      : !securityComplete
+        ? `Last audit was partial: ${securityEvidence.checked}/${securityEvidence.target_count} targets checked, ${securityEvidence.errors} errors, ${securityEvidence.skipped} skipped.`
+        : securityFresh
+          ? "All configured public targets completed the passive security audit."
+          : "The last complete security audit is older than eight hours.";
   const qa = specialistState(agentHealth, "browser smoke tests and seo crawl");
   const review = specialistState(agentHealth, "code review");
   const performance = specialistState(agentHealth, "lighthouse performance audit");
   const agents = [
     {id:"sentinel",name:"Sentinel",role:"Availability & monitoring",description:"Scheduled HTTP health checks and production change snapshots.",status:scheduledFresh?"active":"degraded",last_run_at:scheduled?.last_run_at||null,detail:scheduledFresh?"Scheduled reliability cycle is recent.":"No successful scheduled health cycle in the last eight hours."},
     {id:"asset-intelligence",name:"Asset Intelligence",role:"Inventory & discovery",description:"Discovers pages, tools, catalogue entries, APIs and dependencies.",status:scheduledFresh?"active":"degraded",last_run_at:scheduled?.last_run_at||null,detail:scheduledFresh?"Runs with the scheduled monitoring cycle.":"Waiting for the next successful inventory cycle."},
-    {id:"security-auditor",name:"Security Auditor",role:"Passive security configuration",description:"Checks public HTTPS response headers and records evidence-backed findings without exploit attempts.",status:securityFresh?"active":"degraded",last_run_at:security?.last_run_at||null,detail:securityFresh?"A recent passive security audit completed.":"Waiting for the first scheduled security audit."},
+    {id:"security-auditor",name:"Security Auditor",role:"Passive security configuration",description:"Checks public HTTPS response headers and records evidence-backed findings without exploit attempts.",status:securityFresh?"active":"degraded",last_run_at:securityAudit?.last_run_at||null,detail:securityDetail},
     {id:"qa-engineer",name:"QA Engineer",role:"Browser & journey testing",description:"Playwright Chromium checks navigation, search, tool execution, mobile navigation, sitemap pages and internal links.",...qa},
     {id:"code-reviewer",name:"Code Reviewer",role:"Change & regression review",description:"Independent Workers AI review for repair proposals plus changed-line risk checks for dynamic execution, HTML sinks, hard-coded credentials, insecure URLs and sensitive configuration.",...review},
     {id:"performance-engineer",name:"Performance Engineer",role:"Performance & Core Web Vitals",description:"Scheduled and change-triggered Lighthouse measurements for homepage and Free Tools.",...performance},
-    {id:"repair-engineer",name:"Repair Engineer",role:"Isolated code repair",description:"Workers AI repair proposals, isolated branches and CI-gated draft PRs.",status:agentConfigured?"active":"blocked",last_run_at:null,detail:agentConfigured?"GitHub token authentication and repository read access verified. Repairs still require all CI specialist checks.":(agentHealth?.error||"GitHub authentication or repository access is not verified.")}
+    {id:"repair-engineer",name:"Repair Engineer",role:"Isolated code repair",description:"Workers AI repair proposals, isolated branches and CI-gated draft PRs.",status:agentConfigured?"active":"blocked",last_run_at:null,detail:agentConfigured?"Repository push permission, repair-base/source read access, Actions workflow/job reads, and the repair Worker D1, Workers AI, and Workflow bindings are verified. Actual token write scopes are exercised by isolated branch and draft-PR creation; repairs remain CI-gated.":(agentHealth?.error||"GitHub repository write or Actions read capability is not verified.")}
   ];
   return adminJson({
     data: result.results,
@@ -150,6 +186,73 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
   }
 
   const body = await context.request.json().catch(() => null) as CreateRepairJobRequest | null;
+  if (body?.permission_probe === true) {
+    if (body.confirm !== true) {
+      return adminJson({ error: { code: "CONFIRMATION_REQUIRED", message: "Confirm the temporary branch and draft-PR permission probe." } }, 400);
+    }
+    const agent = context.env.ADMIN_AGENT_SERVICE;
+    if (!agent) {
+      return adminJson({ error: { code: "AGENT_NOT_CONFIGURED", message: "The private repair Worker service binding is unavailable." } }, 503);
+    }
+    const lockId = "github-permission-probe-singleton";
+    const emergencyOverride = body.emergency_override === true;
+    const staleBefore = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    await context.env.DB!.prepare(
+      "INSERT OR IGNORE INTO admin_repair_jobs (id,finding_id,requested_by,request_text,status,created_at,updated_at) VALUES (?,NULL,?,?, 'queued',?,?)"
+    ).bind(lockId, identity.email, "Internal GitHub permission probe concurrency lock.", now(), now()).run();
+    const acquired = await context.env.DB!.prepare(
+      "UPDATE admin_repair_jobs SET status='running',requested_by=?,request_text=?,updated_at=? WHERE id=? AND (status!='running' OR (updated_at<? AND ?=1))"
+    ).bind(identity.email, emergencyOverride ? "Emergency override: reclaim stale permission probe lock." : "GitHub permission probe lock.", now(), lockId, staleBefore, emergencyOverride ? 1 : 0).run();
+    if ((acquired.meta?.changes || 0) !== 1) {
+      return adminJson({
+        error: {
+          code: "PROBE_ALREADY_RUNNING",
+          message: "Another GitHub permission probe is still running. Retry when it finishes. Emergency override can reclaim a lock that has been stale for more than ten minutes."
+        }
+      }, 409);
+    }
+    let probe: Record<string, unknown> | null = null;
+    let failure: { code: string; message: string; status: number } | null = null;
+    try {
+      const response = await agent.fetch(new Request("https://admin-agent.internal/permission-probe", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-yorphives-internal-probe": "1"
+        },
+        body: JSON.stringify({ confirm: true, emergency_override: emergencyOverride })
+      }));
+      const result = await response.json().catch(() => null) as unknown;
+      if (!response.ok || !result || typeof result !== "object" || Array.isArray(result)) {
+        failure = { code: "GITHUB_PERMISSION_PROBE_FAILED", message: "The repair Worker could not complete the permission probe.", status: response.status || 502 };
+      } else {
+        probe = result as Record<string, unknown>;
+      }
+    } catch {
+      failure = { code: "GITHUB_PERMISSION_PROBE_UNAVAILABLE", message: "The private repair Worker could not be reached.", status: 502 };
+    } finally {
+      await context.env.DB!.prepare(
+        "UPDATE admin_repair_jobs SET status='completed',updated_at=? WHERE id=?"
+      ).bind(now(), lockId).run();
+    }
+    const auditDetails = {
+      ready: probe?.ready === true,
+      contents_write: probe?.contents_write === true,
+      pull_requests_write: probe?.pull_requests_write === true,
+      cleanup: probe?.cleanup || null,
+      cleanup_errors: probe?.cleanup_errors || [],
+      remaining_branch: probe?.remaining_branch || null,
+      remaining_pull_request: probe?.remaining_pull_request || null,
+      emergency_override: emergencyOverride,
+      error: failure?.message || probe?.error || null
+    };
+    await context.env.DB!.prepare(
+      "INSERT INTO admin_audit_events (id,actor,action,resource_type,resource_id,details_json,created_at) VALUES (?,?,?,?,?,?,?)"
+    ).bind(id(), identity.email, "github_permission_probe", "github_token", "cloudflare-admin-agent", JSON.stringify(auditDetails), now()).run();
+    if (failure) return adminJson({ error: { code: failure.code, message: failure.message } }, failure.status);
+    return adminJson({ probe });
+  }
+
   const requestText = (body?.request_text || "").trim();
   if (!requestText || requestText.length > 4000) {
     return adminJson({ error: { code: "INVALID_REQUEST", message: "Describe the repair in 1–4000 characters." } }, 400);
