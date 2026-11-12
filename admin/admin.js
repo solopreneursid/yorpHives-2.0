@@ -432,9 +432,18 @@ async function loadAgents(refresh=true) {
       const selected=$("repair-finding").value;
       const findings=await api("/api/admin/findings");
       const select=$("repair-finding");select.replaceChildren();
+      select.dataset.linksReady=jobs.finding_links_ready===true?"true":"false";
       const general=document.createElement("option");general.value="";general.textContent="General investigation";select.append(general);
-      for(const finding of findings.data||[]){const option=document.createElement("option");option.value=finding.id;option.textContent="["+finding.severity+"] "+finding.title;select.append(option);}
-      select.value=selected;
+      for(const finding of findings.data||[]){
+        const option=document.createElement("option");
+        option.value=finding.id;
+        option.dataset.source=finding.source_type==="asset"?"asset":"monitor";
+        option.textContent="["+finding.severity+"] "+finding.title;
+        // Before migration 0022, asset findings are not valid repair FK targets.
+        if(option.dataset.source==="asset" && !jobs.finding_links_ready)option.disabled=true;
+        select.append(option);
+      }
+      select.value=Array.from(select.options).some(option=>option.value===selected&&!option.disabled)?selected:"";
     }
     const target=$("repair-jobs");
     if(target){
@@ -526,7 +535,9 @@ $("repair-form").addEventListener("submit",async event=>{
   if(!repairAgentReady){setText("repair-message", "Configure the private Worker GITHUB_TOKEN secret before starting an agent job.");return;}
   button.disabled=true;button.textContent="Submitting…";setText("repair-message", "");
   try{
-    const result=await api("/api/admin/repair-jobs",{method:"POST",body:JSON.stringify({finding_id:$("repair-finding").value||null,request_text:"[Scope: "+$("repair-scope").value+"] "+requestText})});
+    const selectedFinding=$("repair-finding").selectedOptions[0];
+    const findingId=$("repair-finding").value||null;
+    const result=await api("/api/admin/repair-jobs",{method:"POST",body:JSON.stringify({finding_id:findingId,...(findingId?{finding_source:selectedFinding?.dataset.source||"monitor"}:{}),request_text:"[Scope: "+$("repair-scope").value+"] "+requestText})});
     setText("repair-message", result.dispatched?"Investigation dispatched. Proposed changes must return through a draft pull request.":result.message||"Request saved.");
     $("repair-request").value="";state.loaded.delete("agents");await loadAgents();
   }catch(error){setText("repair-message", "Could not submit request: " + error.message);}
