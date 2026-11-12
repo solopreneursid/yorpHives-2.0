@@ -1,0 +1,23 @@
+/* YorpMind governed self-evolution: evidence-first and no executable UI. */
+.ym-evolution-panel{border:1px solid #356178;background:linear-gradient(133deg,#143145,#101b31);border-radius:14px;padding:22px;margin:0 0 20px}
+.ym-evolution-header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px}
+.ym-evolution-header h2{color:#e8faff;font-size:1.3rem;margin:8px 0}
+.ym-evolution-header p{max-width:780px;color:#a8c6d8;font-size:.8rem;line-height:1.65}
+.ym-evolution-state{font-size:.75rem;line-height:1.55;color:#a8c9dc;margin:14px 0}
+.ym-evolution-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-bottom:16px}
+.ym-evolution-metric{background:#0e2033;border:1px solid #2f506a;padding:14px;border-radius:10px;display:flex;flex-direction:column;gap:7px}
+.ym-evolution-metric span{color:#a9c9da;font-size:.68rem}
+.ym-evolution-metric strong{color:#ecfeff;font-size:1.35rem}
+.ym-evolution-metric small{color:#8db3c9;font-size:.68rem;line-height:1.45}
+.ym-evolution-proposals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.ym-evolution-item{min-width:0;border:1px solid #315268;border-radius:11px;background:#102238;padding:16px}
+.ym-evolution-item .ym-source{overflow-wrap:anywhere;margin:8px 0}
+.ym-evolution-review{display:grid;gap:10px;margin-top:14px;border-top:1px solid #35516b;padding-top:12px}
+.ym-evolution-review label{display:grid;gap:8px;font-size:.77rem;color:#c5def0}
+.ym-evolution-review textarea{width:100%;min-height:85px;background:#0b1829;border:1px solid #41627a;border-radius:8px;color:#e8f7ff;padding:11px;font:inherit;line-height:1.5;font-size:.82rem;resize:vertical}
+.ym-evolution-actions{display:flex;gap:9px;flex-wrap:wrap}
+.ym-evolution-actions button:disabled{opacity:.5;cursor:not-allowed}
+.ym-evolution-disclaimer{color:#e2c99b;background:#312b1d;padding:12px 14px;border-left:3px solid #edbd67;border-radius:0 8px 8px 0;font-size:.77rem;line-height:1.6;margin-top:16px}
+.ym-evolution-panel :is(button,textarea):focus-visible{outline:2px solid #67e8f9;outline-offset:3px}
+@media(max-width:960px){.ym-evolution-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.ym-evolution-proposals{grid-template-columns:1fr}}
+@media(max-width:560px){.ym-evolution-panel{padding:15px}.ym-evolution-header{flex-direction:column}.ym-evolution-actions button{width:100%}}
