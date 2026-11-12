@@ -7,7 +7,7 @@ export async function scanYorpMindTeam(db, clock = () => new Date()) {
     return { status: "migration_required", reports_created: 0 };
   const now = clock();
   const date = now.toISOString().slice(0, 10);
-  const [staff, agents, departments, jobs] = await Promise.all([
+  const [staff, agents, departments, jobs, daily] = await Promise.all([
     db.prepare("SELECT staff_id,display_name,tier,domain,reports_to,max_parallel_reviews,enabled FROM yorpmind_staff WHERE enabled=1 LIMIT 20").all(),
     db.prepare("SELECT agent_id,display_name,department_id,status,enabled,autonomy_level FROM agent_registry ORDER BY agent_id LIMIT ?").bind(MAX_TEAM_AGENTS_SCANNED).all(),
     db.prepare("SELECT department_id,name FROM agent_departments LIMIT 40").all(),
