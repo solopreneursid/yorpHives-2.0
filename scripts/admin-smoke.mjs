@@ -234,8 +234,10 @@ async function run() {
     await page.locator("#view-agents").waitFor({ state: "visible", timeout: 10000 });
     record("incident_prepare_does_not_dispatch",
       (await page.locator("#repair-request").inputValue()).includes("Preview-only tool failure") &&
-      (await page.locator("#repair-finding").inputValue()) === sampleFinding.id,
-      "Preparing an investigation fills the reviewable form; does not start a repair Workflow");
+      (await page.locator("#repair-request").inputValue()).includes(sampleFinding.id) &&
+      (await page.locator("#repair-finding").inputValue()) === "" &&
+      (await page.locator("#repair-message").innerText()).includes("general investigation"),
+      "Asset finding preparation preserves evidence without submitting an invalid monitor-only foreign key or dispatching AI");
     await page.unroute("**/api/admin/findings*");
     await page.unroute("**/api/admin/repair-jobs");
 
