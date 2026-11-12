@@ -25,6 +25,9 @@ const demandRouteURI=data((await file("../functions/api/admin/demand.ts"))
   .replace('"../../_lib/headquarters"',JSON.stringify(headquartersURI))
   .replace('"../../../hq-intelligence/demand.js"',JSON.stringify(demandURI)));
 const {onRequestGet:getDemand,onRequestPost:postDemand}=await import(demandRouteURI);
+const nextActionsURI=data((await file("../functions/api/admin/next-actions.ts"))
+  .replace('"../../_lib/admin-auth"',JSON.stringify(authURI)));
+const {onRequestGet:getNextActions}=await import(nextActionsURI);
 const synthesisURI=data(await file("../hq-intelligence/synthesis.js"));
 const {parseIdeas,synthesizeIdeas}=await import(synthesisURI);
 const workerURI=data((await file("../hq-intelligence/worker.js"))
@@ -68,6 +71,7 @@ async function database(){
   "../migrations/0015_headquarters_global_intelligence.sql",
   "../migrations/0016_headquarters_validation.sql",
   "../migrations/0017_headquarters_existing_tool_demand.sql",
+  "../migrations/0018_headquarters_traffic_evidence.sql",
   "../migrations/0019_headquarters_public_market_sources.sql"
  ])db.exec(await file(path));
  const DB={
@@ -418,6 +422,43 @@ test("Unknown technologies and industries are not excluded by the starter taxono
   const refreshed=await postDemand(context(e,"POST",{action:"refresh"}));
   assert.equal(refreshed.status,200);
   assert.equal(db.prepare("SELECT research_status FROM hq_demand_categories WHERE category_key=?").get(dynamic.category_key).research_status,"investigating","refresh never overwrites founder triage");
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM agent_approvals").get().n,0);
+ }finally{globalThis.fetch=originalFetch;db.close();}
+});
+
+test("Read-only HQ next actions distinguish source types and do not invent demand",async()=>{
+ const {db,DB}=await database();
+ globalThis.fetch=stub;
+ try{
+  const e=envFor(DB);
+  const noAuth=await getNextActions(context(e,"GET",undefined,{"cf-access-jwt-assertion":""}));
+  assert.equal(noAuth.status,401);
+  const none=await getNextActions(context(e));
+  assert.equal(none.status,200);
+  const pending=await none.json();
+  assert.ok(pending.recommendations.some(x=>x.kind==="measure_first_party"));
+  assert.ok(pending.recommendations.some(x=>x.kind==="verify_source_collection"));
+  assert.equal(pending.coverage.traffic_capture_exists,false);
+  assert.equal(pending.coverage.public_market_source_count,0);
+  assert.ok(pending.recommendations.every(x=>!x.verified_demand&&!x.authorized_for_build));
+  const captureId=crypto.randomUUID();
+  db.prepare("INSERT INTO hq_traffic_captures(capture_id,capture_day,observed_start,observed_end,tool_paths,grouped_requests,candidate_groups,recorded_by) VALUES (?,'2026-11-12','2026-11-05T00:00:00Z','2026-11-12T00:00:00Z',1,81,1,'qa')").run(captureId);
+  db.prepare("INSERT INTO hq_traffic_tool_paths(capture_id,slug,path,grouped_requests) VALUES (?,'file-studio','/free-tools/file-studio/',81)").run(captureId);
+  db.prepare("INSERT INTO hq_public_market_signals(signal_key,provider,evidence_kind,source_id,source_query,title,excerpt,source_url,public_metric_label,public_metric_value) VALUES ('wordpress:document-tool','wordpress_plugins','existing_product','document-tool','pdf','Document Utility','A public plugin.','https://wordpress.org/plugins/document-tool/','active_install_band',5000)").run();
+  db.prepare("INSERT INTO hq_public_market_signals(signal_key,provider,evidence_kind,source_id,source_query,title,excerpt,source_url,public_metric_label,public_metric_value) VALUES ('stackexchange:webapps:4881','stackexchange_questions','public_question','webapps:4881','webapps','How can I convert reports?','A public question.','https://webapps.stackexchange.com/questions/4881','question_score',2)").run();
+  const response=await getNextActions(context(e));
+  const snapshot=await response.json();
+  assert.equal(snapshot.coverage.traffic_capture_exists,true);
+  assert.equal(snapshot.coverage.public_market_source_count,2);
+  assert.equal(snapshot.recommendations.some(x=>x.kind==="measure_first_party"),false);
+  assert.ok(snapshot.recommendations.some(x=>x.kind==="audit_existing_tool"&&x.evidence_type==="first_party_http_requests"&&x.evidence_value===81));
+  assert.ok(snapshot.recommendations.some(x=>x.kind==="compare_existing_software"&&x.evidence_unit==="active_install_band"));
+  assert.ok(snapshot.recommendations.some(x=>x.kind==="investigate_public_problem"&&x.evidence_unit==="question_score"));
+  assert.ok(snapshot.recommendations.every(x=>!x.verified_demand&&!x.authorized_for_build));
+  assert.ok(snapshot.recommendations.every(x=>x.priority_type==="workflow_triage_not_market_demand"));
+  const markdown=await getNextActions(context(e,"GET",undefined,{accept:"text/markdown"}));
+  assert.match(markdown.headers.get("content-type"),/text\/markdown/);
+  assert.match(await markdown.text(),/Approved to build: no/);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM agent_approvals").get().n,0);
  }finally{globalThis.fetch=originalFetch;db.close();}
 });
