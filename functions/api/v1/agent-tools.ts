@@ -48,6 +48,10 @@ export async function onRequestPost({request,env}:Context):Promise<Response>{
  if(!env.DB)return json({error:"Execution database is unavailable."},503);
  const serviceIds=(env.HQ_TOOL_SERVICE_TOKEN_IDS||"").trim();
  if(!serviceIds)return json({error:"Agent execution is not enabled for this environment."},503);
+ const executionIds=new Set(serviceIds.split(",").map(x=>x.trim()).filter(Boolean));
+ const ciIds=new Set((env.ADMIN_CI_SERVICE_TOKEN_IDS||"").split(",").map(x=>x.trim()).filter(Boolean));
+ if([...executionIds].some(id=>ciIds.has(id)))
+  return json({error:"Execution allowlist overlaps the read-only CI identity scope."},503);
  // CI's existing Admin token is NEVER permitted to execute a service.
  const identity=await verifyAdminAccess(request,{
   ...env,ADMIN_ALLOWED_EMAILS:"",

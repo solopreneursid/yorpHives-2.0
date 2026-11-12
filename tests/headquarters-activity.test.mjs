@@ -127,6 +127,9 @@ test("agent tool execution requires a separately allowlisted signed Access servi
   const disabled=await executeAgent(ctx({...env,HQ_TOOL_SERVICE_TOKEN_IDS:""},route,"POST",
    {tool:"sha256-text",input:"hello"},{"cf-access-jwt-assertion":service}));
   assert.equal(disabled.status,503);
+  const overlap=await executeAgent(ctx({...env,HQ_TOOL_SERVICE_TOKEN_IDS:"ci-readonly"},route,"POST",
+   {tool:"sha256-text",input:"hello"},{"cf-access-jwt-assertion":ci}));
+  assert.equal(overlap.status,503,"a misconfigured CI token must never gain execution rights");
   assert.equal((await executeAgent(ctx(env,route,"POST",
    {tool:"sha256-text",input:"hello"},{"cf-access-jwt-assertion":ci}))).status,401);
   assert.equal((await executeAgent(ctx(env,route,"POST",
