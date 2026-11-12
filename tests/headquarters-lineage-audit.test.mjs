@@ -4,7 +4,8 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { tmpdir } from "node:os";
-import { join, dirname, fileURLToPath } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseNameStatus, reviewClass, reportMarkdown } from "../scripts/headquarters-lineage-audit.mjs";
 
 const exec = promisify(execFile);
