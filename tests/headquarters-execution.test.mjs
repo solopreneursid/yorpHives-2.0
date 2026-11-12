@@ -126,6 +126,8 @@ test("mission execution requires authenticated owner, allowed specialist and hea
     assert.equal((await onRequestPost(call(env, "POST", mission))).status, 201);
     const snapshot = await (await onRequestGet(call(env, "GET"))).json();
     assert.equal(snapshot.engine_available, true);
+    const offlineSnapshot = await (await onRequestGet(call({ ...env, HQ_ENGINE_SERVICE: undefined }, "GET"))).json();
+    assert.equal(offlineSnapshot.engine_available, false);
     assert.equal(snapshot.specialists.filter(agent => agent.enabled && agent.autonomy_level === "recommend").length, 7);
     assert.equal(snapshot.missions.length, 1);
     const stale = { action: "dispatch", job_id: mission.job_id, expected_updated_at: "stale" };

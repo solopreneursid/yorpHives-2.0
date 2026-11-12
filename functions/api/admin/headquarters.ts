@@ -54,10 +54,21 @@ async function markDispatchFailure(context: MissionContext, jobId: string, error
     "completed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE job_id=? AND job_type='owner_mission' AND status='queued'"
   ).bind(JSON.stringify({ error: error.slice(0, 300), verified: false }), jobId).run();
 }
+async function missionEngineReady(service?: MissionService): Promise<boolean> {
+  if (!service) return false;
+  try {
+    const response = await service.fetch(new Request("https://hq-engine.internal/health", {
+      method: "GET", signal: AbortSignal.timeout(5000)
+    }));
+    const data = await response.json().catch(() => null) as MissionEngineHealth | null;
+    return response.ok && data?.ready === true && data.mode === "bounded_recommendation";
+  } catch { return false; }
+}
 export async function onRequestGet(context: MissionContext): Promise<Response> {
   const identity = await requireAdmin(context);
   if (isAdminResponse(identity)) return identity;
-  return headquartersResponse(context.request, await headquartersSnapshot(context.env.DB!, Boolean(context.env.HQ_ENGINE_SERVICE)));
+  const engineReady = await missionEngineReady(context.env.HQ_ENGINE_SERVICE);
+  return headquartersResponse(context.request, await headquartersSnapshot(context.env.DB!, engineReady));
 }
 export async function onRequestPost(context: MissionContext): Promise<Response> {
   const identity = await requireAdmin(context);
@@ -119,13 +130,7 @@ export async function onRequestPatch(context: MissionContext): Promise<Response>
   ).first<{ count: number }>();
   if (Number(active?.count || 0) >= MAX_ACTIVE)
     return adminJson({ error: { message: "The mission engine is at capacity (3 active jobs). Review running missions first." } }, 429);
-  let available = false;
-  try {
-    const health = await engine.fetch(new Request("https://hq-engine.internal/health", { method: "GET" }));
-    const data = await health.json().catch(() => null) as MissionEngineHealth | null;
-    available = health.ok && data?.ready === true && data.mode === "bounded_recommendation";
-  } catch { available = false; }
-  if (!available) return adminJson({ error: { message: "Mission engine is not healthy. No credits were spent and the mission remains planned." } }, 503);
+  if (!await missionEngineReady(engine)) return adminJson({ error: { message: "Mission engine is not healthy. No credits were spent and the mission remains planned." } }, 503);
   const updated = await db.prepare(
     "UPDATE agent_jobs SET status='queued',updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') " +
     "WHERE job_id=? AND updated_at=? AND status='planned' AND job_type='owner_mission' AND created_by=?"
