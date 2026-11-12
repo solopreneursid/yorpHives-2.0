@@ -190,6 +190,24 @@
         </div>
         <div class="hq-market-feed-list" id="market-feed-list"></div>
       </section>
+      <section class="hq-activity-panel" aria-label="Successful tool actions and authenticated agent executions">
+        <div class="hq-activity-heading">
+          <div>
+            <span class="intel-overline">EXECUTION METRICS · FIRST INSTRUMENTED TOOLS</span>
+            <h2>Did a tool actually run?</h2>
+            <p>Successful actions reported by browser-based tools are tracked separately from actual Access-authenticated server tool executions. Neither number is a unique-user count, paid conversion, or verified agent-market demand.</p>
+          </div>
+          <a class="hq-button hq-button-secondary" href="/api/admin/tool-activity?format=markdown" target="_blank" rel="noopener noreferrer">Read usage evidence ↗</a>
+        </div>
+        <div class="hq-activity-stats">
+          <article><span>BROWSER-REPORTED COMPLETIONS</span><strong id="activity-browser-count">—</strong><small>Tool calculated locally; self-reported</small></article>
+          <article><span>ACCESS-AUTHENTICATED EXECUTIONS</span><strong id="activity-agent-count">—</strong><small>Successful private server execution only</small></article>
+          <article><span>TOOLS INSTRUMENTED</span><strong id="activity-covered-count">—</strong><small>Separate browser and agent registry entries</small></article>
+        </div>
+        <p class="hq-activity-status" id="activity-status" role="status" aria-live="polite">Loading observed tool activity…</p>
+        <div id="activity-list" class="hq-activity-list"></div>
+        <small class="hq-activity-caveat">This is a first measurement layer. It covers selected tools only, stores no file contents or user identities, and does not produce a conversion rate by dividing events by sampled HTTP requests. Server agent execution remains disabled until separate service credentials are configured.</small>
+      </section>
       <section class="hq-decision-queue" aria-label="Evidence-based next actions">
         <div class="hq-decision-heading">
           <div><span class="intel-overline">FOUNDER PRIORITY QUEUE · DETERMINISTIC</span>
@@ -491,5 +509,6 @@
 <script src="/admin/traffic-evidence.js" defer></script>
 <script src="/admin/market-sources.js" defer></script>
 <script src="/admin/next-actions.js" defer></script>
+<script src="/admin/tool-activity.js" defer></script>
 </body>
 </html>

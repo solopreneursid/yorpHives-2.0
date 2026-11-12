@@ -369,3 +369,24 @@
 .hq-decision-empty{font-size:11px;color:#abc2d2;padding:15px}
 @media(max-width:1050px){.hq-decision-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.hq-decision-grid{grid-template-columns:1fr}.hq-decision-queue{padding:16px}.hq-decision-heading>a{width:100%}}
+
+/* Strictly separated anonymous browser reports and authenticated execution. */
+.hq-activity-panel{padding:22px;margin:0 0 28px;border:1px solid #4e667e;border-radius:17px;background:linear-gradient(128deg,#102538,#101d2e)}
+.hq-activity-heading{display:flex;gap:16px;align-items:start;justify-content:space-between;flex-wrap:wrap}
+.hq-activity-heading h2{font-size:24px;color:#f2faff;letter-spacing:-.04em;margin:8px 0;font-weight:800}
+.hq-activity-heading p{font-size:11px;color:#a9c4d3;line-height:1.8;max-width:670px}
+.hq-activity-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.hq-activity-stats article{border:1px solid #34596c;border-radius:10px;background:#0e1d2e;padding:16px}
+.hq-activity-stats span{font-size:9px;color:#a5c4d4;font-weight:750;letter-spacing:.06em}
+.hq-activity-stats strong{font-size:24px;color:#f4fbff;display:block;margin:10px 0;letter-spacing:-.04em}
+.hq-activity-stats small{font-size:10px;color:#94b5c8;line-height:1.5}
+.hq-activity-status{font-size:10px;color:#9fe4ce;line-height:1.7;margin:12px 0}
+.hq-activity-list{max-height:270px;overflow:auto;border-top:1px solid #31576c}
+.hq-activity-row{display:flex;justify-content:space-between;align-items:center;gap:13px;padding:10px 4px;border-bottom:1px solid #28475b}
+.hq-activity-label{display:grid;gap:4px}
+.hq-activity-label strong{font-size:11px;color:#daeefa}
+.hq-activity-label small{font-size:9px;color:#9bb8c7}
+.hq-activity-number{font-size:11px;color:#f6dba3;white-space:nowrap}
+.hq-activity-empty{font-size:11px;color:#a6becc;padding:14px 0}
+.hq-activity-caveat{display:block;margin-top:14px;font-size:10px;color:#cdbf9d;line-height:1.7}
+@media(max-width:650px){.hq-activity-stats{grid-template-columns:1fr}.hq-activity-panel{padding:16px}.hq-activity-heading>a{width:100%}}
