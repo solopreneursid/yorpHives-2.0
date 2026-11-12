@@ -121,7 +121,7 @@ async function run() {
         return apiOriginal(path, options);
       };
       try {
-        await window.loadOwnerActionCenter();
+        await window.loadOwnerActionCenter(true);
         const host = document.querySelector("#owner-actions");
         return {
           available: true,
