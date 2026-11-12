@@ -75,12 +75,23 @@ export class MissionWorkflow extends WorkflowEntrypoint {
     try {
       const job = await step.do("claim-queued-mission", async () => {
         const row = await missionRecord(this.env.DB, jobId);
-        if (!eligible(row) || row.status !== "queued") throw new Error("Mission was not eligible or was already claimed.");
-        const update = await this.env.DB.prepare(
-          "UPDATE agent_jobs SET status='running',started_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')," +
-          "updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE job_id=? AND status='queued'"
-        ).bind(jobId).run();
-        if (update.meta?.changes !== 1) throw new Error("Mission already changed state.");
+        if (!eligible(row) || !["queued", "running"].includes(row.status)) {
+          throw new Error("Mission was not eligible for this workflow.");
+        }
+        if (row.status === "queued") {
+          const claimed = await this.env.DB.prepare(
+            "UPDATE agent_jobs SET status='running',started_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')," +
+            "updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE job_id=? AND job_type='owner_mission' AND status='queued' RETURNING job_id"
+          ).bind(jobId).first();
+          if (!claimed?.job_id) throw new Error("Mission was claimed by another workflow.");
+        } else {
+          // Durable step retries may replay after a successful write. A fixed
+          // workflow instance ID makes resuming the same running mission safe.
+          const active = await this.env.DB.prepare(
+            "SELECT job_id FROM agent_jobs WHERE job_id=? AND job_type='owner_mission' AND status='running' AND started_at IS NOT NULL"
+          ).bind(jobId).first();
+          if (!active?.job_id) throw new Error("Mission cannot resume without a recorded start.");
+        }
         return { id: row.job_id, title: row.title, brief: row.request_summary, agent: row.display_name, department: row.department_id };
       });
       const brief = await step.do("generate-reviewable-mission-brief", {
@@ -112,9 +123,9 @@ export class MissionWorkflow extends WorkflowEntrypoint {
         return parseBrief(response?.response ?? response?.result?.response);
       });
       await step.do("persist-brief-and-review-gate", async () => {
-        const result = await this.env.DB.prepare(
+        const saved = await this.env.DB.prepare(
           "UPDATE agent_jobs SET status='awaiting_owner_approval',result_json=?,evidence_json=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')," +
-          "completed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE job_id=? AND job_type='owner_mission' AND status='running'"
+          "completed_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE job_id=? AND job_type='owner_mission' AND status='running' RETURNING job_id"
         ).bind(
           JSON.stringify({
             kind: "recommendation_brief", model: MODEL, verified: false,
@@ -125,8 +136,15 @@ export class MissionWorkflow extends WorkflowEntrypoint {
             note: "Model-generated analysis only. External facts, measurements and claims require independent evidence."
           }]),
           jobId
-        ).run();
-        if (result.meta?.changes !== 1) throw new Error("Mission changed state before its result could be saved.");
+        ).first();
+        if (!saved?.job_id) {
+          const existing = await this.env.DB.prepare(
+            "SELECT status,result_json FROM agent_jobs WHERE job_id=? AND job_type='owner_mission'"
+          ).bind(jobId).first();
+          if (existing?.status !== "awaiting_owner_approval" || !existing.result_json) {
+            throw new Error("Mission changed state before its result could be saved.");
+          }
+        }
         return { persisted: true };
       });
       return { job_id: jobId, status: "awaiting_owner_approval", verified: false };

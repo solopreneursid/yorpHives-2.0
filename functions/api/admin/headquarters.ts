@@ -133,9 +133,9 @@ export async function onRequestPatch(context: MissionContext): Promise<Response>
   if (!await missionEngineReady(engine)) return adminJson({ error: { message: "Mission engine is not healthy. No credits were spent and the mission remains planned." } }, 503);
   const updated = await db.prepare(
     "UPDATE agent_jobs SET status='queued',updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') " +
-    "WHERE job_id=? AND updated_at=? AND status='planned' AND job_type='owner_mission' AND created_by=?"
-  ).bind(body.job_id, body.expected_updated_at, identity.email).run();
-  if (updated.meta?.changes !== 1) return adminJson({ error: { message: "Mission changed while starting. Refresh and try again." } }, 409);
+    "WHERE job_id=? AND updated_at=? AND status='planned' AND job_type='owner_mission' AND created_by=? RETURNING job_id"
+  ).bind(body.job_id, body.expected_updated_at, identity.email).first<{ job_id: string }>();
+  if (!updated?.job_id) return adminJson({ error: { message: "Mission changed while starting. Refresh and try again." } }, 409);
   try {
     const dispatched = await engine.fetch(new Request("https://hq-engine.internal/missions", {
       method: "POST",

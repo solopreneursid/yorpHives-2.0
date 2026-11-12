@@ -209,3 +209,24 @@ test("mission Worker refuses unqueued or unregistered direct dispatches", async 
     assert.equal(calls.count, 0);
   } finally { database.close(); }
 });
+
+test("resume a mission claimed by an earlier durable step attempt", async () => {
+  const { database, adapter } = createDb();
+  database.exec(await source("../migrations/0010_agentic_os_foundation.sql"));
+  database.exec(await source("../migrations/0012_headquarters_execution.sql"));
+  const mission = makeMission("innovation-scout");
+  database.prepare(
+    "INSERT INTO agent_jobs (job_id,agent_id,job_type,title,request_summary,status,priority,created_by,started_at) VALUES (?,?,'owner_mission',?,?,'running',?,?,'2026-11-12T01:00:00.000Z')"
+  ).run(mission.job_id, mission.agent_id, mission.title, mission.request_summary, mission.priority, "owner@example.com");
+  const workflow = new MissionWorkflow();
+  workflow.env = { DB: adapter, AI: { run: async () => ({ response: JSON.stringify(brief()) }) } };
+  try {
+    const receipt = await workflow.run({ payload: { kind: "mission_brief", job_id: mission.job_id } }, step);
+    assert.equal(receipt.status, "awaiting_owner_approval");
+    const result = database.prepare("SELECT status,result_json FROM agent_jobs WHERE job_id=?").get(mission.job_id);
+    assert.equal(result.status, "awaiting_owner_approval");
+    assert.equal(JSON.parse(result.result_json).verified, false);
+  } finally {
+    database.close();
+  }
+});
