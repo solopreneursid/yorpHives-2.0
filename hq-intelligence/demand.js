@@ -75,19 +75,28 @@ export function researchPriority(observations){
  const recent=sources.filter(x=>{const at=Date.parse(x.published_at||"");return Number.isFinite(at)&&Date.now()-at<60*86400000&&Date.now()>=at;}).length;
  return Math.min(80,20+Math.min(6,sources.length)*6+Math.min(3,kinds.size)*7+Math.min(4,recent)*3);
 }
-export async function indexDemand(db,sources,trigger="research_workflow"){
+
+// This starter taxonomy is optional reference material, NOT a limitation on
+// industries, business models, technologies or future product formats.
+// Every AI-generated idea with real source references creates a separate,
+// source-linked discovery node without needing to match these patterns.
+const LIMIT_SOURCES_PER_REFRESH=150;
+const LIMIT_HYPOTHESES_PER_REFRESH=100;
+export async function indexDemand(db,sources,trigger="research_workflow",researchRunId=null){
+ if(!["owner","research_workflow"].includes(trigger))throw new Error("Unsupported research ingestion trigger.");
+ if(researchRunId!==null&&!/^[0-9a-f-]{36}$/i.test(researchRunId))throw new Error("Invalid research run identifier.");
  const statements=DEMAND_CATEGORIES.map(c=>db.prepare(
    "INSERT INTO hq_demand_categories(category_key,title,summary,scale,user_job,agent_job,monetization_model,implementation_risk) "+
    "VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(category_key) DO UPDATE SET "+
    "title=excluded.title,summary=excluded.summary,scale=excluded.scale,"+
    "user_job=excluded.user_job,agent_job=excluded.agent_job,"+
-   "monetization_model=excluded.monetization_model,implementation_risk=excluded.implementation_risk"
- ).bind(c.key,c.title,"Established functional category — investigate demand independently.",
+   "monetization_model=excluded.monetization_model,implementation_risk=excluded.implementation_risk "+
+   "WHERE hq_demand_categories.origin='reference'"
+ ).bind(c.key,c.title,"Reference category — opportunity evidence remains unverified.",
    c.scale,c.userJob,c.agentJob,c.monetizationModel,c.risk));
- // Do not overwrite human triage status or version on category updates.
  await db.batch(statements);
- let observed=0,added=0;
- for(const source of sources.slice(0,500)){
+ let observed=0,added=0,candidates=0;
+ for(const source of sources.slice(0,LIMIT_SOURCES_PER_REFRESH)){
    for(const category of demandMatches(source)){
      observed++;
      const row=await db.prepare(
@@ -97,11 +106,56 @@ export async function indexDemand(db,sources,trigger="research_workflow"){
      if(row?.source_id)added++;
    }
  }
+ const query=db.prepare(
+   "SELECT idea_id,title,kind,problem,solution,monetization_hypothesis "+
+   "FROM hq_intelligence_ideas "+
+   (researchRunId?"WHERE run_id=? ":"")+
+   "ORDER BY created_at DESC LIMIT "+LIMIT_HYPOTHESES_PER_REFRESH
+ );
+ const ideas=researchRunId?await query.bind(researchRunId).all():await query.all();
+ for(const idea of ideas.results){
+   const key="hypothesis:"+idea.idea_id;
+   const record=await db.prepare(
+     "INSERT INTO hq_demand_categories(category_key,title,summary,scale,origin,origin_idea_id,"+
+     "user_job,agent_job,monetization_model,implementation_risk) "+
+     "VALUES (?,?,?,?,'hypothesis',?,?,?,?,'unknown') "+
+     "ON CONFLICT(category_key) DO NOTHING RETURNING category_key"
+   ).bind(key,idea.title,idea.problem,idea.kind,idea.idea_id,idea.solution,
+     "Agent use not established; verify explicit use cases and authorization.",
+     "Unverified hypothesis: "+idea.monetization_hypothesis).first();
+   if(record?.category_key)candidates++;
+   const evidence=await db.prepare(
+     "SELECT e.source_id,s.provider FROM hq_intelligence_evidence e "+
+     "JOIN hq_intelligence_sources s ON s.source_id=e.source_id "+
+     "WHERE e.idea_id=? LIMIT 3"
+   ).bind(idea.idea_id).all();
+   for(const source of evidence.results){
+     const inserted=await db.prepare(
+       "INSERT INTO hq_demand_evidence(category_key,source_id,evidence_kind) VALUES (?,?,?) "+
+       "ON CONFLICT(category_key,source_id) DO NOTHING RETURNING source_id"
+     ).bind(key,source.source_id,evidenceKind(source.provider)).first();
+     if(inserted?.source_id)added++;
+   }
+ }
+ for(const source of sources.slice(0,LIMIT_SOURCES_PER_REFRESH)){
+   const linked=await db.prepare(
+     "SELECT 1 AS found FROM hq_demand_evidence WHERE source_id=? LIMIT 1"
+   ).bind(source.source_id).first();
+   if(linked){
+     await db.prepare("DELETE FROM hq_demand_unclassified_sources WHERE source_id=?").bind(source.source_id).run();
+   }else{
+     await db.prepare(
+       "INSERT INTO hq_demand_unclassified_sources(source_id) VALUES (?) "+
+       "ON CONFLICT(source_id) DO UPDATE SET last_detected_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')"
+     ).bind(source.source_id).run();
+   }
+ }
  const id=crypto.randomUUID();
- await db.prepare(
-   "INSERT INTO hq_demand_refresh_runs(refresh_id,trigger_source,source_count,observed_matches,added_links) "+
-   "VALUES (?,?,?,?,?)"
- ).bind(id,trigger,Math.min(sources.length,500),observed,added).run();
- return {refresh_id:id,source_count:Math.min(sources.length,500),observed_matches:observed,added_links:added,
-  searches_performed:0,ai_calls:0,demand_verified:false};
+ const saved=await db.prepare(
+   "INSERT INTO hq_demand_refresh_runs(refresh_id,trigger_source,source_count,observed_matches,added_links,generated_candidates,research_run_id) "+
+   "VALUES (?,?,?,?,?,?,?) ON CONFLICT(research_run_id) DO NOTHING RETURNING refresh_id"
+ ).bind(id,trigger,Math.min(sources.length,LIMIT_SOURCES_PER_REFRESH),observed,added,candidates,researchRunId).first();
+ return {refresh_id:saved?.refresh_id||null,source_count:Math.min(sources.length,LIMIT_SOURCES_PER_REFRESH),
+  observed_matches:observed,added_links:added,generated_candidates:candidates,
+  searches_performed:0,ai_calls:0,demand_verified:false,category_ceiling:false};
 }
