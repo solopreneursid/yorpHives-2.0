@@ -3,11 +3,15 @@ const PROJECTS = Object.freeze({
   "yorphives-admin-staging": { output: "ADMIN_BASE_URL", productionBranch: "build/yorphives-admin-reliability" }
 });
 const APPROVED_BRANCH = /^(?:build|feature|fix|qa|design|ops)\/[a-z0-9][a-z0-9._/-]{1,110}$/;
+const isSafePreviewBranch = value => typeof value === "string" &&
+  APPROVED_BRANCH.test(value) && !value.includes("..") &&
+  !value.includes("//") && !value.endsWith("/") && !value.endsWith(".") &&
+  !value.split("/").some(segment => segment.startsWith("."));
 const EXPECTED_SOURCE = Object.freeze({ owner: "solopreneursid", repo: "yorpHives-2.0" });
 
 export function validateHeadquartersPreviewProject(data, branch) {
   const config = PROJECTS["yorphives-admin-staging"];
-  if (!APPROVED_BRANCH.test(branch || "") || branch === config.productionBranch ||
+  if (!isSafePreviewBranch(branch) || branch === config.productionBranch ||
       data?.name !== "yorphives-admin-staging" ||
       data?.source?.type !== "github" ||
       data?.source?.config?.owner !== EXPECTED_SOURCE.owner ||
@@ -17,7 +21,7 @@ export function validateHeadquartersPreviewProject(data, branch) {
       data?.source?.config?.deployments_enabled !== true ||
       data?.canonical_deployment?.environment !== "production" ||
       data?.canonical_deployment?.deployment_trigger?.metadata?.branch !== config.productionBranch ||
-      !/^[a-f0-9-]{36}$/i.test(String(data.canonical_deployment?.id || ""))) return null;
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(data.canonical_deployment?.id || ""))) return null;
   return { canonicalId: data.canonical_deployment.id };
 }
 
@@ -28,7 +32,8 @@ export function validatePreviewDeployment(deployment, { project, branch, commitS
   if (requireSucceeded && (deployment.latest_stage?.name !== "deploy" || deployment.latest_stage?.status !== "success")) return null;
   let url;
   try { url = new URL(deployment.url); } catch { return null; }
-  if (url.protocol !== "https:" || !url.hostname.endsWith("." + project + ".pages.dev") ||
+  if (url.protocol !== "https:" ||
+      !new RegExp("^[a-f0-9]{8}\\." + project + "\\.pages\\.dev$").test(url.hostname) ||
       url.username || url.password || url.port || url.search || url.hash || url.pathname !== "/") return null;
   return { id: String(deployment.id || ""), url: url.origin, reused: requireSucceeded };
 }
@@ -69,7 +74,7 @@ export async function createOrReusePreview({
   if (!config) throw new Error("Unapproved Pages project.");
   if (!accountId || !apiToken || !commitSha || !branch) throw new Error("Missing required deployment setting.");
   if (!/^[a-f0-9]{40}$/i.test(commitSha)) throw new Error("Invalid commit SHA.");
-  if (!APPROVED_BRANCH.test(branch) || branch === config.productionBranch) {
+  if (!isSafePreviewBranch(branch) || branch === config.productionBranch) {
     throw new Error("Only isolated feature branches may be deployed by this workflow.");
   }
 
