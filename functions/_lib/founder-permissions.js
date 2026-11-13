@@ -42,22 +42,15 @@ export function permissionLabels(row) {
  * No agent may edit releases, merge PRs, trigger paid AI, or change admin rights.
  * Do not infer an executable capability from the display name of a grant.
  */
-export function grantAllows(row,actor,action,target,now=new Date()) {
-  if(!row || row.state!=="active" || row.assistant!==actor ||
-      !ASSISTANTS.includes(actor) || !uuid.test(String(row.grant_id||"")) ||
-      !GRANT_SCOPES.includes(row.scope) || !GRANT_LEVELS.includes(row.permission) ||
-      row.owner_email?.length<3 || !Number.isSafeInteger(Number(row.max_actions)) ||
-      Number(row.max_actions)<1 || Number(row.max_actions)>GRANT_MAX_ACTIONS ||
-      !Number.isSafeInteger(Number(row.used_actions)) ||
-      Number(row.used_actions)>=Number(row.max_actions) ||
-      typeof row.active_expires_at!=="string" ||
-      !Number.isFinite(Date.parse(row.active_expires_at)) ||
-      Date.parse(row.active_expires_at)<=now.getTime() ||
-      !["website","headquarters"].includes(target) ||
-      (row.scope!=="both" && row.scope!==target))return false;
-  return action==="create_issue" &&
-    ["prepare_fixes","manage_staging"].includes(row.permission);
+/**
+ * Permanently retired. Old grant records may remain for audit and emergency
+ * revocation, but can NEVER authorize actions, even before their expiry.
+ * New agents require separate, least-privilege development identities.
+ */
+export function grantAllows(_row,_actor,_action,_target,_now=new Date()) {
+  return false;
 }
+
 export function grantDisplayState(row,now=new Date()) {
   if(!row || !["awaiting_mfa","active","revoked","expired"].includes(row.state))
     return "unavailable";
