@@ -82,16 +82,22 @@ test("daily YorpMind team scan saves real failed repair coaching proposals idemp
     const result=await scanYorpMindTeam(d1(db),clock);
     assert.equal(result.status,"completed");
     assert.equal(result.coaching_reports_created,4);
+    assert.equal(result.engineering_qa_work_orders_created,4);
+    assert.equal(result.work_orders_are_proposals_only,true);
     assert.equal(result.failed_repairs_scanned,2);
     assert.equal(result.model_calls,0);
     assert.equal(result.agent_dispatches,0);
     assert.equal(result.production_changes,0);
     const saved=db.prepare("SELECT manager_id,state,evidence_json FROM yorpmind_team_reports ORDER BY manager_id").all();
-    assert.equal(saved.length,4);
+    assert.equal(saved.length,8);
     assert.ok(saved.every(x=>x.state==="proposed"));
-    assert.ok(saved.every(x=>JSON.parse(x.evidence_json).approved_skill===false));
+    assert.ok(saved.every(x=>{
+      const e=JSON.parse(x.evidence_json);
+      return e.approved_skill===false || e.learning_approved===false;
+    }));
     const repeated=await scanYorpMindTeam(d1(db),clock);
     assert.equal(repeated.coaching_reports_created,0);
-    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM yorpmind_team_reports").get().n,4);
+    assert.equal(repeated.engineering_qa_work_orders_created,0);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM yorpmind_team_reports").get().n,8);
   }finally{db.close();}
 });
