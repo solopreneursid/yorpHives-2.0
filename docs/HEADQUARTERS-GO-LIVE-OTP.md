@@ -12,3 +12,13 @@ Normal development and isolated staging previews never require OTP. Do not set t
 ## Zero-cost policy
 
 Preproduction readiness reports now target **US$0 additional recurring infrastructure spend**. These static numbers are policy requirements, not spend enforcement: live Cloudflare billing remains unverified and optional AI work must remain limited until real usage receipts and provider-level controls are checked. No paid service is enabled by this branch.
+
+## Permanent founder-only release contract
+
+The founder is the **sole production release authority**. The everyday Headquarters release interface is **[ Preview ] [ Go Live ]**, side by side. Preview opens the exact version already tested in an isolated deployment. Go Live requires the founder's own verified Cloudflare Access human identity, an OTP delivered to the configured founder address, and a final confirmation bound to that exact version. Any new commit or changed verification evidence invalidates the release and requires another check.
+
+**No administrator delegation for Go Live.** YorpMind, ChatGPT, other AI employees, CI service accounts and other signed-in human collaborators must not issue, verify, consume, or approve a production Go Live OTP. They must not be granted temporary or permanent administrator privileges as a publishing workaround. An otherwise valid service token carrying the founder's email still fails release authorization. The retired delegation API may expose historical records but must never generate new production rights.
+
+Routine research, coding, repair, security review, independent QA and preview deployment proceed under narrowly scoped development permissions **without** founder approval. Production configuration changes, live data writes and new financial commitments require separately authorized owner controls, not AI-assumed admin power. Only the authenticated founder's explicit Go Live action and one-time code may authorize the exact reviewed production release.
+
+The current route implements OTP **dry-run only**. Until a separately reviewed, narrowly scoped founder-only publishing executor and rollback/health checks are proven, the Go Live button stays disabled. Neither the current OTP test flag nor any workflow/service identity grants publishing authority.
