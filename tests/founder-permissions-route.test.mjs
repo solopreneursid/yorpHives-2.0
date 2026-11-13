@@ -46,6 +46,7 @@ function adapter(sqlite) {
 async function fixture(){
   const sqlite=new DatabaseSync(":memory:");
   sqlite.exec(await source("../migrations/0028_founder_temporary_grants.sql"));
+  sqlite.exec(await source("../migrations/0029_founder_email_otp.sql"));
   sqlite.exec("CREATE TABLE admin_audit_events(id TEXT PRIMARY KEY,actor TEXT,action TEXT,resource_type TEXT,resource_id TEXT,details_json TEXT,created_at TEXT)");
   return {sqlite,DB:adapter(sqlite)};
 }
@@ -208,5 +209,26 @@ test("emergency stop fails closed without partially revoking if its audit write 
     sqlite.exec("DROP TRIGGER reject_stop_audit");
     assert.equal((await main.onRequestPatch(request(DB,"PATCH",{action:"revoke_all"}))).status,200);
     assert.equal(sqlite.prepare("SELECT state FROM founder_temporary_grants").get().state,"revoked");
+  }finally{sqlite.close();}
+});
+
+test("emergency stop invalidates unspent email codes including joint grants",async()=>{
+  const {sqlite,DB}=await fixture();
+  try{
+    const id="123e4567-e89b-42d3-a456-000000000812";
+    const now=new Date().toISOString();
+    sqlite.prepare(
+      "INSERT INTO founder_otp_challenges (challenge_id,owner_email,"+
+      "assistant_selection,scope,permission,duration_minutes,purpose,code_hmac,"+
+      "state,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)"
+    ).run(id,"owner@example.com","both","both","prepare_fixes",15,
+      "Investigate and prepare a safe repair for the founder to review later.",
+      "a".repeat(64),"sent",now,new Date(Date.now()+300000).toISOString());
+    const stop=await main.onRequestPatch(request(DB,"PATCH",{action:"revoke_all"}));
+    assert.equal(stop.status,200);
+    assert.equal(sqlite.prepare("SELECT state FROM founder_otp_challenges WHERE challenge_id=?")
+      .get(id).state,"cancelled");
+    assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM founder_temporary_grants")
+      .get().n,0);
   }finally{sqlite.close();}
 });
