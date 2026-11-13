@@ -187,9 +187,39 @@ export async function onRequestPatch(context:AdminRequestContext):Promise<Respon
     return error("INVALID_ORIGIN","Only your secure Headquarters page can cancel access.",403);
   const raw=await context.request.text();
   if(!validBody(context.request,raw))return error("INVALID_REQUEST","Invalid request.",400);
-  let body:Partial<RevokeRequest>;
+  let body:Record<string,unknown>;
   try{body=JSON.parse(raw);}catch{return error("INVALID_JSON","Invalid request.",400);}
-  if(body?.action!=="revoke"||!UUID.test(String(body.grant_id||"")))
+  if(!body||typeof body!=="object"||Array.isArray(body))
+    return error("INVALID_REVOKE","Choose a valid cancellation.",400);
+  // Emergency stop is a one-click owner-only operation. It never requires an
+  // OTP: revoking rights must remain possible if mail or step-up MFA is down.
+  if(body.action==="revoke_all" && Object.keys(body).length===1){
+    try{
+      if(!await hasSchema(context))
+        return error("PERMISSIONS_NOT_READY","Temporary permissions are not available.",503);
+      const now=new Date().toISOString();
+      const results=await context.env.DB!.batch([
+        context.env.DB!.prepare(
+          "UPDATE founder_temporary_grants SET state='revoked',revoked_by=?,revoked_at=? "+
+          "WHERE owner_email=? AND state IN ('awaiting_mfa','active')"
+        ).bind(identity.email,now,identity.email),
+        context.env.DB!.prepare(
+          "INSERT INTO admin_audit_events(id,actor,action,resource_type,resource_id,details_json,created_at) "+
+          "VALUES(?,?,'temporary_permissions_all_revoked','assistant_permissions',?,?,?)"
+        ).bind(crypto.randomUUID(),identity.email,"all",JSON.stringify({
+          owner_emergency_stop:true,scope:"all_assistants",
+          prevents_new_actions:true,production_allowed:false
+        }),now)
+      ]) as Array<{meta?:{changes?:number}}>;
+      const count=Number(results[0]?.meta?.changes);
+      if(!Number.isSafeInteger(count)||count<0)throw Error("Missing revocation receipt");
+      return adminJson({cancelled:true,revoked_count:count,
+        assistant_access_ended:true,production_allowed:false,
+        note:"All current and pending temporary grants are revoked. New requests require fresh owner approval."});
+    }catch{return error("CANCEL_FAILED",
+      "Emergency stop could not be verified. Do not assume assistant access ended.",503);}
+  }
+  if(body.action!=="revoke"||!UUID.test(String(body.grant_id||"")))
     return error("INVALID_REVOKE","Choose a valid permission to cancel.",400);
   try{
     const now=new Date().toISOString();
