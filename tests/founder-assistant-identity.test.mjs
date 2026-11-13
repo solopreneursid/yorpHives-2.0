@@ -106,46 +106,20 @@ function ctx(db,token,worker,requestBody=action) {
       },body:JSON.stringify(requestBody)
     })};
 }
-test("authorized helper creates at most one issue for one request ID without production rights",async()=>{
-  const {sqlite,db}=await fixture();
-  globalThis.fetch=fetchKeys;
-  let calls=0;
-  const worker=async req=>{
-    calls++;
-    assert.equal(req.headers.get("x-yorphives-internal-inbox"),"1");
-    const body=await req.json();
-    assert.equal(body.confirm,true);
-    return Response.json({
-      created:true,number:93,title:body.title,
-      url:"https://github.com/solopreneursid/yorpHives-2.0/issues/93",
-      production_approved:false,new_model_calls:0
-    },{status:201});
-  };
-  try{
-    const token=await jwt();
-    const response=await onRequestPost(ctx(db,token,worker));
-    assert.equal(response.status,201);
-    const record=await response.json();
-    assert.equal(record.completed,true);
-    assert.equal(record.production_allowed,false);
-    assert.equal(record.cost,"no_new_ai_call");
-    assert.equal(calls,1);
-    assert.equal((await onRequestPost(ctx(db,token,worker))).status,409);
-    assert.equal(calls,1);
-    assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM founder_grant_actions").get().n,1);
-    assert.equal(sqlite.prepare("SELECT state FROM founder_grant_actions").get().state,"completed");
-    assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n,1);
-    const stranger=await jwt("chatgpt-service-verify");
-    assert.equal((await onRequestPost(ctx(db,stranger,worker,{
-      ...action,request_id:"123e4567-e89b-42d3-a456-000000000043"
-    }))).status,403);
-    assert.equal(calls,1);
-    sqlite.prepare("UPDATE founder_temporary_grants SET state='revoked',revoked_at=?,revoked_by=? WHERE grant_id=?")
-      .run(new Date().toISOString(),"owner@example.com",GRANT);
-    assert.equal((await onRequestPost(ctx(db,token,worker,{
-      ...action,request_id:"123e4567-e89b-42d3-a456-000000000044"
-    }))).status,403);
-  }finally{globalThis.fetch=oldFetch;sqlite.close();}
+test("verified assistants cannot use retired administrator actions",async()=>{
+ const {sqlite,db}=await fixture();
+ globalThis.fetch=fetchKeys;
+ let calls=0;
+ try{
+  const token=await jwt();
+  const response=await onRequestPost(ctx(db,token,async()=>{
+   calls++;return Response.json({created:true});
+  }));
+  assert.equal(response.status,410);
+  assert.match(JSON.stringify(await response.json()),/ASSISTANT_GRANTS_RETIRED/);
+  assert.equal(calls,0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM founder_grant_actions").get().n,0);
+ }finally{globalThis.fetch=oldFetch;sqlite.close();}
 });
 test("a missing real assistant token cannot use an otherwise active permission",async()=>{
   const {sqlite,db}=await fixture();

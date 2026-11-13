@@ -95,85 +95,27 @@ test("one-time code primitives are action bound and reject invalid scope",async(
     id,"owner@example.com",
     canonicalGrantPayload({...grant,assistant:"chatgpt"}),"123456"));
 });
-test("one email code activates both assistants together, only once",async()=>{
-  const {sqlite,outgoing,req}=await fixture();
-  try{
-    const ready=await routes.onRequestGet(req());
-    assert.equal((await ready.json()).can_request,true);
-    const sent=await routes.onRequestPost(req({action:"send",...grant}));
-    assert.equal(sent.status,201);
-    const message=outgoing.at(-1);
-    const code=message.text.match(/code is (\d{6})/)[1];
-    const challenge=(await sent.json()).challenge_id;
-    assert.ok(challenge);
-    assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM founder_temporary_grants").get().n,0);
-    const wrong=await routes.onRequestPost(req({action:"verify",challenge_id:challenge,code:"------"}));
-    assert.equal(wrong.status,400);
-    const incorrect=await routes.onRequestPost(req({
-      action:"verify",challenge_id:challenge,code:code==="111111"?"222222":"111111"
-    }));
-    assert.equal(incorrect.status,403);
-    const activated=await routes.onRequestPost(req({action:"verify",challenge_id:challenge,code}));
-    assert.equal(activated.status,200);
-    const result=await activated.json();
-    assert.deepEqual(result.selected_assistants,["yorpmind","chatgpt"]);
-    assert.equal(result.production_allowed,false);
-    assert.deepEqual(sqlite.prepare(
-      "SELECT assistant,state FROM founder_temporary_grants ORDER BY assistant").all().map(({assistant,state})=>({assistant,state})),
-      [{assistant:"chatgpt",state:"active"},{assistant:"yorpmind",state:"active"}]);
-    assert.equal((await routes.onRequestPost(req({action:"verify",challenge_id:challenge,code}))).status,409);
-    assert.equal(sqlite.prepare(
-      "SELECT COUNT(*) AS n FROM admin_audit_events WHERE action='temporary_permissions_email_confirmed'"
-    ).get().n,1);
-  }finally{sqlite.close();}
+test("legacy assistant OTP is not available even with fully configured email",async()=>{
+ const {sqlite,outgoing,req}=await fixture();try{
+  const ready=await routes.onRequestGet(req());
+  assert.equal(ready.status,200);
+  const status=await ready.json();
+  assert.equal(status.can_request,false);
+  assert.equal(status.collective_available,false);
+  assert.equal(status.email_ready,false);
+  const send=await routes.onRequestPost(req({action:"send",...grant}));
+  assert.equal(send.status,410);
+  assert.match(JSON.stringify(await send.json()),/ASSISTANT_GRANTS_RETIRED/);
+  const verify=await routes.onRequestPost(req({action:"verify",
+    challenge_id:"123e4567-e89b-42d3-a456-000000000111",code:"123456"}));
+  assert.equal(verify.status,410);
+  assert.equal(outgoing.length,0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM founder_otp_challenges").get().n,0);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM founder_temporary_grants").get().n,0);
+ }finally{sqlite.close();}
 });
-test("resend invalidates the first code and a rejected email fails closed",async()=>{
-  const {sqlite,outgoing,req,env}=await fixture();
-  try{
-    const first=await routes.onRequestPost(req({action:"send",...grant}));
-    const firstId=(await first.json()).challenge_id;
-    const sendAgain=await routes.onRequestPost(req({action:"send",...grant}));
-    assert.equal(sendAgain.status,201);
-    assert.equal(sqlite.prepare(
-      "SELECT state FROM founder_otp_challenges WHERE challenge_id=?").get(firstId).state,
-      "cancelled");
-    const cancelled=await routes.onRequestPost(req({action:"cancel",
-      challenge_id:(await sendAgain.json()).challenge_id}));
-    assert.equal(cancelled.status,200);
-    assert.equal(sqlite.prepare(
-      "SELECT COUNT(*) AS n FROM founder_temporary_grants").get().n,0);
-    const third=await routes.onRequestPost(req({action:"send",...grant},{
-      env:{FOUNDER_MAIL:{send:async()=>{throw Error("mail unavailable");}}}
-    }));
-    assert.equal(third.status,503);
-    assert.equal(sqlite.prepare(
-      "SELECT COUNT(*) AS n FROM founder_otp_challenges WHERE state='issuing'").get().n,0);
-    assert.equal(outgoing.length,2);
-    const fourth=await routes.onRequestPost(req({action:"send",...grant}));
-    assert.equal(fourth.status,429);
-    assert.equal((await (await routes.onRequestGet(req(null,{env:{FOUNDER_OTP_ENABLED:"no"}}))).json()).can_request,false);
-  }finally{sqlite.close();}
-});
-test("Cross-origin, nonfounder and disconnected agents are denied before email",async()=>{
-  const {sqlite,outgoing,req}=await fixture();
-  try{
-    assert.equal((await routes.onRequestPost(req({action:"send",...grant},{owner:false}))).status,401);
-    assert.equal((await routes.onRequestPost(req({action:"send",...grant},
-      {origin:"https://malicious.example"}))).status,403);
-    assert.equal((await routes.onRequestPost(req({action:"send",...grant},
-      {env:{CF_ACCESS_CHATGPT_SERVICE_TOKEN_ID:""}}))).status,503);
-    assert.equal(outgoing.length,0);
-    assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM founder_otp_challenges").get().n,0);
-  }finally{sqlite.close();}
-});
-test("the founder screen cannot enable collective access without verified email readiness",async()=>{
-  const html=await source("../admin/index.html");
-  const js=await source("../admin/founder-control-center.js");
-  assert.match(html,/id="founder-otp-dialog"/);
-  assert.match(html,/id="founder-otp-code"/);
-  assert.match(js,/otpReady=otp\?\.can_request===true/);
-  assert.match(js,/pair.disabled=!otpReady/);
-  assert.match(js,/action:"send"/);
-  assert.match(js,/action:"verify"/);
-  assert.match(js,/action:"revoke_all"/);
+test("untrusted session still cannot access retired OTP",async()=>{
+ const {sqlite,req}=await fixture();try{
+  assert.equal((await routes.onRequestPost(req({action:"send",...grant},{owner:false}))).status,401);
+ }finally{sqlite.close();}
 });
