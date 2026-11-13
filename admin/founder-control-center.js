@@ -92,9 +92,8 @@
     const purpose=$("founder-reason").value.trim();
     // Clicking Request explicitly confirms this limited request.
     // No permission can activate until server-side independent approval.
-    if(!confirm("Give "+assistantNames[assistant]+" temporary permission for "+
-      duration_minutes+" minutes after your separate security check? "+
-      "This does not authorize publishing or unrestricted account access."))return;
+    // Request preparation is non-privileged; confirmation happens only through
+    // the separate owner security gate (future: action-bound email OTP).
     busy=true;
     $("founder-permission-submit").disabled=true;
     setStatus("Saving your request. No permission is active yet.");
