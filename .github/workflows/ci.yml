@@ -10,6 +10,7 @@ on:
       - main
       - build/headquarters-staging-mission-proof
       - build/headquarters-durable-staging-rehearsal
+      - build/headquarters-shared-repair-learning
 
 permissions:
   contents: read
