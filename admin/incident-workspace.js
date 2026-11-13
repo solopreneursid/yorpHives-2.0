@@ -184,6 +184,24 @@
     byId("incident-related").replaceChildren(create("p", "incident-empty", "Loading linked repair history…"));
     const prepare = byId("incident-prepare");
     prepare.disabled = false;
+    const chat = byId("incident-chatgpt");
+    chat.disabled = false;
+    chat.onclick = () => {
+      if (typeof window.HQChooseAssistant !== "function") {
+        actions.notify("ChatGPT handoff is unavailable. Refresh Headquarters.");
+        return;
+      }
+      // Keep the original monitored finding as inert text. Never execute it.
+      // The founder copies the prepared message into ChatGPT deliberately.
+      previouslyFocused = null;
+      dialog.close();
+      window.HQChooseAssistant({
+        title: display(finding.title),
+        why: display(finding.details),
+        next_step: "Check the original problem, prepare a draft fix and verify it before recommending release.",
+        link: display(finding.monitor_url)
+      }, "chatgpt");
+    };
     prepare.onclick = async () => {
       prepare.disabled = true;
       try {
@@ -244,6 +262,7 @@
     dialog.addEventListener("close", () => {
       generation++;
       byId("incident-prepare").onclick = null;
+      byId("incident-chatgpt").onclick = null;
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
     });
   }
