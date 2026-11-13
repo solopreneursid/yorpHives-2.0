@@ -37,33 +37,18 @@ test("admin routes verify user and CI service identities while keeping CI access
   assert.match(route, /requireAdmin/);
 });
 
-test("GitHub write-permission probe is owner-triggered, audited and automatically cleaned up", async () => {
-  const worker = await read("../admin-agent/worker.js");
-  const route = await read("../functions/api/admin/repair-jobs.ts");
-  const html = await read("../admin/index.html");
-  const ui = await read("../admin/admin.js");
-  const probeRoute = route.slice(route.indexOf("if (body?.permission_probe"), route.indexOf("const requestText"));
-  assert.match(worker, /probeGithubWritePermissions/);
-  assert.match(worker, /pull_requests_write/);
-  assert.match(worker, /pull_request_closed/);
-  assert.match(worker, /branch_deleted/);
-  assert.match(worker, /x-yorphives-internal-probe/);
-  assert.match(probeRoute, /permission_probe/);
-  assert.match(probeRoute, /github-permission-probe-singleton/);
-  assert.match(probeRoute, /UPDATE admin_repair_jobs SET status='running'/);
-  assert.match(probeRoute, /emergencyOverride/);
-  assert.match(probeRoute, /updated_at<\?/);
-  assert.match(probeRoute, /UPDATE admin_repair_jobs SET status='completed'/);
-  assert.match(probeRoute, /PROBE_ALREADY_RUNNING/);
-  assert.doesNotMatch(probeRoute, /PROBE_RATE_LIMIT|60 \* 60 \* 1000/);
-  assert.match(worker, /branchAttempted/);
-  assert.match(worker, /possiblePullRequests/);
-  assert.match(worker, /cleanupErrors\.push/);
-  assert.match(ui, /emergency_override:emergencyOverride/);
-  assert.match(ui, /Emergency override will reclaim that stale lock/);
-  assert.match(html, /verify-github-permissions/);
-  assert.match(ui, /permissionProbeButton/);
-  assert.match(ui, /Nothing is merged/);
+test("Headquarters retires the AI repair and write-permission probe",async()=>{
+ const worker=await read("../admin-agent/worker.js");
+ const route=await read("../functions/api/admin/repair-jobs.ts");
+ const html=await read("../admin/index.html");
+ const ui=await read("../admin/admin.js");
+ assert.match(route,/MONITOR_ONLY/);
+ assert.match(route,/repair_dispatch_enabled: false/);
+ assert.match(route,/permission_probe_performed: false/);
+ assert.doesNotMatch(html,/id="verify-github-permissions"|id="repair-form"|id="repair-submit"/);
+ assert.doesNotMatch(ui,/permission_probe:true|runProbe\\(/);
+ assert.match(html,/id="monitor-only-guidance"/);
+ assert.match(worker,/probeGithubWritePermissions/); // archived worker source only
 });
 
 
@@ -180,7 +165,7 @@ test("quality workflows include browser, SEO, Lighthouse and passive security co
 });
 
 
-test("Control Center adds bounded repair jobs, owner audit history and optional analytics", async () => {
+test("Control Center retains repair history and analytics without dispatching new repairs", async () => {
   const migration = await read("../migrations/0008_admin_control_center.sql");
   const analytics = await read("../functions/api/admin/analytics.ts");
   const repairs = await read("../functions/api/admin/repair-jobs.ts");
@@ -200,10 +185,8 @@ test("Control Center adds bounded repair jobs, owner audit history and optional 
   assert.match(analytics, /CF_ANALYTICS_ZONE_ID/);
   assert.ok(analytics.includes("api.cloudflare.com/client/v4/graphql"));
   assert.match(repairs, /requireAdmin/);
-  assert.match(repairs, /INVALID_ORIGIN/);
+  assert.match(repairs, /MONITOR_ONLY/);
   assert.match(repairs, /ADMIN_AGENT_SERVICE/);
-  assert.match(repairs, /AGENT_DAILY_LIMIT/);
-  assert.match(repairs, /admin-agent\.internal\/instances/);
   assert.match(repairs, /admin_asset_findings/);
   assert.match(html, /id="view-analytics"/);
   assert.match(html, /id="view-agents"/);
@@ -231,7 +214,7 @@ test("Admin findings support audited triage while fixed status remains verificat
 
 
 
-test("Cloudflare durable repair agent uses a private service binding and CI-gated draft PRs", async () => {
+test("Historical repair worker remains auditable but Headquarters dispatch is retired", async () => {
   const route = await read("../functions/api/admin/repair-jobs.ts");
   const worker = await read("../admin-agent/worker.js");
   const repairEvidence = await read("../admin-agent/repair-evidence.js");
@@ -240,12 +223,12 @@ test("Cloudflare durable repair agent uses a private service binding and CI-gate
   assert.match(route, /ADMIN_AGENT_SERVICE/);
   const adminUi = await read("../admin/admin.js");
   const adminHtml = await read("../admin/index.html");
-  assert.match(adminUi, /Cloudflare repair agent ready/);
+  assert.match(adminUi, /Monitoring and recommendations only/);
   assert.match(adminUi, /setInterval\(\(\)=>/);
-  assert.match(adminHtml, /open draft PRs and inspect CI results/);
-  assert.match(route, /admin-agent\.internal\/health/);
-  assert.match(route, /AGENT_DAILY_LIMIT/);
-  assert.match(route, /admin-agent\.internal\/instances/);
+  assert.match(adminHtml, /id="monitor-only-guidance"/);
+  assert.doesNotMatch(route, /admin-agent\\.internal\\/instances/);
+  assert.match(route, /MONITOR_ONLY/);
+  assert.doesNotMatch(route, /admin-agent\\.internal\\/instances/);
   assert.match(route, /security_audit_partial/);
   assert.match(route, /securityEvidence.checked === securityEvidence.target_count/);
   assert.match(route, /securityFresh/);
