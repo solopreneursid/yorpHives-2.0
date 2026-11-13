@@ -111,16 +111,15 @@ export async function onRequestGet(context:AdminRequestContext):Promise<Response
     const data:PermissionsResponse={
       name:"Your assistant permissions",
       owner_is_in_charge:true,
-      mfa_configured:securityReady(context.env),
-      connected:connections(context),
+      mfa_configured:false,
+      connected:{yorpmind:false,chatgpt:false},
       agent_execution_connected:false,
-      active_actions_supported:["create_issue"],
+      active_actions_supported:[],
       production_execution_enabled:false,
       assistants:(await list(context)).filter(x=>x.owner_email===identity.email)
         .map(row=>({...row,display_state:grantDisplayState(row),
           labels:permissionLabels(row),production_allowed:false})),
-      explanation:"This gives limited, time-bound help only. A verified assistant connection is required "+
-        "before it can act. AI cannot publish YorpHives or grant itself more powers."
+      explanation:"Temporary grants are retired. Agents work in isolated development environments without administrator rights. Founder OTP is reserved for verified production releases."
     };
     const accept=context.request.headers.get("accept")||"";
     const format=new URL(context.request.url).searchParams.get("format");
@@ -135,50 +134,10 @@ function validBody(request:Request,raw:string) {
 export async function onRequestPost(context:AdminRequestContext):Promise<Response> {
   const identity=await requireAdmin(context);
   if(isAdminResponse(identity))return identity;
-  if(context.request.headers.get("origin")!==new URL(context.request.url).origin)
-    return error("INVALID_ORIGIN","Use the secure Headquarters page.",403);
-  const raw=await context.request.text();
-  if(!validBody(context.request,raw))
-    return error("INVALID_REQUEST","Use a small, valid request from Headquarters.",400);
-  let body:unknown;try{body=JSON.parse(raw);}catch{return error("INVALID_JSON","Request could not be read.",400);}
-  const input=validGrantInput(body) as NewPermissionRequest|null;
-  if(!input)return error("INVALID_PERMISSION","Choose an assistant, allowed work, time and a clear reason.",400);
-  if(!securityReady(context.env))
-    return error("SECURITY_CHECK_NOT_READY",
-      "Your separate security confirmation is not ready. No temporary access was given.",503);
-  try{
-    if(!await hasSchema(context))
-      return error("PERMISSIONS_NOT_READY","Temporary permissions have not been installed.",503);
-    const now=new Date(),ts=now.toISOString();
-    const count=await context.env.DB!.prepare(
-      "SELECT COUNT(*) AS n FROM founder_temporary_grants WHERE owner_email=? AND "+
-      "substr(created_at,1,10)=?"
-    ).bind(identity.email,ts.slice(0,10)).first<{n:number}>();
-    if(Number(count?.n||0)>=6)
-      return error("DAILY_LIMIT","You've reached today's limit of six permission requests.",429);
-    const id=crypto.randomUUID();
-    const expiry=new Date(now.getTime()+10*60*1000).toISOString();
-    await context.env.DB!.batch([
-      context.env.DB!.prepare(
-        "INSERT INTO founder_temporary_grants "+
-        "(grant_id,assistant,scope,permission,duration_minutes,purpose,owner_email,state,created_at,request_expires_at) "+
-        "VALUES (?,?,?,?,?,?,?,'awaiting_mfa',?,?)"
-      ).bind(id,input.assistant,input.scope,input.permission,input.duration_minutes,
-        input.purpose,identity.email,ts,expiry),
-      context.env.DB!.prepare(
-        "INSERT INTO admin_audit_events(id,actor,action,resource_type,resource_id,details_json,created_at) "+
-        "VALUES(?,?,'temporary_permission_requested','assistant_permission',?,?,?)"
-      ).bind(crypto.randomUUID(),identity.email,id,JSON.stringify({
-        assistant:input.assistant,scope:input.scope,permission:input.permission,
-        duration_minutes:input.duration_minutes,activated:false,production_allowed:false
-      }),ts)
-    ]);
-    return adminJson({status:"awaiting_security_check",grant_id:id,
-      security_url:"/api/admin/step-up/assistant-permissions?id="+encodeURIComponent(id),
-      request_expires_at:expiry,permission_active:false,
-      production_allowed:false},201);
-  }catch{return error("PERMISSION_REQUEST_FAILED",
-    "Your request could not be recorded. No temporary access was given.",503);}
+  // The founder's final decision: no temporary administrator rights for any AI.
+  // Keep GET audit and PATCH revoke endpoints for legacy records.
+  return error("ASSISTANT_GRANTS_RETIRED",
+    "YorpMind and ChatGPT work in isolated development without administrator grants. Only a verified Go Live release requires founder approval.",410);
 }
 export async function onRequestPatch(context:AdminRequestContext):Promise<Response> {
   const identity=await requireAdmin(context);
