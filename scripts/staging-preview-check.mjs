@@ -106,9 +106,11 @@ export async function verifyAnonymousBoundary(origin, fetcher = globalThis.fetch
     if (status === 301 || status === 302 || status === 303 || status === 307 || status === 308) {
       try {
         const destination = new URL(location, origin);
-        safeRedirect = destination.protocol === "https:" &&
-          (destination.pathname.startsWith("/cdn-cgi/access/") ||
-            destination.hostname.endsWith(".cloudflareaccess.com"));
+        const accessPath = destination.pathname.startsWith("/cdn-cgi/access/");
+        const trustedHost = destination.hostname === new URL(origin).hostname ||
+          destination.hostname.endsWith(".cloudflareaccess.com");
+        safeRedirect = destination.protocol === "https:" && !destination.username &&
+          !destination.password && !destination.port && trustedHost && accessPath;
       } catch { safeRedirect = false; }
     }
     await response.body?.cancel().catch(() => {});
@@ -116,7 +118,15 @@ export async function verifyAnonymousBoundary(origin, fetcher = globalThis.fetch
       throw new Error("Anonymous access was not securely denied for " + route +
         " (HTTP " + status + "). Release checks stopped.");
     }
-    results.push({ route, status, access_blocked: true });
+    // A bare 401/403 proves denial, not Cloudflare's specific identity.
+    // A redirect proves the Access path only when its HTTPS destination
+    // belongs to this verified origin or an actual cloudflareaccess.com host.
+    const redirect = [301,302,303,307,308].includes(status);
+    results.push({
+      route, status, access_blocked: true,
+      denial_kind: redirect ? "verified_cloudflare_access_redirect" : "http_auth_denial",
+      access_redirect_verified: redirect ? safeRedirect : false
+    });
   }
   return Object.freeze({
     access_boundary_verified: true, routes: results,
