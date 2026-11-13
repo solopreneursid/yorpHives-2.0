@@ -21,12 +21,13 @@ const safeJob = row => typeof row?.job_id === "string" && UUID.test(row.job_id);
 
 export function founderActionQueue(facts, now = new Date()) {
   const jobs = (Array.isArray(facts.jobs) ? facts.jobs : []).slice(0, 50);
+  const validJobs = jobs.filter(safeJob);
   const actions = [];
   function add(id, urgency, title, why, next_step, view, target = null) {
     actions.push({ id, urgency, title, why, next_step, view, target,
       execution_authorized: false, approval_granted: false });
   }
-  const failed = jobs.filter(j => j.status === "failed" && safeJob(j));
+  const failed = validJobs.filter(j => j.status === "failed");
   for (const job of failed.slice(0, 2)) {
     const code = failureCode(job.result_json);
     add("failed-" + job.job_id, "urgent", "Investigate a failed specialist mission",
@@ -34,7 +35,7 @@ export function founderActionQueue(facts, now = new Date()) {
       "Open mission history and inspect the error. Verify a fix in staging before explicitly starting another paid mission.",
       "headquarters", "failed");
   }
-  const reviews = jobs.filter(j => j.status === "awaiting_owner_approval" && safeJob(j));
+  const reviews = validJobs.filter(j => j.status === "awaiting_owner_approval");
   if (reviews.length) add("review-briefs", "attention", "Review " + reviews.length + " AI planning brief" +
       (reviews.length === 1 ? "" : "s"),
       "These recommendations are awaiting your judgment; they have not been independently verified.",
@@ -68,8 +69,8 @@ export function founderActionQueue(facts, now = new Date()) {
       "The last recorded monitor run is older than eight hours or has an invalid timestamp.",
       "Inspect monitoring results and Worker schedules; a recorded run is not proof all routes are healthy.",
       "monitoring");
-  const successful = jobs.filter(j => j.status === "completed").length;
-  if (!successful && jobs.length > 0 && failed.length === 0 && reviews.length === 0)
+  const successful = validJobs.filter(j => j.status === "completed").length;
+  if (!successful && validJobs.length > 0 && failed.length === 0 && reviews.length === 0)
     add("first-complete-mission", "planning", "Validate one specialist mission end to end",
       "No completed mission appears in the latest bounded job window.",
       "Run a staged, owner-initiated recommendation with acceptance criteria and review the saved evidence.",
