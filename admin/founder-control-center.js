@@ -90,7 +90,8 @@
     const permission=$("founder-level").value;
     const duration_minutes=Number($("founder-duration").value);
     const purpose=$("founder-reason").value.trim();
-    if(!$("founder-understand").checked)return;
+    // Clicking Request explicitly confirms this limited request.
+    // No permission can activate until server-side independent approval.
     if(!confirm("Give "+assistantNames[assistant]+" temporary permission for "+
       duration_minutes+" minutes after your separate security check? "+
       "This does not authorize publishing or unrestricted account access."))return;
@@ -137,6 +138,34 @@
     } catch(error) {
       setStatus(error instanceof Error?error.message:"We couldn't confirm cancellation.");
       button.disabled=false;
+    }
+  }
+  async function stopAll() {
+    // Revocation is intentionally one tap, with no OTP and no confirmation
+    // dialog. The server verifies the owner and records an audit event.
+    const button=$("founder-stop-all");
+    if(!button||button.disabled)return;
+    button.disabled=true;
+    button.textContent="Stopping…";
+    setStatus("Ending every active and pending assistant permission…");
+    try {
+      const result=await api("/api/admin/assistant-permissions",{
+        method:"PATCH",body:JSON.stringify({action:"revoke_all"})
+      });
+      if(result?.cancelled!==true||result?.assistant_access_ended!==true||
+          result?.production_allowed!==false||
+          !Number.isSafeInteger(result.revoked_count))
+        throw Error("The emergency stop could not be verified.");
+      await reload();
+      setStatus(result.revoked_count
+        ? "Stopped "+result.revoked_count+" temporary permission(s). No new assistant actions are authorized."
+        : "No active or pending assistant permissions remain.");
+    } catch(error) {
+      setStatus(error instanceof Error?error.message:
+        "Could not verify emergency stop. Do not assume access ended.");
+    } finally {
+      button.disabled=false;
+      button.textContent="■ End all assistant access";
     }
   }
   function showHandoff({title,why,next_step,link},assistant) {
@@ -196,6 +225,14 @@
   function init() {
     $("founder-permission-form")?.addEventListener("submit",submit);
     $("founder-permission-refresh")?.addEventListener("click",reload);
+    $("founder-stop-all")?.addEventListener("click",stopAll);
+    $("founder-open-permissions")?.addEventListener("click",()=>{
+      const panel=document.querySelector(".founder-permission-panel");
+      if(panel){panel.open=true;panel.scrollIntoView({behavior:"smooth",block:"nearest"});}
+    });
+    $("founder-find-fixes")?.addEventListener("click",()=>{
+      document.querySelector('.nav-item[data-view="issues"]')?.click();
+    });
     $("founder-handoff-copy")?.addEventListener("click",copyHandoff);
     $("founder-handoff-close")?.addEventListener("click",()=>$("founder-handoff-dialog").close());
     $("founder-chatgpt")?.addEventListener("click",()=>
