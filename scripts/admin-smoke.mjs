@@ -70,6 +70,32 @@ async function run() {
       compactStart.ownerTitle?.includes("Headquarters") &&
       compactStart.mainWidth>0 && compactStart.mainWidth<=compactStart.viewport,
       "Unified styling, two optional navigation groups and a founder-first home");
+    const palette = await page.evaluate(() => {
+      const themeLoaded=[...document.styleSheets].some(sheet=>
+        String(sheet.href||"").includes("headquarters-prism-theme.css"));
+      const mark=document.querySelector(".sidebar .brand .brand-mark");
+      const hero=document.querySelector(".founder-command");
+      const active=document.querySelector('.nav-item[data-view="headquarters"]');
+      return {
+        themeLoaded,
+        background: getComputedStyle(document.body).backgroundImage,
+        markBackground: mark?getComputedStyle(mark).backgroundImage:"",
+        markFilter: mark?getComputedStyle(mark).filter:"",
+        heroBackground: hero?getComputedStyle(hero).backgroundImage:"",
+        activeBackground: active?getComputedStyle(active).backgroundImage:"",
+        hasBackgroundGrid: getComputedStyle(document.body,"::before").backgroundImage.includes("linear-gradient")
+      };
+    });
+    record("prism_brand_ambient_theme_without_logo_changes",
+      palette.themeLoaded &&
+      palette.background.includes("radial-gradient") &&
+      palette.markBackground.includes("yorphives-logo.webp") &&
+      palette.markFilter==="none" &&
+      palette.heroBackground.includes("radial-gradient") &&
+      palette.activeBackground.includes("linear-gradient") &&
+      palette.hasBackgroundGrid,
+      "The official mark remains untouched; native gradient lighting, grid and selected navigation render correctly");
+
 
     // Reproduce the original screenshot's retained scroll position:
     // switching from a very long view must open the new page at its top.

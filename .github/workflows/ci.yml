@@ -12,6 +12,7 @@ on:
       - build/headquarters-durable-staging-rehearsal
       - build/headquarters-shared-repair-learning
       - build/headquarters-founder-temporary-permissions
+      - design/headquarters-compact-workspace
 
 permissions:
   contents: read
