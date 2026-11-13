@@ -53,6 +53,13 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   "functions/api/admin/assistant-actions.ts",
   "migrations/0028_founder_temporary_grants.sql",
   "migrations/0029_founder_email_otp.sql",
+  "migrations/0030_yorpmind_sovereign_workforce.sql",
+  "functions/_lib/yorpmind-workforce.js",
+  "functions/api/admin/yorpmind-workforce.ts",
+  "admin/yorpmind-workforce.js",
+  "admin/yorpmind-workforce.css",
+  "tests/yorpmind-sovereign-workforce.test.mjs",
+  "docs/YORPMIND-SOVEREIGN-WORKFORCE.md",
   "functions/_lib/founder-email-otp.js",
   "functions/api/admin/founder-otp.ts",
   "tests/founder-email-otp.test.mjs",
@@ -144,13 +151,13 @@ export async function assessHeadquarters(root) {
   } catch {
     // Report through the explicit migration check below.
   }
-  const expected = Array.from({ length: 26 }, (_, i) => i + 4);
+  const expected = Array.from({ length: 27 }, (_, i) => i + 4);
   const missing = expected.filter(number => !migrations.includes(number));
   const duplicates = migrations.filter((number, index) => migrations.indexOf(number) !== index);
   add("headquarters-migrations", missing.length === 0 && duplicates.length === 0,
     missing.length || duplicates.length ?
       "Missing migration IDs: " + missing.join(", ") + "; duplicate IDs: " + duplicates.join(", ") :
-      "Migrations 0004–0029 exist with unique IDs; the newest OTP migration must pass private D1 backup, restore and staging application checks");
+      "Migrations 0004–0030 exist with unique IDs; the new workforce migration needs private D1 backup, restore and staging application checks");
 
   let workflow = "";
   try {
