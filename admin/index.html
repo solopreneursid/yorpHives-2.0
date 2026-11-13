@@ -1058,43 +1058,16 @@
           <div class="release-evidence-list" id="release-evidence-list"><p class="release-evidence-empty">Reading recent repair records…</p></div>
         </details>
       </section>
-      <section class="owner-delegation-panel" aria-labelledby="owner-delegation-title" hidden>
+      <section class="owner-delegation-panel" id="owner-delegation-panel" aria-labelledby="owner-delegation-title" hidden>
         <div class="owner-delegation-heading">
-          <div><span class="eyebrow">YORPMIND · VERIFIED OWNER DELEGATION</span>
-            <h2 id="owner-delegation-title">Review, then authorize an exact release</h2>
-            <p>Prepare an authorization request only after reviewing the working preview, test results, security implications and rollback plan. Your one-time verification happens separately in Cloudflare Access, never in this form.</p>
+          <div><span class="eyebrow">ARCHIVED HISTORY · READ ONLY</span>
+            <h2 id="owner-delegation-title">Previous delegation records</h2>
+            <p>Historical records only. No assistant, manager, collaborator, or CI identity can be granted administrator authority to publish. New releases use Preview and your personal Go Live OTP.</p>
           </div>
-          <button class="button" id="owner-delegation-refresh" type="button">Refresh requests</button>
+          <button class="button" id="owner-delegation-refresh" type="button">Refresh history</button>
         </div>
-        <p class="owner-delegation-notice"><strong>Executor still locked:</strong> Authorizing a commit records delegated intent but does not deploy it until the production executor passes its separate security and rollback gates. Do not enter OTP codes or credentials here.</p>
-        <form id="owner-delegation-form" class="owner-delegation-form">
-          <div class="owner-delegation-grid">
-            <label for="owner-delegation-job">Verified repair job ID
-              <input id="owner-delegation-job" required minlength="36" maxlength="36" autocomplete="off" spellcheck="false" placeholder="Job UUID">
-            </label>
-            <label for="owner-delegation-sha">Exact tested GitHub commit SHA
-              <input id="owner-delegation-sha" required minlength="40" maxlength="40" autocomplete="off" spellcheck="false" placeholder="40-character commit SHA">
-            </label>
-          </div>
-          <label for="owner-delegation-preview">Working Cloudflare staging preview
-            <input id="owner-delegation-preview" required type="url" maxlength="240" autocomplete="off" spellcheck="false" placeholder="https://…yorphives-admin-staging.pages.dev/">
-          </label>
-          <fieldset>
-            <legend>I personally reviewed all six release requirements</legend>
-            <label><input type="checkbox" name="preview_inspected" required> I opened and inspected the preview of the exact change.</label>
-            <label><input type="checkbox" name="functional_tested" required> I verified the feature actually works.</label>
-            <label><input type="checkbox" name="mobile_tested" required> I checked the relevant mobile/responsive behavior.</label>
-            <label><input type="checkbox" name="qa_reviewed" required> I reviewed independent QA and regression evidence.</label>
-            <label><input type="checkbox" name="security_reviewed" required> I reviewed security and permission implications.</label>
-            <label><input type="checkbox" name="rollback_reviewed" required> I reviewed the rollback and recovery plan.</label>
-          </fieldset>
-          <label for="owner-delegation-note">Owner release decision notes
-            <textarea id="owner-delegation-note" required minlength="40" maxlength="1200" rows="4" placeholder="Describe what you tested, what changed and the exact rollback decision."></textarea>
-          </label>
-          <button id="owner-delegation-prepare" class="button primary" type="submit">Prepare MFA approval request</button>
-          <p id="owner-delegation-status" role="status" aria-live="polite">No release authorization has been requested.</p>
-        </form>
-        <div id="owner-delegation-list" class="owner-delegation-list" aria-live="polite"><p class="release-evidence-empty">Loading private authorization requests…</p></div>
+        <p class="owner-delegation-notice"><strong>Legacy approval disabled:</strong> This area cannot issue permissions, start an approval request, or publish. Development and staging QA use restricted work identities, without founder approvals.</p>
+        <div id="owner-delegation-list" class="owner-delegation-list" aria-live="polite"><p class="release-evidence-empty">Reading archived records…</p></div>
       </section>
       <div class="page-heading"><div><span class="eyebrow">OWNER APPROVAL GATE</span><h1>Releases</h1><p>Review proposed changes before anything reaches production.</p></div><span class="pill warning">Production locked</span></div>
       <div class="release-state"><div class="release-lock">▣</div><div><h2>Production deployment is disabled</h2><p>This Admin workspace can prepare and verify changes, but it does not have an enabled production deployment action. Keep release execution in your existing reviewed deployment process until the full approval gate is implemented and tested.</p></div></div>
