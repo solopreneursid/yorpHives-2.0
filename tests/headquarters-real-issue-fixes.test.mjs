@@ -67,6 +67,11 @@ test("unfixable monitoring categories never consume the restricted AI repair bud
   assert.equal(notEligible.permitted,false);
   assert.equal(notEligible.code,"SPECIALIST_REVIEW_REQUIRED");
   assert.equal(notEligible.spending_started,false);
+  const relative = assessRepairIntake({...fixed,asset_url:"/openapi.yaml"});
+  assert.equal(relative.code,"SPECIALIST_REVIEW_REQUIRED",
+    "The actual D1 stores asset paths as relative paths.");
+  assert.equal(assessRepairIntake({...fixed,asset_url:"https://evil.example/openapi.yaml"}).code,
+    "INVALID_ASSET_URL");
   for(const path of ["/llms.txt","/api/v1/free-tools",
     "/free-tools/manifest.json","/.well-known/yorphives.json"]) {
     assert.equal(assessRepairIntake({...fixed,asset_url:"https://yorphives.com"+path}).permitted,false);
@@ -77,6 +82,8 @@ test("unfixable monitoring categories never consume the restricted AI repair bud
   assert.equal(assessRepairIntake({...fixed,asset_type:"website_page",
     asset_url:"https://yorphives.com/free-tools/",category:"seo",
     finding_key:"missing-title"}).permitted,true);
+  assert.equal(assessRepairIntake({...fixed,asset_type:"website_page",
+    asset_url:"/free-tools/",category:"seo",finding_key:"missing-title"}).permitted,true);
   assert.equal(assessRepairIntake({...fixed,status:"fixed"}).code,"FINDING_NOT_ACTIVE");
   assert.equal(assessRepairIntake({finding_source:"monitor",status:"verified"}).permitted,false);
 });
