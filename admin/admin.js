@@ -104,12 +104,21 @@ function showView(name) {
     }
   });
   setText("breadcrumb", view.dataset.title || name);
-  // The previous page may have been scrolled several screens down.
-  // A new page must always open at its beginning, not on a blank old offset.
-  // Complete the new view's layout, then cancel any previous smooth scroll.
+  // A focused control in the old workspace can cause the browser to scroll
+  // back to its hidden position after navigation, especially on mobile.
+  const focus = document.activeElement;
+  if (focus instanceof HTMLElement && focus.closest(".view") &&
+      !view.contains(focus)) focus.blur();
+  // Reset immediately AND after the new workspace layout has settled.
+  // Guard the deferred reset so it cannot scroll a newer route unexpectedly.
   view.getBoundingClientRect();
   window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+  requestAnimationFrame(() => {
+    if (state.view !== name) return;
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+  });
   $("sidebar").classList.remove("open");
   $("mobile-scrim").classList.remove("show");
   $("mobile-menu").setAttribute("aria-expanded", "false");
