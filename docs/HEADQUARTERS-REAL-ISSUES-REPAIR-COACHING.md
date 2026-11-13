@@ -94,6 +94,16 @@ The existing team scan stores these as `yorpmind_team_reports`
 `tested_fix:false`, `approved_skill:false` declaration. It is bounded
 and uses **zero AI inference calls**, with no new autonomous authority.
 
+**Applied to private staging D1 on 13 November 2026:** Four incident-
+linked coaching reports were recorded from the two real failed repair jobs:
+two for `yorpmind1` (Engineering) and two for `yorpmind5` (Quality).
+All are in `proposed` state, marked `tested_fix:false` and
+`approved_skill:false`. The import used zero AI calls, zero production
+changes, and passed `PRAGMA foreign_key_check`. Verified repair
+experiences, approved skills and independent issue-specific QA remained **0**.
+A pre-write Cloudflare D1 Time Travel bookmark was captured, and the
+insertions were recorded in the private Headquarters audit log.
+
 The current YorpMind UI labels those cards **OBSERVED · NEEDS PROOF**.
 They may help workers decide what to investigate, but **do not**
 constitute an approved skill or verified repair. Actual self-evolution
