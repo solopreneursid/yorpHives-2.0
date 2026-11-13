@@ -22,35 +22,41 @@
 <link rel="stylesheet" href="/admin/yorpmind-team.css">
 <link rel="stylesheet" href="/admin/yorpmind-mission-planning.css">
 <link rel="stylesheet" href="/admin/business-intelligence.css">
+<link rel="stylesheet" href="/admin/headquarters-refined.css">
 </head>
 <body>
 <div class="app-shell">
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="/admin/" aria-label="YorpHives Admin home"><span class="brand-mark">Y</span><span><strong>yorphives</strong><small>HEADQUARTERS</small></span></a>
-  <div class="workspace-label">WORKSPACE</div>
-  <nav class="side-nav" aria-label="Admin workspaces">
-    <button class="nav-item active" data-view="headquarters"><span class="nav-icon">◇</span>My Home</button>
-    <button class="nav-item" data-view="yorpmind"><span class="nav-icon">✺</span>YorpMind</button>
-    <button class="nav-item" data-view="intelligence"><span class="nav-icon">✦</span>Ideas &amp; Intelligence</button>
-    <button class="nav-item" data-view="demand"><span class="nav-icon">◉</span>Market Explorer</button>
-    <button class="nav-item" data-view="business"><span class="nav-icon">▤</span>Business Intelligence</button>
-    <button class="nav-item" data-view="radar"><span class="nav-icon">◈</span>Opportunity Radar</button>
-    <button class="nav-item" data-view="departments"><span class="nav-icon">▦</span>Departments</button>
-    <button class="nav-item" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
-    <button class="nav-item" data-view="monitoring"><span class="nav-icon">⌁</span>Monitoring</button>
-    <button class="nav-item" data-view="analytics"><span class="nav-icon">▥</span>Analytics</button>
+  <div class="workspace-label">YOUR SPACE</div>
+  <nav class="side-nav" aria-label="Everyday Headquarters">
+    <button class="nav-item active" data-view="headquarters"><span class="nav-icon" aria-hidden="true">⌂</span>My Home</button>
+    <button class="nav-item" data-view="yorpmind"><span class="nav-icon" aria-hidden="true">✺</span>YorpMind</button>
+    <button class="nav-item" data-view="issues"><span class="nav-icon" aria-hidden="true">⚑</span>Problems to fix<span class="nav-count" id="nav-issues">—</span></button>
+    <button class="nav-item" data-view="agents"><span class="nav-icon" aria-hidden="true">✳</span>Fix problems</button>
   </nav>
-  <div class="workspace-label">OPERATIONS</div>
-  <nav class="side-nav" aria-label="Operations">
-    <button class="nav-item" data-view="issues"><span class="nav-icon">⚑</span>Issues &amp; risks<span class="nav-count" id="nav-issues">—</span></button>
-    <button class="nav-item" data-view="agents"><span class="nav-icon">✳</span>Fix problems</button>
-    <button class="nav-item" data-view="updates"><span class="nav-icon">↻</span>Updates &amp; maintenance<span class="nav-count" id="nav-updates">—</span></button>
-    <button class="nav-item" data-view="releases"><span class="nav-icon">⇧</span>Releases</button>
-  </nav>
-  <div class="workspace-label">HISTORY</div>
-  <nav class="side-nav" aria-label="History">
-    <button class="nav-item" data-view="activity"><span class="nav-icon">◷</span>Activity &amp; audit</button>
-  </nav>
+  <div class="workspace-label">MORE TO EXPLORE</div>
+  <details class="sidebar-group" id="nav-group-explore">
+    <summary>Ideas &amp; opportunities</summary>
+    <nav class="side-nav" aria-label="Ideas and opportunities">
+      <button class="nav-item" data-view="intelligence"><span class="nav-icon" aria-hidden="true">✦</span>New ideas</button>
+      <button class="nav-item" data-view="demand"><span class="nav-icon" aria-hidden="true">◉</span>Explore markets</button>
+      <button class="nav-item" data-view="business"><span class="nav-icon" aria-hidden="true">▤</span>Business opportunities</button>
+      <button class="nav-item" data-view="radar"><span class="nav-icon" aria-hidden="true">◈</span>Opportunity radar</button>
+    </nav>
+  </details>
+  <details class="sidebar-group" id="nav-group-tools">
+    <summary>Tools &amp; records</summary>
+    <nav class="side-nav" aria-label="Additional Headquarters tools">
+      <button class="nav-item" data-view="departments"><span class="nav-icon" aria-hidden="true">▦</span>AI team</button>
+      <button class="nav-item" data-view="overview"><span class="nav-icon" aria-hidden="true">◫</span>Website overview</button>
+      <button class="nav-item" data-view="monitoring"><span class="nav-icon" aria-hidden="true">⌁</span>Checks &amp; monitoring</button>
+      <button class="nav-item" data-view="analytics"><span class="nav-icon" aria-hidden="true">▥</span>Visitor numbers</button>
+      <button class="nav-item" data-view="updates"><span class="nav-icon" aria-hidden="true">↻</span>Updates<span class="nav-count" id="nav-updates">—</span></button>
+      <button class="nav-item" data-view="releases"><span class="nav-icon" aria-hidden="true">⇧</span>Publishing</button>
+      <button class="nav-item" data-view="activity"><span class="nav-icon" aria-hidden="true">◷</span>Past activity</button>
+    </nav>
+  </details>
   <div class="sidebar-bottom">
     <section class="account-card" aria-label="Administrator account">
       <div class="account-heading"><span class="avatar" aria-hidden="true">A</span><div><strong>Administrator account</strong><small id="sidebar-identity">Verifying Cloudflare Access…</small></div></div>
@@ -799,8 +805,8 @@
       <p class="footnote">Traffic metrics are supplied by Cloudflare zone analytics. Geographic, device, referral and per-tool usage reports will appear only when their corresponding data sources are connected; this dashboard does not fabricate missing metrics.</p>
     </section>
 
-    <section class="view" id="view-issues" data-title="Issues & risks">
-      <div class="page-heading"><div><span class="eyebrow">TRIAGE &amp; RESOLUTION</span><h1>Issues &amp; risks</h1><p>Prioritize real findings, inspect evidence and track risk decisions.</p></div><div class="heading-actions"><button class="button" data-go="monitoring">Open monitoring ↗</button></div></div>
+    <section class="view" id="view-issues" data-title="Problems to fix">
+      <div class="page-heading"><div><span class="eyebrow">YOUR WEBSITE · PROBLEMS</span><h1>Problems to fix</h1><p>Check what matters most. Open a problem for the explanation and choose what to do next.</p></div><div class="heading-actions"><button class="button" data-go="monitoring">Open monitoring ↗</button></div></div>
       <div class="filter-row"><button class="filter-chip active" data-finding-filter="active">Active</button><button class="filter-chip" data-finding-filter="all">All history</button><button class="filter-chip" data-finding-filter="resolved">Resolved / accepted</button></div>
       <dialog class="incident-dialog" id="incident-dialog" aria-labelledby="incident-title" aria-describedby="incident-subtitle">
         <div class="incident-shell">
@@ -876,8 +882,28 @@
           </form>
         </div>
       </dialog>
-      <section class="panel"><div class="table-wrap"><table><thead><tr><th>Severity</th><th>Finding</th><th>Environment</th><th>Status</th><th>Last verified</th><th>Action</th></tr></thead><tbody id="findings-list"><tr><td colspan="6" class="empty-state">Loading findings…</td></tr></tbody></table></div></section>
-      <section class="panel"><div class="panel-head"><div><span class="eyebrow">RECOMMENDATIONS</span><h2>Improvement opportunities</h2><p>Recommendations are kept separate from confirmed failures.</p></div></div><div class="table-wrap"><table><thead><tr><th>Priority</th><th>Area</th><th>Observation</th><th>Evidence</th><th>Suggested action</th></tr></thead><tbody id="asset-findings-list"><tr><td colspan="5" class="empty-state">Loading recommendations…</td></tr></tbody></table></div></section>
+      <section class="panel hq-issue-workspace" aria-label="Reported problems">
+        <div class="hq-section-tools">
+          <div><span class="eyebrow">WHAT NEEDS ATTENTION</span>
+            <h2>Reported problems <span id="hq-findings-count" class="hq-fold-note" aria-live="polite"></span></h2></div>
+          <small class="hq-fold-note">Scroll this list to see more · Open a problem for its details</small>
+        </div>
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Scrollable reported problems">
+          <table><thead><tr><th>Importance</th><th>What's happening</th><th>Where</th><th>Progress</th><th>Last checked</th><th>What next</th></tr></thead>
+          <tbody id="findings-list"><tr><td colspan="6" class="empty-state">Loading problems…</td></tr></tbody></table>
+        </div>
+      </section>
+      <details class="hq-fold" id="hq-ideas-fold">
+        <summary><span>Suggestions to improve later <small class="hq-fold-note">· Separate from confirmed problems</small></span></summary>
+        <div class="hq-fold-body">
+          <section class="panel">
+            <div class="table-wrap" role="region" tabindex="0" aria-label="Scrollable improvement suggestions">
+              <table><thead><tr><th>Importance</th><th>Area</th><th>Observation</th><th>Checked</th><th>Suggested next step</th></tr></thead>
+              <tbody id="asset-findings-list"><tr><td colspan="5" class="empty-state">Loading suggestions…</td></tr></tbody></table>
+            </div>
+          </section>
+        </div>
+      </details>
     </section>
 
     <section class="view" id="view-agents" data-title="AI operations">
