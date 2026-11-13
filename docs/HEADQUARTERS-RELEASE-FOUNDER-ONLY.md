@@ -1,0 +1,1 @@
+Release plan access now verifies the configured founder email against a signed-in Cloudflare Access identity. A CI service token or another permitted admin-area identity cannot retrieve the founder's private release plan.

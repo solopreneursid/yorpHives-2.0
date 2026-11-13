@@ -31,6 +31,7 @@ const candidate={target:"headquarters",ready_for_preview:true,blockers:[],
  preview:{url:"https://3c1e6315.yorphives-admin-staging.pages.dev",
  deploymentId:"3c1e6315-40b6-419d-83ef-81d77559df80"}};
 const env={
+ FOUNDER_OWNER_EMAIL:"founder@example.com",
  HQ_RELEASE_GITHUB_READ_TOKEN:"g".repeat(40),
  HQ_RELEASE_CLOUDFLARE_READ_TOKEN:"c".repeat(40),
  HQ_RELEASE_CLOUDFLARE_ACCOUNT_ID:"1".repeat(32)
@@ -75,7 +76,7 @@ test("automated service identities and unauthenticated requests cannot see found
  globalThis.__releaseCandidate=candidate;
  assert.equal((await onRequestGet(context("unknown"))).status,403);
  const service=await onRequestGet(context("service"));
- assert.equal(service.status,200);
+ assert.equal(service.status,403);
  const body=await service.json();
  assert.equal(body.eligible,false);
  assert.equal(body.production_deployment_enabled,false);
@@ -94,4 +95,11 @@ test("incomplete live checks or missing provider permissions lock the release pl
   assert.equal((await noToken.json()).eligible,false);
   assert.equal(calls,0);
  }finally{globalThis.fetch=oldFetch;}
+});
+
+test("a different signed-in account cannot inspect the founder release plan",async()=>{
+ globalThis.__releaseCandidate=candidate;
+ const result=await onRequestGet(context("owner",{FOUNDER_OWNER_EMAIL:"other@example.com"}));
+ assert.equal(result.status,403);
+ assert.equal((await result.json()).eligible,false);
 });

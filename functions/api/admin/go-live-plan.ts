@@ -22,16 +22,19 @@ async function remote(url:string,token:string,cloudflare:boolean):Promise<any>{
 export async function onRequestGet(context:AdminRequestContext):Promise<Response>{
  const owner=await requireAdmin(context);
  if(isAdminResponse(owner))return owner;
- if(owner.serviceToken)return blocked("Only the founder may inspect production release plans.");
+ const env=context.env as AdminRequestContext["env"] & {
+  FOUNDER_OWNER_EMAIL?:string;HQ_RELEASE_GITHUB_READ_TOKEN?:string;
+  HQ_RELEASE_CLOUDFLARE_READ_TOKEN?:string;HQ_RELEASE_CLOUDFLARE_ACCOUNT_ID?:string;
+ };
+ if(owner.serviceToken||!env.FOUNDER_OWNER_EMAIL||
+    owner.email?.toLowerCase()!==env.FOUNDER_OWNER_EMAIL.toLowerCase())
+  return adminJson({eligible:false,plan:null,production_deployment_enabled:false,
+   blockers:["Only the verified founder may inspect production release plans."]},403);
  const ready=await readLiveGoLiveReadiness(context.env,"headquarters");
  if(!ready.ready_for_preview)return adminJson({
   eligible:false,plan:null,production_deployment_enabled:false,
   blockers:ready.blockers||["Independent release checks are incomplete."]
  });
- const env=context.env as AdminRequestContext["env"] & {
-  HQ_RELEASE_GITHUB_READ_TOKEN?:string;HQ_RELEASE_CLOUDFLARE_READ_TOKEN?:string;
-  HQ_RELEASE_CLOUDFLARE_ACCOUNT_ID?:string;
- };
  const gh=String(env.HQ_RELEASE_GITHUB_READ_TOKEN||"");
  const cf=String(env.HQ_RELEASE_CLOUDFLARE_READ_TOKEN||"");
  const account=String(env.HQ_RELEASE_CLOUDFLARE_ACCOUNT_ID||"");
