@@ -722,14 +722,14 @@ async function run() {
     });
     await page.locator('.nav-item[data-view="releases"]').click();
     await page.locator("#view-releases").waitFor({ state: "visible", timeout: 10000 });
+    await page.locator(".release-evidence-details > summary").click();
     await page.locator(".release-evidence-card").first().waitFor({ state: "visible", timeout: 10000 });
-    record("yorpmind_owner_approval_requires_review_not_otp",
-      await page.locator("#owner-delegation-form").isVisible() &&
-      (await page.locator("#owner-delegation-form input[type=checkbox]").count()) === 6 &&
-      (await page.locator("#owner-delegation-form input[name*=otp]").count()) === 0 &&
-      (await page.locator("#owner-delegation-panel").count()) === 0 &&
-      (await page.locator(".owner-delegation-notice").innerText()).includes("Do not enter OTP"),
-      "Founder sees exact commit and six review requirements without any OTP collection field");
+    record("yorpmind_owner_approval_only_at_go_live",
+      !(await page.locator("#owner-delegation-form").isVisible()) &&
+      (await page.locator("#release-go-live").isDisabled()) &&
+      !(await page.locator("#release-launch-preview").isVisible()) &&
+      (await page.locator("#release-launch-status").innerText()).includes("Not production-ready"),
+      "Routine development does not request administrator rights; Go Live stays locked pending verified release and OTP");
     record("release_evidence_board_founder_visible",
       (await page.locator("#release-evidence-summary").innerText()).includes("Recent investigations") &&
       (await page.locator("#release-evidence-list").innerText()).includes("Synthetic preview repair verification"),
