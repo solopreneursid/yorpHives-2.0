@@ -54,3 +54,46 @@
 .founder-choice-mind{border-color:#1b778a!important}
 .founder-choice-chat{border-color:#6d6da5!important}
 @media(max-width:680px){.founder-assistants,.founder-permission-grid{grid-template-columns:1fr}.founder-command{padding:17px}.founder-assistant{padding:15px}}
+
+/* Founder Control: compact, instantly visible controls; no dashboard-sized cards. */
+.founder-quick-actions{
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  padding:10px;margin:13px 0 5px;background:rgba(6,22,39,.78);
+  border:1px solid #365b76;border-radius:12px
+}
+.founder-quick-label{display:grid;gap:2px;margin-right:auto;min-width:145px}
+.founder-quick-label strong{font-size:.86rem;color:#f1faff}
+.founder-quick-label small{font-size:.69rem;color:#b3cbd9}
+.founder-quick-actions button{
+  border:1px solid #337d98;border-radius:8px;background:#0e4661;
+  color:#e2faff;padding:9px 12px;cursor:pointer;font-size:.78rem;
+  font-weight:750;line-height:1.2;min-height:37px
+}
+.founder-quick-actions button:hover,.founder-quick-actions button:focus-visible{
+  border-color:#67e8f9;background:#0f607f
+}
+.founder-quick-actions .founder-quick-stop{
+  background:#632734;border-color:#f18a9d;color:#fff1f2
+}
+.founder-quick-actions .founder-quick-stop:hover,
+.founder-quick-actions .founder-quick-stop:focus-visible{
+  background:#8f3146;border-color:#fda4af
+}
+.founder-quick-actions button:disabled{opacity:.68;cursor:progress}
+.founder-quick-note{font-size:.72rem;line-height:1.5;color:#a9c7d7;margin:3px 2px 12px}
+.founder-permission-advanced{margin:8px 0 12px;border-top:1px solid #2a485f;padding-top:9px}
+.founder-permission-advanced>summary{
+  cursor:pointer;color:#bdefff;font-size:.77rem;font-weight:700;margin:5px 0
+}
+.founder-permission-advanced>summary:focus-visible{outline:2px solid #67e8f9;outline-offset:4px}
+.founder-permission-simple{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:760px){
+  .founder-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .founder-quick-label{grid-column:1/-1}
+  .founder-quick-actions .founder-quick-stop{grid-column:1/-1}
+}
+@media(max-width:520px){
+  .founder-quick-actions{grid-template-columns:1fr}
+  .founder-quick-label,.founder-quick-actions .founder-quick-stop{grid-column:auto}
+  .founder-permission-simple{grid-template-columns:1fr}
+}
