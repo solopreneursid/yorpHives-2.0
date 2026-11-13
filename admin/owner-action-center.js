@@ -37,16 +37,24 @@
       node("span", "owner-task-priority", action.urgency === "urgent"
         ? "ACT FIRST" : action.urgency === "attention" ? "NEEDS ATTENTION" : "WHEN READY"));
     const why = node("p", "owner-task-why", action.why);
-    const next = node("p", "owner-task-next", "YOUR ACTION · " + action.next_step);
+    const next = node("p", "owner-task-next", "Suggested next step: " + action.next_step);
     const footer = node("div", "owner-task-footer");
-    footer.append(node("span", "owner-task-note", "Review only · nothing executed"));
+    footer.append(node("span", "owner-task-note", "Choose an assistant, or open the details. Nothing starts automatically."));
     const button = node("button", "owner-task-button", "Open " +
       (action.view === "headquarters" ? "missions" :
         action.view === "yorpmind" ? "YorpMind" : action.view) + " →");
     button.type = "button";
     button.addEventListener("click", () => openWorkspace(action));
     footer.append(button);
-    card.append(heading, why, next, footer);
+    const choices = node("div", "founder-choice-actions");
+    const chat = node("button", "founder-choice-chat", "Work with ChatGPT");
+    chat.type = "button";
+    chat.addEventListener("click", () => window.HQChooseAssistant?.(action, "chatgpt"));
+    const mind = node("button", "founder-choice-mind", "Give to YorpMind");
+    mind.type = "button";
+    mind.addEventListener("click", () => window.HQChooseAssistant?.(action, "yorpmind"));
+    choices.append(chat, mind);
+    card.append(heading, why, next, footer, choices);
     return card;
   }
 
@@ -63,16 +71,16 @@
           " to consider. Nothing here approves a release or spends AI credits.";
       data.actions.forEach((a, i) => list.append(renderAction(a, i)));
     } else {
-      intro.textContent = "No pending decisions in the bounded private records checked.";
+      intro.textContent = "There is nothing new for you to decide in the work we checked.";
       list.append(node("p", "owner-empty",
-        "Nothing currently requires a founder decision in this sample. This does not certify production readiness, QA, billing or CI."));
+        "Your team may still be working. This message is not a guarantee that every website feature is healthy."));
     }
     const total = data.pending_total_in_window;
     el("owner-action-count").textContent = String(total) +
-      (data.truncated ? "+ queued" : " found");
-    el("owner-action-status").textContent = "Private D1 · refreshed " +
+      (data.truncated ? "+ to review" : " to review");
+    el("owner-action-status").textContent = "Last checked " +
       new Date(data.generated_at).toLocaleString() +
-      " · " + data.recorded_jobs_scanned + " missions inspected · read-only";
+      " · Nothing was changed or started.";
   }
 
   window.loadOwnerActionCenter = async (force = false) => {
