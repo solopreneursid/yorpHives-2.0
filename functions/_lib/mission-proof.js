@@ -71,7 +71,7 @@ export function inspectMissionReceipt(job, events=[]) {
     checks,records_sufficient_for_owner_review:sufficient,
     provider_execution_attested:false,claims_independently_verified:false,
     release_authorized:false,production_deployed:false,
-    provider_billing_verified:false,provider_usage:"unknown",
+    provider_billing_verified:false,provider_usage:providerUsage,
     failure:job.status==="failed"?{
       code:classification,
       message:message||"A mission failure was recorded."
