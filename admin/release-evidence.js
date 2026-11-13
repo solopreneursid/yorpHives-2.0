@@ -116,6 +116,24 @@
         url.pathname === "/" ? url.origin : null;
     } catch { return null; }
   };
+  // Display current server-sourced blockers separately from historical
+  // repair receipts. Never render untrusted strings as HTML or imply approval.
+  function renderLiveBlockers(values) {
+    const box = $("release-live-blockers");
+    const list = $("release-live-blockers-list");
+    const summary = $("release-live-blockers-title");
+    if (!box || !list || !summary) return;
+    const items = Array.isArray(values) ? values.filter(x =>
+      typeof x === "string" && x.trim().length > 0
+    ).slice(0, 12) : [];
+    list.replaceChildren();
+    for (const item of items) list.append(el("li", "", item.slice(0, 320)));
+    if (!items.length) list.append(el("li", "",
+      "No current blocker evidence was available. Go Live remains disabled until verified."));
+    summary.textContent = items.length ? "Live release blockers (" + items.length + ")" :
+      "Live release blockers · verification incomplete";
+    box.hidden = false;
+  }
   async function loadGoLiveReadiness() {
     const target = $("release-target")?.value === "headquarters" ? "headquarters" : "website";
     const status = $("release-launch-status");
@@ -127,6 +145,7 @@
       preview.removeAttribute("href");
       preview.setAttribute("aria-disabled", "true");
     }
+    if ($("release-live-blockers")) $("release-live-blockers").hidden = true;
     status.textContent = "Checking production readiness";
     details.textContent = "Verifying the exact code revision, automated checks and Cloudflare preview.";
     try {
@@ -140,6 +159,7 @@
           data.production_deployment_enabled !== false ||
           typeof data.ready_for_preview !== "boolean" ||
           !Array.isArray(data.blockers)) throw new Error("Invalid release verification evidence");
+      renderLiveBlockers(data.blockers);
       const url = data.ready_for_preview === true ? validPreview(data.preview?.url, target) : null;
       if (url && data.status === "verified_preview" && data.blockers.length === 0) {
         preview.href = url;
@@ -169,6 +189,8 @@
                 /^[a-f0-9]{40}$/.test(drift.source_sha || "") &&
                 /^[a-f0-9]{40}$/.test(drift.served_sha || "") &&
                 Number.isSafeInteger(drift.ahead_by) && drift.ahead_by > 0) {
+              renderLiveBlockers([...(data.blockers||[]),drift.reason].filter(
+                x=>typeof x==="string" && x.length));
               status.textContent = "Deployment mismatch · Go Live locked";
               details.textContent = "GitHub is " + drift.ahead_by +
                 " commit(s) ahead of the version Cloudflare serves. " +
@@ -180,6 +202,7 @@
         } catch { /* Keep existing fail-closed release status. */ }
       }
     } catch {
+      renderLiveBlockers(["Live release checks could not be independently verified."]);
       status.textContent = "Verification unavailable";
       details.textContent = "Live release checks could not be confirmed. Keep developing; publishing is locked.";
     }
