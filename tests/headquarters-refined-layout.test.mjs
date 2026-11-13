@@ -65,6 +65,8 @@ test("every new page opens at the top and reveals the active sidebar group",()=>
 
 test("issues remain linked to their full evidence, while suggestions start closed",()=>{
   assert.match(html,/id="hq-findings-count"/);
+  assert.match(html,/id="incident-chatgpt"/);
+  assert.match(html,/id="incident-prepare"/);
   assert.match(html,/id="findings-list"/);
   assert.match(html,/id="hq-ideas-fold"/);
   assert.match(html,/<summary><span>Suggestions to improve later/);
