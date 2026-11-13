@@ -81,7 +81,8 @@ test("compact scrolling and accessibility survive theme changes",()=>{
 test("theme is pure presentation with no new permissions or external requests",()=>{
   assert.doesNotMatch(theme,/\bfetch\s*\(/);
   assert.doesNotMatch(theme,/https?:\/\//);
-  assert.match(html,/id="founder-permission-form"/);
+  assert.match(html,/id="founder-permission-list"/);
+  assert.doesNotMatch(html,/id="founder-permission-form"/);
   assert.match(html,/id="founder-handoff-dialog"/);
   assert.match(html,/id="incident-dialog"/);
   assert.match(html,/id="findings-list"/);
