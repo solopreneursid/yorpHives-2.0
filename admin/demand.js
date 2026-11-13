@@ -51,9 +51,9 @@ function actions(item){
    });
    row.append(button);
  };
- if(item.research_status==="watching")add("Investigate","investigate");
- if(["watching","investigating"].includes(item.research_status))add("Shortlist","shortlist");
- if(["watching","investigating","shortlisted"].includes(item.research_status))add("Dismiss","dismiss");
+ if(item.research_status==="watching")add("Look into this","investigate");
+ if(["watching","investigating"].includes(item.research_status))add("Save idea","shortlist");
+ if(["watching","investigating","shortlisted"].includes(item.research_status))add("Not for now","dismiss");
  if(item.research_status==="dismissed")add("Reopen","reopen");
  return row;
 }
@@ -61,7 +61,7 @@ function renderOpportunity(item){
  const card=make("article","demand-card");
  const header=make("div","demand-card-header");
  header.append(make("span",item.origin==="hypothesis"?"demand-origin-new":"demand-origin-reference",
-  item.origin==="hypothesis"?"DISCOVERED HYPOTHESIS":"EXISTING CATEGORY"),
+  item.origin==="hypothesis"?"IDEA TO TEST":"KNOWN TYPE OF PRODUCT"),
   make("span","demand-stage",caps(item.research_status)));
  card.append(header);
  card.append(make("h3","",item.title),make("p","demand-card-summary",item.summary));
@@ -76,7 +76,7 @@ function renderOpportunity(item){
  const section=(heading,text)=>{
   const x=make("div","demand-field");x.append(make("strong","",heading),make("p","",text));body.append(x);
  };
- section("HUMAN USE CASE — HYPOTHESIS",item.user_job);
+ section("WHO THIS MIGHT HELP — NOT YET VERIFIED",item.user_job);
  section("POSSIBLE AGENT USE — UNVERIFIED",item.agent_job);
  section("POSSIBLE BUSINESS MODEL — UNVERIFIED",item.monetization_model);
  const evidence=make("div","demand-field");
