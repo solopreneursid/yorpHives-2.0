@@ -6,6 +6,7 @@ on:
       - main
       - "build/**"
       - feature/founder-one-tap-controls
+      - fix/founder-approval-at-production-only
   # All development PRs receive contract tests, including stacked feature branches.
   # This job is read-only and cannot deploy or consume Workers AI.
   pull_request:
