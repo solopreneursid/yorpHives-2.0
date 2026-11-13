@@ -60,7 +60,7 @@ export function attestIndependentReleaseQA({preview,smoke,sha,now=Date.now()}){
  const fresh=value=>{
   // Accept only explicit UTC timestamps; local or offset-free strings are ambiguous.
   if(typeof value!=="string"||
-     !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$/.test(value))return false;
+     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value))return false;
   const ms=Date.parse(value);
   return Number.isFinite(ms)&&ms<=now&&now-ms<=14400000;
  };
