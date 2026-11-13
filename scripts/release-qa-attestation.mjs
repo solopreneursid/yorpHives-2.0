@@ -34,6 +34,10 @@ export function attestIndependentReleaseQA({preview,smoke,sha,now=Date.now()}){
      u.pathname!=="/"||u.search||u.hash)throw Error("Unsafe host");
   host=u.hostname;
  }catch{fail("Unapproved private preview origin");}
+ // Repeated route records can conceal conflicting Access results.
+ const routes=Array.isArray(preview?.anonymous_paths_checked)?preview.anonymous_paths_checked:[];
+ if(routes.length!==2||new Set(routes.map(x=>x?.route)).size!==routes.length)
+  fail("Ambiguous or duplicate anonymous Access route evidence");
  for(const route of ["/admin/","/api/admin/yorpmind-team"]){
   const proof=Array.isArray(preview?.anonymous_paths_checked)?
    preview.anonymous_paths_checked.find(x=>x.route===route):null;
@@ -48,9 +52,18 @@ export function attestIndependentReleaseQA({preview,smoke,sha,now=Date.now()}){
   !Array.isArray(smoke.checks)||smoke.checks.length!==smoke.summary.total||
   !smoke.checks.every(x=>x&&x.ok===true&&typeof x.name==="string"))
   fail("Missing, failed or mismatched authenticated browser evidence");
+ const names=Array.isArray(smoke?.checks)?smoke.checks.map(x=>x?.name):[];
+ if(new Set(names).size!==names.length)
+  fail("Duplicate browser assertion names are not independently verifiable");
  const passed=new Set(Array.isArray(smoke?.checks)?smoke.checks.filter(x=>x?.ok).map(x=>x.name):[]);
  for(const name of REQUIRED_CHECKS)if(!passed.has(name))fail("Missing assertion: "+name);
- const fresh=value=>{const ms=Date.parse(value||"");return Number.isFinite(ms)&&ms<=now&&now-ms<=14400000;};
+ const fresh=value=>{
+  // Accept only explicit UTC timestamps; local or offset-free strings are ambiguous.
+  if(typeof value!=="string"||
+     !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$/.test(value))return false;
+  const ms=Date.parse(value);
+  return Number.isFinite(ms)&&ms<=now&&now-ms<=14400000;
+ };
  if(!fresh(preview?.checked_at)||!fresh(smoke?.generated_at))fail("Evidence stale or undated");
  if(fresh(preview?.checked_at)&&fresh(smoke?.generated_at)&&
     Date.parse(smoke.generated_at)<Date.parse(preview.checked_at))
