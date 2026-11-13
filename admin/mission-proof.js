@@ -1,7 +1,7 @@
 (() => {
   "use strict";
   const allowedStatuses = new Set(["queued","running","awaiting_owner_approval","completed","failed"]);
-  const statuses = {recorded_review_ready:"Recorded review gate",recorded_review_acknowledged:"Planning brief acknowledged",recorded_failure:"Recorded failure",
+  const statuses = {recorded_review_ready:"Recorded review gate",recorded_review_acknowledged:"Planning brief acknowledged",recorded_staging_rehearsal:"Staging rehearsal recorded · 5/5",recorded_failure:"Recorded failure",
     incomplete_record:"Missing evidence",unavailable:"Unavailable"};
   const element = (tag, cls, text) => {
     const n=document.createElement(tag);
@@ -15,6 +15,7 @@
     const header=element("div","hq-proof-heading");
     header.append(element("strong","",statuses[p.evidence_status]||"Incomplete evidence"),
       element("span","hq-proof-badge",
+        p.is_staging_rehearsal && p.staging_rehearsal_completed ? "SYNTHETIC TEST · NOT OWNER APPROVAL" :
         p.records_sufficient_for_owner_review ? "RECORDS FOUND · NOT QA" : "NOT READY"));
     container.append(header);
     if(p.failure)container.append(element("p","hq-proof-failure",
