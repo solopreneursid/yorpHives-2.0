@@ -6,8 +6,10 @@ const host="aaa7346f.yorphives-admin-staging.pages.dev";
 const preview={staging_project:"yorphives-admin-staging",verified_commit_sha:sha,
  deployment_id:"aaa7346f-9150-4aa5-81be-2103f76d263d",preview_url:"https://"+host,
  verified_existing_deployment:true,access_boundary_verified:true,
- anonymous_paths_checked:[{route:"/admin/",access_blocked:true,status:302},
- {route:"/api/admin/yorpmind-team",access_blocked:true,status:403}],
+ anonymous_paths_checked:[{route:"/admin/",access_blocked:true,status:302,
+  denial_kind:"verified_cloudflare_access_redirect",access_redirect_verified:true},
+ {route:"/api/admin/yorpmind-team",access_blocked:true,status:403,
+  denial_kind:"http_auth_denial",access_redirect_verified:false}],
  authenticated_browser_test_completed:false,no_deployment_created:true,
  no_production_change:true,
  canonical_before:{id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",sha:"f".repeat(40),branch:"build/yorphives-admin-reliability"},
@@ -66,6 +68,18 @@ test("duplicate or ambiguous Access and signed-in QA evidence fails closed",()=>
   summary:{total:smoke.checks.length+1,passed:smoke.checks.length+1,failed:0},
   checks:[...smoke.checks,smoke.checks[0]]};
  assert.equal(attest({smoke:duplicateChecks}).evidence_verified,false);
+});
+test("HTTP redirects without verified Cloudflare Access provenance are never accepted",()=>{
+ for(const proof of [
+  {route:"/admin/",access_blocked:true,status:302},
+  {route:"/admin/",access_blocked:true,status:302,denial_kind:"http_auth_denial",access_redirect_verified:false},
+  {route:"/admin/",access_blocked:true,status:302,denial_kind:"verified_cloudflare_access_redirect",access_redirect_verified:false},
+  {route:"/admin/",access_blocked:true,status:403,denial_kind:"verified_cloudflare_access_redirect",access_redirect_verified:true},
+  {route:"/admin/",access_blocked:true,status:403,denial_kind:"http_auth_denial",access_redirect_verified:true}
+ ]){
+  const changed={...preview,anonymous_paths_checked:[proof,preview.anonymous_paths_checked[1]]};
+  assert.equal(attest({preview:changed}).evidence_verified,false,JSON.stringify(proof));
+ }
 });
 test("QA timestamps must be explicit UTC and valid",()=>{
  for(const checked_at of [
