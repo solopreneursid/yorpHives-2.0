@@ -3,6 +3,7 @@
  * No AI permissions, no Git ref writes, no Cloudflare rollback calls.
  */
 import {validatedReleaseBinding} from "./go-live-otp-core.js";
+import {verifyHeadquartersD1Isolation} from "./hq-resource-isolation.js";
 import {verifyHeadquartersCanonicalBranch,PUBLISH_DESTINATION,REPO} from "./go-live-readiness.js";
 const SHA=/^[a-f0-9]{40}$/;
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -19,6 +20,8 @@ export function planHeadquartersFastForward({
  const bound=validatedReleaseBinding(readiness,"headquarters",c.sha,
   readiness.preview?.deploymentId);
  if(!bound)return error("The reviewed preview and all release checks are not verified.");
+ const isolated=verifyHeadquartersD1Isolation(project);
+ if(!isolated.isolated)return error(isolated.reason);
  const canonical=verifyHeadquartersCanonicalBranch(branch,project);
  if(!canonical.verified)return error(canonical.reason);
  if(compareBase!==canonical.sourceSha||compareHead!==c.sha)
