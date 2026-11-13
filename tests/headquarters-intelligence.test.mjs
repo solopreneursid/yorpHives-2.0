@@ -44,6 +44,11 @@ const evolutionURI=data((await file("../hq-intelligence/yorpmind-evolution.js"))
 const teamLibURI=data(await file("../functions/_lib/yorpmind-team.js"));
 const teamScanURI=data((await file("../hq-intelligence/yorpmind-team-scan.js"))
   .replace('"../functions/_lib/yorpmind-team.js"',JSON.stringify(teamLibURI)));
+const releaseEvidenceURI=data(await file("../functions/_lib/release-evidence.js"));
+const yorpmindCoreURI=data(await file("../functions/_lib/yorpmind.js"));
+const verifiedLearningURI=data((await file("../functions/_lib/yorpmind-verified-learning.js"))
+  .replace('"./release-evidence.js"',JSON.stringify(releaseEvidenceURI))
+  .replace('"./yorpmind.js"',JSON.stringify(yorpmindCoreURI)));
 const workerURI=data((await file("../hq-intelligence/worker.js"))
   .replace('import { WorkflowEntrypoint } from "cloudflare:workers";',
     "class WorkflowEntrypoint { constructor() { this.env = {}; } }")
@@ -58,7 +63,9 @@ const workerURI=data((await file("../hq-intelligence/worker.js"))
   .replace('import { scanYorpMindEvolution } from "./yorpmind-evolution.js";',
     'import { scanYorpMindEvolution } from '+JSON.stringify(evolutionURI)+";")
   .replace('import { scanYorpMindTeam } from "./yorpmind-team-scan.js";',
-    'import { scanYorpMindTeam } from '+JSON.stringify(teamScanURI)+";"));
+    'import { scanYorpMindTeam } from '+JSON.stringify(teamScanURI)+";")
+  .replace('import { reconcileRepairLearning } from "../functions/_lib/yorpmind-verified-learning.js";',
+    'import { reconcileRepairLearning } from '+JSON.stringify(verifiedLearningURI)+";"));
 const {ResearchWorkflow,default:worker}=await import(workerURI);
 const {collectPublicSignals}=await import(sourcesURI);
 
