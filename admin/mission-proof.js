@@ -19,6 +19,13 @@
     container.append(header);
     if(p.failure)container.append(element("p","hq-proof-failure",
       "Recorded error ("+p.failure.code+"): "+p.failure.message));
+    if(p.provider_usage && p.provider_usage.billing_verified===false) {
+      container.append(element("p","hq-proof-usage",
+        "Model-reported tokens · Input: "+p.provider_usage.input_tokens+
+        " · Output: "+p.provider_usage.output_tokens+
+        " · Total: "+p.provider_usage.total_tokens+
+        " · Billing not independently verified"));
+    }
     for(const check of Array.isArray(p.checks)?p.checks:[]) {
       const row=element("div","hq-proof-check");
       row.append(element("span","hq-proof-icon",check.result==="recorded"?"✓":"!"));
