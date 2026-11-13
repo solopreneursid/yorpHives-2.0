@@ -34,13 +34,13 @@ function adapter(db) {
 }
 function fixture() {
   const db = new DatabaseSync(":memory:");
-  db.exec("CREATE TABLE agent_jobs(job_id TEXT PRIMARY KEY,job_type TEXT,status TEXT,result_json TEXT,updated_at TEXT);");
+  db.exec("CREATE TABLE agent_jobs(job_id TEXT PRIMARY KEY,job_type TEXT,status TEXT,origin_type TEXT,result_json TEXT,updated_at TEXT);");
   db.exec("CREATE TABLE admin_repair_jobs(id TEXT PRIMARY KEY,status TEXT);");
   db.exec("CREATE TABLE admin_runs(started_at TEXT);");
   db.exec("CREATE TABLE yorpmind_staff(staff_id TEXT PRIMARY KEY);");
   db.exec("CREATE TABLE yorpmind_team_reports(state TEXT);");
   db.exec("CREATE TABLE yorpmind_owner_delegations(state TEXT,request_expires_at TEXT);");
-  db.prepare("INSERT INTO agent_jobs VALUES(?,?,?,?,?)").run(
+  db.prepare("INSERT INTO agent_jobs(job_id,job_type,status,result_json,updated_at) VALUES(?,?,?,?,?)").run(
     "123e4567-e89b-42d3-a456-000000000001", "owner_mission", "failed",
     JSON.stringify({ error: "AI response did not contain valid JSON.", verified:false }),
     "2026-11-12T10:00:00Z");
