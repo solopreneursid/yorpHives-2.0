@@ -97,3 +97,16 @@
   .founder-quick-label,.founder-quick-actions .founder-quick-stop{grid-column:auto}
   .founder-permission-simple{grid-template-columns:1fr}
 }
+
+/* The email-code modal stays compact, readable, and usable with one hand. */
+#founder-otp-dialog{width:min(440px,calc(100vw - 28px));max-width:440px}
+#founder-otp-dialog h2{margin:7px 0 9px}
+#founder-otp-dialog label{display:grid;gap:8px;margin:15px 0 8px;
+  color:#bde6fa;font-size:.84rem;font-weight:750}
+#founder-otp-dialog input{
+  width:100%;padding:13px;border-radius:9px;background:#09192a;
+  color:#f0fdff;border:1px solid #3c718c;font-size:1.3rem;
+  font-weight:750;letter-spacing:.3em;text-align:center
+}
+#founder-otp-dialog input:focus-visible{outline:2px solid #67e8f9;outline-offset:2px}
+#founder-otp-dialog button:disabled{opacity:.55;cursor:progress}
