@@ -134,11 +134,11 @@
     window.HQChooseAssistant({
       title: "YorpHives website: real public route checks",
       why: summaryText(lastReceipt),
-      next_step: "Investigate any failed public-route formats or missing browser protection. " +
-        "First reproduce against the exact deployed site; prepare a draft fix with tests, " +
-        "independent review and founder preview. Do not send non-HTML documents to " +
-        "the restricted page-repair bot. A blocked check is not proof of an outage. " +
-        "After verified QA, record a revision-matched YorpMind lesson, never an unverified skill.",
+      next_step: "Review any observed failed public-route formats or missing browser protection. " +
+        "Treat inconclusive checks as uncertain, not confirmed outages. " +
+        "Suggest safe, evidence-based remedies for the founder to evaluate. " +
+        "Headquarters and YorpMind never modify code or dispatch repairs. " +
+        "The founder makes and tests changes, then uses Preview → Go Live → OTP.",
       link: "https://yorphives.com/"
     }, assistant);
   }
