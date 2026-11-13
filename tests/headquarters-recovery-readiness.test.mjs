@@ -38,6 +38,8 @@ test("actual old staging state is NOT recoverable at current 0030 schema",()=>{
 test("a stale, mismatched or unverified receipt fails closed",()=>{
  for(const partial of [
  {objects:[{...backup,last_modified:"2026-11-13T13:50:00Z"}]},
+ {objects:[{...backup,key:"backups/headquarters-staging/2026-11-13-after-00300-with-ledger.json"}],restoreReceipts:[{...receipt,backup_key:"backups/headquarters-staging/2026-11-13-after-00300-with-ledger.json"}]},
+ {objects:[{...backup,key:"backups/headquarters-staging/2026-11-13-after-00301-with-ledger.json"}],restoreReceipts:[{...receipt,backup_key:"backups/headquarters-staging/2026-11-13-after-00301-with-ledger.json"}]},
  {objects:[backup],restoreReceipts:[{...receipt,backup_etag:"other"}]},
  {restoreReceipts:[{...receipt,backup_sha256:"INVALID"}]},
  {restoreReceipts:[{...receipt,foreign_key_violations:1}]},
