@@ -214,11 +214,11 @@ async function checkAsset(db, asset, now) {
           }
         });
       } else if (representation.kind === "html") {
-        pageTitle = htmlText(body, /<title[^>]*>([\\s\\S]*?)<\\/title>/i);
-        description = htmlText(body, /<meta\\s+[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) ||
-          htmlText(body, /<meta\\s+[^>]*content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i);
-        canonical = htmlText(body, /<link\\s+[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i) ||
-          htmlText(body, /<link\\s+[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["'][^>]*>/i);
+        pageTitle = htmlText(body, /<title[^>]*>([\s\S]*?)<\/title>/i);
+        description = htmlText(body, /<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) ||
+          htmlText(body, /<meta\s+[^>]*content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i);
+        canonical = htmlText(body, /<link\s+[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i) ||
+          htmlText(body, /<link\s+[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["'][^>]*>/i);
         dependencies = extractDependencies(body, url);
         if (!pageTitle) findings.push({
           key: "missing-title", severity: "medium", category: "seo",
