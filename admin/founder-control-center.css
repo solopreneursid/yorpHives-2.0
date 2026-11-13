@@ -16,7 +16,11 @@
 .founder-workers{border-radius:10px;border:1px dashed #476179;text-align:center;padding:10px;color:#a8bdce;font-size:.84rem;margin-top:8px}
 .founder-learning{margin-top:14px;padding:12px 14px;border-left:3px solid #22d3ee;background:#0a2537;color:#c2d9e7;font-size:.82rem;line-height:1.6}
 .founder-permission-panel{margin-top:18px;background:#111e30;border:1px solid #355775;border-radius:14px;padding:clamp(16px,2.5vw,25px)}
-.founder-permission-panel h2{margin:4px 0 6px;color:#eef6ff}
+.founder-permission-panel>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;cursor:pointer;color:#e2f7ff;font-size:.96rem}
+.founder-permission-panel>summary strong{font-weight:780;font-size:1.05rem}
+.founder-permission-panel>summary span{color:#a8c4d6;font-size:.77rem}
+.founder-permission-panel>summary:hover,.founder-permission-panel>summary:focus-visible{color:#67e8f9}
+.founder-permission-panel[open]>summary{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #31516d}
 .founder-permission-explain{font-size:.84rem;color:#b3c6d9;line-height:1.55}
 .founder-permission-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
 .founder-permission-panel label{display:grid;gap:7px;font-weight:700;font-size:.78rem;color:#c8deed}
