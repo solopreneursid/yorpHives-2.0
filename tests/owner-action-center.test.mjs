@@ -14,6 +14,17 @@ test("failed mission is the first admin decision, never an approval", () => {
   assert.equal(result.auto_ai_dispatch_enabled,false);
   assert.ok(result.actions.every(a=>a.approval_granted===false&&a.execution_authorized===false));
 });
+test("synthetic staging success appears only as evidence-inspection advice",()=>{
+  const result=founderActionQueue({jobs:[
+    {...job(1,"awaiting_owner_approval"),origin_type:"staging_rehearsal"}
+  ],teamSchemaReady:true});
+  assert.equal(result.actions.length,1);
+  assert.match(result.actions[0].title,/staging Workflow/i);
+  assert.equal(result.actions[0].target,"staging");
+  assert.equal(result.actions[0].approval_granted,false);
+  assert.equal(result.overview.awaiting_brief_review,0);
+  assert.equal(result.overview.failed_missions,0);
+});
 test("release and manager suggestions require founder review but do not grant authority",()=>{
   const result=founderActionQueue({jobs:[job(1,"awaiting_owner_approval")],repairReviewCount:1,
     pendingMfaCount:1,pendingTeamReports:3,teamSchemaReady:true});
