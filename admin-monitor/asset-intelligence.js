@@ -1,3 +1,5 @@
+import { assessAssetRepresentation, isMachineReadableAsset } from "./asset-policy.js";
+
 const SITE_ORIGIN = "https://yorphives.com";
 const MAX_ASSETS = 250;
 const MAX_ASSETS_PER_RUN = 60;
@@ -132,12 +134,26 @@ async function upsertFinding(db, assetId, finding, now) {
     finding.title, finding.details, finding.recommendation, JSON.stringify(finding.evidence || {}), now, now).run();
 }
 
-async function resolveMissingFindings(db, assetId, activeKeys, now) {
+async function resolveMissingFindings(db, assetId, activeKeys, now, asset) {
   const rows = await db.prepare("SELECT finding_key FROM admin_asset_findings WHERE asset_id=? AND category NOT IN ('dependency','change') AND status IN ('open','investigating','awaiting_approval')").bind(assetId).all();
   for (const row of rows.results || []) {
     if (!activeKeys.has(row.finding_key)) {
-      await db.prepare("UPDATE admin_asset_findings SET status='fixed', resolved_at=?, last_verified=? WHERE asset_id=? AND finding_key=?")
-        .bind(now, now, assetId, row.finding_key).run();
+      if (row.finding_key === "missing-canonical" && isMachineReadableAsset(asset)) {
+        // Older scans incorrectly demanded HTML canonical tags on JSON,
+        // YAML and text endpoints. Close the false-positive explicitly,
+        // without claiming that the underlying route was repaired.
+        await db.prepare(
+          "UPDATE admin_asset_findings SET status='fixed',resolved_at=?,last_verified=?," +
+          "details=?,recommendation=?,evidence_json=? WHERE asset_id=? AND finding_key=?"
+        ).bind(now, now,
+          "No HTML canonical tag is required for this machine-readable route. Earlier detection was a monitoring false positive; it does not prove that the route serves valid machine-readable content.",
+          "No canonical HTML change is needed. Check the response format finding separately.",
+          JSON.stringify({ classification: "not_applicable", cause: "html_seo_rule_applied_to_machine_document", verified_response: false }),
+          assetId, row.finding_key).run();
+      } else {
+        await db.prepare("UPDATE admin_asset_findings SET status='fixed', resolved_at=?, last_verified=? WHERE asset_id=? AND finding_key=?")
+          .bind(now, now, assetId, row.finding_key).run();
+      }
     }
   }
 }
@@ -178,12 +194,31 @@ async function checkAsset(db, asset, now) {
       contentHash = await sha256(bytes);
       const contentType = response.headers.get("content-type") || "";
       const body = new TextDecoder().decode(bytes);
-      if (contentType.includes("text/html") || /^\s*<!doctype html|^\s*<html/i.test(body)) {
-        pageTitle = htmlText(body, /<title[^>]*>([\s\S]*?)<\/title>/i);
-        description = htmlText(body, /<meta\s+[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) ||
-          htmlText(body, /<meta\s+[^>]*content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i);
-        canonical = htmlText(body, /<link\s+[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i) ||
-          htmlText(body, /<link\s+[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["'][^>]*>/i);
+      const representation = assessAssetRepresentation(asset, contentType, body);
+      details = { expected_format: representation.expected,
+        observed_content_type: representation.content_type,
+        representation_valid: representation.ok };
+      if (!representation.ok) {
+        status = "degraded";
+        findings.push({
+          key: representation.code, severity: "high", category: "functionality",
+          title: asset.title + " returned the wrong type of document",
+          details: representation.reason,
+          recommendation: "Check the actual response and Pages route. Restore the expected " +
+            representation.expected.toUpperCase() + " representation, then independently verify it.",
+          evidence: {
+            url: url.toString(), status: response.status,
+            expected_format: representation.expected,
+            observed_content_type: representation.content_type,
+            classification: representation.code
+          }
+        });
+      } else if (representation.kind === "html") {
+        pageTitle = htmlText(body, /<title[^>]*>([\\s\\S]*?)<\\/title>/i);
+        description = htmlText(body, /<meta\\s+[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) ||
+          htmlText(body, /<meta\\s+[^>]*content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i);
+        canonical = htmlText(body, /<link\\s+[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i) ||
+          htmlText(body, /<link\\s+[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["'][^>]*>/i);
         dependencies = extractDependencies(body, url);
         if (!pageTitle) findings.push({
           key: "missing-title", severity: "medium", category: "seo",
@@ -197,20 +232,20 @@ async function checkAsset(db, asset, now) {
           details: "No meta description was detected in the HTML response.",
           recommendation: "Add a concise, unique description that accurately summarizes the page."
         });
-        if (!canonical && asset.type !== "website_page") findings.push({
+        if (!canonical && (asset.type === "website_page" || asset.type === "free_tool")) findings.push({
           key: "missing-canonical", severity: "low", category: "seo",
           title: asset.title + " has no canonical URL",
-          details: "No canonical link was detected.",
-          recommendation: "Add a canonical URL when this route can be reached through alternate URLs."
+          details: "No canonical link was detected in this HTML page.",
+          recommendation: "Add a canonical URL if this HTML page can be reached through alternate URLs."
         });
-      } else if (contentType.includes("application/json")) {
-        try { details = { json_valid: true, json_keys: Object.keys(JSON.parse(body)).slice(0, 20) }; }
-        catch {
-          status = "degraded";
-          findings.push({ key: "invalid-json", severity: "high", category: "functionality",
-            title: asset.title + " returned invalid JSON", details: "The endpoint declared JSON but its body could not be parsed.",
-            recommendation: "Validate the response serialization and API error handling." });
-        }
+      } else if (representation.kind === "json") {
+        const value = representation.json;
+        details = {
+          ...details, json_valid: true,
+          json_shape: Array.isArray(value) ? "array" : typeof value,
+          json_keys: value && typeof value === "object" && !Array.isArray(value) ?
+            Object.keys(value).slice(0, 20) : []
+        };
       }
     }
   } catch (error) {
@@ -249,7 +284,7 @@ async function checkAsset(db, asset, now) {
 
   const activeKeys = new Set(findings.map(f => f.key));
   for (const finding of findings) await upsertFinding(db, assetId, finding, now);
-  await resolveMissingFindings(db, assetId, activeKeys, now);
+  await resolveMissingFindings(db, assetId, activeKeys, now, asset);
   return { asset_key: asset.key, status, http_status: httpStatus, duration_ms: Date.now() - started, dependencies };
 }
 
