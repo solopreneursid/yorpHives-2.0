@@ -11,18 +11,23 @@ const authStub = asModule(`
   export const isAdminResponse = identity => identity instanceof Response;
   export const requireAdmin = async () => ({ email: "owner@example.com" });
 `);
+const intakeURI = asModule(await source("../functions/_lib/repair-intake.js"));
 const routeSource = (await source("../functions/api/admin/repair-jobs.ts"))
-  .replace('"../../_lib/admin-auth"', JSON.stringify(authStub));
+  .replace('"../../_lib/admin-auth"', JSON.stringify(authStub))
+  .replace('"../../_lib/repair-intake.js"', JSON.stringify(intakeURI));
 const { onRequestPost } = await import(asModule(stripTypeScriptTypes(routeSource)));
 
 async function setup(withLinks = true) {
   const database = new DatabaseSync(":memory:");
-  database.exec("PRAGMA foreign_keys=ON; CREATE TABLE admin_findings(id TEXT PRIMARY KEY);" +
-    "CREATE TABLE admin_asset_findings(id TEXT PRIMARY KEY);");
+  database.exec("PRAGMA foreign_keys=ON; " +
+    "CREATE TABLE admin_findings(id TEXT PRIMARY KEY,status TEXT);" +
+    "CREATE TABLE admin_assets(id TEXT PRIMARY KEY,asset_type TEXT,url TEXT);" +
+    "CREATE TABLE admin_asset_findings(id TEXT PRIMARY KEY,asset_id TEXT,status TEXT,category TEXT,finding_key TEXT);");
   database.exec(await source("../migrations/0008_admin_control_center.sql"));
   if (withLinks) database.exec(await source("../migrations/0022_admin_repair_finding_links.sql"));
-  database.prepare("INSERT INTO admin_findings(id) VALUES(?)").run("same-id");
-  database.prepare("INSERT INTO admin_asset_findings(id) VALUES(?)").run("same-id");
+  database.prepare("INSERT INTO admin_findings(id,status) VALUES(?,?)").run("same-id","open");
+  database.prepare("INSERT INTO admin_assets(id,asset_type,url) VALUES(?,?,?)").run("asset-page","website_page","https://yorphives.com/free-tools/");
+  database.prepare("INSERT INTO admin_asset_findings(id,asset_id,status,category,finding_key) VALUES(?,?,?,?,?)").run("same-id","asset-page","investigating","seo","missing-title");
   const prepare = sql => {
     let bound = [];
     const statement = {
