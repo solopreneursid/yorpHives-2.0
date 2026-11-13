@@ -307,7 +307,8 @@ async function main() {
         s.href?.endsWith("/admin/headquarters-refined.css")),
       prism: [...document.styleSheets].some(s =>
         s.href?.endsWith("/admin/headquarters-prism-theme.css")),
-      collapsedSettings: document.querySelector(".founder-permission-panel")?.open === false
+      collapsedSettings: document.querySelector("#view-headquarters .founder-permission-panel") === null &&
+        document.querySelector("#view-security .founder-permission-panel")?.open === false
     }));
     check("brand:design-loaded",
       design.refined && design.prism && design.collapsedSettings,
@@ -405,7 +406,7 @@ async function main() {
       "headquarters", "yorpmind", "issues", "agents",
       "intelligence", "demand", "business", "radar",
       "departments", "overview", "monitoring", "analytics",
-      "updates", "releases", "activity"
+      "updates", "releases", "security", "activity"
     ]) await navigate(page, route);
 
     await measure(page, 1440, 960, "headquarters");
