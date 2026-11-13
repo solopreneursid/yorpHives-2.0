@@ -621,6 +621,9 @@ async function probeGithubWritePermissions(env) {
 
 export class AdminRepairWorkflow extends WorkflowEntrypoint {
   async run(event, step) {
+    // Founder monitoring-only charter: never execute old queued repair jobs.
+    // Keep the historical class for compatibility and audit, not operation.
+    throw new Error("MONITOR_ONLY: Headquarters never executes code repairs.");
     const payload = event.payload || {};
     const jobId = String(payload.job_id || "");
     const requestText = String(payload.request_text || "").trim();
@@ -723,6 +726,12 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
 
 export default {
   async fetch(request, env) {
+    // Defense-in-depth: even a direct private Worker service call must never
+    // create GitHub issues, permission probes or autonomous repair workflows.
+    if (request.method !== "GET") return Response.json({
+      error:"MONITOR_ONLY",monitoring_only:true,dispatch_performed:false,
+      github_issue_created:false,production_deployed:false
+    },{status:405,headers:{"cache-control":"no-store"}});
     const url = new URL(request.url);
     // These GitHub issue operations are reachable through a private Worker
     // service binding; no browser or unauthenticated public HTTP route is used.
