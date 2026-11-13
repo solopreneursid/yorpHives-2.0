@@ -1,4 +1,5 @@
 import { adminJson, isAdminResponse, requireAdmin, type AdminRequestContext } from "../../_lib/admin-auth";
+import { learnFromRepair } from "../../_lib/yorpmind-verified-learning.js";
 
 type ReproductionStatus = "reproduced" | "not_reproduced";
 type FixStatus = "passed" | "failed" | "inconclusive";
@@ -251,5 +252,23 @@ export async function onRequestPost(context: AdminRequestContext): Promise<Respo
     "SELECT job_id,commit_sha,pr_number,reproduction_status,fix_status,regression_status,evidence,reviewed_by,created_at,updated_at " +
     "FROM admin_repair_qa_reports WHERE job_id=? AND commit_sha=?"
   ).bind(job.id, head.sha).first<QaRow>();
-  return adminJson(responseFor(job.id, qa, head, ci.commit_sha), 201);
+  const review = responseFor(job.id, qa, head, ci.commit_sha);
+  let learning: {
+    status: string; learned: boolean; model_calls: number;
+    experience_id?: string; evidence_level?: string; production_approved?: false;
+  } = { status:"not_eligible",learned:false,model_calls:0 };
+  // The same repair/QA record is the learning source whether its code was
+  // prepared in ChatGPT or through Headquarters. QA is reported by the owner;
+  // this is not independent browser QA or permission to release.
+  if (review.issue_specific_qa_complete) {
+    try {
+      learning = await learnFromRepair(context.env.DB!, job.id, identity.email);
+    } catch {
+      // A completed QA report must remain durable. A daily bounded scan can
+      // reconcile missing learning later without re-running the AI model.
+      learning = { status:"reconciliation_pending",learned:false,model_calls:0 };
+    }
+  }
+  return adminJson({ ...review,
+    yorpmind_learning: learning, production_approved:false }, 201);
 }
