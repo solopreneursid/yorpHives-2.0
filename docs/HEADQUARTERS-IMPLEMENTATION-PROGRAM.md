@@ -1,11 +1,11 @@
 # YorpHives Headquarters — implementation program
-**Scope:** private Headquarters, YorpMind, existing website development. This is a live engineering checklist, not a production attestation.
+**Scope (founder clarified, 14 November 2026):** private, continuous monitoring and business intelligence for both the live YorpHives website and Headquarters. Headquarters never makes code fixes. The founder makes changes and alone decides what goes live. This is a live engineering checklist, not a production attestation.
 
 ## Permanent authority boundary
 - Founder alone may publish an exact reviewed release by **Preview → Go Live → personal OTP → final confirmation**.
 - All assistant/admin grants and separate production delegation routes remain retired. AI roles, CI and service tokens cannot inherit founder identity or production write privileges.
-- Autonomous development, investigation, QA, preview creation, research and ordinary learning require no founder approval, but work must stay in authorized test environments and within measured budgets.
-- No new paid service, production data write, public website change or cost commitment is authorized by this program.
+- Continuous read-only monitoring, vulnerability observations, update detection, market research, revenue evidence and recommendations run within authorized scopes and budgets. Headquarters must NOT dispatch repairs, modify source code, create fix branches, or grant production authority.
+- The founder makes fixes using their preferred workflow, then reviews the exact verified final Preview. Only pressing Go Live and entering a valid founder OTP may authorize the reviewed release. No new paid service, autonomous production data write or cost commitment is authorized.
 
 ## Phase 1 — finish production readiness (blocking)
 1. Maintain an exact-SHA private preview of the latest draft revision. Confirm Cloudflare's served SHA and preview identity after every change.
@@ -17,16 +17,19 @@
 7. Build and test the founder-only, one-use OTP release executor with exact-revision binding, branch compare-and-swap, audit receipts, post-release health and safe rollback. Keep executor disabled until every gate has independent evidence.
 8. Run a final exact-candidate review in **Preview**. Only a verified founder identity and OTP can enable **Go Live**.
 
-## Phase 2 — working YorpMind Engineering and QA
-- The scheduled, model-free team scan can now persist **paired investigation proposals** to Engineering Lead and independent Quality Engineer from observed failed repair records. Reports are idempotent per day, bounded, source-linked, and explicitly not executed.
-- **Next:** provision an isolated, no-production-credential execution environment for an approved development-only tool adapter; constrain command/filesystem/network access and use only installed, self-hosted model endpoints.
-- **Next:** demonstrate exactly one real cycle: observed defect → Engineering branch patch → independent QA regression → verified private preview → audited learning receipt. Neither agent may self-approve code or production.
-- Keep inference dispatch, tool use and retries within hard resource budgets. Record attempted/model output separately from independently checked results.
+## Phase 2 — reliable constant monitoring and recommendations
+- Monitor public YorpHives and private Headquarters uptime, errors, route health, broken features, changing dependencies, security misconfiguration and performance regressions.
+- Record source URL, observed timestamp, evidence, risk, affected system, confidence and suggested steps for the founder. Distinguish live observations from historical or synthetic evidence.
+- Monitor new technology, competitors, unmet market needs, product ideas, international opportunities, SEO and available revenue signals. Recommendations never execute code or paid campaigns.
+- Keep observations bounded, deduplicated and attributable. Escalate urgent risks without automatically applying fixes.
+- Older Engineering/QA **work orders are historical**. No new agent repair work orders or repair dispatch are permitted. Historical records remain readable.
+- The existing repair-jobs and repair-inbox APIs reject POST with `MONITOR_ONLY`. Repair history and reported issue evidence remain read-only.
 
-## Phase 3 — growth and revenue based on evidence
-- Existing research, market signals and Business Intelligence remain hypotheses until real user demand and economics are verified.
-- **Next:** connect observed traffic and existing tool activity to source-linked hypotheses; identify high-signal product experiments without making up Search Console, AdSense, conversion or revenue numbers.
-- **Next:** test validated products in isolated environments; measure real outcomes before scaling or updating YorpMind memory. No automatic paid campaign or change to the public website.
+## Phase 3 — evidence-based revenue and opportunity intelligence
+- Track verified, accessible earnings, traffic, conversion and advertising evidence; explicitly flag missing or stale accounts instead of inventing income.
+- Continuously identify and rank possible new revenue sources and product opportunities by evidence, cost, complexity, demand and risk.
+- Suggest opportunities to the founder. Headquarters does not launch campaigns, build products, rewrite the website, buy services or publish.
+- When the founder implements a fix or improvement, only the reviewed exact-candidate **Preview → Go Live → founder OTP → Publish** process can release it. Post-release monitoring detects regressions and reports any failures.
 
 ## Evidence rules
 A task is **implemented** only when source is committed and its tests pass. It is **verified live** only with real environment receipts for the exact revision. It is **production-ready** only after independent QA, recovery, cost, security, reconciliation and founder-exclusive release gates all pass. Do not equate a proposed work order, migration file, existing deployment, green CI, or OTP dry run with those later states.
@@ -71,3 +74,6 @@ The staging Access preflight accepts redirects only to the verified private prev
 - Never share founder OTPs, Cloudflare API tokens, or database dumps in chat. Owner credentials remain in the provider's secure UI.
 
 **Go Live stays disabled.** Shared data cannot be fixed by simply changing a green CI flag or marking a checklist complete.
+
+## Clarification: system of observation, not automatic repair
+Headquarters is the founder's monitoring console, research radar, revenue intelligence and controlled release surface. It does not fix issues itself, open code repair PRs, create GitHub work items from a monitoring report, change the live website or alter Headquarters source code. The founder can use any external development assistance they choose to make a fix, but it is outside Headquarters' authority. Headquarters verifies the finished preview and waits for the founder's OTP before publishing. Any old documentation about "autonomous engineering" is superseded by this policy.
