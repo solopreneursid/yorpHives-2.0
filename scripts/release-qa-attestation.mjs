@@ -5,6 +5,7 @@ import {sameHeadquartersCanonical} from "./staging-preview-check.mjs";
 export const REQUIRED_CHECKS=Object.freeze([
 "access_identity_resolved","yorpmind_six_managers_real_staging_read",
 "yorpmind_manager_scan_no_autonomous_release","yorpmind_owner_approval_only_at_go_live",
+"founder_security_revoke_isolated",
 "release_evidence_no_implicit_production_approval","release_evidence_private_read_only",
 "yorpmind_ci_cannot_pass_mfa_step_up","temporary_permissions_staging_schema_ready_but_access_locked",
 "website_proof_real_staging_api","website_proof_real_browser_seven_rows",
