@@ -7,6 +7,7 @@ interface SourceMission {
   job_id: string;
   job_type: string;
   status: string;
+  origin_type: string | null;
   agent_id: string | null;
   title: string;
   updated_at: string;
@@ -46,6 +47,7 @@ function markdown(response: MissionProofResponse): Response {
     "# Headquarters — Mission evidence", "",
     "Evidence: " + cleanMarkdown(p.evidence_status),
     "Mission status: " + cleanMarkdown(p.status),
+    "Synthetic staging rehearsal: " + (p.is_staging_rehearsal ? "YES" : "NO") + "", 
     "Saved records sufficient for brief review: " +
       (p.records_sufficient_for_owner_review ? "YES" : "NO"),
     "Independent QA: NOT VERIFIED",
@@ -84,7 +86,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   try {
     const db=context.env.DB!;
     const mission=await db.prepare(
-      "SELECT job_id,job_type,status,agent_id,title,updated_at,input_json,result_json " +
+      "SELECT job_id,job_type,status,origin_type,agent_id,title,updated_at,input_json,result_json " +
       "FROM agent_jobs WHERE job_id=? AND job_type='owner_mission'"
     ).bind(req.job_id).first<SourceMission>();
     if (!mission)
