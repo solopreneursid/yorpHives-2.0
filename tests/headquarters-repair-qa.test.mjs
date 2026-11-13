@@ -16,7 +16,15 @@ const auth = asModule(`
     : { email: "founder@example.com", serviceToken: false };
 `);
 const original = await readFile(new URL("../functions/api/admin/repair-qa.ts", import.meta.url), "utf8");
-const route = await import(asModule(stripTypeScriptTypes(original.replace('"../../_lib/admin-auth"', JSON.stringify(auth)))));
+const learning = asModule(`
+  export async function learnFromRepair() {
+    return { status: "not_eligible", learned: false, model_calls: 0 };
+  }
+`);
+const route = await import(asModule(stripTypeScriptTypes(
+  original.replace('"../../_lib/admin-auth"', JSON.stringify(auth))
+    .replace('"../../_lib/yorpmind-verified-learning.js"', JSON.stringify(learning))
+)));
 const originalFetch = globalThis.fetch;
 
 async function fixture(withSchema = true) {
