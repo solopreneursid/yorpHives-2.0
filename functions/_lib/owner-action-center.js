@@ -22,12 +22,14 @@ const safeJob = row => typeof row?.job_id === "string" && UUID.test(row.job_id);
 export function founderActionQueue(facts, now = new Date()) {
   const jobs = (Array.isArray(facts.jobs) ? facts.jobs : []).slice(0, 50);
   const validJobs = jobs.filter(safeJob);
+  const ownerJobs = validJobs.filter(j => j.origin_type !== "staging_rehearsal");
+  const rehearsals = validJobs.filter(j => j.origin_type === "staging_rehearsal");
   const actions = [];
   function add(id, urgency, title, why, next_step, view, target = null) {
     actions.push({ id, urgency, title, why, next_step, view, target,
       execution_authorized: false, approval_granted: false });
   }
-  const failed = validJobs.filter(j => j.status === "failed");
+  const failed = ownerJobs.filter(j => j.status === "failed");
   for (const job of failed.slice(0, 2)) {
     const code = failureCode(job.result_json);
     add("failed-" + job.job_id, "urgent", "Investigate a failed specialist mission",
@@ -35,12 +37,19 @@ export function founderActionQueue(facts, now = new Date()) {
       "Open mission history and inspect the error. Verify a fix in staging before explicitly starting another paid mission.",
       "headquarters", "failed");
   }
-  const reviews = validJobs.filter(j => j.status === "awaiting_owner_approval");
+  const reviews = ownerJobs.filter(j => j.status === "awaiting_owner_approval");
   if (reviews.length) add("review-briefs", "attention", "Review " + reviews.length + " AI planning brief" +
       (reviews.length === 1 ? "" : "s"),
       "These recommendations are awaiting your judgment; they have not been independently verified.",
       "Read the brief, check its evidence, then acknowledge or discard it. This never authorizes release.",
       "headquarters", "review");
+  const rehearsal = rehearsals[0];
+  if (rehearsal && ["awaiting_owner_approval", "failed"].includes(rehearsal.status))
+    add("staging-rehearsal-" + rehearsal.job_id, "attention", "Inspect the staging Workflow rehearsal",
+      "A clearly marked synthetic staging mission has a saved status of " +
+      rehearsal.status.replaceAll("_", " ") + ". This was not dispatched by you.",
+      "Open Staging rehearsals and expand Check mission evidence. Review the recorded steps; do not acknowledge it as an owner brief or approve production.",
+      "headquarters", "staging");
   if (Number(facts.repairReviewCount) > 0)
     add("repair-review", "urgent", "Review verified repair candidates",
       facts.repairReviewCount + " repair job(s) are marked for owner review.",
@@ -69,8 +78,8 @@ export function founderActionQueue(facts, now = new Date()) {
       "The last recorded monitor run is older than eight hours or has an invalid timestamp.",
       "Inspect monitoring results and Worker schedules; a recorded run is not proof all routes are healthy.",
       "monitoring");
-  const successful = validJobs.filter(j => j.status === "completed").length;
-  if (!successful && validJobs.length > 0 && failed.length === 0 && reviews.length === 0)
+  const successful = ownerJobs.filter(j => j.status === "completed").length;
+  if (!successful && ownerJobs.length > 0 && failed.length === 0 && reviews.length === 0)
     add("first-complete-mission", "planning", "Validate one specialist mission end to end",
       "No completed mission appears in the latest bounded job window.",
       "Run a staged, owner-initiated recommendation with acceptance criteria and review the saved evidence.",
@@ -83,6 +92,7 @@ export function founderActionQueue(facts, now = new Date()) {
     pending_total_in_window: actions.length,
     truncated: actions.length > MAX_FOUNDER_ACTIONS,
     recorded_jobs_scanned: jobs.length,
+    staging_rehearsals_in_window: rehearsals.length,
     release_execution_enabled: false,
     auto_ai_dispatch_enabled: false,
     overview: {
