@@ -1,3 +1,4 @@
+import { assessRepairIntake } from "../../_lib/repair-intake.js";
 import { adminJson, isAdminResponse, requireAdmin, type AdminRequestContext } from "../../_lib/admin-auth";
 
 /** Private Cloudflare Service binding to the durable Admin repair Workflow Worker. */
@@ -278,8 +279,35 @@ export async function onRequestPost(context: AdminRequestContext & { env: AdminR
   }
   if (findingId) {
     const table = findingSource === "asset" ? "admin_asset_findings" : "admin_findings";
-    const finding = await context.env.DB!.prepare("SELECT id FROM " + table + " WHERE id = ?").bind(findingId).first<{ id: string }>();
-    if (!finding) return adminJson({ error: { code: "FINDING_NOT_FOUND", message: "The selected " + findingSource + " finding does not exist." } }, 404);
+    if (findingSource === "asset") {
+      const finding = await context.env.DB!.prepare(
+        "SELECT f.id,f.status,f.category,f.finding_key,a.asset_type,a.url AS asset_url " +
+        "FROM admin_asset_findings f JOIN admin_assets a ON a.id=f.asset_id WHERE f.id=?"
+      ).bind(findingId).first<{
+        id:string;status:string;category:string;finding_key:string;asset_type:string;asset_url:string;
+      }>();
+      if (!finding) return adminJson({error:{
+        code:"FINDING_NOT_FOUND",message:"The selected asset finding does not exist."
+      }},404);
+      const intake = assessRepairIntake({ ...finding, finding_source: "asset" });
+      if (!intake.permitted) {
+        return adminJson({error:{
+          code:intake.code,message:intake.explanation
+        },ai_dispatched:false,model_calls:0,production_approved:false,
+          suggested_next_step:"Review this issue with ChatGPT or YorpMind without starting the restricted page-repair bot."},422);
+      }
+    } else {
+      const finding = await context.env.DB!.prepare(
+        "SELECT id,status FROM admin_findings WHERE id=?"
+      ).bind(findingId).first<{id:string;status:string}>();
+      if (!finding) return adminJson({error:{
+        code:"FINDING_NOT_FOUND",message:"The selected monitor finding does not exist."
+      }},404);
+      const intake = assessRepairIntake({finding_source:"monitor",status:finding.status});
+      if (!intake.permitted) return adminJson({error:{
+        code:intake.code,message:intake.explanation
+      },ai_dispatched:false,model_calls:0,production_approved:false},422);
+    }
   }
   const linkSchemaReady = Boolean(await context.env.DB!.prepare(
     "SELECT name FROM sqlite_master WHERE type='table' AND name='admin_repair_finding_links'"
