@@ -33,6 +33,22 @@
   }
 
   function render(board) {
+    // D1 historical receipts are never a live release attestation.
+    // Keep Go Live inactive until a separate server-verified release endpoint
+    // can bind a successful preview, exact SHA, checks and founder OTP.
+    const goLive = $("release-go-live");
+    const preview = $("release-launch-preview");
+    if (goLive) goLive.disabled = true;
+    if (preview) {
+      preview.hidden = true;
+      preview.removeAttribute("href");
+    }
+    if ($("release-launch-status")) $("release-launch-status").textContent = "Not production-ready";
+    if ($("release-launch-description")) {
+      $("release-launch-description").textContent =
+        "YorpMind and the team can continue building, fixing and testing in isolated previews. " +
+        "A verified release preview will appear here only after all production checks pass.";
+    }
     $("release-evidence-summary").replaceChildren(
       recordMetric("Recent investigations", board.counts.repairs, "Latest 25 repair records"),
       recordMetric("CI evidence", board.counts.ci_attested, "Five signed-off job receipts"),
@@ -115,6 +131,9 @@
           (error instanceof Error ? error.message : "Retry from an authorized session."))
       );
       $("release-evidence-updated").textContent = "Could not verify evidence";
+      if ($("release-go-live")) $("release-go-live").disabled = true;
+      if ($("release-launch-preview")) $("release-launch-preview").hidden = true;
+      if ($("release-launch-status")) $("release-launch-status").textContent = "Verification unavailable";
     } finally {
       loading = false;
     }

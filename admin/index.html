@@ -78,7 +78,7 @@
   </header>
   <div class="content">
     <div class="system-message" id="system-message" role="status" aria-live="polite" hidden><span class="system-message-text" id="system-message-text"></span><a id="system-message-action" href="/admin/" hidden>Re-authenticate ↗</a><button id="system-message-dismiss" type="button" aria-label="Dismiss message">×</button></div>
-    <div class="global-notice"><span>◆</span><p><strong>You are in charge.</strong> Your assistants can investigate and prepare changes. You choose what happens next, and publishing still needs your separate approval.</p></div>
+    <div class="global-notice"><span>◆</span><p><strong>Build freely. Publish only with your approval.</strong> Authorized employees may develop and test in isolated environments without admin privileges. You review a verified preview and approve only the final Go Live action.</p></div>
 
 
     <section class="view active" id="view-headquarters" data-title="My Home">
@@ -87,13 +87,12 @@
         <h1 id="founder-welcome">Welcome to your Headquarters.</h1>
         <p class="founder-subtitle">You are in charge. Your two assistants can help you understand a problem, find a solution, and prepare changes. You choose who helps and what happens next.</p>
         <div class="founder-quick-actions" aria-label="Founder quick controls">
-          <div class="founder-quick-label"><strong>Founder Control</strong><small>One place to review work and control assistant access</small></div>
-          <button id="founder-find-fixes" type="button">Review proposed fixes</button>
-          <button id="founder-open-permissions" type="button">Grant temporary access</button>
-          <button id="founder-test-email" type="button" disabled>✉ Test email delivery</button>
-          <button id="founder-stop-all" type="button" class="founder-quick-stop">■ End all assistant access</button>
+          <div class="founder-quick-label"><strong>Founder Control</strong><small>No admin delegation · approval only when publishing</small></div>
+          <button id="founder-find-fixes" type="button">View development issues</button>
+          <button id="founder-open-release" type="button">Review Go Live →</button>
+          <button id="founder-stop-all" type="button" class="founder-quick-stop">■ Revoke legacy access</button>
         </div>
-        <p class="founder-quick-note">Emergency stop never needs an email code. Temporary grants require email verification and independently connected assistant identities. Production fixes remain locked until checked.</p>
+        <p class="founder-quick-note">Your authorized team may research, build, fix and test on isolated branches and previews without asking for admin access. Only verified production publishing needs your one-time code. No one else receives admin rights.</p>
         <div class="founder-you"><span aria-hidden="true">👑</span><strong>You · Owner &amp; Administrator</strong><small>Final say on money, permissions, and publishing</small></div>
         <div class="founder-arrow" aria-hidden="true">↓</div>
         <div class="founder-assistants" aria-label="Your two equal assistants">
@@ -111,7 +110,7 @@
         <div class="founder-arrow" aria-hidden="true">↓</div>
         <div class="founder-workers">Your AI team · researchers, builders, testers, and other specialists</div>
         <p class="founder-learning">✧ YorpMind learns from a repair after it has been checked—whether you worked with YorpMind or ChatGPT. Suggestions and unfinished work are not treated as proven fixes.</p>
-        <details class="founder-permission-panel" aria-labelledby="founder-permission-heading">
+        <details class="founder-permission-panel" aria-labelledby="founder-permission-heading" hidden>
           <summary id="founder-permission-heading"><strong>Temporary access</strong><span>Choose assistant → approve → stop anytime</span></summary>
           <p class="founder-permission-explain">Choose an assistant and a short time. This development version still requires a separate security check; the requested email OTP flow will replace that extra step once securely connected.</p>
           <form id="founder-permission-form">
@@ -998,14 +997,26 @@
     <section class="view" id="view-releases" data-title="Releases">
       <section class="release-evidence-section" aria-labelledby="release-evidence-title">
         <div class="release-evidence-head">
-          <div><span class="eyebrow">FIRST-PARTY RELEASE EVIDENCE</span><h2 id="release-evidence-title">Repair verification &amp; approvals</h2><p id="release-evidence-updated" role="status" aria-live="polite">Checking private evidence…</p></div>
+          <div><span class="eyebrow">PRODUCTION RELEASE</span><h2 id="release-evidence-title">Preview → Go Live</h2><p id="release-evidence-updated" role="status" aria-live="polite">Checking private evidence…</p></div>
           <button class="button" id="release-evidence-refresh" type="button">Refresh evidence ↻</button>
         </div>
-        <p class="release-evidence-notice"><strong>Production remains locked.</strong> This panel shows private D1 verification records, not live GitHub-branch validation or a production-release authorization. No automatic merges or deployments are available.</p>
-        <div class="release-evidence-metrics" id="release-evidence-summary" aria-label="Release evidence totals"></div>
-        <div class="release-evidence-list" id="release-evidence-list"><p class="release-evidence-empty">Reading recent repair records…</p></div>
+        <div class="release-launch-desk" aria-label="Founder-only production approval">
+          <span class="release-launch-badge" id="release-launch-status">Checking readiness</span>
+          <p id="release-launch-description">The team can keep developing. Only a verified, production-ready revision will be offered for release.</p>
+          <div class="release-launch-controls">
+            <a id="release-launch-preview" class="button" href="#" target="_blank" rel="noopener noreferrer" hidden>Open verified preview ↗</a>
+            <button id="release-go-live" class="button" type="button" disabled>Go Live · OTP</button>
+          </div>
+          <small>Go Live requires your verified identity, exact candidate revision, successful checks, and a one-time code. No one else receives administrator rights.</small>
+        </div>
+        <details class="release-evidence-details">
+          <summary>Technical release evidence and remaining checks</summary>
+          <p class="release-evidence-notice"><strong>Not production-ready yet.</strong> These historical records are not live commit, preview, MFA or rollback attestations. The button remains disabled until a separate verified release executor is implemented.</p>
+          <div class="release-evidence-metrics" id="release-evidence-summary" aria-label="Release evidence totals"></div>
+          <div class="release-evidence-list" id="release-evidence-list"><p class="release-evidence-empty">Reading recent repair records…</p></div>
+        </details>
       </section>
-      <section class="owner-delegation-panel" aria-labelledby="owner-delegation-title">
+      <section class="owner-delegation-panel" aria-labelledby="owner-delegation-title" hidden>
         <div class="owner-delegation-heading">
           <div><span class="eyebrow">YORPMIND · VERIFIED OWNER DELEGATION</span>
             <h2 id="owner-delegation-title">Review, then authorize an exact release</h2>

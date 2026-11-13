@@ -340,6 +340,9 @@
     $("founder-find-fixes")?.addEventListener("click",()=>{
       document.querySelector('.nav-item[data-view="issues"]')?.click();
     });
+    $("founder-open-release")?.addEventListener("click",()=>{
+      document.querySelector('.nav-item[data-view="releases"]')?.click();
+    });
     $("founder-handoff-copy")?.addEventListener("click",copyHandoff);
     $("founder-handoff-close")?.addEventListener("click",()=>$("founder-handoff-dialog").close());
     $("founder-chatgpt")?.addEventListener("click",()=>

@@ -39,7 +39,7 @@
     const why = node("p", "owner-task-why", action.why);
     const next = node("p", "owner-task-next", "Suggested next step: " + action.next_step);
     const footer = node("div", "owner-task-footer");
-    footer.append(node("span", "owner-task-note", "Choose an assistant, or open the details. Nothing starts automatically."));
+    footer.append(node("span", "owner-task-note", "This is an informational work item, not an admin approval request."));
     const button = node("button", "owner-task-button", "Open " +
       (action.view === "headquarters" ? "missions" :
         action.view === "yorpmind" ? "YorpMind" : action.view) + " →");
@@ -66,9 +66,9 @@
     if (data.actions.length) {
       intro.textContent = urgent
         ? urgent + " urgent decision" + (urgent === 1 ? "" : "s") +
-          " need attention. Read each recommendation before taking action."
+          " are visible as team work updates. No approval is needed to keep developing."
         : data.actions.length + " decision" + (data.actions.length === 1 ? "" : "s") +
-          " to consider. Nothing here approves a release or spends AI credits.";
+          " being tracked. No approval is needed for normal development or testing.";
       data.actions.forEach((a, i) => list.append(renderAction(a, i)));
     } else {
       intro.textContent = "There is nothing new for you to decide in the work we checked.";

@@ -29,3 +29,14 @@
 @media(max-width:920px){.release-evidence-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.release-evidence-metrics{grid-template-columns:1fr 1fr}.release-evidence-metric{padding:13px}.release-evidence-card{padding:14px}.release-evidence-card-head{flex-direction:column;align-items:flex-start}.release-evidence-lock{align-self:flex-start}}
 @media(max-width:375px){.release-evidence-metrics{grid-template-columns:1fr}}
+
+/* Founder release decision: compact, safe until a dedicated verified release API exists. */
+.release-launch-desk{display:flex;flex-direction:column;gap:9px;padding:17px 19px;margin:14px 0;background:linear-gradient(115deg,#13283a,#101b30);border:1px solid #315267;border-radius:13px}
+.release-launch-desk p{font-size:.87rem;line-height:1.55;color:#d2e7f5;margin:0;max-width:850px}
+.release-launch-desk small{font-size:.73rem;color:#9db6c9;line-height:1.5}
+.release-launch-badge{align-self:flex-start;font-size:.72rem;font-weight:750;color:#f8dbac;background:#3c2c1d;border:1px solid #796143;border-radius:99px;padding:6px 11px}
+.release-launch-controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:5px}
+.release-launch-controls .button{border-radius:9px;padding:11px 17px}
+#release-go-live:disabled{opacity:.6;cursor:not-allowed}
+.release-evidence-details{margin:14px 0}
+.release-evidence-details>summary{cursor:pointer;padding:10px 0;color:#b6d8eb;font-weight:650}

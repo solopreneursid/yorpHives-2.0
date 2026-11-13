@@ -32,16 +32,16 @@ export function founderActionQueue(facts, now = new Date()) {
   const failed = ownerJobs.filter(j => j.status === "failed");
   for (const job of failed.slice(0, 2)) {
     const code = failureCode(job.result_json);
-    add("failed-" + job.job_id, "urgent", "Investigate a failed specialist mission",
+    add("failed-" + job.job_id, "attention", "Team: investigate a failed specialist mission",
       "A recorded AI mission failed (" + code + "). No successful brief was stored.",
-      "Open mission history and inspect the error. Verify a fix in staging before explicitly starting another paid mission.",
+      "Engineering can inspect and test a fix in staging within existing budgets. No founder production approval is needed for investigation.",
       "headquarters", "failed");
   }
   const reviews = ownerJobs.filter(j => j.status === "awaiting_owner_approval");
-  if (reviews.length) add("review-briefs", "attention", "Review " + reviews.length + " AI planning brief" +
+  if (reviews.length) add("review-briefs", "planning", "Team working brief: " + reviews.length + " draft" +
       (reviews.length === 1 ? "" : "s"),
-      "These recommendations are awaiting your judgment; they have not been independently verified.",
-      "Read the brief, check its evidence, then acknowledge or discard it. This never authorizes release.",
+      "These are unverified drafts, not production approval requests.",
+      "YorpMind can continue evaluating and improving drafts. Founder review is optional until a production-ready release exists.",
       "headquarters", "review");
   const rehearsal = rehearsals[0];
   if (rehearsal && ["awaiting_owner_approval", "failed"].includes(rehearsal.status))
@@ -51,20 +51,20 @@ export function founderActionQueue(facts, now = new Date()) {
       "Open Staging rehearsals and expand Check mission evidence. Review the recorded steps; do not acknowledge it as an owner brief or approve production.",
       "headquarters", "staging");
   if (Number(facts.repairReviewCount) > 0)
-    add("repair-review", "urgent", "Review verified repair candidates",
-      facts.repairReviewCount + " repair job(s) are marked for owner review.",
-      "Inspect exact CI receipts, issue-specific QA, and real previews before preparing any release authorization.",
+    add("repair-review", "attention", "Team: verify repair candidates",
+      facts.repairReviewCount + " repair proposal(s) still need independent verification, not founder approval.",
+      "Engineering and QA should complete checks and prepare a verified preview. Escalate to the founder only when release-ready.",
       "releases");
   if (Number(facts.pendingMfaCount) > 0)
-    add("mfa-release", "urgent", "Review pending release authorization",
-      facts.pendingMfaCount + " scoped request(s) await independent founder MFA.",
-      "Check exact commit, preview and expiry; enter OTP only in the dedicated Cloudflare Access challenge.",
+    add("mfa-release", "attention", "Legacy temporary-access request",
+      facts.pendingMfaCount + " legacy privilege request(s) remain pending. These are not production-ready release approvals.",
+      "No assistant needs administrator rights for isolated development. Ignore or revoke legacy requests; Go Live approval is separate.",
       "releases");
   const failedReviews = Number(facts.pendingTeamReports) || 0;
   if (failedReviews > 0)
     add("manager-reports", "attention", "Review YorpMind team reports",
       failedReviews + " supervisor recommendation(s) need review. They are not approved changes.",
-      "Open YorpMind, inspect evidence and acknowledge or dismiss. Do not treat manager agreement as independent QA.",
+      "YorpMind can triage and improve these suggestions within the development environment; your release approval is not needed.",
       "yorpmind");
   if (facts.teamSchemaReady === false)
     add("team-schema", "attention", "Finish the private team database rollout",
