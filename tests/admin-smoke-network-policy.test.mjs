@@ -42,7 +42,7 @@ test("browser smoke cannot leak Access credentials through context-wide headers"
  const {readFile}=await import("node:fs/promises");
  const content=await readFile(new URL("../scripts/admin-smoke.mjs",import.meta.url),"utf8");
  assert.match(content,/serviceWorkers: "block"/);
- assert.match(content,/context\\.routeWebSocket/);
+ assert.match(content,/context\.routeWebSocket/);
  assert.match(content,/makePrivatePreviewAccessRouter/);
- assert.doesNotMatch(content,/extraHTTPHeaders:\\s*accessHeaders/);
+ assert.doesNotMatch(content,/extraHTTPHeaders:\s*accessHeaders/);
 });
