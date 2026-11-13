@@ -129,6 +129,16 @@ export function recommendTeamActions(staff, agents, jobs, departments, now = new
   const deptNames = new Map((departments || []).map(d => [d.department_id, d.name]));
   const sourceJobs = (jobs || []).slice(0, MAX_TEAM_JOBS_SCANNED);
   const activeJobs = sourceJobs.filter(j => active.has(j.status)).length;
+  // Stop suggesting new paid AI work while a recent task needs review,
+  // an investigation is unresolved, or an in-flight mission is stale.
+  // This never cancels existing jobs or changes the authoritative dispatch cap.
+  const needsIntervention = sourceJobs.some(job => {
+    if (job.status === "failed" || job.status === "awaiting_owner_approval") return true;
+    if (!active.has(job.status)) return false;
+    const updated = safeTime(job.updated_at);
+    return updated !== null &&
+      Math.max(0, (now.getTime() - updated) / 3600000) >= REVIEW_STALE_HOURS;
+  });
   const dailyUsed = Number.isInteger(limits.dailyMissionsUsed) && limits.dailyMissionsUsed >= 0
     ? limits.dailyMissionsUsed : DAILY_MISSION_CAP;
   const supervisorCap = new Map((staff || []).map(s => [s.staff_id, s.max_parallel_reviews]));
@@ -174,7 +184,7 @@ export function recommendTeamActions(staff, agents, jobs, departments, now = new
       if (old && old.job_id !== job.job_id) {
         candidates.push(makeAdvice("verify_reusable_history", "medium", job, agent, managerId,
           "A prior completed mission has the same normalized title. Review historical results before spending inference; past completion is not verified correctness."));
-      } else if (agent?.enabled === 1 && agent?.status === "ready" && agent.autonomy_level === "recommend"
+      } else if (!needsIntervention && agent?.enabled === 1 && agent?.status === "ready" && agent.autonomy_level === "recommend"
           && activeJobs < ACTIVE_JOB_CAP && dailyUsed < DAILY_MISSION_CAP
           && (activeByManager.get(managerId) || 0) < (supervisorCap.get(managerId) || 1)
           && (activeByAgent.get(job.agent_id) || 0) < 2
@@ -183,6 +193,8 @@ export function recommendTeamActions(staff, agents, jobs, departments, now = new
           "This ready specialist has spare recorded capacity. Offer the planned mission for owner-initiated dispatch under the existing daily AI budget."));
       } else {
         candidates.push(makeAdvice("review_capacity", "low", job, agent, managerId,
+          needsIntervention ?
+          "Existing failed, unverified or stalled work needs intervention before recommending more AI spend. Review its evidence first." :
           "Planned work is not dispatchable under observed worker capacity or permissions. Review allocation before enabling more work."));
       }
     }
