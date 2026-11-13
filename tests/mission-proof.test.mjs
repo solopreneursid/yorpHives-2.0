@@ -47,6 +47,9 @@ test("provider-reported usage is visible but cannot claim verified billing",()=>
       actual_cost_usd:999999}})),events);
   assert.equal(counterfeit.provider_usage,null);
   assert.equal(counterfeit.provider_billing_verified,false);
+  const inconsistent=inspectMissionReceipt(job("awaiting_owner_approval",job().input_json,
+    JSON.stringify({...report,provider_usage:{...usage,total_tokens:100}})),events);
+  assert.equal(inconsistent.provider_usage,null);
 });
 test("a successful synthetic staging Workflow never asks for owner approval",()=>{
   const synthetic=inspectMissionReceipt({...job(),origin_type:"staging_rehearsal"},events);
