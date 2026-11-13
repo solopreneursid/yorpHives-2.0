@@ -111,8 +111,8 @@ test("monitor maintains safe findings while retired repair route never dispatche
   assert.match(monitor,/assessAssetRepresentation\(asset, contentType, body\)/);
   assert.match(monitor,/isMachineReadableAsset\(asset\)/);
   assert.match(monitor,/classification: "not_applicable"/);
-  assert.match(router,/assessRepairIntake\(/);
-  assert.match(router,/ai_dispatched:false,model_calls:0/);
+  assert.match(router,/MONITOR_ONLY/);
+  assert.match(router,/dispatch_performed: false/);
   assert.match(worker,/readWorkersAiText\(response\)/);
   assert.match(worker,/reasoning_effort: "medium"/);
   assert.doesNotMatch(worker,/retries: \{ limit: 1/);
