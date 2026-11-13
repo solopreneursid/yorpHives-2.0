@@ -16,6 +16,7 @@ on:
       - design/headquarters-prism-brand-theme
       - ops/headquarters-staging-schema-complete
       - qa/headquarters-browser-launch-check
+      - fix/headquarters-repair-intake-learning
 
 permissions:
   contents: read
