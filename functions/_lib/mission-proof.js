@@ -37,7 +37,8 @@ export function inspectMissionReceipt(job, events=[]) {
   const n=value=>Number.isSafeInteger(value)&&value>=0&&value<=10000000;
   const providerUsage=storedUsage && storedUsage.source==="provider_response" &&
     storedUsage.billing_verified===false &&
-    n(storedUsage.input_tokens)&&n(storedUsage.output_tokens)&&n(storedUsage.total_tokens) ?
+    n(storedUsage.input_tokens)&&n(storedUsage.output_tokens)&&n(storedUsage.total_tokens) &&
+    storedUsage.total_tokens>=storedUsage.input_tokens+storedUsage.output_tokens ?
     { input_tokens:storedUsage.input_tokens,output_tokens:storedUsage.output_tokens,
       total_tokens:storedUsage.total_tokens,billing_verified:false,actual_cost_usd:null } : null;
   const goodBrief=output.kind==="recommendation_brief" && output.verified===false &&
