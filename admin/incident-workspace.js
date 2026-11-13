@@ -198,39 +198,25 @@
       window.HQChooseAssistant({
         title: display(finding.title),
         why: display(finding.details),
-        next_step: "Check the original problem, prepare a draft fix and verify it before recommending release.",
+        next_step: "Help me understand this observation and possible remedies. I will personally make and test any fixes before Preview → Go Live → OTP.",
         link: display(finding.monitor_url)
       }, "chatgpt");
     };
     prepare.onclick = async () => {
       prepare.disabled = true;
       try {
-        // Preparing this form is read-only. Dispatch still requires the founder to
-        // submit the existing authenticated form after inspecting the proposed text.
-        dialog.close();
-        await actions.showView("agents");
-        const select = byId("repair-finding");
-        const option = Array.from(select.options).find(item => item.value === finding.id);
-        // Only select an asset finding when staging has the source-qualified
-        // link migration; otherwise preserve its evidence as a general request.
-        const linkable = Boolean(option && !option.disabled);
-        select.value = linkable ? finding.id : "";
-        byId("repair-message").textContent = linkable
-          ? "Finding linked. Submitting this form starts a separately authorized, quota-limited repair."
-          : "Finding prepared as a general investigation; source evidence is preserved in the request.";
-        const input = byId("repair-request");
-        input.value = [
+        const details = [
           "Finding ID: " + display(finding.id),
           "Finding source: " + display(finding.source_type),
-          "Investigate finding: " + display(finding.title),
+          "Finding: " + display(finding.title),
           "Observed: " + display(finding.details),
           "Affected: " + display(finding.monitor_url),
-          "Determine a reproducible cause; propose a scoped fix with tests and independent QA. Do not deploy production."
-        ].join("\n").slice(0, 4000);
-        input.focus();
-      } catch (error) {
-        const text = error instanceof Error ? error.message : "Could not open the investigation form.";
-        actions.notify(text);
+          "Suggested next step: Review the evidence, make any fix yourself, test the final build, then use Preview → Go Live → OTP."
+        ].join("\n").slice(0,4000);
+        await navigator.clipboard.writeText(details);
+        actions.notify("Finding copied. Headquarters has not started a repair or changed any code.");
+      } catch {
+        actions.notify("Copy unavailable. Review the finding details here and make your changes manually.");
       } finally {
         prepare.disabled = false;
       }
