@@ -193,7 +193,7 @@ async function run() {
     const sharedMarkdownText = sharedMarkdown.ok() ? await sharedMarkdown.text() : "";
     record("private_shared_github_inbox_markdown_for_agents",
       sharedMarkdown.status() === 200 &&
-      /text\\/markdown/i.test(sharedMarkdown.headers()["content-type"] || "") &&
+      (sharedMarkdown.headers()["content-type"] || "").includes("text/markdown") &&
       sharedMarkdownText.includes("Production release: DISABLED") === false &&
       sharedMarkdownText.includes("Automated production release: DISABLED"),
       "Agent-readable Markdown shares the same untrusted GitHub issues and release boundaries");
