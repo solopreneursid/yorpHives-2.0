@@ -55,7 +55,7 @@ test("every new page opens at the top and reveals the active sidebar group",()=>
   const end=admin.indexOf("async function loadView(name)",start);
   assert.ok(start>0&&end>start);
   const method=admin.slice(start,end);
-  assert.match(method,/window\.scrollTo\(0, 0\)/);
+  assert.match(method,/window\.scrollTo\(\{ top: 0, left: 0, behavior: "instant" \}\)/);
   assert.match(method,/scrollingElement\.scrollTop = 0/);
   assert.match(method,/item\.closest\("\.sidebar-group"\)/);
   assert.match(method,/group\.open = true/);

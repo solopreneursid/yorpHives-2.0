@@ -29,7 +29,11 @@ test("founder choices and permission locks are covered in browser QA", () => {
     "handoff:chatgpt", "handoff:yorpmind", "permission:closed",
     "browser:no-unapproved-mutations", "browser:no-external-network",
     "owner:hierarchy", "brand:design-loaded", "issues:contained-scroll",
-    "research:balanced-scroll", "browser:no-script-crashes"
+    "research:balanced-scroll", "browser:no-script-crashes",
+    "cockpit:recorded-counts-and-focused-home", "cockpit:next-action-navigation",
+    "cockpit:mission-composer-keyboard", "cockpit:mission-composer-close",
+    "cockpit:outage-clears-stale-counts", "cockpit:retry-restores-recorded-counts",
+    "cockpit:optional-source-failure-isolated"
   ]) assert.ok(visual.includes(marker), marker);
   for (const view of [
     "headquarters", "yorpmind", "issues", "agents", "intelligence", "demand",

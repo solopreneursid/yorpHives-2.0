@@ -25,6 +25,7 @@
 <link rel="stylesheet" href="/admin/business-intelligence.css">
 <link rel="stylesheet" href="/admin/headquarters-refined.css">
 <link rel="stylesheet" href="/admin/headquarters-prism-theme.css">
+<link rel="stylesheet" href="/admin/cockpit.css">
 </head>
 <body>
 <div class="app-shell">
@@ -78,41 +79,78 @@
   </header>
   <div class="content">
     <div class="system-message" id="system-message" role="status" aria-live="polite" hidden><span class="system-message-text" id="system-message-text"></span><a id="system-message-action" href="/admin/" hidden>Re-authenticate ↗</a><button id="system-message-dismiss" type="button" aria-label="Dismiss message">×</button></div>
-    <div class="global-notice"><span>◆</span><p><strong>Build freely. Publish only with your approval.</strong> Authorized employees may develop and test in isolated environments without admin privileges. You review a verified preview and approve only the final Go Live action.</p></div>
+    <div class="global-notice"><span>◆</span><p><strong>Build freely. Publish only with your approval.</strong> Agents may work in isolated development environments without admin privileges. Only the final verified Go Live action needs your OTP.</p></div>
 
 
     <section class="view active" id="view-headquarters" data-title="My Home">
-      <section class="founder-command" aria-labelledby="founder-welcome">
-        <span class="founder-eyebrow">YOUR BUSINESS · YOUR DECISIONS</span>
-        <h1 id="founder-welcome">Welcome to your Headquarters.</h1>
-        <p class="founder-subtitle">You are in charge. Your two assistants can help you understand a problem, find a solution, and prepare changes. You choose who helps and what happens next.</p>
+      <header class="cockpit-heading" aria-labelledby="founder-welcome">
+        <div>
+          <span class="cockpit-eyebrow">FOUNDER WORKSPACE <span aria-hidden="true">/</span> <span id="cockpit-date">TODAY</span></span>
+          <h1 id="founder-welcome">Today at Headquarters<span>.</span></h1>
+          <p>Your business in view. Your next decision, one step away.</p>
+        </div>
+        <div class="cockpit-heading-actions">
+          <button class="cockpit-secondary" id="cockpit-refresh" type="button" aria-label="Refresh founder dashboard">↻ Refresh</button>
+          <button class="hq-button hq-button-primary" id="hq-new" type="button">+ New mission</button>
+        </div>
+      </header>
+      <p class="cockpit-sync" id="cockpit-status" role="status" aria-live="polite">Connecting to your private workspace…</p>
+      <div class="cockpit-metrics" aria-label="Company activity from private records">
+        <button class="cockpit-metric" type="button" data-cockpit-go="missions">
+          <span class="cockpit-metric-label">OPEN MISSIONS <span aria-hidden="true">↗</span></span>
+          <strong id="cockpit-missions">—</strong><small id="cockpit-missions-note">Reading mission records</small>
+        </button>
+        <button class="cockpit-metric cockpit-metric-amber" type="button" data-cockpit-go="issues">
+          <span class="cockpit-metric-label">PROBLEMS TO REVIEW <span aria-hidden="true">↗</span></span>
+          <strong id="cockpit-issues">—</strong><small id="cockpit-issues-note">Reading reported problems</small>
+        </button>
+        <button class="cockpit-metric" type="button" data-cockpit-go="intelligence">
+          <span class="cockpit-metric-label">OPPORTUNITY PIPELINE <span aria-hidden="true">↗</span></span>
+          <strong id="cockpit-opportunities">—</strong><small id="cockpit-opportunities-note">Reading business ideas</small>
+        </button>
+        <button class="cockpit-metric" type="button" data-cockpit-go="yorpmind">
+          <span class="cockpit-metric-label">RECORDED LESSONS <span aria-hidden="true">↗</span></span>
+          <strong id="cockpit-memory">—</strong><small id="cockpit-memory-note">Reading YorpMind memory</small>
+        </button>
+      </div>
+      <div class="cockpit-overview">
+        <section class="cockpit-next" aria-labelledby="cockpit-next-title">
+          <div class="cockpit-section-label"><span class="cockpit-spark" aria-hidden="true">✦</span> YOUR NEXT STEP <span class="cockpit-evidence-tag">FROM YOUR RECORDS</span></div>
+          <h2 id="cockpit-next-title">Let’s see what needs you.</h2>
+          <p id="cockpit-next-copy">Reading missions, website checks and opportunities to find a useful next action.</p>
+          <button id="cockpit-next-action" class="cockpit-next-button" type="button" disabled>Checking priorities…</button>
+          <div class="cockpit-workflow" aria-label="Your work moves through these steps"><span><b>01</b> Set an outcome</span><i aria-hidden="true">→</i><span><b>02</b> Test the result</span><i aria-hidden="true">→</i><span><b>03</b> Keep the lesson</span></div>
+        </section>
+        <section class="cockpit-health" aria-labelledby="cockpit-health-title">
+          <div class="cockpit-section-label">OPERATING PICTURE <span class="cockpit-health-indicator" id="cockpit-health-badge">CHECKING</span></div>
+          <h2 id="cockpit-health-title">Website &amp; execution</h2>
+          <dl class="cockpit-health-list">
+            <div><dt>Website checks</dt><dd id="cockpit-monitor-status">Not yet loaded</dd></div>
+            <div><dt>Work in progress</dt><dd id="cockpit-running">—</dd></div>
+            <div><dt>Waiting for your review</dt><dd id="cockpit-review">—</dd></div>
+            <div><dt>Approved reference skills</dt><dd id="cockpit-skills">—</dd></div>
+          </dl>
+          <p class="cockpit-health-note" id="cockpit-monitor-note">Status reflects recorded checks. Run a fresh check to inspect the website now.</p>
+          <button type="button" class="cockpit-text-link" data-cockpit-go="website">Check website now <span aria-hidden="true">↗</span></button>
+        </section>
+      </div>
+      <nav class="cockpit-shortcuts" aria-label="Quick actions">
+        <button type="button" data-cockpit-go="missions"><span aria-hidden="true">▤</span><span><strong>Mission desk</strong><small>Track outcomes</small></span><b aria-hidden="true">↗</b></button>
+        <button type="button" data-cockpit-go="yorpmind"><span aria-hidden="true">✺</span><span><strong>YorpMind</strong><small>Knowledge &amp; team</small></span><b aria-hidden="true">↗</b></button>
+        <button type="button" data-cockpit-go="business"><span aria-hidden="true">◈</span><span><strong>Opportunities</strong><small>Choose what to explore</small></span><b aria-hidden="true">↗</b></button>
+        <button type="button" data-cockpit-go="activity"><span aria-hidden="true">◷</span><span><strong>Activity trail</strong><small>See what changed</small></span><b aria-hidden="true">↗</b></button>
+      </nav>
+      <section class="founder-command cockpit-control" aria-label="Founder controls">
         <div class="founder-quick-actions" aria-label="Founder quick controls">
-          <div class="founder-quick-label"><strong>Founder Control</strong><small>No admin delegation · approval only when publishing</small></div>
-          <button id="founder-find-fixes" type="button">View development issues</button>
-          <button id="founder-open-release" type="button">Review Go Live →</button>
+          <div class="founder-quick-label"><strong>Founder Control</strong><small>Build freely · only you approve production</small></div>
+          <button id="founder-find-fixes" type="button">Development issues</button>
+          <button id="founder-open-release" type="button">Preview → Go Live</button>
           <button id="founder-stop-all" type="button" class="founder-quick-stop">■ Revoke legacy access</button>
         </div>
-        <p class="founder-quick-note">Your authorized team may research, build, fix and test on isolated branches and previews without asking for admin access. Only verified production publishing needs your one-time code. No one else receives admin rights.</p>
-        <div class="founder-you"><span aria-hidden="true">👑</span><strong>You · Owner &amp; Administrator</strong><small>Final say on money, permissions, and publishing</small></div>
-        <div class="founder-arrow" aria-hidden="true">↓</div>
-        <div class="founder-assistants" aria-label="Your two equal assistants">
-          <article class="founder-assistant">
-            <strong>✺ YorpMind</strong>
-            <p>Handles work inside Headquarters, oversees the AI team, and remembers lessons from checked repairs.</p>
-            <button id="founder-yorpmind" type="button">Give work to YorpMind →</button>
-          </article>
-          <article class="founder-assistant">
-            <strong>✦ ChatGPT</strong>
-            <p>Helps you here in chat, works with your connected code project, and shares the same issue and repair history.</p>
-            <button id="founder-chatgpt" type="button">Work with ChatGPT →</button>
-          </article>
-        </div>
-        <div class="founder-arrow" aria-hidden="true">↓</div>
-        <div class="founder-workers">Your AI team · researchers, builders, testers, and other specialists</div>
-        <p class="founder-learning">✧ YorpMind learns from a repair after it has been checked—whether you worked with YorpMind or ChatGPT. Suggestions and unfinished work are not treated as proven fixes.</p>
+        <p class="cockpit-access-note">No AI receives administrator rights. Authorized employees can build, fix and test in isolated previews. You approve only verified changes going live.</p>
         <details class="founder-permission-panel" aria-labelledby="founder-permission-heading" hidden>
           <summary id="founder-permission-heading"><strong>Temporary access</strong><span>Choose assistant → approve → stop anytime</span></summary>
-          <p class="founder-permission-explain">Choose an assistant and a short time. This development version still requires a separate security check; the requested email OTP flow will replace that extra step once securely connected.</p>
+          <p class="founder-permission-explain">Choose an assistant and a short time. Available approval methods and connection status are checked below before any permission can start.</p>
           <form id="founder-permission-form">
             <div class="founder-permission-grid founder-permission-simple">
               <label for="founder-assistant">Who gets temporary access?
@@ -167,6 +205,15 @@
             <div id="founder-permission-list" class="founder-permission-list"></div>
           </details>
         </details>
+        <details class="cockpit-reference">
+          <summary>How your assistants work</summary>
+          <div class="founder-you"><strong>You · Owner &amp; Administrator</strong><small>Final say on money, permissions, and publishing</small></div>
+          <div class="founder-assistants" aria-label="Your two equal assistants">
+            <article class="founder-assistant"><strong>✺ YorpMind</strong><p>Plan missions and review the team’s knowledge. Execution depends on the connected specialist and its permissions.</p><button id="founder-yorpmind" type="button">Give work to YorpMind →</button></article>
+            <article class="founder-assistant"><strong>✦ ChatGPT</strong><p>Prepare a message for your ChatGPT conversation. This handoff does not send a message or grant access automatically.</p><button id="founder-chatgpt" type="button">Work with ChatGPT →</button></article>
+          </div>
+          <p class="cockpit-reference-note">Only checked repair evidence can support a learned lesson. Draft suggestions stay labeled until reviewed.</p>
+        </details>
       </section>
       <dialog id="founder-otp-dialog" class="founder-handoff-dialog" aria-labelledby="founder-otp-title">
         <form id="founder-otp-form">
@@ -213,16 +260,9 @@
           <span class="owner-console-locked">🔒 No automatic release or administrative approval</span>
         </div>
       </section>
-      <div class="hq-hero">
-        <div class="hq-hero-content">
-          <div class="hq-overline"><span class="hq-live-dot" aria-hidden="true"></span> YOUR TEAM AT WORK</div>
-          <h1>Make the decisions.<br><span>We will help with the work.</span></h1>
-          <p>Follow the progress of your website and the AI team. Open any task to see what happened, what needs checking, and what choice is yours.</p>
-          <div class="hq-hero-actions">
-            <button class="hq-button hq-button-primary" id="hq-new" type="button">+ Give the team a task</button>
-            <details><summary>Advanced: view the team report</summary><a class="hq-button hq-button-secondary" href="/api/admin/headquarters?format=markdown" target="_blank" rel="noopener noreferrer">Open detailed report ↗</a></details>
-          </div>
-        </div>
+      <details class="cockpit-execution-details">
+        <summary>Execution readiness &amp; specialist details <span>Optional operational detail</span></summary>
+        <div class="cockpit-execution-inner">
         <div class="hq-hero-aside" aria-label="Workspace readiness">
           <div class="hq-hero-aside-label">PRIVATE WORKSPACE <span class="hq-secure">● ACCESS PROTECTED</span></div>
           <div class="hq-hero-status"><span id="hq-storage">Connecting…</span><small>Mission database</small></div>
@@ -231,8 +271,6 @@
           <p class="hq-hero-aside-note" id="hq-mission-budget" aria-live="polite">Checking daily AI mission allowance…</p>
           <div class="hq-hero-aside-bottom" id="hq-updated" aria-live="polite">Loading latest activity…</div>
         </div>
-      </div>
-
       <div class="hq-metrics" aria-label="Headquarters metrics">
         <article class="hq-metric"><span>OPEN MISSIONS</span><strong id="hq-open">—</strong><small>Across your latest 100 missions</small></article>
         <article class="hq-metric"><span>IN FLIGHT</span><strong id="hq-running">—</strong><small>Queued and generating</small></article>
@@ -240,9 +278,12 @@
         <article class="hq-metric"><span>DEPARTMENTS</span><strong id="hq-departments">—</strong><small><span id="hq-ready">—</span> brief specialists enabled</small></article>
       </div>
 
+        </div>
+      </details>
+
       <section class="hq-panel hq-compose" id="hq-compose" hidden aria-label="Create a mission">
         <div class="hq-panel-heading">
-          <div><span class="hq-kicker">NEW MISSION</span><h2>Define an outcome.</h2><p>Save the brief first. Starting AI work requires a separate explicit action.</p></div>
+          <div><span class="hq-kicker">NEW MISSION</span><h2>Define an outcome.</h2><p>Describe the result you want. Saving creates a mission; you choose when work starts.</p></div>
           <button class="hq-text-action" type="button" id="hq-close">Close ×</button>
         </div>
         <form id="hq-form" class="hq-form">
@@ -271,7 +312,7 @@
       <div class="hq-workgrid">
         <section class="hq-panel hq-mission-panel">
           <div class="hq-panel-heading">
-            <div><span class="hq-kicker">WHAT YOUR TEAM IS DOING</span><h2>Work in progress</h2><p>Open a task to see what happened and what you should check.</p></div>
+            <div><span class="hq-kicker">WHAT YOUR TEAM IS DOING</span><h2>Your mission desk</h2><p>Track the outcome, review the evidence, and choose the next step.</p></div>
             <label class="hq-filter">View <select id="hq-filter" class="hq-input"><option value="active">Open work</option><option value="review">Needs review</option><option value="staging">Staging rehearsals</option><option value="all">All missions</option><option value="failed">Failed — investigate</option><option value="cancelled">Cancelled</option></select></label>
           </div>
           <div id="hq-missions" class="hq-mission-list" aria-live="polite"></div>
@@ -1066,7 +1107,7 @@
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">IMMUTABLE OPERATIONAL TRAIL</span><h2>Admin activity log</h2></div></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Resource</th><th>Details</th></tr></thead><tbody id="audit-list"><tr><td colspan="5" class="empty-state">Loading audit history…</td></tr></tbody></table></div></section>
       <div class="overview-grid">
         <section class="panel"><div class="panel-head"><div><span class="eyebrow">MONITORING</span><h2>Recent runs</h2></div></div><div class="table-wrap"><table><thead><tr><th>Started</th><th>Status</th><th>Checked</th><th>Passed</th><th>Failed</th></tr></thead><tbody id="activity-runs"><tr><td colspan="5" class="empty-state">Loading…</td></tr></tbody></table></div></section>
-        <section class="panel"><div class="panel-head"><div><span class="eyebrow">CHANGE HISTORY</span><h2>Production snapshots</h2></div></div><div class="table-wrap"><table><thead><tr><th>Detected</th><th>Page</th><th>Change</th><th>Status</th></tr></thead><tbody id="activity-changes"><tr><td colspan="4" class="empty-state">Loading…</td></tr></table></div></section>
+        <section class="panel"><div class="panel-head"><div><span class="eyebrow">CHANGE HISTORY</span><h2>Production snapshots</h2></div></div><div class="table-wrap"><table><thead><tr><th>Detected</th><th>Page</th><th>Change</th><th>Status</th></tr></thead><tbody id="activity-changes"><tr><td colspan="4" class="empty-state">Loading…</td></tr></tbody></table></div></section>
       </div>
     </section>
 
@@ -1100,5 +1141,6 @@
 <script src="/admin/tool-activity.js" defer></script>
 <script src="/admin/business-intelligence.js" defer></script>
 <script src="/admin/headquarters-refined.js" defer></script>
+<script src="/admin/cockpit.js" defer></script>
 </body>
 </html>

@@ -5,11 +5,11 @@ on:
     branches:
       - main
       - "build/**"
-      - feature/founder-one-tap-controls
+      - "feature/**"
       - fix/founder-approval-at-production-only
-  # All development PRs receive contract tests, including stacked feature branches.
-  # This job is read-only and cannot deploy or consume Workers AI.
+  # Stacked Headquarters branches must receive checks whichever base is used.
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,7 +29,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Run syntax checks and platform contract tests
         run: npm run check
       - name: Verify Headquarters component, migration and provider policy
