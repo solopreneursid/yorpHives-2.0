@@ -63,7 +63,7 @@ export function inspectMissionReceipt(job, events=[]) {
     release_authorized:false,production_deployed:false,
     provider_billing_verified:false,provider_usage:"unknown",
     failure:job.status==="failed"?{
-      code:/^[A-Z_]{3,64}$/.test(code)?code:"UNCLASSIFIED_FAILURE",
+      code:classification,
       message:message||"A mission failure was recorded."
     }:null,
     model_metadata:goodBrief?{
