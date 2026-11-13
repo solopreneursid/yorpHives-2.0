@@ -1,0 +1,35 @@
+/* Founder-facing live website proof: compact, responsive and readable. */
+.website-proof{margin:0 0 16px;position:relative;isolation:isolate;overflow:hidden;border:1px solid rgba(82,196,217,.24);border-radius:16px;background:linear-gradient(120deg,rgba(9,30,48,.96),rgba(15,23,42,.94) 64%,rgba(16,35,52,.96));box-shadow:0 14px 38px rgba(0,0,0,.12)}
+.website-proof:before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,rgba(50,222,215,.75),rgba(111,151,247,.5),transparent);pointer-events:none}
+.website-proof-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 18px 12px}
+.website-proof-head>div{min-width:0}
+.website-proof-head h2{margin:5px 0 4px;color:#f2f8fc;font-size:clamp(1.07rem,1.8vw,1.26rem);font-weight:700;line-height:1.28}
+.website-proof-head p{margin:0;color:#a8bfd0;font-size:.84rem;line-height:1.55}
+.website-proof-head .button{min-height:40px;white-space:nowrap}
+.website-proof-status{margin:0;padding:5px 18px 12px;color:#bdcedd;font-size:.85rem;line-height:1.5}
+.website-proof-status[data-status="passed"]{color:#9af4d9}
+.website-proof-status[data-status="attention"]{color:#ffd2a0}
+.website-proof-status[data-status="inconclusive"]{color:#bed6f7}
+.website-proof-list{display:grid;align-content:start;gap:0;max-height:292px;overflow-y:auto;overscroll-behavior:contain;border-top:1px solid rgba(103,157,180,.14)}
+.website-proof-list:empty{display:none}
+.website-proof-item{display:grid;grid-template-columns:minmax(145px,1fr) minmax(105px,150px) minmax(0,2fr);align-items:center;gap:12px;min-width:0;padding:11px 18px;border-bottom:1px solid rgba(111,149,172,.11);background:rgba(7,19,33,.28);transition:background .18s ease}
+.website-proof-item:nth-child(even){background:rgba(20,38,55,.23)}
+.website-proof-item:hover{background:rgba(44,75,100,.24)}
+.website-proof-name{min-width:0}
+.website-proof-name strong{display:block;color:#eff8ff;font-size:.85rem;line-height:1.35}
+.website-proof-name small{display:block;margin-top:2px;color:#85a9bf;font-size:.72rem;overflow-wrap:anywhere}
+.website-proof-pill{width:fit-content;display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(125,171,196,.26);border-radius:999px;padding:5px 9px;background:rgba(40,60,76,.45);font-size:.73rem;letter-spacing:.02em;color:#cde3f2;white-space:nowrap}
+.website-proof-pill[data-state="verified_basic"]{border-color:rgba(78,219,166,.3);background:rgba(22,101,70,.22);color:#a7f2d0}
+.website-proof-pill[data-state="needs_attention"]{border-color:rgba(255,178,91,.34);background:rgba(139,70,23,.22);color:#ffd2a0}
+.website-proof-pill[data-state="not_verified"]{border-color:rgba(117,166,232,.28);background:rgba(45,82,132,.22);color:#c6dbfa}
+.website-proof-detail{margin:0;color:#a9bdd1;font-size:.77rem;line-height:1.45;overflow-wrap:anywhere}
+.website-proof-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 18px;border-top:1px solid rgba(103,157,180,.14)}
+.website-proof-foot[hidden]{display:none}
+.website-proof-foot>span{font-size:.75rem;color:#bdd1e1}
+.website-proof-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.website-proof-actions .button{font-size:.78rem;min-height:34px}
+.website-proof-note{margin:0;padding:10px 18px 14px;border-top:1px solid rgba(103,157,180,.12);font-size:.71rem;color:#8fa8bc;line-height:1.6}
+.website-proof .button:focus-visible,.website-proof-list:focus-visible{outline:2px solid #65e0e9;outline-offset:2px}
+.website-proof .button:disabled{opacity:.55;cursor:wait}
+@media(max-width:760px){.website-proof-head{align-items:stretch;flex-direction:column}.website-proof-head .button{align-self:flex-start}.website-proof-item{grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;padding:12px 14px}.website-proof-detail{grid-column:1/-1}.website-proof-foot{align-items:flex-start;flex-direction:column;padding:12px 14px}.website-proof-actions .button{min-width:0}.website-proof-status{padding-inline:14px}.website-proof-head{padding-inline:14px}.website-proof-note{padding-inline:14px}}
+@media(prefers-reduced-motion:reduce){.website-proof-item{transition:none}}
