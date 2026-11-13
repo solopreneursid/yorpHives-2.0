@@ -121,10 +121,12 @@ export function yorpmindSnapshot(experiences, skills) {
     policy: {
       approved_services: ["Cloudflare", "ChatGPT/OpenAI", "GitHub free capabilities"],
       public_access_enabled: YORPMIND_PUBLIC_ACCESS_ENABLED,
-      autonomous_learning_enabled: false,
+      autonomous_learning_enabled: true,
+      learning_mode: "automatic_revision_matched_founder_reported_qa",
+      automatic_model_calls_per_learning: 0,
       autonomous_skill_execution_enabled: YORPMIND_SKILL_EXECUTION_ENABLED,
       production_changes_enabled: false,
-      evidence_note: "Founder-reported QA is stored as provenance, not independent proof or current GitHub HEAD verification."
+      evidence_note: "Automatic memory capture requires five exact-commit CI receipts and passed revision-matched owner-reported QA. It is historical provenance, not independent current verification. Skills, code and production release remain owner-controlled."
     },
     counts: {
       experiences: records.length,
@@ -143,7 +145,7 @@ export function yorpmindMarkdown(snapshot) {
   const lines = [
     "# YorpMind — private Headquarters intelligence",
     "",
-    "This is private evidence-backed reference knowledge. No autonomous skills or public AI access are enabled.",
+    "YorpMind automatically records reference-only lessons from eligible revision-matched founder-reported QA. No autonomous skill execution or public AI access is enabled.",
     "Production changes: DISABLED",
     "",
     "## Experiences (founder QA evidence, not live GitHub verification)",
