@@ -16,6 +16,17 @@ Contact: connect@yorphives.com
 Website: https://yorphives.com/
 `;
 
+/** Only an isolated Headquarters Pages deployment should open on /admin/.
+ * The shared repository also serves the public website, so never redirect
+ * arbitrary hosts, the live site, API routes, or its markdown overview.
+ */
+export function isHeadquartersPreviewRoot(url, method, wantsMarkdown = false) {
+  return (method === "GET" || method === "HEAD") &&
+    url.pathname === "/" && !wantsMarkdown &&
+    /^[0-9a-f]{8}\.yorphives-admin-staging\.pages\.dev$/i.test(url.hostname) &&
+    url.protocol === "https:";
+}
+
 function applyTransportSecurity(response) {
   const headers = new Headers(response.headers);
   headers.set("Strict-Transport-Security", "max-age=31536000");
@@ -34,6 +45,20 @@ export async function onRequest(context) {
     url.pathname === "/" &&
     (url.searchParams.get("format") === "markdown" ||
       accept.includes("text/markdown"));
+
+  if (isHeadquartersPreviewRoot(url, request.method, wantsMarkdown)) {
+    // Relative location prevents cross-origin redirects, and drops tracking
+    // query parameters rather than forwarding them into private Headquarters.
+    return applyTransportSecurity(new Response(null, {
+      status: 302,
+      headers: {
+        "location": "/admin/",
+        "cache-control": "no-store, private",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "no-referrer"
+      }
+    }));
+  }
 
   if (wantsMarkdown && request.method === "GET") {
     return applyTransportSecurity(new Response(OVERVIEW, {
