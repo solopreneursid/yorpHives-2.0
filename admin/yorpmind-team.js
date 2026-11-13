@@ -39,14 +39,22 @@
   function reportCard(report) {
     const card = node("article", "ym-team-report");
     const head = node("div", "ym-team-report-head");
+    const coaching = String(report.report_key || "").startsWith("coaching:");
     head.append(
-      node("strong", "", report.recommendation.replaceAll("_", " ")),
-      node("span", "ym-team-tag", report.severity.toUpperCase() + " · " + report.state)
+      node("strong", "", coaching ? "Learning from a real problem" :
+        report.recommendation.replaceAll("_", " ")),
+      node("span", "ym-team-tag", coaching ? "OBSERVED · NEEDS PROOF" :
+        report.severity.toUpperCase() + " · " + report.state)
     );
     card.append(head,
       node("p", "", report.summary),
       node("p", "ym-team-muted", report.manager_id + " → " + report.subject_agent_id),
       node("p", "ym-team-muted", "Job: " + report.source_job_id + " · " + pretty(report.created_at)));
+    if (coaching) {
+      card.append(node("p", "ym-team-muted",
+        "Training note only · No fix has been independently verified. " +
+        "Reviewing this note does not approve an AI skill or any website changes."));
+    }
     if (report.state !== "proposed") {
       card.append(node("p", "ym-team-muted", "Reviewed by " + (report.reviewed_by || "Unknown") +
         " on " + pretty(report.reviewed_at) + ". No execution was authorized."));

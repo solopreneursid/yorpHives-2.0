@@ -15,6 +15,7 @@ on:
       - design/headquarters-compact-workspace
       - design/headquarters-prism-brand-theme
       - ops/headquarters-staging-schema-complete
+      - qa/headquarters-browser-launch-check
 
 permissions:
   contents: read
