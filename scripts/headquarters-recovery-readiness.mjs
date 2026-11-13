@@ -37,6 +37,9 @@ export function evaluateHeadquartersRecovery({
   new RegExp("(?:^|-)after-"+String(sourceMigrationCount).padStart(4,"0")+"(?:-|\\.)").test(o.key.split("/").at(-1))&&
   Number.isSafeInteger(o.size)&&o.size>1024&&
   typeof o.etag==="string"&&o.etag.length>0&&
+  // A restore receipt cannot authenticate its own digest. The expected
+  // digest must be supplied separately from verified backup evidence.
+  DIGEST.test(String(o.sha256||""))&&
   Number.isFinite(Date.parse(o.last_modified||""))&&
   Date.parse(o.last_modified)>applied&&
   Date.parse(o.last_modified)<=now
@@ -49,6 +52,7 @@ export function evaluateHeadquartersRecovery({
   return receipt.migration_id===sourceMigrationCount&&
    receipt.backup_key===backup.key&&receipt.backup_etag===backup.etag&&
    DIGEST.test(String(receipt.backup_sha256||""))&&
+   receipt.backup_sha256===backup.sha256&&
    Number.isSafeInteger(receipt.table_count)&&receipt.table_count>=1&&
    Number.isSafeInteger(receipt.row_count)&&receipt.row_count>=0&&
    receipt.foreign_key_violations===0&&receipt.schema_equal===true&&
