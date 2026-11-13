@@ -41,6 +41,9 @@ const {parseIdeas,synthesizeIdeas}=await import(synthesisURI);
 const patternsURI=data(await file("../functions/_lib/yorpmind-patterns.js"));
 const evolutionURI=data((await file("../hq-intelligence/yorpmind-evolution.js"))
   .replace('"../functions/_lib/yorpmind-patterns.js"',JSON.stringify(patternsURI)));
+const teamLibURI=data(await file("../functions/_lib/yorpmind-team.js"));
+const teamScanURI=data((await file("../hq-intelligence/yorpmind-team-scan.js"))
+  .replace('"../functions/_lib/yorpmind-team.js"',JSON.stringify(teamLibURI)));
 const workerURI=data((await file("../hq-intelligence/worker.js"))
   .replace('import { WorkflowEntrypoint } from "cloudflare:workers";',
     "class WorkflowEntrypoint { constructor() { this.env = {}; } }")
@@ -53,7 +56,9 @@ const workerURI=data((await file("../hq-intelligence/worker.js"))
   .replace('import { MODEL, synthesizeIdeas } from "./synthesis.js";',
     'import { MODEL, synthesizeIdeas } from '+JSON.stringify(synthesisURI)+";")
   .replace('import { scanYorpMindEvolution } from "./yorpmind-evolution.js";',
-    'import { scanYorpMindEvolution } from '+JSON.stringify(evolutionURI)+";"));
+    'import { scanYorpMindEvolution } from '+JSON.stringify(evolutionURI)+";")
+  .replace('import { scanYorpMindTeam } from "./yorpmind-team-scan.js";',
+    'import { scanYorpMindTeam } from '+JSON.stringify(teamScanURI)+";"));
 const {ResearchWorkflow,default:worker}=await import(workerURI);
 const {collectPublicSignals}=await import(sourcesURI);
 
