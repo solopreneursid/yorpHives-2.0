@@ -5,6 +5,10 @@ const sha="a".repeat(40),base="b".repeat(40),pr=94;
 const branch={name:"build/yorphives-admin-reliability",commit:{sha:base}};
 const project={name:"yorphives-admin-staging",production_branch:branch.name,
  source:{type:"github",config:{owner:"solopreneursid",repo_name:"yorpHives-2.0",production_branch:branch.name}},
+ deployment_configs:{
+  preview:{d1_databases:{DB:{id:"84c324ac-f7dc-4304-80bf-8da16da18c4c"}}},
+  production:{d1_databases:{DB:{id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}}}
+ },
  canonical_deployment:{id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",
   environment:"production",latest_stage:{name:"deploy",status:"success"},
   deployment_trigger:{metadata:{branch:branch.name,commit_hash:base}}}};
@@ -44,6 +48,10 @@ test("rollback and base revision must match the actually served canonical deploy
   {compareHead:"c".repeat(40)},
   {compareBase:"c".repeat(40)},
   {readiness:{...ready,ready_for_preview:false}},
+  {project:{...project,deployment_configs:{
+    preview:{d1_databases:{DB:{id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}}},
+    production:{d1_databases:{DB:{id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}}}
+  }}},
   {readiness:{...ready,preview:{...ready.preview,deploymentId:"wrong"}}}
  ])assert.equal(planHeadquartersFastForward({...args,...change}).eligible,false);
 });
