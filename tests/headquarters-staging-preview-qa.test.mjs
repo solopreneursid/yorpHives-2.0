@@ -107,14 +107,40 @@ test("Anonymous HTTP 200, misleading redirects or 5xx halt staging authorization
     /unapproved Headquarters origin/);
 });
 
-test("Actual signed-in workflow cannot deploy or run automatically, and tests real coaching",async()=>{
+test("Automatic staging preview search matches exact branch and SHA; never writes",async()=>{
+  const seen=[];
+  const matching={...validDeployment};
+  const wrong={...validDeployment,
+    deployment_trigger:{metadata:{branch,commit_hash:"b".repeat(40)}}};
+  const fetcher=async (url,opts)=>{
+    seen.push({url,opts});
+    return Response.json({success:true,result:[wrong,matching]});
+  };
+  const {locateMatchingAdminPreview}=await import("../scripts/staging-preview-check.mjs");
+  const actual=await locateMatchingAdminPreview({
+    accountId:account,apiToken:"read-token",branch,commitSha:sha,fetcher
+  });
+  assert.equal(actual?.url,origin);
+  assert.equal(actual?.commitSha,sha);
+  assert.equal(seen.length,1);
+  assert.equal(seen[0].opts.method,"GET");
+  assert.match(seen[0].url,/env=preview&per_page=10&page=1/);
+  assert.ok(!JSON.stringify(actual).includes("read-token"));
+  await assert.rejects(()=>locateMatchingAdminPreview({
+    accountId:account,apiToken:"read-token",branch,commitSha:sha,
+    fetcher:async()=>Response.json({success:true,result:[wrong]})
+  }),/No successful, matching-code/);
+});
+
+test("Actual signed-in workflow is manual one-checkbox and cannot deploy",async()=>{
   const workflow=await readFile(new URL("../.github/workflows/admin-staging-quality.yml",import.meta.url),"utf8");
   const smoke=await readFile(new URL("../scripts/admin-smoke.mjs",import.meta.url),"utf8");
   const verifier=await readFile(new URL("../scripts/verify-existing-admin-preview.mjs",import.meta.url),"utf8");
   assert.match(workflow,/workflow_dispatch:/);
-  assert.match(workflow,/reviewed_commit_sha:/);
-  assert.match(workflow,/reviewed_deployment_id:/);
-  assert.match(workflow,/PAGES_DEPLOYMENT_ID: \$\{\{ inputs\.reviewed_deployment_id \}\}/);
+  assert.match(workflow,/confirm_preview_reviewed:/);
+  assert.match(workflow,/type: boolean/);
+  assert.match(workflow,/CONFIRM_PREVIEW_REVIEWED/);
+  assert.match(workflow,/PAGES_COMMIT_SHA:/);
   assert.match(workflow,/staging-deployments/);
   assert.match(workflow,/verify-existing-admin-preview\.mjs/);
   assert.match(workflow,/CF_ACCESS_CLIENT_ID/);
@@ -123,6 +149,7 @@ test("Actual signed-in workflow cannot deploy or run automatically, and tests re
   assert.doesNotMatch(workflow,/npm run deploy:pages-preview/);
   assert.doesNotMatch(workflow,/wrangler\s+deploy/);
   assert.match(verifier,/await verifyAnonymousBoundary\(preview\.url\)/);
+  assert.match(verifier,/locateMatchingAdminPreview/);
   assert.match(verifier,/GITHUB_ENV/);
   assert.match(verifier,/checkedOut/);
   assert.match(smoke,/website_proof_real_staging_api/);
