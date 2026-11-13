@@ -192,3 +192,21 @@ test("Founder Control exposes stop-all but clearly keeps collective OTP and appl
   assert.match(js,/action:"revoke_all"/);
   assert.match(js,/assistantNames/);
 });
+
+test("emergency stop fails closed without partially revoking if its audit write fails",async()=>{
+  const {sqlite,DB}=await fixture();
+  try{
+    const created=await main.onRequestPost(request(DB,"POST",input));
+    assert.equal(created.status,201);
+    sqlite.exec("CREATE TRIGGER reject_stop_audit BEFORE INSERT ON admin_audit_events "+
+      "WHEN NEW.action='temporary_permissions_all_revoked' "+
+      "BEGIN SELECT RAISE(ABORT,'audit unavailable'); END;");
+    const stopped=await main.onRequestPatch(request(DB,"PATCH",{action:"revoke_all"}));
+    assert.equal(stopped.status,503);
+    const stillPending=sqlite.prepare("SELECT state FROM founder_temporary_grants").get();
+    assert.equal(stillPending.state,"awaiting_mfa");
+    sqlite.exec("DROP TRIGGER reject_stop_audit");
+    assert.equal((await main.onRequestPatch(request(DB,"PATCH",{action:"revoke_all"}))).status,200);
+    assert.equal(sqlite.prepare("SELECT state FROM founder_temporary_grants").get().state,"revoked");
+  }finally{sqlite.close();}
+});
