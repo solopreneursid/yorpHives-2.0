@@ -1,7 +1,7 @@
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
-  locateExactExistingPreview, verifyAnonymousBoundary
+  locateMatchingAdminPreview, verifyAnonymousBoundary
 } from "./staging-preview-check.mjs";
 
 const checkedOut = process.env.GITHUB_SHA || "";
@@ -13,10 +13,9 @@ if (!process.env.GITHUB_ENV) {
   throw new Error("This protected verification only runs inside an approved GitHub Actions job.");
 }
 
-const preview = await locateExactExistingPreview({
+const preview = await locateMatchingAdminPreview({
   accountId: process.env.CF_ACCOUNT_ID || "",
   apiToken: process.env.CF_API_TOKEN || "",
-  deploymentId: process.env.PAGES_DEPLOYMENT_ID || "",
   branch: process.env.PAGES_BRANCH || "",
   commitSha: approved
 });
