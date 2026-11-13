@@ -175,12 +175,13 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     {id:"qa-engineer",name:"QA Engineer",role:"Browser & journey testing",description:"Playwright Chromium checks navigation, search, tool execution, mobile navigation, sitemap pages and internal links.",...qa},
     {id:"code-reviewer",name:"Code Reviewer",role:"Change & regression review",description:"Independent Workers AI review for repair proposals plus changed-line risk checks for dynamic execution, HTML sinks, hard-coded credentials, insecure URLs and sensitive configuration.",...review},
     {id:"performance-engineer",name:"Performance Engineer",role:"Performance & Core Web Vitals",description:"Scheduled and change-triggered Lighthouse measurements for homepage and Free Tools.",...performance},
-    {id:"repair-engineer",name:"Repair Engineer",role:"Isolated code repair",description:"Workers AI repair proposals, isolated branches and CI-gated draft PRs.",status:agentConfigured?"active":"blocked",last_run_at:null,detail:agentConfigured?"Repository push permission, repair-base/source read access, Actions workflow/job reads, and the repair Worker D1, Workers AI, and Workflow bindings are verified. Actual token write scopes are exercised by isolated branch and draft-PR creation; repairs remain CI-gated.":(agentHealth?.error||"GitHub repository write or Actions read capability is not verified.")}
+    {id:"repair-engineer",name:"Repair Engineer",role:"Historical repair system (retired)",description:"Read-only past repair records. Headquarters monitors; the founder performs changes.",status:"planned",last_run_at:null,detail:"Autonomous repair dispatch and GitHub permission probes are permanently disabled under the founder monitoring-only policy."}
   ];
   return adminJson({
     data: result.results,
     finding_links_ready: linksAvailable,
     agentConfigured,
+    monitoring_only: true, repair_dispatch_enabled: false,
     github: agentHealth?.github || null,
     workflow: agentHealth?.workflow || null,
     agents,
@@ -188,189 +189,21 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   });
 }
 
-export async function onRequestPost(context: AdminRequestContext & { env: AdminRequestContext["env"] & RepairEnv }): Promise<Response> {
+/**
+ * Founder policy: Headquarters is monitoring and intelligence ONLY.
+ * Historical repair records are read-only; no repair dispatch, AI inference,
+ * GitHub permission probe, branch write or workflow invocation is permitted.
+ * This is a permanent fail-closed endpoint, not a configurable feature flag.
+ */
+export async function onRequestPost(context: AdminRequestContext): Promise<Response> {
   const identity = await requireAdmin(context);
   if (isAdminResponse(identity)) return identity;
-  const origin = context.request.headers.get("origin");
-  if (!origin || origin !== new URL(context.request.url).origin) {
-    return adminJson({ error: { code: "INVALID_ORIGIN", message: "Admin actions must originate from this site." } }, 403);
-  }
-  if (!context.request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
-    return adminJson({ error: { code: "INVALID_CONTENT_TYPE", message: "A JSON request body is required." } }, 415);
-  }
-
-  const body = await context.request.json().catch(() => null) as CreateRepairJobRequest | null;
-  if (body?.permission_probe === true) {
-    if (body.confirm !== true) {
-      return adminJson({ error: { code: "CONFIRMATION_REQUIRED", message: "Confirm the temporary branch and draft-PR permission probe." } }, 400);
-    }
-    const agent = context.env.ADMIN_AGENT_SERVICE;
-    if (!agent) {
-      return adminJson({ error: { code: "AGENT_NOT_CONFIGURED", message: "The private repair Worker service binding is unavailable." } }, 503);
-    }
-    const lockId = "github-permission-probe-singleton";
-    const emergencyOverride = body.emergency_override === true;
-    const staleBefore = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-    await context.env.DB!.prepare(
-      "INSERT OR IGNORE INTO admin_repair_jobs (id,finding_id,requested_by,request_text,status,created_at,updated_at) VALUES (?,NULL,?,?, 'queued',?,?)"
-    ).bind(lockId, identity.email, "Internal GitHub permission probe concurrency lock.", now(), now()).run();
-    const acquired = await context.env.DB!.prepare(
-      "UPDATE admin_repair_jobs SET status='running',requested_by=?,request_text=?,updated_at=? WHERE id=? AND (status!='running' OR (updated_at<? AND ?=1))"
-    ).bind(identity.email, emergencyOverride ? "Emergency override: reclaim stale permission probe lock." : "GitHub permission probe lock.", now(), lockId, staleBefore, emergencyOverride ? 1 : 0).run();
-    if ((acquired.meta?.changes || 0) !== 1) {
-      return adminJson({
-        error: {
-          code: "PROBE_ALREADY_RUNNING",
-          message: "Another GitHub permission probe is still running. Retry when it finishes. Emergency override can reclaim a lock that has been stale for more than ten minutes."
-        }
-      }, 409);
-    }
-    let probe: Record<string, unknown> | null = null;
-    let failure: { code: string; message: string; status: number } | null = null;
-    try {
-      const response = await agent.fetch(new Request("https://admin-agent.internal/permission-probe", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-yorphives-internal-probe": "1"
-        },
-        body: JSON.stringify({ confirm: true, emergency_override: emergencyOverride })
-      }));
-      const result = await response.json().catch(() => null) as unknown;
-      if (!response.ok || !result || typeof result !== "object" || Array.isArray(result)) {
-        failure = { code: "GITHUB_PERMISSION_PROBE_FAILED", message: "The repair Worker could not complete the permission probe.", status: response.status || 502 };
-      } else {
-        probe = result as Record<string, unknown>;
-      }
-    } catch {
-      failure = { code: "GITHUB_PERMISSION_PROBE_UNAVAILABLE", message: "The private repair Worker could not be reached.", status: 502 };
-    } finally {
-      await context.env.DB!.prepare(
-        "UPDATE admin_repair_jobs SET status='completed',updated_at=? WHERE id=?"
-      ).bind(now(), lockId).run();
-    }
-    const auditDetails = {
-      ready: probe?.ready === true,
-      contents_write: probe?.contents_write === true,
-      pull_requests_write: probe?.pull_requests_write === true,
-      cleanup: probe?.cleanup || null,
-      cleanup_errors: probe?.cleanup_errors || [],
-      remaining_branch: probe?.remaining_branch || null,
-      remaining_pull_request: probe?.remaining_pull_request || null,
-      emergency_override: emergencyOverride,
-      error: failure?.message || probe?.error || null
-    };
-    await context.env.DB!.prepare(
-      "INSERT INTO admin_audit_events (id,actor,action,resource_type,resource_id,details_json,created_at) VALUES (?,?,?,?,?,?,?)"
-    ).bind(id(), identity.email, "github_permission_probe", "github_token", "cloudflare-admin-agent", JSON.stringify(auditDetails), now()).run();
-    if (failure) return adminJson({ error: { code: failure.code, message: failure.message } }, failure.status);
-    return adminJson({ probe });
-  }
-
-  const requestText = (body?.request_text || "").trim();
-  if (!requestText || requestText.length > 4000) {
-    return adminJson({ error: { code: "INVALID_REQUEST", message: "Describe the repair in 1–4000 characters." } }, 400);
-  }
-  const findingId = body?.finding_id == null || body.finding_id === "" ? null : body.finding_id;
-  const findingSource = body?.finding_source ?? "monitor";
-  if (!["monitor", "asset"].includes(findingSource) || (findingId !== null && (typeof findingId !== "string" || findingId.length > 150)) ||
-      (findingId === null && body?.finding_source !== undefined)) {
-    return adminJson({ error: { code: "INVALID_FINDING", message: "Specify a valid finding ID and its monitor or asset source." } }, 400);
-  }
-  if (findingId) {
-    const table = findingSource === "asset" ? "admin_asset_findings" : "admin_findings";
-    if (findingSource === "asset") {
-      const finding = await context.env.DB!.prepare(
-        "SELECT f.id,f.status,f.category,f.finding_key,a.asset_type,a.url AS asset_url " +
-        "FROM admin_asset_findings f JOIN admin_assets a ON a.id=f.asset_id WHERE f.id=?"
-      ).bind(findingId).first<{
-        id:string;status:string;category:string;finding_key:string;asset_type:string;asset_url:string;
-      }>();
-      if (!finding) return adminJson({error:{
-        code:"FINDING_NOT_FOUND",message:"The selected asset finding does not exist."
-      }},404);
-      const intake = assessRepairIntake({ ...finding, finding_source: "asset" });
-      if (!intake.permitted) {
-        return adminJson({error:{
-          code:intake.code,message:intake.explanation
-        },ai_dispatched:false,model_calls:0,production_approved:false,
-          suggested_next_step:"Review this issue with ChatGPT or YorpMind without starting the restricted page-repair bot."},422);
-      }
-    } else {
-      const finding = await context.env.DB!.prepare(
-        "SELECT id,status FROM admin_findings WHERE id=?"
-      ).bind(findingId).first<{id:string;status:string}>();
-      if (!finding) return adminJson({error:{
-        code:"FINDING_NOT_FOUND",message:"The selected monitor finding does not exist."
-      }},404);
-      const intake = assessRepairIntake({finding_source:"monitor",status:finding.status});
-      if (!intake.permitted) return adminJson({error:{
-        code:intake.code,message:intake.explanation
-      },ai_dispatched:false,model_calls:0,production_approved:false},422);
-    }
-  }
-  const linkSchemaReady = Boolean(await context.env.DB!.prepare(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name='admin_repair_finding_links'"
-  ).first<{ name: string }>());
-  if (findingId && findingSource === "asset" && !linkSchemaReady) {
-    return adminJson({ error: { code: "REPAIR_LINK_MIGRATION_REQUIRED", message: "Asset finding linkage is unavailable until staging migration 0022 is applied." } }, 503);
-  }
-
-  const agent = context.env.ADMIN_AGENT_SERVICE;
-  if (!agent) {
-    return adminJson({ error: { code: "AGENT_NOT_CONFIGURED", message: "The isolated repair workflow service binding is not configured." } }, 503);
-  }
-
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const recent = await context.env.DB!.prepare(
-    "SELECT COUNT(*) AS count FROM admin_repair_jobs WHERE created_at >= ?"
-  ).bind(cutoff).first<{ count: number }>();
-  if ((recent?.count || 0) >= 2) {
-    return adminJson({ error: { code: "AGENT_DAILY_LIMIT", message: "The staging repair agent is limited to two jobs per 24 hours to protect the free inference allowance." } }, 429);
-  }
-
-  const jobId = id();
-  const timestamp = now();
-  const insert = context.env.DB!.prepare(
-    "INSERT INTO admin_repair_jobs (id,finding_id,requested_by,request_text,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)"
-  ).bind(jobId, findingSource === "monitor" ? findingId : null, identity.email, requestText, "queued", timestamp, timestamp);
-  if (findingId && linkSchemaReady) {
-    const link = context.env.DB!.prepare(
-      "INSERT INTO admin_repair_finding_links(job_id,finding_source,finding_id) VALUES (?,?,?)"
-    ).bind(jobId, findingSource, findingId);
-    await context.env.DB!.batch([insert, link]);
-  } else {
-    await insert.run();
-  }
-  await audit(context, identity.email, "repair_requested", jobId, {
-    finding_id: findingId, finding_source: findingId ? findingSource : null, request_text: requestText
-  });
-
-  try {
-    const dispatch = await agent.fetch(new Request("https://admin-agent.internal/instances", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        job_id: jobId,
-        finding_id: findingId,
-        requested_by: identity.email,
-        request_text: requestText,
-        repository: "solopreneursid/yorpHives-2.0",
-        base_branch: "build/yorphives-admin-reliability"
-      })
-    }));
-    const result = await dispatch.json().catch(() => null) as { id?: string; status?: string; error?: string } | null;
-    if (!dispatch.ok || !result?.id) throw new Error(result?.error || "The repair workflow could not be started.");
-
-    await context.env.DB!.prepare("UPDATE admin_repair_jobs SET status='dispatched',result_summary=?,updated_at=?,dispatched_at=? WHERE id=?")
-      .bind("Durable Cloudflare repair workflow accepted. The agent is preparing an isolated branch and CI-verified draft PR.", now(), now(), jobId).run();
-    await audit(context, identity.email, "repair_dispatched", jobId, { workflow_instance_id: result.id });
-    return adminJson({ job: { id: jobId, status: "dispatched" }, dispatched: true }, 202);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Repair workflow dispatch failed.";
-    await context.env.DB!.prepare("UPDATE admin_repair_jobs SET status='failed',result_summary=?,updated_at=? WHERE id=?")
-      .bind(message.slice(0, 3500), now(), jobId).run();
-    await audit(context, identity.email, "repair_dispatch_failed", jobId, {});
-    return adminJson({ job: { id: jobId, status: "failed" }, dispatched: false, message: "The request was saved, but the repair workflow could not be started." }, 202);
-  }
+  return adminJson({
+    error: {
+      code: "MONITOR_ONLY",
+      message: "Headquarters only monitors and recommends. The founder makes changes independently; only their verified Preview → Go Live → OTP action may publish."
+    },
+    monitoring_only: true, dispatch_performed: false, permission_probe_performed: false,
+    production_approved: false, production_deployed: false
+  }, 405);
 }
