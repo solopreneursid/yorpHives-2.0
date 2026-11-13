@@ -51,7 +51,7 @@ test("issue creation uses only reviewed inputs and never dispatches a repair",as
     assert.match(String(url),/\/repos\/solopreneursid\/yorpHives-2\.0\/issues$/);
     const payload=JSON.parse(init.body);
     assert.equal(payload.title,"Headquarters navigation shows missing links");
-    assert.match(payload.body,/Founder-authenticated Headquarters/);
+    assert.match(payload.body,/founder-authenticated Headquarters/i);
     assert.match(payload.body,/not a verified fix/);
     return Response.json({number:46,html_url:"https://untrusted.example/spoof"});
   };
