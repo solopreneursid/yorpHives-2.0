@@ -5,9 +5,9 @@ import { founderActionQueue, MAX_FOUNDER_ACTIONS } from "../functions/_lib/owner
 const uuid = n => "123e4567-e89b-42d3-a456-" + String(n).padStart(12,"0");
 const job = (n,status,result_json=null) => ({job_id:uuid(n),status,result_json});
 
-test("failed mission is the first admin decision, never an approval", () => {
+test("failed mission is a team follow-up, never founder approval", () => {
   const result=founderActionQueue({jobs:[job(1,"failed",'{"code":"BRIEF_JSON_INVALID"}')],teamSchemaReady:false});
-  assert.equal(result.actions[0].urgency,"urgent");
+  assert.equal(result.actions[0].urgency,"attention");
   assert.equal(result.actions[0].target,"failed");
   assert.match(result.actions[0].why,/BRIEF_JSON_INVALID/);
   assert.equal(result.release_execution_enabled,false);
@@ -25,12 +25,12 @@ test("synthetic staging success appears only as evidence-inspection advice",()=>
   assert.equal(result.overview.awaiting_brief_review,0);
   assert.equal(result.overview.failed_missions,0);
 });
-test("release and manager suggestions require founder review but do not grant authority",()=>{
+test("unfinished repairs and manager notes are not owner release authorizations",()=>{
   const result=founderActionQueue({jobs:[job(1,"awaiting_owner_approval")],repairReviewCount:1,
     pendingMfaCount:1,pendingTeamReports:3,teamSchemaReady:true});
   const ids=result.actions.map(a=>a.id);
   for(const id of ["review-briefs","repair-review","mfa-release","manager-reports"])assert.ok(ids.includes(id));
-  assert.match(result.actions.find(a=>a.id==="mfa-release").next_step,/Cloudflare Access/);
+  assert.match(result.actions.find(a=>a.id==="mfa-release").next_step,/No assistant needs administrator rights/);
   assert.ok(result.actions.every(a=>a.execution_authorized===false));
 });
 test("untrusted failure text is not surfaced as an action",()=>{
