@@ -99,23 +99,13 @@
     const heading=String(title||"YorpHives finding").slice(0,180);
     const details=[heading,String(why||""),String(next_step||"")].filter(Boolean).join("\n");
     if(assistant==="yorpmind"){
-      const request=$("repair-request");
-      const nav=document.querySelector('.nav-item[data-view="agents"]');
-      if(request&&nav) {
-        nav.click();
-        request.value=(
-          "Please investigate this YorpHives finding and prepare a safe, reviewable fix.\n"+
-          details+"\nDo not publish anything. Show evidence and a preview before asking for approval."
-        ).slice(0,3900);
-        const note=$("repair-message");
-        if(note)note.textContent="Prepared for YorpMind. Read it, then choose Request investigation if you want to start.";
-        request.scrollIntoView({behavior:"smooth",block:"center"});
-        request.focus({preventScroll:true});
-      }
+      // YorpMind now presents monitoring observations only. Do not prepare a
+      // repair request, write a draft, create a mission, or dispatch a Worker.
+      document.querySelector('.nav-item[data-view="yorpmind"]')?.click();
       return;
     }
     const message=[
-      "Help me work on this YorpHives finding in the connected repository",
+      "Help me understand this YorpHives monitoring finding and possible remedies",
       "solopreneursid/yorpHives-2.0.",
       "Problem: "+heading,
       "Why it matters: "+String(why||"Not specified."),
@@ -165,7 +155,7 @@
     $("founder-handoff-copy")?.addEventListener("click",copyHandoff);
     $("founder-handoff-close")?.addEventListener("click",()=>$("founder-handoff-dialog").close());
     $("founder-chatgpt")?.addEventListener("click",()=>
-      showHandoff({title:"Help me investigate or improve YorpHives."},"chatgpt"));
+      showHandoff({title:"Review YorpHives monitoring findings and opportunities."},"chatgpt"));
     $("founder-yorpmind")?.addEventListener("click",()=>
       showHandoff({title:"Help me investigate or improve YorpHives."},"yorpmind"));
     // Security page loads archived grants only when the founder opens it.
