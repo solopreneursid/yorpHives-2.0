@@ -12,6 +12,7 @@
     active:"Active for a short time",revoked:"Cancelled",expired:"Ended",unavailable:"Unavailable"};
   let securityReady=false;
   let otpReady=false;
+  let deliveryReady=false;
   let lastChallengeId=null;
   let loaded=false;
   let busy=false;
@@ -57,6 +58,9 @@
       let otp=null;
       try{otp=await api("/api/admin/founder-otp");}catch{}
       otpReady=otp?.can_request===true && otp?.production_allowed===false;
+      deliveryReady=otp?.delivery_ready===true && otp?.production_allowed===false;
+      const testButton=$("founder-test-email");
+      if(testButton)testButton.disabled=!deliveryReady;
       const pair=$("founder-assistant")?.querySelector('option[value="both"]');
       if(pair)pair.disabled=!otpReady;
       grantRows=data.assistants;
@@ -85,6 +89,9 @@
     } catch {
       securityReady=false;
       otpReady=false;
+      deliveryReady=false;
+      const testButton=$("founder-test-email");
+      if(testButton)testButton.disabled=true;
       $("founder-permission-submit").disabled=true;
       const pair=$("founder-assistant")?.querySelector('option[value="both"]');
       if(pair)pair.disabled=true;
@@ -200,6 +207,24 @@
       });}catch{setStatus("Could not confirm code cancellation. Use End all assistant access to invalidate pending codes.");}
     }
   }
+  async function testFounderEmail(){
+    const button=$("founder-test-email");
+    if(!deliveryReady||!button||button.disabled)return;
+    button.disabled=true;
+    setStatus("Submitting a harmless email test. This cannot grant assistant access.");
+    try{
+      const response=await api("/api/admin/founder-email-test",{
+        method:"POST",body:'{"action":"send_test"}'
+      });
+      if(response?.accepted!==true||response?.permission_active!==false||
+        response?.production_allowed!==false)
+        throw Error("Email submission was not verified.");
+      setStatus("Email submitted. Check your founder inbox (including spam). No assistant rights were changed.");
+    }catch(error){
+      setStatus(error instanceof Error?error.message:
+        "Email delivery test could not be confirmed. No permissions were changed.");
+    }finally{button.disabled=!deliveryReady;}
+  }
   async function revoke(id,button) {
     if(!confirm("Stop this temporary permission now?"))return;
     button.disabled=true;
@@ -304,6 +329,7 @@
   function init() {
     $("founder-permission-form")?.addEventListener("submit",submit);
     $("founder-permission-refresh")?.addEventListener("click",reload);
+    $("founder-test-email")?.addEventListener("click",testFounderEmail);
     $("founder-otp-form")?.addEventListener("submit",confirmOtp);
     $("founder-otp-cancel")?.addEventListener("click",cancelOtp);
     $("founder-stop-all")?.addEventListener("click",stopAll);
