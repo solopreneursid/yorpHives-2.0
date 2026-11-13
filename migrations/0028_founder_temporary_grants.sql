@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS founder_temporary_grants (
   )),
   duration_minutes INTEGER NOT NULL CHECK(duration_minutes IN (15,30,60)),
   max_actions INTEGER NOT NULL DEFAULT 3 CHECK(max_actions BETWEEN 1 AND 3),
-  used_actions INTEGER NOT NULL DEFAULT 0 CHECK(used_actions BETWEEN 0 AND max_actions),
   purpose TEXT NOT NULL CHECK(length(purpose) BETWEEN 40 AND 700),
   owner_email TEXT NOT NULL CHECK(length(owner_email) BETWEEN 3 AND 200),
   state TEXT NOT NULL DEFAULT 'awaiting_mfa'
