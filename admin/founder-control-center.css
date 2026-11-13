@@ -44,4 +44,9 @@
 .founder-handoff-controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .founder-handoff-controls :is(button,a){border-radius:8px;background:#0e7490;color:#fff;border:1px solid #1c96a8;padding:11px 15px;text-decoration:none;font-size:.83rem;font-weight:700;cursor:pointer}
 .founder-handoff-controls .founder-close{background:#253448}
+.founder-choice-actions{display:flex;gap:10px;flex-wrap:wrap;margin:11px 0 0}
+.founder-choice-actions button{border-radius:8px;border:1px solid #2c6c87;background:#102d42;color:#d9f5ff;font-size:.78rem;font-weight:750;padding:9px 12px;cursor:pointer}
+.founder-choice-actions button:hover,.founder-choice-actions button:focus-visible{background:#0e7490;color:#fff}
+.founder-choice-mind{border-color:#1b778a!important}
+.founder-choice-chat{border-color:#6d6da5!important}
 @media(max-width:680px){.founder-assistants,.founder-permission-grid{grid-template-columns:1fr}.founder-command{padding:17px}.founder-assistant{padding:15px}}
