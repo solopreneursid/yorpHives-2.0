@@ -168,10 +168,12 @@ export async function onRequestPatch(context: AdminRequestContext): Promise<Resp
       "INSERT INTO admin_audit_events(id,actor,action,resource_type,resource_id,details_json,created_at) " +
       "SELECT ?,?,'yorpmind_evolution_review','yorpmind_proposal',?, ?,? " +
       "WHERE EXISTS(SELECT 1 FROM yorpmind_evolution_proposals " +
-      "WHERE proposal_id=? AND status=? AND reviewed_by=? AND reviewed_at=?)"
+      "WHERE proposal_id=? AND status=? AND reviewed_by=? AND reviewed_at=?) " +
+      "AND NOT EXISTS(SELECT 1 FROM admin_audit_events WHERE " +
+      "action='yorpmind_evolution_review' AND resource_type='yorpmind_proposal' AND resource_id=?)"
     ).bind(crypto.randomUUID(), identity.email, body.proposal_id,
       JSON.stringify({ decision: body.decision, reference_only: true }),
-      timestamp, body.proposal_id, status, identity.email, timestamp)
+      timestamp, body.proposal_id, status, identity.email, timestamp, body.proposal_id)
   ]);
   if (Number(updated?.meta?.changes || 0) !== 1) {
     return denied("REVIEW_ALREADY_RECORDED", "This proposal was already reviewed or does not exist.", 409);

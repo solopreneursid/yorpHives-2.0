@@ -1,0 +1,42 @@
+name: Public website HTTP evidence — no credentials
+
+on:
+  pull_request:
+    branches:
+      - fix/headquarters-repair-intake-learning
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-http-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Collect real, read-only YorpHives route evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Verify installed Node.js runtime
+        run: |
+          node --version
+          node -e "if(Number(process.versions.node.split('.')[0])<20)throw Error('Node 20+ required')"
+      - name: Inspect public routes without accounts, AI, or writes
+        run: node scripts/website-public-evidence.mjs
+      - name: Compare public website against the isolated Pages preview
+        env:
+          YORPHIVES_PAGES_PREVIEW: https://7fb0ced0.yorphives-2-preview.pages.dev
+          YORPHIVES_PAGES_PREVIEW_SHA: 9c00211294d307fe204fe778769f3284543eb84b
+        run: node scripts/website-preview-contrast.mjs
+      - name: Upload bounded public response evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: website-public-proof-${{ github.run_id }}
+          path: artifacts/website-public-proof/
+          if-no-files-found: warn
+          retention-days: 14

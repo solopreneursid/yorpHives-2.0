@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - ops/headquarters-staging-schema-complete
+      - fix/headquarters-repair-intake-learning
   workflow_dispatch:
 
 permissions:

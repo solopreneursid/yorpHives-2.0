@@ -78,6 +78,32 @@ function fixture(path) {
     recorded_jobs_scanned: 0,
     items: []
   };
+  if (path === "/api/admin/website-proof") {
+    const routes = ["/", "/free-tools/", "/free-tools/manifest.json",
+      "/llms.txt", "/openapi.yaml", "/.well-known/yorphives.json",
+      "/api/v1/free-tools"];
+    const checks = routes.map((path, index) => ({
+      path, title: path === "/" ? "Homepage" : path,
+      expected_format: index < 2 ? "html" : "machine-readable",
+      status: index === 2 ? "needs_attention" : index === 4 ?
+        "not_verified" : "verified_basic",
+      http_status: index === 4 ? null : 200,
+      content_type: index < 2 ? "text/html" : "application/json",
+      note: index === 2 ? "Simulated HTML fallback for browser layout test." :
+        index === 4 ? "Simulated inaccessible site for browser layout test." :
+        "Synthetic response passed layout test only.",
+      security: null
+    }));
+    return {
+      source: "real_public_http_get", origin: "https://yorphives.com",
+      checked_at: iso, total: 7, basic_passed: 5,
+      needs_attention: 1, unverified: 1,
+      overall: "needs_attention", checks,
+      previous_findings_auto_resolved: false,
+      documents_proven_fully_correct: false, new_ai_model_calls: 0,
+      database_writes: 0, production_changes: 0
+    };
+  }
   if (path === "/api/admin/action-center") {
     return { ...neutral, name: "Headquarters Founder Action Center",
       scope: "private_d1_evidence_only", actions: [], pending_total_in_window: 0 };
@@ -269,6 +295,34 @@ async function main() {
       issueScroll.collapsed && Number.parseFloat(issueScroll.maxHeight) < 800,
       "Problem list scrolls inside its own bounded panel; suggestions start closed.");
     await screenshot(page, "02-desktop-problems.png");
+    // This is a FAKE website result to test visual layout and founder choice.
+    // It must never be presented as a successful real public HTTP probe.
+    await page.locator("#website-proof-run").click();
+    await page.locator(".website-proof-item").first().waitFor({state:"visible",timeout:TIMEOUT});
+    check("website-proof:read-only-panel",
+      await page.locator(".website-proof-item").count()===7 &&
+      (await page.locator("#website-proof-status").textContent()).includes("need investigation") &&
+      await page.locator("#website-proof-foot").isVisible(),
+      "Seven synthetic website results render in the founder's scrollable issue panel.");
+    await screenshot(page, "07-desktop-website-check.png");
+    await page.locator("#website-proof-chatgpt").click();
+    check("website-proof:chatgpt-handoff",
+      await page.locator("#founder-handoff-dialog").evaluate(d=>d.open===true) &&
+      (await page.locator("#founder-handoff-text").inputValue()).includes("Do not make a production change"),
+      "The website check opens an optional review message without dispatching AI.");
+    check("website-proof:handoff-visible-from-other-view",
+      await page.locator("#founder-handoff-dialog").isVisible() &&
+      await page.locator("#founder-handoff-close").isVisible() &&
+      await page.locator("#founder-handoff-dialog").evaluate(d=>d.parentElement===document.body),
+      "Founder handoff is visible and operable from Problems, not nested under hidden Home.");
+    await screenshot(page, "08-desktop-handoff.png");
+    await page.locator("#founder-handoff-close").click();
+    await page.locator("#website-proof-yorpmind").click();
+    check("website-proof:yorpmind-handoff-no-dispatch",
+      await page.locator("#view-agents").isVisible() &&
+      (await page.locator("#repair-request").inputValue()).includes("YorpHives website") &&
+      blockedMutations.length===0,
+      "YorpMind handoff prepares a review request but never dispatches work.");
 
     await measure(page, 1440, 960, "intelligence");
     const ideas = await page.evaluate(() => ({
