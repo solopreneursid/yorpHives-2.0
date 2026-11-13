@@ -14,7 +14,7 @@ test("Headquarters has one navigation destination for every preserved workspace"
   const expected=[
     "headquarters","yorpmind","issues","agents","intelligence","demand",
     "business","radar","departments","overview","monitoring","analytics",
-    "updates","releases","activity"
+    "updates","releases","security","activity"
   ];
   const actual=[...html.matchAll(/<button\s+class="nav-item(?: active)?"\s+data-view="([^"]+)"/g)]
     .map(match=>match[1]);
