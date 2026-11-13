@@ -75,50 +75,29 @@ async function setup(withLinks = true) {
   return { database, call, adapter };
 }
 
-test("asset finding uses an atomic source-specific link, not the monitor-only legacy FK", async () => {
-  const { database, call } = await setup();
-  try {
-    const res = await call({ finding_id: "same-id", finding_source: "asset" });
-    assert.equal(res.status, 202);
-    const row = database.prepare("SELECT id, finding_id, status FROM admin_repair_jobs").get();
-    assert.equal(row.finding_id, null);
-    assert.equal(row.status, "dispatched");
-    const link = database.prepare("SELECT finding_source,finding_id FROM admin_repair_finding_links WHERE job_id=?").get(row.id);
-    assert.deepEqual({ ...link }, { finding_source: "asset", finding_id: "same-id" });
-    assert.equal(database.prepare("SELECT COUNT(*) AS count FROM admin_audit_events").get().count, 2);
-  } finally { database.close(); }
-});
-
-test("monitor findings retain legacy FK and source-qualified association", async () => {
-  const { database, call } = await setup();
-  try {
-    const res = await call({ finding_id: "same-id", finding_source: "monitor" });
-    assert.equal(res.status, 202);
-    const row = database.prepare("SELECT id,finding_id FROM admin_repair_jobs").get();
-    assert.equal(row.finding_id, "same-id");
-    const link = database.prepare("SELECT finding_source,finding_id FROM admin_repair_finding_links WHERE job_id=?").get(row.id);
-    assert.equal(link.finding_source, "monitor");
-  } finally { database.close(); }
-});
-
-test("invalid finding source and nonexisting finding never dispatch", async () => {
-  const { database, call } = await setup();
-  try {
-    assert.equal((await call({ finding_id: "same-id", finding_source: "unknown" })).status, 400);
-    assert.equal((await call({ finding_id: "unknown", finding_source: "asset" })).status, 404);
-    assert.equal(database.prepare("SELECT COUNT(*) AS count FROM admin_repair_jobs").get().count, 0);
-  } finally { database.close(); }
-});
-
-test("older staging without migration remains compatible for monitors but fails closed for assets", async () => {
-  const { database, call } = await setup(false);
-  try {
-    const asset = await call({ finding_id: "same-id", finding_source: "asset" });
-    assert.equal(asset.status, 503);
-    assert.equal((await asset.json()).error.code, "REPAIR_LINK_MIGRATION_REQUIRED");
-    assert.equal(database.prepare("SELECT COUNT(*) AS count FROM admin_repair_jobs").get().count, 0);
-    assert.equal((await call({ finding_id: "same-id" })).status, 202);
-  } finally { database.close(); }
+test("monitor and asset findings remain read-only: no repair jobs or associations can be dispatched",async()=>{
+ for(const withLinks of [true,false]){
+  const {database,call}=await setup(withLinks);
+  try{
+   for(const payload of [
+    {finding_id:"same-id",finding_source:"asset"},
+    {finding_id:"same-id",finding_source:"monitor"},
+    {finding_id:"missing",finding_source:"asset"},
+    {finding_id:"same-id",finding_source:"unknown"},
+    {}
+   ]){
+    const response=await call(payload);
+    assert.equal(response.status,405);
+    const body=await response.json();
+    assert.equal(body.error.code,"MONITOR_ONLY");
+    assert.equal(body.dispatch_performed,false);
+    assert.equal(body.production_deployed,false);
+   }
+   assert.equal(database.prepare("SELECT COUNT(*) AS n FROM admin_repair_jobs").get().n,0);
+   if(withLinks)assert.equal(database.prepare("SELECT COUNT(*) AS n FROM admin_repair_finding_links").get().n,0);
+   assert.equal(database.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n,0);
+  }finally{database.close();}
+ }
 });
 
 test("database trigger rejects invalid linked identities without orphaning repair records", async () => {
