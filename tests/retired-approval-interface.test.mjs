@@ -10,7 +10,7 @@ const section=(html,start,end)=>{
 test("founder Home has only development, Preview and Go Live shortcuts",async()=>{
  const html=await source("admin/index.html");
  const home=section(html,'<section class="view active" id="view-headquarters"','<section class="view" id="view-yorpmind"');
- const bar=section(home,'<div class="founder-quick-actions"','</div>');
+ const bar=section(home,'<div class="founder-quick-actions"','<p class="cockpit-access-note">');
  assert.match(bar,/id="founder-find-fixes"[^>]*>Development issues/);
  assert.match(bar,/id="founder-open-preview"[^>]*>Preview/);
  assert.match(bar,/id="founder-open-release"[^>]*>Go Live/);
