@@ -27,6 +27,7 @@ export function inspectMissionReceipt(job, events=[]) {
       release_authorized:false,production_deployed:false,
       suggested_admin_action:"Return to Headquarters and investigate this record." };
   }
+  const rehearsal=job.origin_type==="staging_rehearsal";
   const history=Array.isArray(events)?events.slice(0,MAX_PROOF_EVENTS):[];
   const count=kind=>history.filter(e=>e?.job_id===job.job_id && e.event_type===kind).length;
   const input=object(job.input_json,8000);
@@ -46,15 +47,18 @@ export function inspectMissionReceipt(job, events=[]) {
   const acknowledged=job.status==="completed" && count("brief_review_acknowledged")===1;
   const queue=count("mission_queued"),start=count("mission_running"),review=count("mission_awaiting_owner_approval");
   const checks=[
-    check("dispatch","Founder mission dispatch event",queue===1,
-      "One queued event exists in D1.","Queue evidence is missing or duplicated."),
+    check("dispatch",rehearsal?"Synthetic staging queue event":"Founder mission dispatch event",queue===1,
+      rehearsal?"One synthetic staging queue event was recorded. This was not founder dispatch.":"One queued event exists in D1.",
+      "Queue evidence is missing or duplicated."),
     check("running","Durable mission running event",start===1,
       "One running event exists in D1.","Running evidence is missing or duplicated."),
     check("inference_claim","At-most-one AI attempt claimed",attempted,
       "The job records a durable inference attempt claim.","A model attempt is not recorded."),
     check("result","Complete structured brief saved",goodBrief,
       "The unverified decision brief contains required fields.","No valid completed brief is stored."),
-    check("review_gate","Founder review gate recorded",(waiting || acknowledged) && review===1,
+    check("review_gate",rehearsal?"Staging review state recorded":"Founder review gate recorded",
+      (waiting || acknowledged) && review===1,
+      rehearsal?"The synthetic result was saved at a review-state checkpoint; founder review is not requested.":
       acknowledged?"The owner acknowledged the planning brief; facts remain unverified.":"The mission awaits founder review.",
       "A founder review state or acknowledgement was not confirmed.")
   ];
@@ -67,8 +71,11 @@ export function inspectMissionReceipt(job, events=[]) {
     job_id:job.job_id,status:job.status,agent_id:clean(job.agent_id,90),
     job_title:clean(job.title,160),last_updated_at:date(job.updated_at)?job.updated_at:null,
     evidence_status:job.status==="failed"?"recorded_failure":sufficient ?
+      rehearsal?"recorded_staging_rehearsal":
       acknowledged?"recorded_review_acknowledged":"recorded_review_ready":"incomplete_record",
-    checks,records_sufficient_for_owner_review:sufficient,
+    checks,is_staging_rehearsal:rehearsal,
+    staging_rehearsal_completed:rehearsal && sufficient,
+    records_sufficient_for_owner_review:sufficient && !rehearsal,
     provider_execution_attested:false,claims_independently_verified:false,
     release_authorized:false,production_deployed:false,
     provider_billing_verified:false,provider_usage:providerUsage,
@@ -83,7 +90,11 @@ export function inspectMissionReceipt(job, events=[]) {
     verification_checklist:goodBrief?list(output.verification_needed):[],
     event_window:{inspected:history.length,truncated:history.length===MAX_PROOF_EVENTS,
       expected_events_present:queue===1&&start===1&&review===1},
-    suggested_admin_action:job.status==="failed"?
+    suggested_admin_action:rehearsal?
+      (sufficient?
+        "The synthetic staging Workflow finished and saved a valid unverified brief. Inspect its evidence; no founder acknowledgement or release approval is needed. Run independent browser QA separately.":
+        "Investigate the synthetic staging Workflow and its missing records. This is not a founder-dispatched mission."):
+      job.status==="failed"?
       "Inspect the recorded failure and private Worker diagnostics; verify any fix in staging. A new paid mission needs a separate founder dispatch.":
       acknowledged?
         "This planning brief was acknowledged but never independently verified. Proceed to separate factual and regression QA; no release approval exists.":
