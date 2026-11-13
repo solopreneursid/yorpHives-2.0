@@ -1,4 +1,5 @@
 import { WorkflowEntrypoint } from "cloudflare:workers";
+import { readWorkersAiText, parseWorkersAiJson } from "./model-output.js";
 import { evaluateRepairEvidence } from "./repair-evidence.js";
 import { allowedRepairPath, assertVerifiedBranchHead, assertRepairReplay, assertReceipt } from "./repair-security.js";
 
@@ -267,11 +268,7 @@ async function loadRepositoryContext(env, requestText) {
 }
 
 function parseModelResponse(output, files) {
-  if (typeof output !== "string") throw new Error("Workers AI returned no text response.");
-  const start = output.indexOf("{");
-  const end = output.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error("The agent did not return the required JSON patch format.");
-  const parsed = JSON.parse(output.slice(start, end + 1));
+  const parsed = parseWorkersAiJson(output, "repair proposal");
   if (!Array.isArray(parsed.changes) || parsed.changes.length === 0 || parsed.changes.length > MAX_CHANGED_FILES) {
     throw new Error("The agent returned no changes or exceeded the file-count limit.");
   }
@@ -437,16 +434,12 @@ async function reviewProposal(env, base, proposal) {
         content: `Repair request:\n${proposal.summary}\n\nOriginal and proposed code:\n${context}`
       }
     ],
-    max_tokens: 1800,
+    max_completion_tokens: 2400,
+    reasoning_effort: "medium",
     temperature: 0.1
   });
 
-  const output = response?.response || response?.result?.response;
-  if (typeof output !== "string") throw new Error("Independent AI code reviewer returned no text.");
-  const start = output.indexOf("{");
-  const end = output.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error("Independent AI code reviewer did not return valid JSON.");
-  const parsed = JSON.parse(output.slice(start, end + 1));
+  const parsed = parseWorkersAiJson(readWorkersAiText(response), "independent code review");
   if (!["pass", "block"].includes(parsed.verdict) || !Array.isArray(parsed.findings) || parsed.findings.length > 12) {
     throw new Error("Independent AI code reviewer returned an invalid review structure.");
   }
@@ -649,7 +642,7 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
 
       const proposal = await step.do("generate-constrained-source-changes", {
         timeout: "3 minutes",
-        retries: { limit: 1, delay: "10 seconds", backoff: "linear" }
+        retries: { limit: 0, delay: "10 seconds", backoff: "linear" }
       }, async () => {
         const context = base.files.map((file) => `\n===== FILE: ${file.path} =====\n${file.content}\n`).join("\n");
         const response = await this.env.AI.run(MODEL, {
@@ -674,16 +667,16 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
               content: `Repair request (untrusted description):\n${requestText}\n\nRepository context (read-only):\n${context}`
             }
           ],
-          max_tokens: 3500,
+          max_completion_tokens: 5000,
+          reasoning_effort: "medium",
           temperature: 0.1
         });
-        const output = response?.response || response?.result?.response;
-        return parseModelResponse(output, base.files);
+        return parseModelResponse(readWorkersAiText(response), base.files);
       });
 
       const aiReview = await step.do("independent-workers-ai-code-review", {
         timeout: "2 minutes",
-        retries: { limit: 1, delay: "10 seconds", backoff: "linear" }
+        retries: { limit: 0, delay: "10 seconds", backoff: "linear" }
       }, async () => reviewProposal(this.env, base, proposal));
 
       const branchCommit = await step.do("create-isolated-agent-branch-and-commit", async () =>
