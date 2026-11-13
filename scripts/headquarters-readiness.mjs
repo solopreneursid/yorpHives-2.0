@@ -30,6 +30,7 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   "admin/owner-action-center.js",
   "admin/owner-action-center.css",
   "hq-engine/brief-output.js",
+  "hq-engine/usage-receipt.js",
   "functions/_lib/mission-proof.js",
   "functions/api/admin/mission-proof.ts",
   "admin/mission-proof.js",
