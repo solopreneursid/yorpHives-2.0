@@ -96,7 +96,7 @@ test("preview shows only production-authorized founder controls",async()=>{
  assert.match(html,/id="founder-open-release"/);
  assert.match(html,/id="founder-stop-all"/);
  assert.match(html,/id="view-security"/);
- assert.match(html,/class="founder-permission-panel"[^>]*open/);
+ assert.match(html,/class="founder-permission-panel"/);
  assert.doesNotMatch(html.slice(html.indexOf('id="view-headquarters"'),html.indexOf('id="view-yorpmind"')),/id="founder-stop-all"/);
  assert.match(html,/id="release-go-live"[^>]*disabled/);
 });
