@@ -72,6 +72,8 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   "functions/api/admin/website-proof.ts",
   "scripts/website-public-evidence.mjs",
   "scripts/website-preview-contrast.mjs",
+  "scripts/staging-preview-check.mjs",
+  "scripts/verify-existing-admin-preview.mjs",
   ".github/workflows/website-public-evidence.yml",
   "docs/HEADQUARTERS-PHASE-17-LIVE-WEBSITE-PROOF.md",
   "admin/website-proof.js",
