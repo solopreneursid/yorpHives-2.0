@@ -94,6 +94,45 @@ async function run() {
       }
     }
 
+    // Human-first owner hierarchy and bounded temporary rights are visible
+    // independently of whether the optional security approval is configured.
+    const ownerHome = await page.evaluate(() => ({
+      heading: document.querySelector("#founder-welcome")?.textContent || "",
+      owner: document.querySelector(".founder-you")?.textContent || "",
+      assistants: [...document.querySelectorAll(".founder-assistant strong")].map(x=>x.textContent||""),
+      connected: typeof window.HQChooseAssistant==="function",
+      durationChoices: [...(document.querySelector("#founder-duration")?.options||[])].map(x=>x.value),
+      hasConfirm: document.querySelector("#founder-understand")?.required===true
+    }));
+    record("owner_above_two_equal_assistants",
+      ownerHome.owner.includes("Owner") && ownerHome.assistants.length===2 &&
+      ownerHome.assistants.some(x=>x.includes("YorpMind")) &&
+      ownerHome.assistants.some(x=>x.includes("ChatGPT")),
+      "The founder sits above YorpMind and ChatGPT; workers are below them");
+    record("human_assistant_choice_and_short_permission",
+      ownerHome.connected && ownerHome.hasConfirm &&
+      JSON.stringify(ownerHome.durationChoices)===JSON.stringify(["15","30","60"]),
+      "Handoff choices are explicit; temporary permissions never run longer than one hour");
+    const permReply = await page.request.get(baseUrl+"/api/admin/assistant-permissions",{
+      headers: accessHeaders,timeout:20000
+    });
+    const permBody=await permReply.json().catch(()=>null);
+    record("temporary_permissions_fail_closed_or_are_read_only",
+      permReply.status()===503 && permBody?.error?.code==="PERMISSIONS_NOT_READY" ||
+      permReply.status()===200 && permBody?.owner_is_in_charge===true &&
+      permBody?.production_execution_enabled===false,
+      "Missing private migration blocks access; when installed, production remains locked");
+    const fakeAgent = await page.request.post(baseUrl+"/api/admin/assistant-actions",{
+      headers: {...accessHeaders,"content-type":"application/json"},
+      data:{request_id:crypto.randomUUID(),action:"create_issue",scope:"website",
+        title:"Synthetic request that must be blocked",
+        details:"This is a browser-only security test and must never create an issue.",confirm:true},
+      timeout:20000
+    });
+    record("browser_or_ci_cannot_impersonate_assistant",
+      fakeAgent.status()===403,
+      "Ordinary founder and CI sessions cannot use temporary AI permissions");
+
     record("founder_action_panel_present", await page.locator("#owner-action-title").count() === 1,
       "Founder decisions are visible on the first Headquarters screen");
     const actionUi = await page.evaluate(async () => {
