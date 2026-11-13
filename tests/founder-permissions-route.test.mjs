@@ -190,7 +190,7 @@ test("Founder Control exposes stop-all but clearly keeps collective OTP and appl
   assert.match(html,/id="founder-open-release"/);
   assert.match(html,/class="founder-permission-panel"[^>]*hidden/);
   assert.match(html,/value="both" disabled/);
-  assert.match(html,/Only verified production publishing needs your one-time code/);
+  assert.match(html,/only you approve production/);
   assert.match(js,/action:"revoke_all"/);
   assert.match(js,/assistantNames/);
 });
