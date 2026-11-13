@@ -87,5 +87,6 @@ test("responsive layout never requires permanently visible technical sidebars",(
   // Data is still in-place and the scheduled worker/security boundaries have
   // not been changed by the purely presentational route.
   assert.match(html,/id="repair-form"/);
-  assert.match(html,/id="founder-permission-form"/);
+  assert.match(html,/id="founder-permission-list"/);
+  assert.doesNotMatch(html,/id="founder-permission-form"/);
 });
