@@ -55,6 +55,78 @@ async function run() {
     record("admin_shell_rendered", await page.locator(".app-shell").count() === 1, "Admin application shell exists");
     record("admin_heading_rendered", await page.locator("#view-headquarters h1").textContent().then(value => Boolean(value?.trim())), "Headquarters heading is present");
 
+    // Layout review for the screenshot-reported issues. This check changes
+    // browser presentation only: no tasks, approvals or paid work are launched.
+    const compactStart = await page.evaluate(() => ({
+      styleLoaded: [...document.styleSheets].some(sheet =>
+        String(sheet.href||"").includes("headquarters-refined.css")),
+      navigationGroups: document.querySelectorAll("#sidebar details.sidebar-group").length,
+      ownerTitle: document.querySelector("#founder-welcome")?.textContent?.trim(),
+      mainWidth: Math.round(document.querySelector(".main-area")?.getBoundingClientRect().width||0),
+      viewport: innerWidth
+    }));
+    record("compact_styling_and_organized_sidebar",
+      compactStart.styleLoaded && compactStart.navigationGroups===2 &&
+      compactStart.ownerTitle?.includes("Headquarters") &&
+      compactStart.mainWidth>0 && compactStart.mainWidth<=compactStart.viewport,
+      "Unified styling, two optional navigation groups and a founder-first home");
+
+    // Reproduce the original screenshot's retained scroll position:
+    // switching from a very long view must open the new page at its top.
+    await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
+    await page.locator("#nav-group-explore > summary").click();
+    await page.locator('.nav-item[data-view="intelligence"]').click();
+    await page.locator("#view-intelligence").waitFor({state:"visible",timeout:10000});
+    const researchLayout = await page.evaluate(() => ({
+      top: window.scrollY,
+      explored: document.querySelector("#nav-group-explore")?.open===true,
+      ideasOverflow: getComputedStyle(document.querySelector("#intel-ideas")).overflowY,
+      sidebarOverflow: getComputedStyle(document.querySelector(".intel-sidebar")).overflowY,
+      breadcrumb: document.querySelector("#breadcrumb")?.textContent||""
+    }));
+    record("research_page_scroll_reset_and_balanced_columns",
+      researchLayout.top===0 && researchLayout.explored &&
+      researchLayout.ideasOverflow==="auto" &&
+      researchLayout.sidebarOverflow==="auto" &&
+      researchLayout.breadcrumb.includes("Global Intelligence"),
+      "Switching pages resets scroll; independent idea and research panels remain readable");
+
+    await page.locator('.nav-item[data-view="issues"]').click();
+    await page.locator("#view-issues").waitFor({state:"visible",timeout:10000});
+    const problemsLayout = await page.evaluate(() => {
+      const viewport=document.querySelector("#view-issues .hq-issue-workspace .table-wrap");
+      const style=viewport?getComputedStyle(viewport):null;
+      return {top:window.scrollY,
+        region:viewport?.getAttribute("role"),
+        scroll:style?.overflowY,
+        capped:Number.parseFloat(style?.maxHeight||"0")<=600,
+        suggestionsClosed:document.querySelector("#hq-ideas-fold")?.open===false,
+        issuesLabel:document.querySelector("#hq-findings-count")!==null};
+    });
+    record("problems_scroll_inside_panel_with_suggestions_collapsed",
+      problemsLayout.top===0 && problemsLayout.region==="region" &&
+      problemsLayout.scroll==="auto" && problemsLayout.capped &&
+      problemsLayout.suggestionsClosed && problemsLayout.issuesLabel,
+      "The problem list scrolls within a capped panel; improvement suggestions start closed");
+
+    await page.locator('.nav-item[data-view="headquarters"]').click();
+    await page.locator("#view-headquarters").waitFor({state:"visible",timeout:10000});
+    await page.setViewportSize({width:390,height:844});
+    const smallScreen = await page.evaluate(() => ({
+      width:innerWidth,
+      contentWidth:document.documentElement.scrollWidth,
+      sidebarHidden:getComputedStyle(document.querySelector(".sidebar")).transform!=="none",
+      introWidth:document.querySelector(".founder-command")?.getBoundingClientRect().width||0,
+      listWidth:document.querySelector(".owner-console")?.getBoundingClientRect().width||0
+    }));
+    record("mobile_layout_fits_without_horizontal_page_scroll",
+      smallScreen.contentWidth<=smallScreen.width+2 &&
+      smallScreen.sidebarHidden &&
+      smallScreen.introWidth>0 && smallScreen.introWidth<=smallScreen.width &&
+      smallScreen.listWidth>0 && smallScreen.listWidth<=smallScreen.width,
+      "Narrow screen keeps navigation tucked away and cards within the viewport");
+    await page.setViewportSize({width:1440,height:1000});
+
     await page.waitForFunction(() => {
       const identity = document.querySelector("#identity")?.textContent?.trim() || "";
       return identity.length > 0 && !identity.includes("Verifying");

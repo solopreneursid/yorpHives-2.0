@@ -92,8 +92,22 @@ function showView(name) {
   state.view = name;
   history.replaceState(null, "", "#" + name);
   document.querySelectorAll(".view").forEach(item => item.classList.toggle("active", item === view));
-  document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === name));
+  document.querySelectorAll(".nav-item").forEach(item => {
+    const active = item.dataset.view === name;
+    item.classList.toggle("active", active);
+    if (active) {
+      item.setAttribute("aria-current", "page");
+      const group = item.closest(".sidebar-group");
+      if (group) group.open = true;
+    } else {
+      item.removeAttribute("aria-current");
+    }
+  });
   setText("breadcrumb", view.dataset.title || name);
+  // The previous page may have been scrolled several screens down.
+  // A new page must always open at its beginning, not on a blank old offset.
+  window.scrollTo(0, 0);
+  if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
   $("sidebar").classList.remove("open");
   $("mobile-scrim").classList.remove("show");
   $("mobile-menu").setAttribute("aria-expanded", "false");
@@ -320,9 +334,31 @@ async function loadIssues() {
 }
 function renderFindings() {
   const target=$("findings-list");
+  const count = $("hq-findings-count");
+  if (count) count.textContent = "· " + (state.findings?.length || 0) + " shown";
   renderTable(target,state.findings,[
     (tr,item)=>{const td=cell(tr,"");td.append(badge(item.severity));},
-    (tr,item)=>cell(tr,item.title+" — "+item.details),
+    (tr,item)=>{
+      const td = document.createElement("td");
+      const friendly = document.createElement("strong");
+      const original = document.createElement("span");
+      friendly.className = "hq-issue-title";
+      original.className = "hq-issue-detail";
+      const heading = String(item.title || "Problem");
+      const description = String(item.details || "");
+      const lower = (heading + " " + description).toLowerCase();
+      friendly.textContent = lower.includes("strict-transport-security") || lower.includes("hsts")
+        ? "Extra HTTPS protection needs checking"
+        : lower.includes("clickjacking") || lower.includes("frame-ancestors")
+        ? "Protection against unwanted page embedding needs checking"
+        : lower.includes("canonical")
+        ? "Preferred page link needs checking"
+        : heading;
+      original.textContent = heading + (description ? " — " + description : "");
+      td.title = original.textContent;
+      td.append(friendly, original);
+      tr.append(td);
+    },
     (tr,item)=>cell(tr,item.environment || item.monitor_name || "—"),
     (tr,item)=>{const td=cell(tr,"");td.append(badge(item.status));},
     (tr,item)=>cell(tr,date(item.last_verified)),
@@ -331,7 +367,7 @@ function renderFindings() {
       const button=document.createElement("button");button.className="button";
       const closed=["accepted_risk","fixed","verified"].includes(item.status);
       const next=closed?"open":item.status==="investigating"?"accepted_risk":"investigating";
-      button.textContent=closed?"Reopen":next==="accepted_risk"?"Accept risk":"Investigate";
+      button.textContent=closed?"Reopen":next==="accepted_risk"?"Accept risk":"Mark investigating";
       button.addEventListener("click",async()=>{
         if(next==="accepted_risk"&&!confirm("Record this finding as an accepted risk? The decision will be audited."))return;
         button.disabled=true;
@@ -341,7 +377,7 @@ function renderFindings() {
       const inspect=document.createElement("button");
       inspect.type="button";
       inspect.className="button";
-      inspect.textContent="View case";
+      inspect.textContent="View details";
       inspect.setAttribute("aria-label","View incident evidence for "+item.title);
       inspect.addEventListener("click",()=>{
         if(!window.HQIncidentWorkspace){showSystemMessage("The incident workspace is unavailable. Refresh Headquarters.",{kind:"error"});return;}
@@ -595,6 +631,7 @@ setInterval(()=>{
   }
 },60000);
 window.addEventListener("DOMContentLoaded", () => {
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
   const requested = location.hash.slice(1);
   showView(document.getElementById("view-" + requested) ? requested : "headquarters");
   api("/api/admin/overview").then(data => { setText("identity", data.identity); setText("sidebar-identity", data.identity); }).catch(() => {});

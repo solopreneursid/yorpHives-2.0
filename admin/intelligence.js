@@ -57,10 +57,10 @@
    button.type="button";
    button.addEventListener("click",()=>{
      const text={
-       shortlist:"Shortlist this unvalidated idea for further review?",
-       dismiss:"Dismiss this hypothesis? Its source references will remain in the research ledger.",
-       reopen:"Reopen this dismissed idea?",
-       create_mission:"Create a PLANNED validation mission with source links? No AI execution, code deployment or spending will start."
+       shortlist:"Save this idea so you can review it later? This does not start work.",
+       dismiss:"Put this idea aside? You can still find it in the history.",
+       reopen:"Bring this idea back for another look?",
+       create_mission:"Create a planned task to test this idea? This does not start AI work, spend money or publish anything."
      }[action];
      if(confirm(text))mutate(idea,action,button);
    });
@@ -71,23 +71,23 @@
    const over=node("div","intel-card-top");
    const markers=node("div","intel-card-labels");
    markers.append(node("span","intel-kind",types[idea.kind]||idea.kind),
-     node("span","intel-idea-state intel-state-"+idea.status,idea.status.replaceAll("_"," ").toUpperCase()));
-   over.append(markers,node("span","intel-score",idea.priority_score+" / 100 · REVIEW PRIORITY"));
+     node("span","intel-idea-state intel-state-"+idea.status,({proposed:"NEW",shortlisted:"SAVED",promoted:"PLANNED",dismissed:"NOT NOW"}[idea.status]||idea.status.replaceAll("_"," ").toUpperCase())));
+   over.append(markers,node("span","intel-score","REVIEW SCORE "+idea.priority_score+"/100 · NOT DEMAND"));
    article.append(over,node("h3","",idea.title));
    article.append(node("p","intel-audience","FOR "+idea.audience));
    article.append(node("p","intel-solution",idea.solution));
    const note=node("div","intel-hypothesis");
-   note.append(node("strong","","HYPOTHESIS · NOT VERIFIED DEMAND"),
+   note.append(node("strong","","EARLY IDEA · NOT YET TESTED"),
      node("span","",idea.problem));
    article.append(note);
    const detail=node("details","intel-detail");
-   detail.append(node("summary","","Explore MVP, business case & evidence"));
+   detail.append(node("summary","","See the idea, test plan and evidence"));
    const body=node("div","intel-detail-body");
-   body.append(pairs("WHY NOW — HYPOTHESIS",idea.why_now),
-     pairs("FIRST VERSION / MVP",idea.mvp),
+   body.append(pairs("WHY THIS MIGHT MATTER",idea.why_now),
+     pairs("WHAT THE FIRST VERSION COULD DO",idea.mvp),
      pairs("HOW IT COULD BE DIFFERENT",idea.differentiation),
      pairs("HOW TO TEST REAL DEMAND",idea.validation_plan),
-     pairs("POSSIBLE MONETIZATION — UNVERIFIED",idea.monetization_hypothesis),
+     pairs("HOW IT MIGHT EARN MONEY — NOT VERIFIED",idea.monetization_hypothesis),
      pairs("POSSIBLE DISTRIBUTION",idea.distribution_hypothesis),
      pairs("MAIN RISKS",idea.risks));
    const proof=node("div","intel-evidence");
@@ -102,10 +102,10 @@
    const footer=node("div","intel-card-footer");
    footer.append(node("span","intel-date","DISCOVERED "+date(idea.created_at)));
    const buttons=node("div","intel-actions");
-   if(idea.status==="proposed")buttons.append(actionButton(idea,"shortlist","Shortlist"));
+   if(idea.status==="proposed")buttons.append(actionButton(idea,"shortlist","Save idea"));
    if(["proposed","shortlisted"].includes(idea.status)){
-     buttons.append(actionButton(idea,"create_mission","Create validation mission ↗",true));
-     buttons.append(actionButton(idea,"dismiss","Dismiss"));
+     buttons.append(actionButton(idea,"create_mission","Plan a small test ↗",true));
+     buttons.append(actionButton(idea,"dismiss","Not for now"));
    }else if(idea.status==="dismissed")buttons.append(actionButton(idea,"reopen","Reopen"));
    else if(idea.status==="promoted"){
      const jump=node("button","intel-action-secondary","Open mission control ↗");
@@ -138,7 +138,7 @@
    label("intel-ask",state.source_totals.hn_ask||0);
    label("intel-show",state.source_totals.hn_show||0);
    label("intel-github",state.source_totals.github_repo||0);
-   label("intel-status-text",state.ideas.length+" hypotheses stored · "+visible.length+" visible · all require independent validation");
+   label("intel-status-text",state.ideas.length+" early ideas saved · "+visible.length+" shown · real-world checking is still needed");
    label("intel-engine",state.engine_available?
      "● Private engine ready · Maximum 2 manual scans/day · 1 model call per scan":
      "○ Private research engine not connected or unavailable · Read-only idea history remains accessible");

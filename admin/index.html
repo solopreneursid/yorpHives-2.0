@@ -22,35 +22,41 @@
 <link rel="stylesheet" href="/admin/yorpmind-team.css">
 <link rel="stylesheet" href="/admin/yorpmind-mission-planning.css">
 <link rel="stylesheet" href="/admin/business-intelligence.css">
+<link rel="stylesheet" href="/admin/headquarters-refined.css">
 </head>
 <body>
 <div class="app-shell">
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="/admin/" aria-label="YorpHives Admin home"><span class="brand-mark">Y</span><span><strong>yorphives</strong><small>HEADQUARTERS</small></span></a>
-  <div class="workspace-label">WORKSPACE</div>
-  <nav class="side-nav" aria-label="Admin workspaces">
-    <button class="nav-item active" data-view="headquarters"><span class="nav-icon">◇</span>My Home</button>
-    <button class="nav-item" data-view="yorpmind"><span class="nav-icon">✺</span>YorpMind</button>
-    <button class="nav-item" data-view="intelligence"><span class="nav-icon">✦</span>Ideas &amp; Intelligence</button>
-    <button class="nav-item" data-view="demand"><span class="nav-icon">◉</span>Market Explorer</button>
-    <button class="nav-item" data-view="business"><span class="nav-icon">▤</span>Business Intelligence</button>
-    <button class="nav-item" data-view="radar"><span class="nav-icon">◈</span>Opportunity Radar</button>
-    <button class="nav-item" data-view="departments"><span class="nav-icon">▦</span>Departments</button>
-    <button class="nav-item" data-view="overview"><span class="nav-icon">◫</span>Overview</button>
-    <button class="nav-item" data-view="monitoring"><span class="nav-icon">⌁</span>Monitoring</button>
-    <button class="nav-item" data-view="analytics"><span class="nav-icon">▥</span>Analytics</button>
+  <div class="workspace-label">YOUR SPACE</div>
+  <nav class="side-nav" aria-label="Everyday Headquarters">
+    <button class="nav-item active" data-view="headquarters"><span class="nav-icon" aria-hidden="true">⌂</span>My Home</button>
+    <button class="nav-item" data-view="yorpmind"><span class="nav-icon" aria-hidden="true">✺</span>YorpMind</button>
+    <button class="nav-item" data-view="issues"><span class="nav-icon" aria-hidden="true">⚑</span>Problems to fix<span class="nav-count" id="nav-issues">—</span></button>
+    <button class="nav-item" data-view="agents"><span class="nav-icon" aria-hidden="true">✳</span>Fix problems</button>
   </nav>
-  <div class="workspace-label">OPERATIONS</div>
-  <nav class="side-nav" aria-label="Operations">
-    <button class="nav-item" data-view="issues"><span class="nav-icon">⚑</span>Issues &amp; risks<span class="nav-count" id="nav-issues">—</span></button>
-    <button class="nav-item" data-view="agents"><span class="nav-icon">✳</span>Fix problems</button>
-    <button class="nav-item" data-view="updates"><span class="nav-icon">↻</span>Updates &amp; maintenance<span class="nav-count" id="nav-updates">—</span></button>
-    <button class="nav-item" data-view="releases"><span class="nav-icon">⇧</span>Releases</button>
-  </nav>
-  <div class="workspace-label">HISTORY</div>
-  <nav class="side-nav" aria-label="History">
-    <button class="nav-item" data-view="activity"><span class="nav-icon">◷</span>Activity &amp; audit</button>
-  </nav>
+  <div class="workspace-label">MORE TO EXPLORE</div>
+  <details class="sidebar-group" id="nav-group-explore">
+    <summary>Ideas &amp; opportunities</summary>
+    <nav class="side-nav" aria-label="Ideas and opportunities">
+      <button class="nav-item" data-view="intelligence"><span class="nav-icon" aria-hidden="true">✦</span>New ideas</button>
+      <button class="nav-item" data-view="demand"><span class="nav-icon" aria-hidden="true">◉</span>Explore markets</button>
+      <button class="nav-item" data-view="business"><span class="nav-icon" aria-hidden="true">▤</span>Business opportunities</button>
+      <button class="nav-item" data-view="radar"><span class="nav-icon" aria-hidden="true">◈</span>Opportunity radar</button>
+    </nav>
+  </details>
+  <details class="sidebar-group" id="nav-group-tools">
+    <summary>Tools &amp; records</summary>
+    <nav class="side-nav" aria-label="Additional Headquarters tools">
+      <button class="nav-item" data-view="departments"><span class="nav-icon" aria-hidden="true">▦</span>AI team</button>
+      <button class="nav-item" data-view="overview"><span class="nav-icon" aria-hidden="true">◫</span>Website overview</button>
+      <button class="nav-item" data-view="monitoring"><span class="nav-icon" aria-hidden="true">⌁</span>Checks &amp; monitoring</button>
+      <button class="nav-item" data-view="analytics"><span class="nav-icon" aria-hidden="true">▥</span>Visitor numbers</button>
+      <button class="nav-item" data-view="updates"><span class="nav-icon" aria-hidden="true">↻</span>Updates<span class="nav-count" id="nav-updates">—</span></button>
+      <button class="nav-item" data-view="releases"><span class="nav-icon" aria-hidden="true">⇧</span>Publishing</button>
+      <button class="nav-item" data-view="activity"><span class="nav-icon" aria-hidden="true">◷</span>Past activity</button>
+    </nav>
+  </details>
   <div class="sidebar-bottom">
     <section class="account-card" aria-label="Administrator account">
       <div class="account-heading"><span class="avatar" aria-hidden="true">A</span><div><strong>Administrator account</strong><small id="sidebar-identity">Verifying Cloudflare Access…</small></div></div>
@@ -477,9 +483,9 @@
     <section class="view" id="view-demand" data-title="Market Explorer">
       <div class="demand-hero">
         <div>
-          <span class="intel-overline">OPEN-ENDED OPPORTUNITY INTELLIGENCE</span>
+          <span class="intel-overline">FIND WHAT PEOPLE NEED</span>
           <h1>Explore <em>any market.</em></h1>
-          <p>YorpHives follows real problems and useful opportunities—not a predefined list of industries, product types or technologies. Discover existing tools worth improving, emerging directions worth researching, and source signals that do not fit any current category.</p>
+          <p>Explore problems people talk about, products already being used and ideas that may be worth testing. We keep possible opportunities separate from proof that customers will pay for them.</p>
           <div class="demand-hero-actions">
             <button type="button" class="hq-button hq-button-primary" id="demand-refresh">↻ Index stored research</button>
             <a class="hq-button hq-button-secondary" href="/api/admin/demand?format=markdown" target="_blank" rel="noopener noreferrer">Markdown for agents ↗</a>
@@ -487,16 +493,16 @@
           <small id="demand-refresh-note" class="demand-subnote">No external search or AI call occurs during indexing.</small>
         </div>
         <aside class="demand-hero-note">
-          <span class="intel-overline">DISCOVERY POLICY</span>
-          <strong>Categories are examples, not limits.</strong>
-          <p>Established tool types provide a useful starting point. A new field can enter directly from a source-backed hypothesis; unfamiliar source material is retained for investigation.</p>
-          <span>PUBLIC SOURCES ≠ VERIFIED MARKET DEMAND</span>
+          <span class="intel-overline">HOW WE FIND IDEAS</span>
+          <strong>We can look beyond familiar products.</strong>
+          <p>Examples help us start, but your next product does not need to fit any existing category. Each idea still needs real checking.</p>
+          <span>ONLINE DISCUSSIONS ARE NOT PROOF OF SALES</span>
         </aside>
       </div>
       <div class="demand-metrics" aria-label="Opportunity intelligence summary">
         <article><span>REFERENCE CATEGORIES</span><strong id="demand-reference-count">—</strong><small>Not an allowed list</small></article>
-        <article><span>OPEN-ENDED DISCOVERIES</span><strong id="demand-dynamic-count">—</strong><small>Not restricted to predefined sectors</small></article>
-        <article><span>UNCLASSIFIED SIGNALS</span><strong id="demand-unclassified-count">—</strong><small>Public signals retained for review</small></article>
+        <article><span>NEW IDEAS</span><strong id="demand-dynamic-count">—</strong><small>Not limited to familiar product types</small></article>
+        <article><span>MORE TO EXPLORE</span><strong id="demand-unclassified-count">—</strong><small>Examples waiting for classification</small></article>
         <article><span>LISTED FREE TOOLS</span><strong id="demand-inventory-count">—</strong><small>Catalogue inventory, not verified usage</small></article>
       </div>
       <section class="hq-traffic-panel" aria-label="First-party Free Tools traffic evidence">
@@ -620,9 +626,9 @@
     <section class="view" id="view-intelligence" data-title="Global Intelligence">
       <div class="intel-hero">
         <div class="intel-intro">
-          <span class="intel-overline"><i aria-hidden="true"></i> RESEARCH & INNOVATION // YORPHIVES</span>
+          <span class="intel-overline"><i aria-hidden="true"></i> YOUR NEXT PRODUCT IDEAS</span>
           <h1>Find what’s <span>worth building.</span></h1>
-          <p>Signals from public developer communities become source-linked hypotheses for tools, apps, plugins, agent-native services, and new YorpHives directions. We measure what we can verify—not imagined demand.</p>
+          <p>See promising problems people discuss online and possible products YorpHives could build. Each idea links to its sources; none is treated as proven customer demand until we check it.</p>
           <div class="intel-hero-actions">
             <button class="hq-button hq-button-primary" type="button" id="intel-scan">✦ Run discovery scan</button>
             <a class="hq-button hq-button-secondary" href="/api/admin/intelligence?format=markdown" target="_blank" rel="noopener noreferrer">Machine-readable ideas ↗</a>
@@ -630,8 +636,8 @@
           <div class="intel-mini-note" id="intel-engine" role="status" aria-live="polite">Checking private research engine…</div>
         </div>
         <div class="intel-aside">
-          <span class="intel-overline">RESEARCH PRINCIPLES</span>
-          <h2>Evidence before excitement.</h2>
+          <span class="intel-overline">HOW TO JUDGE AN IDEA</span>
+          <h2>Check the facts before building.</h2>
           <div class="intel-rule"><b>01</b><div><strong>Observe</strong><span>Public Ask HN, Show HN and open-source projects</span></div></div>
           <div class="intel-rule"><b>02</b><div><strong>Hypothesize</strong><span>One bounded AI synthesis per scan; ideas must cite collected signals</span></div></div>
           <div class="intel-rule"><b>03</b><div><strong>Validate</strong><span>Test demand, technical feasibility, and willingness to pay before building</span></div></div>
@@ -639,16 +645,16 @@
         </div>
       </div>
       <div class="intel-stats" aria-label="Global Intelligence metrics">
-        <article><span>PRODUCT HYPOTHESES</span><strong id="intel-total">—</strong><small>Proposals, not verified products</small></article>
-        <article><span>SHORTLISTED</span><strong id="intel-shortlisted">—</strong><small>Prioritized for founder review</small></article>
+        <article><span>EARLY IDEAS</span><strong id="intel-total">—</strong><small>Suggestions, not proven demand</small></article>
+        <article><span>SAVED IDEAS</span><strong id="intel-shortlisted">—</strong><small>Keep for your next review</small></article>
         <article><span>PUBLIC SOURCES</span><strong id="intel-sources">—</strong><small>Linkable research observations</small></article>
         <article><span>RESEARCH RUNS</span><strong id="intel-runs">—</strong><small>Durable, bounded and auditable</small></article>
       </div>
       <div class="intel-grid">
         <section class="intel-primary">
           <div class="intel-section-head">
-            <div><span class="intel-overline">GROWTH BACKLOG</span><h2>Ideas &amp; directions</h2>
-              <p>Ranked by a heuristic for investigation—not market size or expected revenue.</p></div>
+            <div><span class="intel-overline">THINGS WORTH CONSIDERING</span><h2>Ideas you can explore</h2>
+              <p>Shown in a suggested review order, not by expected profit or customer numbers.</p></div>
             <div class="intel-filters">
               <label for="intel-status">Status</label>
               <select class="hq-input" id="intel-status">
@@ -799,8 +805,8 @@
       <p class="footnote">Traffic metrics are supplied by Cloudflare zone analytics. Geographic, device, referral and per-tool usage reports will appear only when their corresponding data sources are connected; this dashboard does not fabricate missing metrics.</p>
     </section>
 
-    <section class="view" id="view-issues" data-title="Issues & risks">
-      <div class="page-heading"><div><span class="eyebrow">TRIAGE &amp; RESOLUTION</span><h1>Issues &amp; risks</h1><p>Prioritize real findings, inspect evidence and track risk decisions.</p></div><div class="heading-actions"><button class="button" data-go="monitoring">Open monitoring ↗</button></div></div>
+    <section class="view" id="view-issues" data-title="Problems to fix">
+      <div class="page-heading"><div><span class="eyebrow">YOUR WEBSITE · PROBLEMS</span><h1>Problems to fix</h1><p>Check what matters most. Open a problem for the explanation and choose what to do next.</p></div><div class="heading-actions"><button class="button" data-go="monitoring">Open monitoring ↗</button></div></div>
       <div class="filter-row"><button class="filter-chip active" data-finding-filter="active">Active</button><button class="filter-chip" data-finding-filter="all">All history</button><button class="filter-chip" data-finding-filter="resolved">Resolved / accepted</button></div>
       <dialog class="incident-dialog" id="incident-dialog" aria-labelledby="incident-title" aria-describedby="incident-subtitle">
         <div class="incident-shell">
@@ -825,7 +831,10 @@
           </div>
           <footer class="incident-actions">
             <p>Starting an AI repair is a separate authenticated founder action. No changes are published automatically.</p>
-            <button class="button primary" type="button" id="incident-prepare">Prepare investigation ↗</button>
+            <div class="incident-choice-buttons" aria-label="Choose who helps with this problem">
+              <button class="button" type="button" id="incident-chatgpt">Work with ChatGPT</button>
+              <button class="button primary" type="button" id="incident-prepare">Prepare for YorpMind →</button>
+            </div>
           </footer>
         </div>
       </dialog>
@@ -876,8 +885,28 @@
           </form>
         </div>
       </dialog>
-      <section class="panel"><div class="table-wrap"><table><thead><tr><th>Severity</th><th>Finding</th><th>Environment</th><th>Status</th><th>Last verified</th><th>Action</th></tr></thead><tbody id="findings-list"><tr><td colspan="6" class="empty-state">Loading findings…</td></tr></tbody></table></div></section>
-      <section class="panel"><div class="panel-head"><div><span class="eyebrow">RECOMMENDATIONS</span><h2>Improvement opportunities</h2><p>Recommendations are kept separate from confirmed failures.</p></div></div><div class="table-wrap"><table><thead><tr><th>Priority</th><th>Area</th><th>Observation</th><th>Evidence</th><th>Suggested action</th></tr></thead><tbody id="asset-findings-list"><tr><td colspan="5" class="empty-state">Loading recommendations…</td></tr></tbody></table></div></section>
+      <section class="panel hq-issue-workspace" aria-label="Reported problems">
+        <div class="hq-section-tools">
+          <div><span class="eyebrow">WHAT NEEDS ATTENTION</span>
+            <h2>Reported problems <span id="hq-findings-count" class="hq-fold-note" aria-live="polite"></span></h2></div>
+          <small class="hq-fold-note">Scroll this list to see more · Open a problem for its details</small>
+        </div>
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Scrollable reported problems">
+          <table><thead><tr><th>Importance</th><th>What's happening</th><th>Where</th><th>Progress</th><th>Last checked</th><th>What next</th></tr></thead>
+          <tbody id="findings-list"><tr><td colspan="6" class="empty-state">Loading problems…</td></tr></tbody></table>
+        </div>
+      </section>
+      <details class="hq-fold" id="hq-ideas-fold">
+        <summary><span>Suggestions to improve later <small class="hq-fold-note">· Separate from confirmed problems</small></span></summary>
+        <div class="hq-fold-body">
+          <section class="panel">
+            <div class="table-wrap" role="region" tabindex="0" aria-label="Scrollable improvement suggestions">
+              <table><thead><tr><th>Importance</th><th>Area</th><th>Observation</th><th>Checked</th><th>Suggested next step</th></tr></thead>
+              <tbody id="asset-findings-list"><tr><td colspan="5" class="empty-state">Loading suggestions…</td></tr></tbody></table>
+            </div>
+          </section>
+        </div>
+      </details>
     </section>
 
     <section class="view" id="view-agents" data-title="AI operations">
@@ -1007,5 +1036,6 @@
 <script src="/admin/next-actions.js" defer></script>
 <script src="/admin/tool-activity.js" defer></script>
 <script src="/admin/business-intelligence.js" defer></script>
+<script src="/admin/headquarters-refined.js" defer></script>
 </body>
 </html>
