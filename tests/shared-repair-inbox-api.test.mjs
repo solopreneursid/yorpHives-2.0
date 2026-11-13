@@ -104,29 +104,34 @@ test("authenticated private GET is read-only and negotiates Markdown",async()=>{
     assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n,0);
   }finally{globalThis.fetch=originalFetch;sqlite.close();}
 });
-test("owner may open an issue but never dispatch AI or authorize production",async()=>{
-  const {sqlite,DB}=storage();
-  globalThis.fetch=async()=>Response.json({keys:[jwk]});
-  try{
-    const out=await onRequestPost(context(DB,"POST"));
-    assert.equal(out.status,201);
-    const result=await out.json();
-    assert.equal(result.production_approved,false);
-    assert.equal(result.new_model_calls,0);
-    const recorded=sqlite.prepare("SELECT action,details_json FROM admin_audit_events").get();
-    assert.equal(recorded.action,"github_issue_created");
-    assert.equal(JSON.parse(recorded.details_json).automatic_agent_dispatch,false);
-  }finally{globalThis.fetch=originalFetch;sqlite.close();}
+test("owner cannot create GitHub issues through Headquarters; inbox remains read-only",async()=>{
+ const {sqlite,DB}=storage();
+ globalThis.fetch=async()=>Response.json({keys:[jwk]});
+ try{
+  const out=await onRequestPost(context(DB,"POST"));
+  assert.equal(out.status,405);
+  const result=await out.json();
+  assert.equal(result.error.code,"MONITOR_ONLY");
+  assert.equal(result.github_issue_created,false);
+  assert.equal(result.dispatch_performed,false);
+  assert.equal(result.production_approved,false);
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n,0);
+ }finally{globalThis.fetch=originalFetch;sqlite.close();}
 });
-test("unauthenticated, cross-origin or unconfirmed mutations fail closed",async()=>{
-  const {sqlite,DB}=storage();
-  globalThis.fetch=async()=>Response.json({keys:[jwk]});
-  try{
-    assert.equal((await onRequestGet(context(DB,"GET",{missingToken:true}))).status,401);
-    assert.equal((await onRequestPost(context(DB,"POST",{origin:"https://attacker.example"}))).status,403);
-    assert.equal((await onRequestPost(context(DB,"POST",{body:{
-      title:"A title",details:"Enough detail to describe a problem, perhaps.",scope:"website",confirm:false
-    }}))).status,400);
-    assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n,0);
-  }finally{globalThis.fetch=originalFetch;sqlite.close();}
+test("unknown identity and all issue-creation payloads fail closed",async()=>{
+ const {sqlite,DB}=storage();
+ globalThis.fetch=async()=>Response.json({keys:[jwk]});
+ try{
+  assert.equal((await onRequestGet(context(DB,"GET",{missingToken:true}))).status,401);
+  for(const extra of [
+   {origin:"https://attacker.example"},
+   {body:{title:"An issue",details:"Description of the issue",scope:"website",confirm:false}},
+   {}
+  ]){
+   const response=await onRequestPost(context(DB,"POST",extra));
+   assert.equal(response.status,405);
+   assert.equal((await response.json()).error.code,"MONITOR_ONLY");
+  }
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n,0);
+ }finally{globalThis.fetch=originalFetch;sqlite.close();}
 });
