@@ -110,3 +110,31 @@
 }
 #founder-otp-dialog input:focus-visible{outline:2px solid #67e8f9;outline-offset:2px}
 #founder-otp-dialog button:disabled{opacity:.55;cursor:progress}
+
+/* Security & access: emergency controls are separate from the founder's
+   everyday three-action dashboard. No permission issuer is present. */
+.security-access-panel{margin-bottom:16px}
+.security-access-panel .panel-head p{
+  max-width:790px;font-size:.84rem;line-height:1.65;color:#b3cadb
+}
+.security-access-actions{
+  display:flex;align-items:center;flex-wrap:wrap;gap:12px;
+  padding:4px 0 3px
+}
+.security-legacy-stop{
+  background:#4d2335;color:#ffe9ee;border:1px solid #bb647f;
+  border-radius:9px;padding:11px 15px;min-height:42px;
+  cursor:pointer;font:inherit;font-weight:750;font-size:.84rem
+}
+.security-legacy-stop:hover,.security-legacy-stop:focus-visible{
+  background:#742f49;border-color:#ff9aaf
+}
+.security-legacy-stop:focus-visible{outline:2px solid #67e8f9;outline-offset:3px}
+.security-legacy-stop:disabled{opacity:.65;cursor:progress}
+.security-access-explainer{
+  color:#a4bed1;font-size:.77rem;line-height:1.55;max-width:550px
+}
+#view-security>.founder-permission-panel{
+  margin:0 0 16px;background:#101e2d
+}
+#view-security>.owner-delegation-panel{margin-top:0}
