@@ -20,7 +20,7 @@ const route=await import(toURL(stripTypeScriptTypes(source)
 const second=await read("../functions/api/admin/step-up/owner-delegations.ts");
 const step=await import(toURL(stripTypeScriptTypes(second)
  .replace('"../../../_lib/admin-auth"',JSON.stringify(fakeAuth))));
-const db=()=>{const sqlite=new DatabaseSync(":memory:");
+const db=async()=>{const sqlite=new DatabaseSync(":memory:");
  sqlite.exec(await read("../migrations/0026_yorpmind_owner_delegation.sql"));
  return {sqlite,DB:{prepare:sql=>({first:async()=>sqlite.prepare(sql).get()||null,
   all:async()=>({results:sqlite.prepare(sql).all()}),bind:()=>{throw Error("Unexpected write binding");}})}};
