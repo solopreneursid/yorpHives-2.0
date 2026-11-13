@@ -1,125 +1,64 @@
 (() => {
   "use strict";
+  // Retired approvals: audit history ONLY. The sole publishing path is founder
+  // Preview -> Go Live -> OTP. No POST, step-up links or delegation controls.
   const $ = id => document.getElementById(id);
   const node = (tag, cls, value) => {
-    const element = document.createElement(tag);
-    if (cls) element.className = cls;
-    if (value !== undefined) element.textContent = String(value);
-    return element;
+    const item = document.createElement(tag);
+    if (cls) item.className = cls;
+    if (value !== undefined) item.textContent = String(value);
+    return item;
   };
-  const state = { busy: false, configurationReady: false };
-
-  async function api(path, init = {}) {
-    const response = await fetch(path, {
-      cache: "no-store", credentials: "same-origin",
-      ...init,
-      headers: {
-        accept: "application/json", ...(init.method ? { "content-type": "application/json" } : {}),
-        ...(init.headers || {})
-      }
-    });
-    if (response.redirected || response.status === 401 || response.status === 403) {
-      throw new Error("An authorized founder session is required.");
-    }
-    const value = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(value?.error?.message || "Release authorization service is unavailable.");
-    return value;
-  }
-
-  function renderHistory(data) {
-    state.configurationReady = data.step_up_configured === true;
+  const stamp = value => {
+    const d = new Date(value);
+    return Number.isFinite(d.getTime()) ? d.toLocaleString() : "Unknown";
+  };
+  function renderHistory(records) {
     const list = $("owner-delegation-list");
+    if (!list) return;
     list.replaceChildren();
-    if (!Array.isArray(data.delegations) || data.delegations.length === 0) {
-      list.append(node("p", "release-evidence-empty", "No scoped owner approvals yet. Verified previews and QA are required before requesting one."));
+    if (!records.length) {
+      list.append(node("p", "release-evidence-empty",
+        "No historical delegation records. New permissions and release delegations cannot be created."));
       return;
     }
-    for (const row of data.delegations) {
+    for (const row of records.slice(0, 20)) {
       const card = node("article", "owner-delegation-record");
       const head = node("div", "owner-delegation-record-header");
-      head.append(node("strong", "", "Repair " + row.repair_job_id.slice(0, 8) + " · " + row.commit_sha.slice(0, 12)),
-        node("span", "owner-delegation-state", row.state));
-      card.append(head);
-      card.append(node("p", "", "Review preview: " + row.preview_url));
-      card.append(node("small", "", "Requested " + new Date(row.requested_at).toLocaleString() +
-        " · Request expires " + new Date(row.request_expires_at).toLocaleString()));
-      if (row.state === "awaiting_mfa" &&
-          state.configurationReady && new Date(row.request_expires_at).getTime() > Date.now()) {
-        const link = node("a", "button primary", "Open secure Cloudflare MFA authorization ↗");
-        link.href = "/api/admin/step-up/owner-delegations?id=" + encodeURIComponent(row.delegation_id);
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        card.append(link);
-      } else if (row.state === "awaiting_mfa" && !state.configurationReady) {
-        card.append(node("p", "owner-delegation-warning",
-          "MFA authorization remains locked until a distinct Cloudflare Access MFA application is configured and verified."));
-      } else if (row.state === "authorized") {
-        card.append(node("p", "owner-delegation-warning",
-          "Owner authorization recorded. Production deployment still requires the separately audited executor."));
-      }
+      const job = typeof row.repair_job_id === "string" ? row.repair_job_id.slice(0, 8) : "unknown";
+      const sha = typeof row.commit_sha === "string" ? row.commit_sha.slice(0, 12) : "unknown";
+      head.append(node("strong", "", "Historical repair " + job + " · " + sha),
+        node("span", "owner-delegation-state", String(row.state || "unknown")));
+      card.append(head, node("p", "owner-delegation-warning",
+        "Archived for audit. This record does not authorize an AI agent or production release."),
+        node("small", "", "Recorded " + stamp(row.requested_at)));
       list.append(card);
     }
   }
-
   window.loadOwnerDelegations = async () => {
+    const list = $("owner-delegation-list");
+    if (!list) return;
     try {
-      const data = await api("/api/admin/owner-delegations");
-      if (data.name !== "YorpMind" || data.execution_enabled !== false ||
-          data.mechanism !== "preview_review_then_owner_mfa_then_scoped_delegation") {
-        throw new Error("The owner delegation policy could not be verified.");
-      }
-      renderHistory(data);
-    } catch (error) {
-      $("owner-delegation-list").replaceChildren(
-        node("p", "release-evidence-empty", error instanceof Error ? error.message : "Delegation records unavailable."));
-      state.configurationReady = false;
+      const response = await fetch("/api/admin/owner-delegations", {
+        credentials: "same-origin", cache: "no-store",
+        headers: {accept: "application/json"}
+      });
+      if (!response.ok || response.redirected) throw Error("Private history unavailable");
+      const data = await response.json();
+      if (data.name !== "YorpMind" || data.mechanism !== "retired_delegation_history" ||
+          data.execution_enabled !== false || data.can_create !== false ||
+          data.can_authorize !== false || data.production_deployed !== false ||
+          !Array.isArray(data.delegations))
+        throw Error("Retired delegation policy could not be verified");
+      renderHistory(data.delegations);
+    } catch {
+      list.replaceChildren(node("p", "release-evidence-empty",
+        "Archived history unavailable. Legacy approval and publishing remain disabled."));
     }
   };
-
-  async function submit(event) {
-    event.preventDefault();
-    if (state.busy || !$("owner-delegation-form").reportValidity()) return;
-    const form = $("owner-delegation-form");
-    const checks = [
-      "preview_inspected", "functional_tested", "mobile_tested",
-      "qa_reviewed", "security_reviewed", "rollback_reviewed"
-    ];
-    const checklist = Object.fromEntries(checks.map(key => [key,
-      form.querySelector('input[name="' + key + '"]').checked]));
-    const payload = {
-      action: "deploy_verified_release",
-      repair_job_id: $("owner-delegation-job").value.trim(),
-      commit_sha: $("owner-delegation-sha").value.trim(),
-      preview_url: $("owner-delegation-preview").value.trim(),
-      owner_note: $("owner-delegation-note").value.trim(),
-      checklist
-    };
-    state.busy = true;
-    $("owner-delegation-prepare").disabled = true;
-    $("owner-delegation-status").textContent = "Checking live GitHub revision, exact-commit CI and QA before recording owner preview review…";
-    try {
-      const data = await api("/api/admin/owner-delegations", {
-        method: "POST", body: JSON.stringify(payload)
-      });
-      if (data.status !== "awaiting_mfa" || data.execution_enabled !== false) {
-        throw new Error("Unexpected owner authorization response.");
-      }
-      $("owner-delegation-status").textContent =
-        "Request recorded for this exact commit. Next: open the separate Cloudflare MFA checkpoint, when configured. No production action occurred.";
-      await window.loadOwnerDelegations();
-    } catch (error) {
-      $("owner-delegation-status").textContent =
-        error instanceof Error ? error.message : "Request could not be prepared.";
-    } finally {
-      state.busy = false;
-      $("owner-delegation-prepare").disabled = false;
-    }
-  }
-
   function init() {
-    $("owner-delegation-form").addEventListener("submit", submit);
-    $("owner-delegation-refresh").addEventListener("click", () => window.loadOwnerDelegations());
+    $("owner-delegation-refresh")?.addEventListener("click", window.loadOwnerDelegations);
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, {once: true});
   else init();
 })();
