@@ -156,6 +156,9 @@
     $("founder-find-fixes")?.addEventListener("click",()=>{
       document.querySelector('.nav-item[data-view="issues"]')?.click();
     });
+    $("founder-open-preview")?.addEventListener("click",()=>{
+      document.querySelector('.nav-item[data-view="releases"]')?.click();
+    });
     $("founder-open-release")?.addEventListener("click",()=>{
       document.querySelector('.nav-item[data-view="releases"]')?.click();
     });
@@ -165,7 +168,7 @@
       showHandoff({title:"Help me investigate or improve YorpHives."},"chatgpt"));
     $("founder-yorpmind")?.addEventListener("click",()=>
       showHandoff({title:"Help me investigate or improve YorpHives."},"yorpmind"));
-    void reload();
+    // Security page loads archived grants only when the founder opens it.
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
   else init();
