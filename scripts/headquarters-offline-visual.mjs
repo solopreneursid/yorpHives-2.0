@@ -452,10 +452,10 @@ async function main() {
     await page.locator("#founder-handoff-close").click();
     await page.locator("#website-proof-yorpmind").click();
     check("website-proof:yorpmind-handoff-no-dispatch",
-      await page.locator("#view-agents").isVisible() &&
-      (await page.locator("#repair-request").inputValue()).includes("YorpHives website") &&
+      await page.locator("#view-yorpmind").isVisible() &&
+      (await page.locator("#repair-request").count()) === 0 &&
       blockedMutations.length===0,
-      "YorpMind handoff prepares a review request but never dispatches work.");
+      "YorpMind handoff opens monitoring insights, never an automated repair request.");
 
     await measure(page, 1440, 960, "intelligence");
     const ideas = await page.evaluate(() => ({
@@ -484,10 +484,10 @@ async function main() {
     await page.locator("#founder-handoff-close").click();
     await page.locator("#founder-yorpmind").click();
     check("handoff:yorpmind",
-      await page.locator("#view-agents").isVisible() &&
-      (await page.locator("#repair-request").inputValue())
-        .includes("Do not publish anything"),
-      "YorpMind handoff prepares a request for founder confirmation.");
+      await page.locator("#view-yorpmind").isVisible() &&
+      (await page.locator("#repair-request").count())===0 &&
+      blockedMutations.length===0,
+      "YorpMind shows observations; the founder owns any code fix.");
 
     await measure(page, 390, 844, "issues");
     await screenshot(page, "06-mobile-problems.png");
