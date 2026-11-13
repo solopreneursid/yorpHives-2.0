@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "../founder-mail/worker.mjs";
-import {otpEnabled,sendFounderMail} from "../functions/_lib/founder-email-otp.js";
+import {otpEnabled,sendFounderMail,founderEmailToken} from "../functions/_lib/founder-email-otp.js";
 
 const FROM="security@approvals.yorphives.com";
 const TO="owner@example.com";
@@ -54,4 +54,21 @@ test("OTP sends through private service binding only after receipt",async()=>{
   await assert.rejects(()=>sendFounderMail({
     ...config,FOUNDER_MAIL:{fetch:async()=>Response.json({accepted:false})}
   },valid));
+});
+
+test("single copy/paste whitespace prefix is recognized without revealing the secret",()=>{
+  const token="demo-a-32-character-or-longer-email-token-only";
+  const config={FOUNDER_OTP_ENABLED:"yes",FOUNDER_OTP_HMAC_KEY:"a".repeat(48),
+    FOUNDER_OWNER_EMAIL:TO,FOUNDER_OTP_FROM:FROM,
+    FOUNDER_CF_ACCOUNT_ID:"123456789abcdef0123456789abcdef0",
+    "\\tFOUNDER_EMAIL_API_TOKEN":token};
+  // JavaScript interprets the key above as a literal backslash+t; mimic the
+  // actual whitespace-prefixed key received from Cloudflare.
+  delete config["\\tFOUNDER_EMAIL_API_TOKEN"];
+  config["\tFOUNDER_EMAIL_API_TOKEN"]=token;
+  assert.equal(founderEmailToken(config),token);
+  assert.equal(otpEnabled(config,TO),true);
+  assert.equal(founderEmailToken({...config,FOUNDER_EMAIL_API_TOKEN:"canonical"}),"canonical");
+  assert.equal(founderEmailToken({...config," FOUNDER_EMAIL_API_TOKEN":"other"}),"");
+  assert.equal(founderEmailToken({}),"");
 });
