@@ -12,6 +12,7 @@ const refName = process.env.GITHUB_REF_NAME || "";
 // detects *new* risks introduced by the branch; the full stack must still
 // receive founder/security review before any production release.
 const STACKED_BASES = Object.freeze({
+ "build/headquarters-durable-staging-rehearsal":"build/headquarters-staging-mission-proof",
  "build/headquarters-staging-mission-proof":"build/headquarters-action-center-mission-reliability",
  "build/headquarters-action-center-mission-reliability":"build/headquarters-yorpmind-team-management",
  "build/headquarters-yorpmind-team-management":"build/headquarters-yorpmind-owner-delegation",
