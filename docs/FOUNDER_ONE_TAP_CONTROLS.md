@@ -9,12 +9,15 @@ The founder is the only permanent administrator. YorpMind and ChatGPT are peers.
 ## What is implemented in this draft
 
 - The founder home displays a compact action strip: Review proposed fixes, Grant temporary access, End all assistant access.
-- Temporary access form moves seldom-used scope, action and reason settings into Optional. It still calls the existing, limited, individual-only MFA permission API.
+- Temporary access form moves seldom-used scope, action and reason settings into Optional. When the email-verification backend reports ready, the form requests a six-digit code. If only the older separate security gate is configured, it still supports that legacy path.
 - Emergency `PATCH /api/admin/assistant-permissions` with `{"action":"revoke_all"}` is owner-session-gated, same-origin-checked, atomic in D1 and audited. It revokes **all current active and pending individual grants** in one request, returning a verified count. It does **not** require an email code, a second identity challenge, or a functioning mail sender.
-- A "Both together" option is visible but **disabled**, not a fake permission path. Existing per-grant stop buttons remain.
+- A "Both together" option stays **disabled until email delivery, the migrated D1 challenge table, and separately authenticated assistant connections are all configured**. When enabled, one correct code atomically grants both assistant identities without production release rights. Existing per-grant stop buttons remain.
+- Added `0029_founder_email_otp.sql`, `/api/admin/founder-otp`, a minimal one-time-code dialog, and a secure email transport adapter (restricted native `send_email` binding **or** Cloudflare Email Service REST).
+- Email code is HMAC-protected, action-bound, stored only as a digest, valid for five minutes, limited to five attempts and three requests per hour. Replays, resends and emergency cancellation are rejected server-side.
+- Emergency stop now also cancels in-flight and unspent email-code requests.
 - Production releases, model calls, GitHub merges and unrestricted admin permissions remain locked.
 
-**Not built yet:** email delivery, action-bound OTP issue/verification, collective single-OTP grant activation, secure two-way assistant communications, or applying a fix. No action can rely on the user-facing description of these future controls. No deployment or live agent-rights change occurs in this PR.
+**Not operational yet:** real email sending (sender, verified source domain, scoped API token or binding), D1 migration 0029 in the private preview, verified YorpMind/ChatGPT service identities and the private action service. Secure two-way assistant communications and exact-fix application are also pending. The email route and paired-grant path are coded but must fail closed until every dependency is verified. A private git-based Pages preview has been built; no existing Headquarters alias or public production website was changed.
 
 ## Target on-screen experience
 
@@ -34,7 +37,7 @@ The founder is the only permanent administrator. YorpMind and ChatGPT are peers.
 
 ## Collective assistant permissions
 
-- Model one owner-approved `permission_group` with immutable scope, expiry and action budget, linked to **two separately bound grants** (YorpMind identity and ChatGPT identity).
+- The initial backend models a single immutable email challenge for the selected assistants and creates **two separately bound grants** in one transaction. A dedicated long-lived group record and shared workstream are still to be added; no broad admin role is ever issued.
 - Verify the **same OTP** for the group. Activate both subordinate grants within one transaction. If either identity/connection is missing, do not grant partial shared access.
 - Maintain strict separately validated assistant service identities, audit every action, and enforce least-privilege operations at the server. There is no root admin credential handed to an LLM.
 - Shared discussion must run through authenticated tasks/messages, signed source IDs, and a durable log. Training updates are suggested from checked evidence; a model cannot mark its own fix as independently tested.
@@ -51,3 +54,18 @@ The founder is the only permanent administrator. YorpMind and ChatGPT are peers.
 **Fix application acceptance:** only pre-reviewed, signed/revision-pinned fixes, protected staging tests, visible diff and rollback, and separate verified production gate. No silent site deployment.
 
 No production release until authenticated staging browser QA, D1 backup/restore, permissions tests, real email delivery, identity integration, cumulative security review and founder acceptance all pass.
+
+## Private staging setup — exact requirements (not production)
+
+1. Backup the **preview D1** database, rehearse recovery, apply `migrations/0029_founder_email_otp.sql`, then verify its schema and migration ledger. Do not use the production database.
+2. Configure the owner-only preview environment settings:
+   - `FOUNDER_OTP_ENABLED=yes` (only after tests pass)
+   - `FOUNDER_OWNER_EMAIL` = the identity-provider-verified founder address
+   - `FOUNDER_OTP_FROM` = verified YorpHives email sender
+   - `FOUNDER_OTP_HMAC_KEY` = 32+ byte randomly generated secret (secret setting, never in Git)
+   - Email transport: an allowed `FOUNDER_MAIL` binding, **or** `FOUNDER_EMAIL_API_TOKEN` as a restricted Cloudflare Email Sending API token secret plus `FOUNDER_CF_ACCOUNT_ID`. No generic Cloudflare deployment token.
+3. Configure and verify a separate `CF_ACCESS_AGENT_AUD` and distinct `CF_ACCESS_YORPMIND_SERVICE_TOKEN_ID` / `CF_ACCESS_CHATGPT_SERVICE_TOKEN_ID`, and the private `ADMIN_AGENT_SERVICE` binding. Without this, no code can activate a grant.
+4. Verify the sender with a real inbox-based test requested by the owner, check no credentials or codes appear in logs, and run integration tests for both, single and revoked grants.
+5. Continue to require exact revision preview, independent browser tests, safe release authorization and recovery drills before any production activation.
+
+**Caution:** email-only verification is not independent MFA if the same mailbox is the login method. Founder identity and permissions still depend on the already signed-in Cloudflare Access session. Prefer passkeys or another authenticator for high-value production releases.
