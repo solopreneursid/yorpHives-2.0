@@ -1,6 +1,6 @@
 import { chromium, request } from "playwright";
 import {makePrivatePreviewAccessRouter,privatePreviewOrigin} from "./admin-smoke-network-policy.mjs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 
 const baseUrl = (process.env.ADMIN_BASE_URL || "").replace(/\/$/, "");
 const clientId = process.env.CF_ACCESS_CLIENT_ID || "";
@@ -1068,7 +1068,25 @@ async function run() {
     await browser.close();
   }
 
+  // Bind browser assertions to the deployment established by the read-only
+  // Cloudflare metadata and anonymous Access preflight in this same job.
+  // A hostname alone is not immutable release evidence.
+  const verified = JSON.parse(await readFile(
+    "artifacts/admin-preview-verification.json", "utf8"
+  ));
+  const previewUrl = new URL(verified.preview_url);
+  if (verified.verified_existing_deployment !== true ||
+      verified.access_boundary_verified !== true ||
+      verified.staging_project !== "yorphives-admin-staging" ||
+      previewUrl.origin !== parsedBase.origin ||
+      !/^[a-f0-9]{40}$/.test(verified.verified_commit_sha || "") ||
+      !/^[a-f0-9]{8}-[a-f0-9-]{27,}$/.test(verified.deployment_id || "") ||
+      verified.no_production_change !== true) {
+    throw new Error("Browser QA is not bound to verified exact deployment metadata.");
+  }
   const report = {
+    source_commit: verified.verified_commit_sha,
+    deployment_id: verified.deployment_id,
     generated_at: new Date().toISOString(),
     target_host: parsedBase.hostname,
     summary: {
