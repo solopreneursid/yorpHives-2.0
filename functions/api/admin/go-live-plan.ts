@@ -3,6 +3,7 @@ import {adminJson,isAdminResponse,requireAdmin,type AdminRequestContext}
 import {readLiveGoLiveReadiness} from "../../_lib/go-live-live.js";
 import {planHeadquartersFastForward} from "../../_lib/hq-go-live-plan.js";
 import {diagnoseHeadquartersDrift} from "../../_lib/hq-release-drift.js";
+import {verifyHeadquartersD1Isolation} from "../../_lib/hq-resource-isolation.js";
 import {REPO,RELEASE_BASE_BRANCH,RELEASE_PROJECT} from "../../_lib/go-live-readiness.js";
 const blocked=(reason:string)=>adminJson({eligible:false,plan:null,
  production_deployment_enabled:false,blockers:[reason]});
@@ -53,16 +54,20 @@ export async function onRequestGet(context:AdminRequestContext):Promise<Response
   const drift=diagnoseHeadquartersDrift({
    branch:previous,project,comparison:ancestry,compareBase:liveSha,compareHead:sourceSha
   });
-  if(!ready.ready_for_preview||!drift.reconciled)
+  const isolation=verifyHeadquartersD1Isolation(project);
+  if(!ready.ready_for_preview||!drift.reconciled||!isolation.isolated)
    return adminJson({
-    eligible:false,plan:null,drift,production_deployment_enabled:false,
-    blockers:[...(ready.blockers||[]),...(drift.reconciled?[]:[drift.reason])]
+    eligible:false,plan:null,drift,database_isolation:isolation,
+    production_deployment_enabled:false,
+    blockers:[...(ready.blockers||[]),
+      ...(drift.reconciled?[]:[drift.reason]),
+      ...(isolation.isolated?[]:[isolation.reason])]
    });
   const comparison=await remote(github+"/compare/"+sourceSha+"..."+ready.candidate.sha,gh,false);
   const result=planHeadquartersFastForward({
    readiness:ready,branch:previous,project,comparison,
    compareBase:sourceSha,compareHead:ready.candidate.sha
   });
-  return adminJson({...result,drift});
+  return adminJson({...result,drift,database_isolation:isolation});
  }catch{return blocked("Exact production ancestry or canonical rollback inspection is unavailable.");}
 }
