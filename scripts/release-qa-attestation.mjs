@@ -41,9 +41,14 @@ export function attestIndependentReleaseQA({preview,smoke,sha,now=Date.now()}){
  for(const route of ["/admin/","/api/admin/yorpmind-team"]){
   const proof=Array.isArray(preview?.anonymous_paths_checked)?
    preview.anonymous_paths_checked.find(x=>x.route===route):null;
-  if(!proof||proof.access_blocked!==true||
-   ![301,302,303,307,308,401,403].includes(proof.status))
-   fail("Anonymous protection missing: "+route);
+  const redirect=proof&&[301,302,303,307,308].includes(proof.status);
+  const direct=proof&&[401,403].includes(proof.status);
+  if(!proof||proof.access_blocked!==true||(!redirect&&!direct)||
+     (redirect&&(proof.denial_kind!=="verified_cloudflare_access_redirect"||
+      proof.access_redirect_verified!==true))||
+     (direct&&(proof.denial_kind!=="http_auth_denial"||
+      proof.access_redirect_verified!==false)))
+   fail("Anonymous protection or Access denial provenance missing: "+route);
  }
  if(!smoke||smoke.target_host!==host||
   smoke.source_commit!==sha||smoke.deployment_id!==preview?.deployment_id||
