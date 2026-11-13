@@ -20,6 +20,7 @@ export function attestIndependentReleaseQA({preview,smoke,sha,now=Date.now()}){
  if(!SHA.test(sha||""))fail("Exact SHA missing");
  if(preview?.staging_project!=="yorphives-admin-staging"||preview?.verified_commit_sha!==sha||
   preview?.verified_existing_deployment!==true||preview?.access_boundary_verified!==true||
+  preview?.database_isolation_verified!==true||
   preview?.no_deployment_created!==true||preview?.no_production_change!==true||
   !sameHeadquartersCanonical(preview?.canonical_before,preview?.canonical_after)||
   !/^[a-f0-9]{40}$/.test(preview?.canonical_before?.sha||"")||
