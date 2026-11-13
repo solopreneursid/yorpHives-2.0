@@ -28,30 +28,30 @@ responses. The original YorpHives logo and public site remain unchanged.
 
 ## What the protected workflow now does
 
-1. You choose an **already deployed** isolated Headquarters preview and
-   review its exact 40-character source revision and Cloudflare
-   deployment ID.
+1. Open and review the latest isolated Headquarters preview.
 2. In GitHub Actions → **YorpHives authenticated Admin staging smoke
-   tests** → **Run workflow**, select the corresponding feature branch,
-   enter `reviewed_commit_sha` and `reviewed_deployment_id`.
+   tests** → **Run workflow**, select the matching development branch,
+   then check the single box: **I reviewed the private Headquarters
+   preview and want to run the read-only sign-in checks**. There are
+   **no technical SHA or deployment IDs to copy**.
 3. A protected `staging-deployments` environment must approve access
    before any credentials become available. Do **not** share API tokens,
    Access client secrets, or OTPs with an assistant.
-4. The workflow confirms the entered SHA is exactly the checked-out
-   source and refuses `main`.
-5. It reads Cloudflare Pages metadata using the protected API token,
-   confirms the ID belongs to `yorphives-admin-staging`, the exact
-   branch/SHA match, the environment is `preview`, and the deployment
-   actually succeeded. It cannot substitute a stale, production or
-   user-controlled hostname.
+4. The workflow confirms that the selected source is exactly the GitHub
+   branch HEAD and refuses `main` or `master`.
+5. It searches a bounded list of existing Cloudflare Pages previews,
+   finds an already successful `yorphives-admin-staging` deployment
+   whose exact branch and code SHA match the checked-out revision,
+   and refuses all stale, production or untrusted hostnames. **It
+   never creates a new deployment.**
 6. Before sending credentials, it makes anonymous GET requests to
    `/admin/` and `/api/admin/yorpmind-team`. Both must return a
    legitimate Access denial. An anonymous HTTP 200, wrong redirect or
    uncertain response stops the test.
-7. Only then does the protected Access test identity use the existing
-   preview for read-only browser and API checks. It verifies site status,
-   both handoff buttons, six manager roles and source-linked coaching
-   records in the private staging D1.
+7. Only then does the protected Access test identity use the verified
+   private preview for browser and API checks. It verifies website
+   checks, both handoff buttons, six manager roles and source-linked
+   coaching records in private staging D1.
 8. The workflow uploads a **sanitized summary**, never raw private
    response bodies or credentials.
 
