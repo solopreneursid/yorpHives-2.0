@@ -13,6 +13,7 @@ const auth=asUrl(
 const live=asUrl("export const readLiveGoLiveReadiness=async()=>globalThis.__releaseCandidate;");
 const plan=asUrl("export const planHeadquartersFastForward=args=>globalThis.__buildReleasePlan(args);");
 const drift=asUrl("export const diagnoseHeadquartersDrift=args=>globalThis.__diagnoseDrift(args);");
+const isolation=asUrl("export const verifyHeadquartersD1Isolation=project=>globalThis.__isolateD1(project);");
 const readiness=asUrl(
  'export const REPO="solopreneursid/yorpHives-2.0";'+
  'export const RELEASE_BASE_BRANCH={headquarters:"build/yorphives-admin-reliability"};'+
@@ -24,6 +25,7 @@ for(const [name,url] of [
  ['"../../_lib/go-live-live.js"',live],
  ['"../../_lib/hq-go-live-plan.js"',plan],
  ['"../../_lib/hq-release-drift.js"',drift],
+ ['"../../_lib/hq-resource-isolation.js"',isolation],
  ['"../../_lib/go-live-readiness.js"',readiness]
 ]){assert.ok(source.includes(name),name);source=source.replace(name,JSON.stringify(url));}
 const {onRequestGet}=await import(asUrl(source));
@@ -32,6 +34,10 @@ const candidate={target:"headquarters",ready_for_preview:true,blockers:[],
  status:"verified_preview",candidate:{sha,target:"headquarters",number:48},
  preview:{url:"https://3c1e6315.yorphives-admin-staging.pages.dev",
  deploymentId:"3c1e6315-40b6-419d-83ef-81d77559df80"}};
+globalThis.__isolateD1=()=>({
+ isolated:true,production_deployment_enabled:false,
+ database_migration_allowed:false,database_restore_verified:false
+});
 const env={
  FOUNDER_OWNER_EMAIL:"founder@example.com",
  HQ_RELEASE_GITHUB_READ_TOKEN:"g".repeat(40),
@@ -83,6 +89,35 @@ test("automated service identities and unauthenticated requests cannot see found
  const body=await service.json();
  assert.equal(body.eligible,false);
  assert.equal(body.production_deployment_enabled,false);
+});
+test("founder release plan reports a shared D1 as a hard blocker even if other gates pass",async()=>{
+ const oldFetch=globalThis.fetch;
+ const previous=globalThis.__isolateD1;
+ globalThis.__releaseCandidate=candidate;
+ globalThis.__diagnoseDrift=()=>({status:"aligned",reconciled:true,
+  production_deployment_enabled:false});
+ globalThis.__isolateD1=()=>({isolated:false,
+  production_deployment_enabled:false,database_migration_allowed:false,
+  reason:"Preview and canonical Headquarters share the SAME D1 database."});
+ globalThis.fetch=async(url)=>{
+  if(url.includes("/branches/"))return Response.json({
+   name:"build/yorphives-admin-reliability",commit:{sha:base}});
+  if(url.includes("/pages/projects/"))return Response.json({success:true,result:{
+   name:"yorphives-admin-staging",production_branch:"build/yorphives-admin-reliability",
+   canonical_deployment:{deployment_trigger:{metadata:{commit_hash:base}}}
+  }});
+  throw Error("No publishing or branch comparison allowed");
+ };
+ try{
+  const response=await onRequestGet(context());
+  const body=await response.json();
+  assert.equal(response.status,200);
+  assert.equal(body.eligible,false);
+  assert.equal(body.plan,null);
+  assert.equal(body.database_isolation.isolated,false);
+  assert.equal(body.production_deployment_enabled,false);
+  assert.match(body.blockers.join(" "),/SAME D1/);
+ }finally{globalThis.fetch=oldFetch;globalThis.__isolateD1=previous;}
 });
 test("incomplete checks still expose founder-only read-only drift without planning a release",async()=>{
  const oldFetch=globalThis.fetch,calls=[];
