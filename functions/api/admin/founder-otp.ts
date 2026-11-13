@@ -190,10 +190,12 @@ export async function onRequestPost(context:Context):Promise<Response>{
           "INSERT INTO founder_temporary_grants "+
           "(grant_id,assistant,scope,permission,duration_minutes,purpose,owner_email,"+
           "state,created_at,request_expires_at,activated_at,activated_by,active_expires_at) "+
-          "VALUES(?,?,?,?,?,?,?,'active',?,?,?,?,?)"
+          "SELECT ?,?,?,?,?,?,?,'active',?,?,?,?,? "+
+          "FROM founder_otp_challenges c WHERE c.challenge_id=? AND "+
+          "c.owner_email=? AND c.state='used' AND c.consumed_at=?"
         ).bind(crypto.randomUUID(),a,challenge.scope,challenge.permission,
           challenge.duration_minutes,challenge.purpose,owner.email,ts,
-          challenge.expires_at,ts,owner.email,until)),
+          challenge.expires_at,ts,owner.email,until,id,owner.email,ts)),
         db.prepare(
           "INSERT INTO admin_audit_events(id,actor,action,resource_type,resource_id,details_json,created_at) "+
           "VALUES(?,?,'temporary_permissions_email_confirmed','assistant_permissions',?,?,?)"
@@ -204,7 +206,12 @@ export async function onRequestPost(context:Context):Promise<Response>{
         }),ts)
       ];
       // D1 batch is transactional: either all subordinate grants exist or none.
-      await db.batch(statements);
+      const receipt=await db.batch<{meta?:{changes?:number}}>(statements);
+      const inserts=receipt.slice(actors.length,actors.length*2);
+      if(inserts.length!==actors.length||
+          inserts.some(row=>Number(row?.meta?.changes)!==1))
+        return fail("STOPPED_OR_EXPIRED",
+          "This approval was cancelled or could not activate. No new access is authorized.",409);
       return adminJson({approved:true,selected_assistants:actors,active_until:until,
         production_allowed:false,limited_actions:["create_issue"],
         note:"Temporary permissions activated. Neither assistant can publish live changes."});
