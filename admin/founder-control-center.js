@@ -7,10 +7,12 @@
     if(value!==undefined)item.textContent=String(value);
     return item;
   };
-  const assistantNames={yorpmind:"YorpMind",chatgpt:"ChatGPT"};
+  const assistantNames={yorpmind:"YorpMind",chatgpt:"ChatGPT",both:"YorpMind + ChatGPT"};
   const labels={awaiting_security_check:"Waiting for your security check",
     active:"Active for a short time",revoked:"Cancelled",expired:"Ended",unavailable:"Unavailable"};
   let securityReady=false;
+  let otpReady=false;
+  let lastChallengeId=null;
   let loaded=false;
   let busy=false;
   let grantRows=[];
@@ -52,6 +54,11 @@
           data.assistants.some(row=>row.production_allowed!==false))
         throw Error("Permission safety information is incomplete.");
       securityReady=data.mfa_configured===true;
+      let otp=null;
+      try{otp=await api("/api/admin/founder-otp");}catch{}
+      otpReady=otp?.can_request===true && otp?.production_allowed===false;
+      const pair=$("founder-assistant")?.querySelector('option[value="both"]');
+      if(pair)pair.disabled=!otpReady;
       grantRows=data.assistants;
       loaded=true;
       const list=$("founder-permission-list");
@@ -60,19 +67,27 @@
       if(!grantRows.length)list.append(create("p","founder-empty",
         "You haven't given either assistant temporary permission yet."));
       const ready=$("founder-security-note");
-      ready.textContent=securityReady ?
-        "Your extra security check is ready. Only a verified assistant connection can use an approved permission." :
-        "Extra security confirmation is not connected yet. No new permissions can be activated.";
+      ready.textContent=otpReady ?
+        "Email confirmation is available. One code can authorize either assistant or both together for a limited time." :
+        securityReady ?
+        "Email approval is not connected yet. The older, separate security check is still available." :
+        "Email approval is not configured yet. Permissions remain locked until email sending and secure assistant identities are connected.";
       const connection=data.connected||{};
       $("founder-connection-note").textContent=
         "Assistant connections · YorpMind: "+(connection.yorpmind?"Ready":"Not yet connected")+
         " · ChatGPT: "+(connection.chatgpt?"Ready":"Not yet connected")+
         ". This ChatGPT conversation does not automatically receive Headquarters access.";
-      $("founder-permission-submit").disabled=!securityReady;
-      if(!securityReady)setStatus("Granting access is locked until your separate security check is configured.");
+      $("founder-permission-submit").disabled=!(otpReady||securityReady);
+      $("founder-permission-submit").textContent=otpReady?"Send email code →":
+        securityReady?"Continue to security check →":"Email approval not ready";
+      if(!otpReady&&!securityReady)
+        setStatus("Granting temporary access is locked until a verified approval channel is ready.");
     } catch {
       securityReady=false;
+      otpReady=false;
       $("founder-permission-submit").disabled=true;
+      const pair=$("founder-assistant")?.querySelector('option[value="both"]');
+      if(pair)pair.disabled=true;
       $("founder-permission-list").replaceChildren(create("p","founder-empty",
         "Temporary permissions aren't ready to use yet. No new access has been given."));
       $("founder-security-note").textContent=
@@ -84,7 +99,7 @@
   }
   async function submit(event) {
     event.preventDefault();
-    if(busy||!securityReady||!$("founder-permission-form").reportValidity())return;
+    if(busy||!(otpReady||securityReady)||!$("founder-permission-form").reportValidity())return;
     const assistant=$("founder-assistant").value;
     const scope=$("founder-scope").value;
     const permission=$("founder-level").value;
@@ -96,8 +111,32 @@
     // the separate owner security gate (future: action-bound email OTP).
     busy=true;
     $("founder-permission-submit").disabled=true;
-    setStatus("Saving your request. No permission is active yet.");
+    setStatus(otpReady?"Requesting a six-digit code. No permissions are active yet.":
+      "Saving your request. No permission is active yet.");
     try {
+      if(otpReady){
+        const result=await api("/api/admin/founder-otp",{
+          method:"POST",body:JSON.stringify({
+            action:"send",assistant,scope,permission,duration_minutes,purpose,confirm:true
+          })
+        });
+        if(result?.status!=="code_sent"||result?.permission_active!==false||
+          result?.production_allowed!==false||
+          !/^[0-9a-f-]{36}$/i.test(String(result.challenge_id||"")))
+          throw Error("The email request could not be verified.");
+        lastChallengeId=result.challenge_id;
+        const modal=$("founder-otp-dialog");
+        if(modal.parentElement!==document.body)document.body.append(modal);
+        $("founder-otp-code").value="";
+        $("founder-otp-status").textContent="Code expires after five minutes. Max five attempts.";
+        $("founder-otp-message").textContent=
+          "Check your founder email for a code authorizing "+
+          assistantNames[assistant]+" for "+duration_minutes+" minutes.";
+        modal.showModal();
+        $("founder-otp-code").focus();
+        setStatus("An approval code was requested. Enter it in the secure dialog to activate limited access.");
+        return;
+      }
       const result=await api("/api/admin/assistant-permissions",{
         method:"POST",body:JSON.stringify({
           assistant,scope,permission,duration_minutes,purpose,confirm:true
@@ -119,7 +158,46 @@
         "Request could not be saved. No permission was given.");
     } finally {
       busy=false;
-      $("founder-permission-submit").disabled=!securityReady;
+      $("founder-permission-submit").disabled=!(otpReady||securityReady);
+    }
+  }
+  async function confirmOtp(event){
+    event.preventDefault();
+    const code=$("founder-otp-code").value.trim();
+    if(!lastChallengeId||!/^[0-9]{6}$/.test(code))return;
+    const button=$("founder-otp-confirm");
+    button.disabled=true;
+    $("founder-otp-status").textContent="Verifying this one-time approval…";
+    try{
+      const out=await api("/api/admin/founder-otp",{
+        method:"POST",body:JSON.stringify({
+          action:"verify",challenge_id:lastChallengeId,code
+        })
+      });
+      if(out?.approved!==true||out?.production_allowed!==false||
+        !Array.isArray(out.selected_assistants))
+        throw Error("Permission activation could not be verified.");
+      lastChallengeId=null;
+      $("founder-otp-code").value="";
+      $("founder-otp-dialog").close();
+      await reload();
+      setStatus("Approved until "+new Date(out.active_until).toLocaleTimeString()+
+        ". All permissions remain limited; use End all assistant access at any time.");
+    }catch(error){
+      $("founder-otp-code").value="";
+      $("founder-otp-status").textContent=error instanceof Error?
+        error.message:"That code was not accepted. No new access was confirmed.";
+    }finally{button.disabled=false;}
+  }
+  async function cancelOtp(){
+    const id=lastChallengeId;
+    lastChallengeId=null;
+    $("founder-otp-code").value="";
+    $("founder-otp-dialog").close();
+    if(id){
+      try{await api("/api/admin/founder-otp",{
+        method:"POST",body:JSON.stringify({action:"cancel",challenge_id:id})
+      });}catch{setStatus("Could not confirm code cancellation. Use End all assistant access to invalidate pending codes.");}
     }
   }
   async function revoke(id,button) {
@@ -155,6 +233,8 @@
           result?.production_allowed!==false||
           !Number.isSafeInteger(result.revoked_count))
         throw Error("The emergency stop could not be verified.");
+      lastChallengeId=null;
+      if($("founder-otp-dialog")?.open)$("founder-otp-dialog").close();
       await reload();
       setStatus(result.revoked_count
         ? "Stopped "+result.revoked_count+" temporary permission(s). No new assistant actions are authorized."
@@ -224,6 +304,8 @@
   function init() {
     $("founder-permission-form")?.addEventListener("submit",submit);
     $("founder-permission-refresh")?.addEventListener("click",reload);
+    $("founder-otp-form")?.addEventListener("submit",confirmOtp);
+    $("founder-otp-cancel")?.addEventListener("click",cancelOtp);
     $("founder-stop-all")?.addEventListener("click",stopAll);
     $("founder-open-permissions")?.addEventListener("click",()=>{
       const panel=document.querySelector(".founder-permission-panel");
