@@ -58,25 +58,16 @@ export async function onRequestGet(context:AdminRequestContext):Promise<Response
   if(!grant||grant.owner_email!==owner.email)
     return failure("NOT_YOUR_REQUEST","Only the same owner can approve this request.",403);
   const labels=permissionLabels(grant);
-  const ready=grantDisplayState(grant)==="awaiting_security_check";
   return page(
-    '<small>YorpHives · secure owner check</small><h1>Give temporary permission?</h1>'+
-    '<p>You are the owner. Your assistant can only help with the work below.</p>'+
-    '<p><strong>Assistant:</strong> '+escape(labels.assistant)+'<br>'+
-    '<strong>Allowed work:</strong> '+escape(labels.permission)+'<br>'+
-    '<strong>Where:</strong> '+escape(labels.scope)+'<br>'+
-    '<strong>For:</strong> '+grant.duration_minutes+' minutes<br>'+
-    '<strong>Why:</strong> '+escape(grant.purpose)+'</p>'+
-    '<p class="notice">Your account stays yours. No password or security code goes to an AI. '+
-    'Only verified assistant connections may use this permission. Publishing changes '+
-    'to the live website still needs a separate, exact-change approval.</p>'+
-    (ready?'<form method="post" action="/api/admin/step-up/assistant-permissions?id='+encodeURIComponent(id)+'">'+
-      '<input type="hidden" name="grant_id" value="'+escape(id)+'">'+
-      '<label><input required type="checkbox" name="agree" value="yes"> '+
-      'I approve this assistant, this work, and this short time limit.</label>'+
-      '<button class="action" type="submit">Approve temporary help</button></form>':
-      '<p>This request has expired, has been used, or was cancelled. No new access was granted.</p>')+
-    '<p><a href="/admin/">Return to Headquarters</a></p>'
+    '<small>YorpHives · historical security record</small>'+
+    '<h1>Temporary assistant approval retired</h1>'+
+    '<p>There is no longer an approval or administrative delegation process for YorpMind, ChatGPT or AI employees.</p>'+
+    '<p><strong>Historical assistant:</strong> '+escape(labels.assistant)+'<br>'+
+    '<strong>Previous area:</strong> '+escape(labels.scope)+'<br>'+
+    '<strong>Record state:</strong> '+escape(grant.state)+'</p>'+
+    '<p class="notice">This page is read-only. It cannot issue, activate or extend any permission. Development continues under restricted work identities. Only the founder may publish via Preview → Go Live → OTP.</p>'+
+    '<p><a href="/admin/">Return to Headquarters</a></p>',
+    410
   );
 }
 export async function onRequestPost(context:AdminRequestContext):Promise<Response> {
