@@ -308,7 +308,7 @@ async function main() {
     await page.locator("#website-proof-chatgpt").click();
     check("website-proof:chatgpt-handoff",
       await page.locator("#founder-handoff-dialog").evaluate(d=>d.open===true) &&
-      (await page.locator("#founder-handoff-text").inputValue()).includes("No production"),
+      (await page.locator("#founder-handoff-text").inputValue()).includes("Do not make a production change"),
       "The website check opens an optional review message without dispatching AI.");
     await page.locator("#founder-handoff-close").click();
 
