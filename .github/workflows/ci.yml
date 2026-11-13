@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - build/headquarters-staging-mission-proof
+      - build/headquarters-durable-staging-rehearsal
 
 permissions:
   contents: read

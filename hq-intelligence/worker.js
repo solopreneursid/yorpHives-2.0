@@ -5,6 +5,7 @@ import { indexDemand } from "./demand.js";
 import { collectMarketSources,storeMarketSources } from "./market-sources.js";
 import { scanYorpMindEvolution } from "./yorpmind-evolution.js";
 import { scanYorpMindTeam } from "./yorpmind-team-scan.js";
+import { reconcileRepairLearning } from "../functions/_lib/yorpmind-verified-learning.js";
 
 const MAX_MANUAL_PER_DAY=2;
 const MAX_SOURCE_ROWS=42;
@@ -175,6 +176,17 @@ export default {
       console.log(JSON.stringify({ event: "yorpmind_team_reported", reports: team.reports_created }));
   } catch (error) {
     console.warn(JSON.stringify({ event: "yorpmind_team_scan_unavailable", reason: String(error instanceof Error ? error.message : error).slice(0, 140) }));
+  }
+  // Reconcile owner-reviewed repairs from either ChatGPT or Headquarters.
+  // Missing or invalid QA cannot enter memory. No model calls or extra dispatch.
+  try {
+    const learning = await reconcileRepairLearning(env.DB);
+    console.log(JSON.stringify({event:"yorpmind_repair_learning_reconciled",
+      status:learning.status,scanned:learning.scanned,learned:learning.learned,
+      model_calls:0}));
+  } catch(error) {
+    console.warn(JSON.stringify({event:"yorpmind_learning_reconcile_unavailable",
+      reason:String(error instanceof Error?error.message:error).slice(0,120)}));
   }
   // Reference-only YorpMind self-evolution: no model calls, skill writes or deployments.
   try {

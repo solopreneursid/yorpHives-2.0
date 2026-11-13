@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="/admin/owner-delegation.css">
 <link rel="stylesheet" href="/admin/owner-action-center.css">
 <link rel="stylesheet" href="/admin/mission-proof.css">
+<link rel="stylesheet" href="/admin/shared-repair-inbox.css">
 <link rel="stylesheet" href="/admin/yorpmind.css">
 <link rel="stylesheet" href="/admin/yorpmind-evolution.css">
 <link rel="stylesheet" href="/admin/yorpmind-team.css">
@@ -174,7 +175,7 @@
         <div class="ym-hero-main">
           <span class="ym-eyebrow">YORPHIVES / INTELLIGENCE SYSTEM · FOUNDATION V1</span>
           <h1>Yorp<span>Mind.</span></h1>
-          <p>The intelligence behind YorpHives. Capture lessons from reviewed repairs, turn them into versioned skills, and retain useful knowledge without giving agents permission to execute procedures or publish code.</p>
+          <p>The intelligence behind YorpHives. Automatically retain lessons from revision-matched, founder-reviewed repair QA—whether the work began in ChatGPT or Headquarters. Turn recurring patterns into reviewable skills, without giving agents permission to execute procedures or publish code.</p>
           <div class="ym-hero-actions">
             <button class="button primary" id="ym-refresh" type="button">↻ Refresh YorpMind</button>
             <a class="button" href="/api/admin/yorpmind" target="_blank" rel="noopener noreferrer">View private JSON ↗</a>
@@ -184,7 +185,7 @@
         <aside class="ym-hero-policy">
           <span class="ym-eyebrow">SECURITY BOUNDARY</span>
           <strong>Knowledge before autonomy.</strong>
-          <p>Only founder-reviewed evidence enters memory. Skills are documentation, not executable commands.</p>
+          <p>Learning from recorded QA is automatic and free of additional model calls. Skills are reference text, never executable authority; releases still need your independent approval.</p>
           <div class="ym-policy-lock">PUBLIC ACCESS OFF · AI EXECUTION OFF · PRODUCTION LOCKED</div>
         </aside>
       </header>
@@ -798,6 +799,21 @@
       <section class="agent-summary-grid" id="agent-summary-grid" aria-label="Agent team summary"><article><strong id="agent-active-count">—</strong><span>Active</span></article><article><strong id="agent-blocked-count">—</strong><span>Blocked</span></article><article><strong id="agent-planned-count">—</strong><span>Planned</span></article><article><strong id="agent-security-count">—</strong><span>Open security findings</span></article></section>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">SPECIALIST REGISTRY</span><h2>Agent team</h2><p>Live status comes from deployed Workers and recent audit records; planned roles are not presented as running bots.</p></div><div class="heading-actions"><button class="text-button" id="verify-github-permissions" type="button">Verify GitHub write permissions ↗</button><button class="text-button" id="refresh-agent-registry">Refresh agents ↻</button></div></div><p class="source-status" id="github-permission-status" role="status">Write permissions have not been tested. The probe creates and closes a temporary draft PR, then deletes its branch; no files are merged.</p><div class="agent-roster" id="agent-roster"><div class="empty-state">Loading agent registry…</div></div></section>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">NEW INVESTIGATION</span><h2>Ask an agent to investigate</h2></div></div><form id="repair-form" class="repair-form"><div class="form-row"><label>Related finding<select class="field" id="repair-finding"><option value="">General investigation</option></select></label><label>Target area<select class="field" id="repair-scope"><option value="auto">Determine from request / finding</option><option value="website">Public website</option><option value="admin">Admin Control Center</option><option value="tools">Free Tools</option><option value="products">Products &amp; applications</option><option value="api">APIs &amp; agent endpoints</option><option value="dependencies">Dependencies &amp; updates</option></select></label></div><label>What should the agent investigate or fix?<textarea class="field" id="repair-request" rows="4" maxlength="4000" required placeholder="Describe the issue, expected behaviour, and any evidence you have…"></textarea></label><div class="form-footer"><span id="repair-message" role="status">Agent requests are rate-limited and audited.</span><button class="button primary" id="repair-submit" type="submit" disabled>Request investigation ↗</button></div></form></section>
+      <section class="panel shared-repair-panel" aria-labelledby="shared-repair-title">
+        <div class="shared-repair-header">
+          <div>
+            <span class="eyebrow">CHATGPT ↔ HEADQUARTERS · SHARED GITHUB RECORD</span>
+            <h2 id="shared-repair-title">Shared issue inbox</h2>
+            <p class="shared-repair-lede">Issues created in ChatGPT through the connected GitHub repository appear here. Or save the description above as a GitHub issue so ChatGPT can work on it. Selecting an issue only fills the repair form; an AI investigation requires a separate confirmation. YorpMind can reuse lessons after exact-revision CI and owner-reported QA, never from a raw issue.</p>
+          </div>
+          <div class="shared-repair-actions">
+            <button class="shared-repair-action" id="repair-github-create" type="button">Save description as issue ↗</button>
+            <button class="shared-repair-action" id="shared-repair-refresh" type="button">↻ Refresh inbox</button>
+          </div>
+        </div>
+        <p class="shared-repair-status" id="shared-repair-status" role="status" aria-live="polite">Issue inbox has not been loaded.</p>
+        <div class="shared-repair-grid" id="shared-repair-list" aria-label="Shared GitHub issues"></div>
+      </section>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">WORKFLOW QUEUE</span><h2>Agent jobs</h2></div><button class="text-button" id="refresh-agents">Refresh jobs ↻</button></div><div id="repair-jobs"><div class="empty-state">Loading repair jobs…</div></div></section>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">AGENT SAFETY</span><h2>Permission boundaries</h2></div></div><div class="permission-grid"><div><strong>Allowed</strong><p>Read repository files, inspect findings, create isolated branches, prepare changes, open draft PRs and inspect CI results.</p></div><div><strong>Not allowed</strong><p>Merge pull requests, deploy production, modify DNS, change Cloudflare account settings, or perform destructive actions.</p></div></div></section>
     </section>
@@ -887,6 +903,7 @@
 <script src="/admin/owner-delegation.js" defer></script>
 <script src="/admin/owner-action-center.js" defer></script>
 <script src="/admin/mission-proof.js" defer></script>
+<script src="/admin/shared-repair-inbox.js" defer></script>
 <script src="/admin/yorpmind.js" defer></script>
 <script src="/admin/yorpmind-evolution.js" defer></script>
 <script src="/admin/yorpmind-team.js" defer></script>

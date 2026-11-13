@@ -32,7 +32,7 @@
     const container = $("ym-experience-list");
     container.replaceChildren();
     if (!experiences.length) {
-      container.append(node("p", "ym-empty", "No founder-recorded QA lessons yet. Capture one from a reviewed repair above."));
+      container.append(node("p", "ym-empty", "No eligible repair QA lessons have been recorded yet. YorpMind will automatically learn after exact-revision CI and owner-reported QA pass; manual capture remains available."));
       return;
     }
     for (const item of experiences) {

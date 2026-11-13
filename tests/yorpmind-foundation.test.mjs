@@ -131,7 +131,9 @@ test("YorpMind is a strictly private, read-only-by-default engine with no execut
     assert.deepEqual(data.experiences, []);
     assert.deepEqual(data.skills, []);
     assert.equal(data.policy.public_access_enabled, false);
-    assert.equal(data.policy.autonomous_learning_enabled, false);
+    assert.equal(data.policy.autonomous_learning_enabled, true);
+    assert.equal(data.policy.learning_mode, "automatic_revision_matched_founder_reported_qa");
+    assert.equal(data.policy.automatic_model_calls_per_learning, 0);
     assert.equal(data.policy.autonomous_skill_execution_enabled, false);
     assert.equal(data.policy.production_changes_enabled, false);
     assert.equal((await call("GET", null, { headers: { "x-deny": "1" } })).status, 401);
