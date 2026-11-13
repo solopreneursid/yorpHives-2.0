@@ -22,3 +22,12 @@ Future staging previews must use the existing pinned GitHub Actions / scripts/pa
 Authenticated staging browser QA is a read-only workflow available via manual workflow dispatch to an authorized development operator. It no longer asks the founder to approve or check a box before tests. A trusted future automation can trigger it within existing permissions. It must inspect a previously existing exact-branch preview and never deploy, merge, or modify production. There remains a protected staging deployment environment and signed Access credentials, not broad administrator rights.
 
 A passing offline visual check does NOT substitute for authenticated live staging, and passing smoke tests do NOT substitute for independent security, rollback, cost checks or founder final Go Live.
+
+
+## Verified private branch preview (November 13, 2026)
+
+A real Cloudflare Pages preview for source `8c184d3fe8f9f007f7a8afb51b610d252504a49e` was created using a documented `FormData` multipart request with explicit branch `fix/founder-approval-at-production-only`, not the unsafe JSON body. Deployment `aaa7346f-9150-4aa5-81be-2103f76d263d` at `https://aaa7346f.yorphives-admin-staging.pages.dev` reached successful preview status, while the canonical staging deployment stayed `77ffbf58-5ff8-4f01-90ba-6e657d9acfc0`.
+
+Cloudflare Access lists an application on wildcard `*.yorphives-admin-staging.pages.dev` with a founder allow policy and a separate CI service-auth policy. This is configuration evidence only; authenticated browser QA and an independent anonymous HTTP-denial test on this new preview are still required.
+
+The preview client now validates the current GitHub-connected Headquarters project's production branch, source repository and canonical deployment **before** any POST and confirms the canonical deployment ID is unchanged **after** a successful preview response. If canonical state changes or cannot be rechecked, the job fails and refuses to claim success. Only explicit allowlisted development branches are permitted.

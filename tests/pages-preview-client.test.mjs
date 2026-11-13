@@ -132,3 +132,75 @@ test("Cloudflare lookup errors fail closed rather than accepting stale POST meta
   await assert.rejects(createOrReusePreview({ ...base, fetchImpl, delayImpl: async () => {} }),
     /preview lookup failed/);
 });
+
+
+const adminBase={...base,project:"yorphives-admin-staging",
+ branch:"fix/founder-approval-at-production-only"};
+const adminProject={
+ name:"yorphives-admin-staging",
+ source:{type:"github",config:{
+  owner:"solopreneursid",repo_name:"yorpHives-2.0",
+  production_branch:"build/yorphives-admin-reliability",deployments_enabled:true
+ }},
+ production_branch:"build/yorphives-admin-reliability",
+ canonical_deployment:{
+  id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",
+  environment:"production",
+  deployment_trigger:{metadata:{branch:"build/yorphives-admin-reliability"}}
+ }
+};
+test("Headquarters preview uses explicit multipart fix branch and keeps canonical unchanged", async()=>{
+ const seen=[];
+ const fake=async(url,init)=>{
+  seen.push({url,method:init.method,form:init.body});
+  if(init.method==="GET")return json({success:true,result:adminProject});
+  assert.equal(init.method,"POST");
+  assert.ok(init.body instanceof FormData);
+  assert.equal(init.body.get("branch"),adminBase.branch);
+  assert.equal(init.body.get("commit_hash"),adminBase.commitSha);
+  assert.equal(init.body.get("commit_dirty"),"false");
+  return json({success:true,result:deployment({
+   url:"https:/" + "/aaa7346f.yorphives-admin-staging.pages.dev",
+   deployment_trigger:{metadata:{branch:adminBase.branch,commit_hash:adminBase.commitSha}}
+  })});
+ };
+ const result=await createOrReusePreview({...adminBase,fetchImpl:fake});
+ assert.equal(result.output,"ADMIN_BASE_URL");
+ assert.equal(result.reused,false);
+ assert.equal(seen.map(x=>x.method).join(","),"GET,POST,GET");
+ assert.ok(seen.filter(x=>x.method==="POST").every(x=>x.url.endsWith("/yorphives-admin-staging/deployments")));
+});
+test("unsafe HQ project identity or changed canonical forbids or fails release",async()=>{
+ const calls=[];
+ const wrong=async(url,init)=>{
+  calls.push(init.method);
+  return json({success:true,result:{...adminProject,production_branch:"main"}});
+ };
+ await assert.rejects(createOrReusePreview({...adminBase,fetchImpl:wrong}),/safe allowlist/);
+ assert.deepEqual(calls,["GET"]);
+ let reads=0;
+ const changed=async(url,init)=>{
+  if(init.method==="GET"){
+   reads++;
+   return json({success:true,result:reads===1?adminProject:{
+    ...adminProject,canonical_deployment:{...adminProject.canonical_deployment,
+     id:"123e4567-e89b-42d3-a456-000000000002"}
+   }});
+  }
+  return json({success:true,result:deployment({
+   url:"https:/" + "/aaa7346f.yorphives-admin-staging.pages.dev",
+   deployment_trigger:{metadata:{branch:adminBase.branch,commit_hash:adminBase.commitSha}}
+  })});
+ };
+ await assert.rejects(createOrReusePreview({...adminBase,fetchImpl:changed}),/canonical deployment changed/);
+});
+test("HQ production default branch and malformed branch names cannot reach API",async()=>{
+ for(const badBranch of ["build/yorphives-admin-reliability","main",
+  "fix/../main","fix/Unsafe","feature/", "hotfix/patch"]){
+  let called=false;
+  await assert.rejects(createOrReusePreview({...adminBase,branch:badBranch,
+   fetchImpl:async()=>{called=true;throw Error("unexpected HTTP");}
+  }),/feature branches/);
+  assert.equal(called,false);
+ }
+});

@@ -2,6 +2,24 @@ const PROJECTS = Object.freeze({
   "yorphives-2-preview": { output: "SITE_BASE_URL", productionBranch: "main" },
   "yorphives-admin-staging": { output: "ADMIN_BASE_URL", productionBranch: "build/yorphives-admin-reliability" }
 });
+const APPROVED_BRANCH = /^(?:build|feature|fix|qa|design|ops)\/[a-z0-9][a-z0-9._/-]{1,110}$/;
+const EXPECTED_SOURCE = Object.freeze({ owner: "solopreneursid", repo: "yorpHives-2.0" });
+
+export function validateHeadquartersPreviewProject(data, branch) {
+  const config = PROJECTS["yorphives-admin-staging"];
+  if (!APPROVED_BRANCH.test(branch || "") || branch === config.productionBranch ||
+      data?.name !== "yorphives-admin-staging" ||
+      data?.source?.type !== "github" ||
+      data?.source?.config?.owner !== EXPECTED_SOURCE.owner ||
+      data?.source?.config?.repo_name !== EXPECTED_SOURCE.repo ||
+      data?.production_branch !== config.productionBranch ||
+      data?.source?.config?.production_branch !== config.productionBranch ||
+      data?.source?.config?.deployments_enabled !== true ||
+      data?.canonical_deployment?.environment !== "production" ||
+      data?.canonical_deployment?.deployment_trigger?.metadata?.branch !== config.productionBranch ||
+      !/^[a-f0-9-]{36}$/i.test(String(data.canonical_deployment?.id || ""))) return null;
+  return { canonicalId: data.canonical_deployment.id };
+}
 
 export function validatePreviewDeployment(deployment, { project, branch, commitSha, requireSucceeded = false }) {
   if (!deployment || deployment.environment !== "preview") return null;
@@ -51,13 +69,33 @@ export async function createOrReusePreview({
   if (!config) throw new Error("Unapproved Pages project.");
   if (!accountId || !apiToken || !commitSha || !branch) throw new Error("Missing required deployment setting.");
   if (!/^[a-f0-9]{40}$/i.test(commitSha)) throw new Error("Invalid commit SHA.");
-  if (!branch.startsWith("build/") || branch === config.productionBranch) {
+  if (!APPROVED_BRANCH.test(branch) || branch === config.productionBranch) {
     throw new Error("Only isolated feature branches may be deployed by this workflow.");
   }
 
   const endpoint = "https://api.cloudflare.com/client/v4/accounts/" +
     encodeURIComponent(accountId) + "/pages/projects/" + encodeURIComponent(project) + "/deployments";
   const headers = { authorization: "Bearer " + apiToken };
+  // Cloudflare Pages defaults to the production branch if branch is omitted.
+  // Explicitly inspect this Git-connected HQ project before any multipart POST.
+  const projectEndpoint = endpoint.slice(0, -"/deployments".length);
+  let guardedCanonical = null;
+  if (project === "yorphives-admin-staging") {
+    const readProject = async () => {
+      const response = await fetchImpl(projectEndpoint, {
+        method: "GET", headers, signal: AbortSignal.timeout(12000)
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || payload?.success !== true) {
+        throw Error("Headquarters preview project safety preflight unavailable.");
+      }
+      return payload.result;
+    };
+    const previous = await readProject();
+    const validated = validateHeadquartersPreviewProject(previous, branch);
+    if (!validated) throw Error("Headquarters staging project or production branch did not match the safe allowlist.");
+    guardedCanonical = validated.canonicalId;
+  }
   const form = new FormData();
   form.append("branch", branch);
   form.append("commit_hash", commitSha);
@@ -67,10 +105,22 @@ export async function createOrReusePreview({
   const response = await fetchImpl(endpoint, {
     method: "POST", headers, body: form, signal: AbortSignal.timeout(45000)
   });
+  const verifyCanonicalUnchanged = async () => {
+    if (!guardedCanonical) return;
+    const latest = await fetchImpl(projectEndpoint, {
+      method: "GET", headers, signal: AbortSignal.timeout(12000)
+    });
+    const payload = await latest.json().catch(() => null);
+    if (!latest.ok || payload?.success !== true ||
+        payload?.result?.canonical_deployment?.id !== guardedCanonical) {
+      throw Error("Headquarters canonical deployment changed or could not be verified; investigate before continuing.");
+    }
+  };
   if (response.status === 304) {
     const found = await findExactSuccessfulPreview({
       endpoint, project, branch, commitSha, headers, fetchImpl, delayImpl
     });
+    await verifyCanonicalUnchanged();
     return { ...found, output: config.output };
   }
   const data = await response.json().catch(() => null);
@@ -81,12 +131,16 @@ export async function createOrReusePreview({
     throw new Error("Cloudflare Pages preview deployment failed (HTTP " + response.status + "): " + errors.slice(0, 500));
   }
   const direct = validatePreviewDeployment(data.result, { project, branch, commitSha });
-  if (direct) return { ...direct, output: config.output };
+  if (direct) {
+    await verifyCanonicalUnchanged();
+    return { ...direct, output: config.output };
+  }
 
   // Some accepted Cloudflare Pages responses temporarily return stale or
   // incomplete metadata. This path never trusts the POST payload alone.
   const verified = await findExactSuccessfulPreview({
     endpoint, project, branch, commitSha, headers, fetchImpl, delayImpl
   });
+  await verifyCanonicalUnchanged();
   return { ...verified, output: config.output };
 }
