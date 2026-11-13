@@ -310,7 +310,19 @@ async function main() {
       await page.locator("#founder-handoff-dialog").evaluate(d=>d.open===true) &&
       (await page.locator("#founder-handoff-text").inputValue()).includes("Do not make a production change"),
       "The website check opens an optional review message without dispatching AI.");
+    check("website-proof:handoff-visible-from-other-view",
+      await page.locator("#founder-handoff-dialog").isVisible() &&
+      await page.locator("#founder-handoff-close").isVisible() &&
+      await page.locator("#founder-handoff-dialog").evaluate(d=>d.parentElement===document.body),
+      "Founder handoff is visible and operable from Problems, not nested under hidden Home.");
+    await screenshot(page, "08-desktop-handoff.png");
     await page.locator("#founder-handoff-close").click();
+    await page.locator("#website-proof-yorpmind").click();
+    check("website-proof:yorpmind-handoff-no-dispatch",
+      await page.locator("#view-agents").isVisible() &&
+      (await page.locator("#repair-request").inputValue()).includes("YorpHives website") &&
+      blockedMutations.length===0,
+      "YorpMind handoff prepares a review request but never dispatches work.");
 
     await measure(page, 1440, 960, "intelligence");
     const ideas = await page.evaluate(() => ({
