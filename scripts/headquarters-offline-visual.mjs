@@ -20,7 +20,8 @@ const blockedExternal = [];
 const checks = [];
 const captures = [];
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
-const TIMEOUT = 10000;
+// CI Chromium can start slowly; a longer wait is not a weaker assertion.
+const TIMEOUT = 20000;
 const MIME = Object.freeze({
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",

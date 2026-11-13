@@ -7,3 +7,8 @@ It requires a verified founder identity (no CI or assistant tokens), exact owner
 Normal development and isolated staging previews never require OTP. Do not set the staging test flag or execute this workflow during routine QA. Do not use the old `founder_otp_challenges` assistant-grant table for releases. The email OTP is not a substitute for independent login MFA if both use the same mailbox.
 
 **Not implemented:** real independent production recovery proof, protected production executor, post-deploy verification/rollback, deployed website changes, billing read receipts. The founder's Go Live button stays disabled until these gates are complete and verified. Migration 0030 has not been applied to live or staging D1 by this branch commit.
+
+
+## Zero-cost policy
+
+Preproduction readiness reports now target **US$0 additional recurring infrastructure spend**. These static numbers are policy requirements, not spend enforcement: live Cloudflare billing remains unverified and optional AI work must remain limited until real usage receipts and provider-level controls are checked. No paid service is enabled by this branch.

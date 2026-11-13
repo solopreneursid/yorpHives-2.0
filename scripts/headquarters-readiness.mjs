@@ -234,9 +234,9 @@ export async function assessHeadquarters(root) {
       approved_services: ["Cloudflare", "ChatGPT/OpenAI", "GitHub free capabilities"],
       new_external_paid_services: "prohibited_without_prior_owner_approval",
       production_auto_publish: false,
-      cost_target_usd_monthly_incremental: 5,
-      cost_review_threshold_usd_monthly_incremental: 10,
-      optional_workload_pause_threshold_usd_monthly_incremental: 15
+      cost_target_usd_monthly_incremental: 0,
+      cost_review_threshold_usd_monthly_incremental: 0,
+      optional_workload_pause_threshold_usd_monthly_incremental: 0
     }
   };
 }
