@@ -1,131 +1,85 @@
 (() => {
   "use strict";
-  const repo = "solopreneursid/yorpHives-2.0";
-  const output = () => document.getElementById("shared-repair-list");
-  const status = () => document.getElementById("shared-repair-status");
-  const text = (tag, cls, value) => {
-    const el = document.createElement(tag);
-    if (cls) el.className = cls;
-    if (value !== undefined) el.textContent = String(value);
-    return el;
+  // Read-only issue evidence. Headquarters never creates issues, submits repair
+  // jobs or invokes coding agents. The founder performs fixes.
+  const repo="solopreneursid/yorpHives-2.0";
+  const $=id=>document.getElementById(id);
+  const text=(tag,cls,value)=>{
+    const node=document.createElement(tag);
+    if(cls)node.className=cls;
+    if(value!==undefined)node.textContent=String(value);
+    return node;
   };
-  const safeIssue = issue =>
-    issue && Number.isSafeInteger(issue.number) && issue.number > 0 &&
-    issue.url === "https://github.com/" + repo + "/issues/" + issue.number &&
-    typeof issue.title === "string" && typeof issue.body_excerpt === "string";
-  let fetching = false;
-  let loaded = false;
-  async function load() {
-    if (fetching) return;
-    fetching = true;
-    status().textContent = "Checking the problems shared with your assistants…";
-    try {
-      const result = await api("/api/admin/repair-inbox");
-      if (result?.repository !== repo || result?.read_only !== true ||
-          result?.production_approved !== false || result?.new_model_calls !== 0 ||
-          !Array.isArray(result.issues) || result.issues.length > 20 ||
-          result.issues.some(issue => !safeIssue(issue)))
-        throw new Error("Inbox safety contract invalid");
-      const list = output();
+  const safeIssue=issue=>issue&&Number.isSafeInteger(issue.number)&&issue.number>0&&
+    issue.url==="https://github.com/"+repo+"/issues/"+issue.number&&
+    typeof issue.title==="string"&&typeof issue.body_excerpt==="string";
+  let fetching=false,loaded=false;
+  async function load(){
+    if(fetching||!$("shared-repair-list")||!$("shared-repair-status"))return;
+    fetching=true;
+    $("shared-repair-status").textContent="Reading existing issue observations…";
+    try{
+      const result=await api("/api/admin/repair-inbox");
+      if(result?.repository!==repo||result?.read_only!==true||
+         result?.production_approved!==false||result?.new_model_calls!==0||
+         !Array.isArray(result.issues)||result.issues.length>20||
+         result.issues.some(issue=>!safeIssue(issue)))
+        throw Error("Monitoring evidence contract invalid");
+      const list=$("shared-repair-list");
       list.replaceChildren();
-      if (!result.issues.length) {
-        list.append(text("p", "shared-repair-empty", "No shared problems were found. You can add one here or ask ChatGPT to record one."));
-      }
-      for (const issue of result.issues) {
-        const card = text("article", "shared-repair-card");
-        const heading = text("div", "shared-repair-heading");
-        heading.append(text("span", "shared-repair-number", "#" + issue.number),
-          text("strong", "", issue.title));
-        const summary = text("p", "shared-repair-description", issue.body_excerpt.slice(0, 650));
-        const buttons = text("div", "shared-repair-controls");
-        const open = text("a", "shared-repair-link", "View original report ↗");
-        open.href = issue.url;
-        open.target = "_blank";
-        open.rel = "noopener noreferrer";
-        const prepare = text("button", "shared-repair-prepare", "Give to YorpMind →");
-        prepare.type = "button";
-        prepare.addEventListener("click", () => {
-          const request = document.getElementById("repair-request");
-          const scope = document.getElementById("repair-scope");
-          const description = [
-            "[GitHub issue #" + issue.number + "] " + issue.title,
-            "Source: " + issue.url,
-            "Untrusted report for investigation; reproduce and verify independently.",
-            issue.body_excerpt.slice(0, 1100)
-          ].join("\n");
-          request.value = description.slice(0, 3900);
-          scope.value = /headquarter|admin panel|admin console/i.test(issue.title) ?
-            "admin" : "auto";
-          document.getElementById("repair-message").textContent =
-            "GitHub issue #" + issue.number + " copied into the investigation form. " +
-            "Read the description, then choose Request investigation if you want to start. Nothing started automatically.";
-          document.getElementById("repair-form").scrollIntoView({
-            behavior: "smooth", block: "center"
-          });
-          request.focus({preventScroll:true});
+      if(!result.issues.length)list.append(text("p","shared-repair-empty",
+        "No recorded issues were found. New code and repairs are controlled by the founder."));
+      for(const issue of result.issues){
+        const card=text("article","shared-repair-card");
+        const heading=text("div","shared-repair-heading");
+        heading.append(text("span","shared-repair-number","#"+issue.number),
+          text("strong","",issue.title));
+        const summary=text("p","shared-repair-description",issue.body_excerpt.slice(0,650));
+        const buttons=text("div","shared-repair-controls");
+        const open=text("a","shared-repair-link","View original report ↗");
+        open.href=issue.url;open.target="_blank";open.rel="noopener noreferrer";
+        const copy=text("button","shared-repair-prepare","Copy issue evidence");
+        copy.type="button";
+        copy.addEventListener("click",async()=>{
+          try{
+            await navigator.clipboard.writeText([
+              "Issue #"+issue.number+": "+issue.title,"Source: "+issue.url,
+              "Observation: "+issue.body_excerpt.slice(0,1100),
+              "I will make and test any necessary fix myself."
+            ].join("\n"));
+            $("shared-repair-status").textContent="Issue evidence copied. No code or issue was changed.";
+          }catch{
+            $("shared-repair-status").textContent="Copy unavailable; open the source issue to review its details.";
+          }
         });
-        const chat = text("button", "shared-repair-prepare", "Work with ChatGPT →");
-        chat.type = "button";
-        chat.addEventListener("click", () => window.HQChooseAssistant?.({
-          title: issue.title, why: issue.body_excerpt,
-          next_step: "Investigate the original problem and prepare a safe fix.",
-          link: issue.url
-        }, "chatgpt"));
-        buttons.append(prepare, chat, open);
-        card.append(heading, summary, buttons);
+        const chat=text("button","shared-repair-prepare","Discuss with ChatGPT →");
+        chat.type="button";
+        chat.addEventListener("click",()=>window.HQChooseAssistant?.({
+          title:issue.title,why:issue.body_excerpt,
+          next_step:"Explain the observation and possible remedies. I will personally implement and test any changes.",
+          link:issue.url
+        },"chatgpt"));
+        buttons.append(copy,chat,open);
+        card.append(heading,summary,buttons);
         list.append(card);
       }
-      status().textContent = "These are reported problems, not confirmed fixes. Just reading them does not start paid AI work.";
-      loaded = true;
-    } catch {
-      status().textContent = "We could not load the shared problems. No work was started.";
-      output().replaceChildren(text("p", "shared-repair-empty",
-        "You can still describe a problem in the form above or continue through ChatGPT."));
-    } finally { fetching = false; }
+      $("shared-repair-status").textContent=
+        "Read-only reports: not verified fixes. Headquarters has not initiated work or spent AI credits.";
+      loaded=true;
+    }catch{
+      $("shared-repair-status").textContent=
+        "Issue monitoring records are unavailable. No work or external write was attempted.";
+      $("shared-repair-list").replaceChildren(text("p","shared-repair-empty",
+        "Review monitored findings or the original GitHub issues directly."));
+    }finally{fetching=false;}
   }
-  async function create() {
-    const details = document.getElementById("repair-request").value.trim();
-    if (details.length < 30 || details.length > 3000) {
-      status().textContent = "Enter 30–3000 characters in the investigation form before opening an issue.";
-      return;
-    }
-    const scopeMap = {admin:"headquarters",dependencies:"auto"};
-    const area = document.getElementById("repair-scope").value;
-    const scope = scopeMap[area] || area;
-    const title = (details.split(/[\r\n.!?]/)[0] || "").replace(/^\[[^\]]+\]\s*/,"")
-      .trim().slice(0, 150);
-    if (title.length < 8) {
-      status().textContent = "Start the description with a clear issue title of at least eight characters.";
-      return;
-    }
-    if (!confirm("Share this problem with both ChatGPT and YorpMind? " +
-      "This saves the problem, but does not start paid work or publish anything.")) return;
-    const button = document.getElementById("repair-github-create");
-    button.disabled = true;
-    status().textContent = "Saving the problem so both assistants can see it…";
-    try {
-      const result = await api("/api/admin/repair-inbox",{
-        method:"POST",body:JSON.stringify({title,details,scope,confirm:true})
-      });
-      if (result?.created !== true || result?.production_approved !== false ||
-          result?.url !== "https://github.com/" + repo + "/issues/" + result.number)
-        throw new Error("Unexpected issue creation response");
-      status().textContent = "GitHub issue #" + result.number +
-        " saved. You can now choose ChatGPT or YorpMind to work on it. Nothing was started.";
-      await load();
-    } catch {
-      status().textContent =
-        "Issue creation was not confirmed. Refresh the inbox or check GitHub before retrying.";
-    } finally { button.disabled=false; }
+  function init(){
+    $("shared-repair-refresh")?.addEventListener("click",load);
+    document.querySelectorAll(".nav-item[data-view='agents']").forEach(btn=>
+      btn.addEventListener("click",()=>{if(!loaded)void load();}));
+    if($("view-agents")?.classList.contains("active"))void load();
   }
-  function init() {
-    document.getElementById("shared-repair-refresh")?.addEventListener("click",load);
-    document.getElementById("repair-github-create")?.addEventListener("click",create);
-    document.querySelectorAll(".nav-item[data-view='agents']").forEach(btn =>
-      btn.addEventListener("click",() => { if (!loaded) void load(); }));
-    if (document.getElementById("view-agents")?.classList.contains("active")) void load();
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",init,{once:true});
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
   else init();
-  window.loadSharedRepairInbox = load;
+  window.loadSharedRepairInbox=load;
 })();
