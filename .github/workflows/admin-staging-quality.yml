@@ -1,14 +1,14 @@
 name: YorpHives authenticated Admin staging smoke tests
 
 on:
-  # Secret-bearing Pages deployments are founder-initiated only. The separate
-  # credential-free Chromium workflow runs automatically on pull requests.
+  # Founder-reviewed authenticated testing is manual and non-deploying.
+  # Credential-free Chromium tests run separately on pull requests.
   workflow_dispatch:
     inputs:
-      reviewed_commit_sha:
-        description: "Exact 40-character Git commit you reviewed for private staging"
+      confirm_preview_reviewed:
+        description: "I reviewed the private Headquarters preview and want to run the read-only sign-in checks"
         required: true
-        type: string
+        type: boolean
 
 permissions:
   contents: read
@@ -28,7 +28,7 @@ jobs:
       CF_ACCOUNT_ID: 69234e51e08d8013980a7ff869746609
       PAGES_PROJECT_NAME: yorphives-admin-staging
       PAGES_BRANCH: ${{ github.head_ref || github.ref_name }}
-      PAGES_COMMIT_SHA: ${{ inputs.reviewed_commit_sha }}
+      PAGES_COMMIT_SHA: ${{ github.sha }}
       PAGES_COMMIT_MESSAGE: Verified owner-selected staging browser QA
     steps:
       - name: Check out the tested branch
@@ -37,26 +37,26 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
-      - name: Verify exact founder-reviewed staging revision
+      - name: Verify founder review and automatically selected code revision
         env:
-          REVIEWED_SHA: ${{ inputs.reviewed_commit_sha }}
+          CONFIRM_PREVIEW_REVIEWED: ${{ inputs.confirm_preview_reviewed }}
           EXPECTED_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          if ! [[ "$REVIEWED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error::Enter the complete, exact 40-character reviewed commit SHA."
+          if [ "$CONFIRM_PREVIEW_REVIEWED" != "true" ]; then
+            echo "::error::Review the private preview and check the review-confirmation box before testing."
             exit 1
           fi
-          if [ "$REVIEWED_SHA" != "$EXPECTED_SHA" ] || [ "$REVIEWED_SHA" != "$(git rev-parse HEAD)" ]; then
-            echo "::error::The selected branch commit does not match the approved SHA. No staging deployment will start."
+          if ! [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || [ "$EXPECTED_SHA" != "$(git rev-parse HEAD)" ]; then
+            echo "::error::The selected branch source does not match the exact GitHub revision."
             exit 1
           fi
-          if [ "$PAGES_BRANCH" = "main" ]; then
-            echo "::error::A production branch is not a private feature preview."
+          if [ "$PAGES_BRANCH" = "main" ] || [ "$PAGES_BRANCH" = "master" ]; then
+            echo "::error::The public website branch is not a private staging preview."
             exit 1
           fi
-          echo "Exact staging preview revision verified."
+          echo "Founder review confirmed; exact source revision verified without manual technical IDs."
       - name: Verify required deployment and Access credentials
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -65,17 +65,17 @@ jobs:
         shell: bash
         run: |
           if [ -z "$CF_API_TOKEN" ]; then
-            echo "::error::Add CLOUDFLARE_API_TOKEN as an environment secret in the protected staging-deployments environment with account-scoped Cloudflare Pages Edit permission."
+            echo "::error::A protected CLOUDFLARE_API_TOKEN with Cloudflare Pages Read is needed to check the exact existing private deployment."
             exit 1
           fi
           if [ -z "$CF_ACCESS_CLIENT_ID" ] || [ -z "$CF_ACCESS_CLIENT_SECRET" ]; then
             echo "::error::Add CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET as environment secrets in staging-deployments, then authorize the token with a Service Auth policy on the YorpHives Admin deployment aliases Access application."
             exit 1
           fi
-      - name: Deploy the Admin feature branch to isolated Pages staging
+      - name: Verify the existing private Pages preview and anonymous Access boundary
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: npm run deploy:pages-preview
+        run: node scripts/verify-existing-admin-preview.mjs
       - name: Wait for authenticated Admin preview
         env:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: |
           if [ -z "$ADMIN_BASE_URL" ]; then
-            echo "::error::The Pages deployment step did not return ADMIN_BASE_URL."
+            echo "::error::The verified existing preview did not return ADMIN_BASE_URL."
             exit 1
           fi
           echo "Waiting for authenticated Admin preview: $ADMIN_BASE_URL"
@@ -110,11 +110,13 @@ jobs:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: npm run test:admin-smoke
-      - name: Upload sanitized Admin smoke report
+      - name: Upload sanitized Admin smoke report and safe existing-preview receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: yorphives-admin-smoke-${{ github.run_id }}
-          path: artifacts/admin-smoke.json
+          path: |
+            artifacts/admin-smoke.json
+            artifacts/admin-preview-verification.json
           if-no-files-found: warn
           retention-days: 30
