@@ -108,6 +108,45 @@ function fixture(path) {
     return { ...neutral, name: "Headquarters Founder Action Center",
       scope: "private_d1_evidence_only", actions: [], pending_total_in_window: 0 };
   }
+  if (path === "/api/admin/cockpit") {
+    // Synthetic dashboard records are exclusively for layout and interaction
+    // testing. They never describe a connected business or live website.
+    const available = { available:true, partial:false, observed_at:iso, error:null };
+    return {
+      name:"YorpHives Founder Cockpit", generated_at:iso,
+      scope:"private_database_evidence", availability:"ready", read_only:true,
+      metrics:{
+        missions:{ total:12, active:5, planned:2, running:1, review:2,
+          failed:1, completed:6, rehearsals:0 },
+        issues:{ active:3, critical:1, known_active:3, known_critical:1 },
+        monitors:{ enabled:7, passing:6, failing:1, stale:0, unknown:0,
+          last_checked_at:iso, freshness_window_hours:8 },
+        memory:{ experiences:2, approved_skills:1 },
+        opportunities:{ proposed:4, shortlisted:1 }
+      },
+      sources:Object.fromEntries(["missions","issues","monitors","memory",
+        "opportunities","activity"].map(name=>[name,{...available}])),
+      recent_missions:[{
+        job_id:"123e4567-e89b-42d3-a456-000000000001",
+        title:"Review onboarding clarity", status:"awaiting_owner_approval",
+        priority:"high", updated_at:iso
+      }],
+      recent_activity:[{
+        event_id:"123e4567-e89b-42d3-a456-000000000002",
+        job_id:"123e4567-e89b-42d3-a456-000000000001",
+        title:"Review onboarding clarity", event_type:"mission_brief_saved",
+        actor_type:"system", created_at:iso
+      }],
+      next_actions:[{
+        id:"critical-issues", title:"Review critical website problems",
+        description:"One synthetic finding exercises the attention layout.",
+        view:"issues", urgency:"urgent", target:null
+      }],
+      finances:{ revenue:null, operating_cost:null, status:"not_connected",
+        message:"Revenue and provider bills are not connected." },
+      limitations:"Offline synthetic layout fixture; no real business records."
+    };
+  }
   if (path === "/api/admin/headquarters") {
     return { ...neutral, schema_version: "offline-qa", engine_available: false };
   }
@@ -187,6 +226,11 @@ async function navigate(page, view) {
     nav.click();
   }, view);
   await page.locator("#view-" + view).waitFor({ state: "visible", timeout: TIMEOUT });
+  // Browser layout and route loading can settle after the section is visible.
+  // Wait for the same navigation state we assert, without a fixed sleep.
+  await page.waitForFunction(name => location.hash === "#" + name &&
+    document.querySelector('.nav-item[aria-current="page"]')?.dataset.view === name &&
+    window.scrollY === 0, view, { timeout: TIMEOUT });
   const status = await page.evaluate(name => ({
     hash: location.hash,
     activeCount: document.querySelectorAll(".nav-item.active").length,
@@ -267,6 +311,92 @@ async function main() {
       design.refined && design.prism && design.collapsedSettings,
       "Professional visual theme and optional settings must load.");
 
+    await page.waitForFunction(() =>
+      document.getElementById("cockpit-missions")?.textContent === "5",
+    null, { timeout: TIMEOUT });
+    const cockpit = await page.evaluate(() => ({
+      headingCount:document.querySelectorAll("#view-headquarters h1").length,
+      metricButtons:document.querySelectorAll(".cockpit-metrics button").length,
+      counts:["cockpit-missions","cockpit-issues","cockpit-opportunities","cockpit-memory"].map(id=>
+        document.getElementById(id)?.textContent),
+      optionalClosed:[".cockpit-reference",".cockpit-execution-details"].every(selector=>
+        document.querySelector(selector)?.open === false),
+      heading:document.getElementById("founder-welcome")?.textContent
+    }));
+    check("cockpit:recorded-counts-and-focused-home",
+      cockpit.headingCount === 1 && cockpit.metricButtons === 4 &&
+      cockpit.counts.join(",") === "5,3,5,2" && cockpit.optionalClosed &&
+      cockpit.heading?.includes("Today at Headquarters"),
+      "A single founder heading and source-backed counts keep optional detail collapsed.");
+    check("cockpit:next-action-enabled",
+      await page.locator("#cockpit-next-action").isEnabled() &&
+      (await page.locator("#cockpit-next-title").textContent()).includes("critical"),
+      "The next action must be selected from the recorded finding fixture.");
+    await page.locator("#cockpit-next-action").click();
+    await page.locator("#view-issues").waitFor({state:"visible",timeout:TIMEOUT});
+    check("cockpit:next-action-navigation",
+      await page.locator('.nav-item[aria-current="page"]').getAttribute("data-view") === "issues",
+      "The suggested next step opens its existing workspace without a mutation.");
+    await navigate(page,"headquarters");
+    await page.locator("#hq-new").click();
+    check("cockpit:mission-composer-keyboard",
+      await page.locator("#hq-compose").isVisible() &&
+      await page.locator("#hq-title").evaluate(node=>node === document.activeElement),
+      "New mission opens the real composer and puts keyboard focus on its title.");
+    await page.locator("#hq-close").click();
+    check("cockpit:mission-composer-close",
+      !await page.locator("#hq-compose").isVisible() &&
+      await page.locator("#hq-new").evaluate(node=>node === document.activeElement),
+      "Closing a draft restores focus to New mission without creating a record.");
+
+    const failedCockpit = async intercepted => intercepted.fulfill({
+      status:503, headers:JSON_HEADERS,
+      body:JSON.stringify({error:{message:"Synthetic dashboard outage for retry testing."}})
+    });
+    await page.route("**/api/admin/cockpit",failedCockpit);
+    await page.locator("#cockpit-refresh").click();
+    await page.waitForFunction(() =>
+      document.getElementById("cockpit-status")?.textContent.includes("unavailable"),
+    null, { timeout:TIMEOUT });
+    check("cockpit:outage-clears-stale-counts",
+      (await page.locator("#cockpit-missions").textContent()) === "—" &&
+      await page.locator("#cockpit-refresh").isEnabled(),
+      "An unavailable backend must clear stale totals and leave a usable retry action.");
+    await page.unroute("**/api/admin/cockpit",failedCockpit);
+    await page.locator("#cockpit-refresh").click();
+    await page.waitForFunction(() =>
+      document.getElementById("cockpit-missions")?.textContent === "5",
+    null, { timeout:TIMEOUT });
+    check("cockpit:retry-restores-recorded-counts",
+      (await page.locator("#cockpit-memory").textContent()) === "2",
+      "Retry must load the new snapshot after a dashboard outage.");
+    if (await page.locator("#system-message-dismiss").isVisible()) {
+      await page.locator("#system-message-dismiss").click();
+    }
+
+    const partialCockpit = async intercepted => {
+      const partial=fixture("/api/admin/cockpit");
+      partial.availability="partial";
+      partial.metrics.memory={experiences:null,approved_skills:null};
+      partial.sources.memory={available:false,partial:false,observed_at:null,
+        error:"Synthetic memory source outage for layout testing."};
+      return intercepted.fulfill({status:200,headers:JSON_HEADERS,body:JSON.stringify(partial)});
+    };
+    await page.route("**/api/admin/cockpit",partialCockpit);
+    await page.locator("#cockpit-refresh").click();
+    await page.waitForFunction(() =>
+      document.getElementById("cockpit-memory")?.textContent === "—",
+    null, { timeout:TIMEOUT });
+    check("cockpit:optional-source-failure-isolated",
+      (await page.locator("#cockpit-missions").textContent()) === "5" &&
+      (await page.locator("#cockpit-skills").textContent()) === "—",
+      "Missing memory must not erase missions or pretend the missing counters are zero.");
+    await page.unroute("**/api/admin/cockpit",partialCockpit);
+    await page.locator("#cockpit-refresh").click();
+    await page.waitForFunction(() =>
+      document.getElementById("cockpit-memory")?.textContent === "2",
+    null, { timeout:TIMEOUT });
+
     // Every route is navigable without contacting a live service. Real API
     // behaviors are tested separately in the authenticated staging workflow.
     for (const route of [
@@ -340,6 +470,7 @@ async function main() {
 
     // The founder can choose either helper. These are pure local UI actions:
     // do not paste secrets, send chat messages, start workers or create jobs.
+    await page.locator(".cockpit-reference > summary").click();
     await page.locator("#founder-chatgpt").click();
     const dialog = page.locator("#founder-handoff-dialog");
     check("handoff:chatgpt",

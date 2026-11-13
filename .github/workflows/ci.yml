@@ -5,21 +5,10 @@ on:
     branches:
       - main
       - "build/**"
-      - feature/founder-one-tap-controls
+      - "feature/**"
+  # Stacked Headquarters branches must receive checks whichever base is used.
   pull_request:
-    branches:
-      - main
-      - build/headquarters-staging-mission-proof
-      - build/headquarters-durable-staging-rehearsal
-      - build/headquarters-shared-repair-learning
-      - build/headquarters-founder-temporary-permissions
-      - design/headquarters-compact-workspace
-      - design/headquarters-prism-brand-theme
-      - ops/headquarters-staging-schema-complete
-      - qa/headquarters-browser-launch-check
-      - fix/headquarters-repair-intake-learning
-      - fix/headquarters-live-website-proof
-      - qa/headquarters-authenticated-preview-rehearsal
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -39,7 +28,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Run syntax checks and platform contract tests
         run: npm run check
       - name: Verify Headquarters component, migration and provider policy

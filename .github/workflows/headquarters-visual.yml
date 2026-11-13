@@ -1,11 +1,12 @@
 name: Headquarters offline desktop and mobile visual QA
 
 on:
-  pull_request:
+  push:
     branches:
-      - ops/headquarters-staging-schema-complete
-      - fix/headquarters-repair-intake-learning
-      - fix/headquarters-live-website-proof
+      - main
+      - "build/**"
+      - "feature/**"
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -26,7 +27,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 22
+          node-version: 24
       - name: Install pinned temporary browser test runner
         run: npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
       - name: Install isolated Chromium browser and OS dependencies

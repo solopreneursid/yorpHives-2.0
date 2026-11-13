@@ -40,8 +40,8 @@ async function api(path, options = {}) {
     throw error;
   }
   if (response.redirected || response.status === 401 || response.status === 403) {
-    showSystemMessage("Your Cloudflare Access session may have expired or this browser is not authorized. Sign in again, then reload the Admin.", { kind: "error", reauthenticate: true });
-    throw new Error("Cloudflare Access authorization is required. Use Sign in / refresh.");
+    showSystemMessage("Your owner session may have expired or this browser is not authorized. Sign in again, then reload Headquarters.", { kind: "error", reauthenticate: true });
+    throw new Error("An authorized owner session is required. Sign in and refresh.");
   }
   const contentType = response.headers.get("content-type") || "";
   const data = contentType.includes("application/json") ? await response.json().catch(() => ({})) : {};
@@ -106,7 +106,9 @@ function showView(name) {
   setText("breadcrumb", view.dataset.title || name);
   // The previous page may have been scrolled several screens down.
   // A new page must always open at its beginning, not on a blank old offset.
-  window.scrollTo(0, 0);
+  // Complete the new view's layout, then cancel any previous smooth scroll.
+  view.getBoundingClientRect();
+  window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
   $("sidebar").classList.remove("open");
   $("mobile-scrim").classList.remove("show");
@@ -537,7 +539,12 @@ $("system-message-dismiss").addEventListener("click", () => {
   const panel = $("system-message");
   if (panel) panel.hidden = true;
 });
-$("logout").addEventListener("click",event=>{if(!confirm("Sign out of Cloudflare Access? This ends your Access session across all protected apps in this browser."))event.preventDefault();});
+$("logout").addEventListener("click",event=>{
+  const message=document.documentElement.dataset.runtime==="self-hosted"
+    ? "Continue to sign out of your private Headquarters?"
+    : "Sign out of Cloudflare Access? This ends your Access session across all protected apps in this browser.";
+  if(!confirm(message))event.preventDefault();
+});
 $("refresh").addEventListener("click",refreshCurrent);
 $("run").addEventListener("click",async()=>{
   if(!confirm("Run read-only HTTPS checks against configured YorpHives production and preview URLs?"))return;
