@@ -21,12 +21,11 @@ test("authenticated smoke proves actual manager records, not just present UI", (
   assert.match(smoke, /production_execution_enabled===false/);
 });
 
-test("private staging workflow is one-checkbox, exact-SHA, manual, nondeploying and protected", () => {
+test("staging development QA requires no founder checkbox but remains exact-SHA and nondeploying", () => {
   assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /confirm_preview_reviewed:/);
-  assert.match(workflow, /type: boolean/);
-  assert.match(workflow, /required: true/);
-  assert.match(workflow, /CONFIRM_PREVIEW_REVIEWED/);
+  assert.doesNotMatch(workflow, /confirm_preview_reviewed:/);
+  assert.doesNotMatch(workflow, /CONFIRM_PREVIEW_REVIEWED/);
+  assert.match(workflow, /Verify isolated staging revision without founder approval/);
   assert.match(workflow, /\$\{\{ github\.sha \}\}/);
   assert.match(workflow, /git rev-parse HEAD/);
   assert.match(workflow, /PAGES_BRANCH" = "main"/);
