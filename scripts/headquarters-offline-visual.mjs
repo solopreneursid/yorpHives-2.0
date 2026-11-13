@@ -277,10 +277,11 @@ async function main() {
   await mkdir(artifactDirectory, { recursive: true });
   const { server, baseUrl } = await startServer();
   let browser;
+  let page;
   let problem = null;
   try {
     browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage({
+    page = await browser.newPage({
       viewport: { width: 1440, height: 960 },
       reducedMotion: "reduce"
     });
@@ -506,7 +507,21 @@ async function main() {
       "Uncaught browser JavaScript errors were detected.");
     await page.close();
   } catch (error) {
-    problem = error instanceof Error ? error.message : "Unknown test failure";
+    let diagnostics = {};
+    if (page) {
+      diagnostics = await page.evaluate(() => ({
+        activeView: document.querySelector(".view.active")?.id || null,
+        cockpitStatus: document.getElementById("cockpit-status")?.textContent?.slice(0, 130) || null,
+        missions: document.getElementById("cockpit-missions")?.textContent || null,
+        memory: document.getElementById("cockpit-memory")?.textContent || null,
+        refreshBusy: document.getElementById("cockpit-refresh")?.disabled ?? null,
+        readyState: document.readyState
+      })).catch(() => ({ pageEvaluationFailed: true }));
+    }
+    problem = (error instanceof Error ? error.message : "Unknown test failure") +
+      " | last_checkpoint=" + (checks.at(-1)?.name || "before-first-check") +
+      " | cockpit=" + JSON.stringify(diagnostics);
+    console.error(problem);
   } finally {
     if (browser) await browser.close();
     await new Promise(resolve => server.close(resolve));
