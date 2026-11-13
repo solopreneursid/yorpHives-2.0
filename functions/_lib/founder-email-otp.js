@@ -12,7 +12,10 @@ export const otpEnabled=(env,email)=>env?.FOUNDER_OTP_ENABLED==="yes" &&
   validEmailAddress(env?.FOUNDER_OTP_FROM) &&
   validEmailAddress(env?.FOUNDER_OWNER_EMAIL) &&
   env.FOUNDER_OWNER_EMAIL.toLowerCase()===String(email).toLowerCase() &&
-  typeof env?.FOUNDER_MAIL?.send==="function";
+  (typeof env?.FOUNDER_MAIL?.send==="function" ||
+    (typeof env?.FOUNDER_EMAIL_API_TOKEN==="string" &&
+      env.FOUNDER_EMAIL_API_TOKEN.length>=32 &&
+      /^[0-9a-f]{32}$/i.test(String(env?.FOUNDER_CF_ACCOUNT_ID||""))));
 
 export function generateSixDigitCode(){
   const sample=new Uint32Array(1);
@@ -52,4 +55,36 @@ export async function otpDigest(secret,id,owner,payload,code){
     encoder.encode("yorphives-otp-v1\n"+id+"\n"+owner.toLowerCase()+
       "\n"+payload+"\n"+code));
   return bytesToHex(new Uint8Array(signed));
+}
+
+/**
+ * Pluggable sending adapter. Native bindings work when available;
+ * Cloudflare Email Service REST works with Pages Functions and a narrowly
+ * scoped Email Sending API token held in an environment secret.
+ */
+export async function sendFounderMail(env,message){
+  if(typeof env?.FOUNDER_MAIL?.send==="function"){
+    const result=await env.FOUNDER_MAIL.send(message);
+    if(result==null || result?.success===false)throw Error("Mail was not accepted");
+    return true;
+  }
+  if(typeof env?.FOUNDER_EMAIL_API_TOKEN!=="string"||
+    env.FOUNDER_EMAIL_API_TOKEN.length<32 ||
+    !/^[0-9a-f]{32}$/i.test(String(env?.FOUNDER_CF_ACCOUNT_ID||"")))
+    throw Error("Email transport is not configured");
+  const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+
+    env.FOUNDER_CF_ACCOUNT_ID+"/email/sending/send",{
+    method:"POST",signal:AbortSignal.timeout(8000),
+    headers:{"authorization":"Bearer "+env.FOUNDER_EMAIL_API_TOKEN,
+      "content-type":"application/json"},
+    body:JSON.stringify(message)
+  });
+  if(!response.ok)throw Error("Email transport refused the request");
+  const receipt=await response.json();
+  const accepted=[...(receipt?.result?.queued||[]),
+    ...(receipt?.result?.delivered||[])];
+  if(receipt?.success!==true ||
+     !accepted.some(x=>String(x).toLowerCase()===message.to.toLowerCase()))
+    throw Error("Mail delivery was not accepted for founder destination");
+  return true;
 }
