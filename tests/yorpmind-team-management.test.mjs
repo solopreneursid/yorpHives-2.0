@@ -133,7 +133,7 @@ test("daily scan records immutable deduplicated proposals in D1 without inferenc
     db.exec("PRAGMA foreign_keys=ON;");
     db.exec("CREATE TABLE agent_departments(department_id TEXT PRIMARY KEY,name TEXT);");
     db.exec("CREATE TABLE agent_registry(agent_id TEXT PRIMARY KEY,display_name TEXT,department_id TEXT,status TEXT,enabled INTEGER,autonomy_level TEXT);");
-    db.exec("CREATE TABLE agent_jobs(job_id TEXT PRIMARY KEY,agent_id TEXT,job_type TEXT,title TEXT,status TEXT,priority TEXT,updated_at TEXT,result_json TEXT);");
+    db.exec("CREATE TABLE agent_jobs(job_id TEXT PRIMARY KEY,agent_id TEXT,job_type TEXT,title TEXT,status TEXT,priority TEXT,updated_at TEXT,result_json TEXT,origin_type TEXT);");
     db.exec("CREATE TABLE agent_job_events(event_type TEXT,created_at TEXT);");
     db.exec(await readFile(new URL("../migrations/0027_yorpmind_team_management.sql",import.meta.url),"utf8"));
     db.prepare("INSERT INTO agent_departments VALUES (?,?)").run("engineering","Engineering");
@@ -162,7 +162,7 @@ test("daily cap holds even with extra eligible changes and no autonomous privile
   try {
     db.exec("CREATE TABLE agent_departments(department_id TEXT PRIMARY KEY,name TEXT);");
     db.exec("CREATE TABLE agent_registry(agent_id TEXT PRIMARY KEY,display_name TEXT,department_id TEXT,status TEXT,enabled INTEGER,autonomy_level TEXT);");
-    db.exec("CREATE TABLE agent_jobs(job_id TEXT PRIMARY KEY,agent_id TEXT,job_type TEXT,title TEXT,status TEXT,priority TEXT,updated_at TEXT,result_json TEXT);");
+    db.exec("CREATE TABLE agent_jobs(job_id TEXT PRIMARY KEY,agent_id TEXT,job_type TEXT,title TEXT,status TEXT,priority TEXT,updated_at TEXT,result_json TEXT,origin_type TEXT);");
     db.exec("CREATE TABLE agent_job_events(event_type TEXT,created_at TEXT);");
     db.exec(await readFile(new URL("../migrations/0027_yorpmind_team_management.sql",import.meta.url),"utf8"));
     db.prepare("INSERT INTO agent_departments VALUES (?,?)").run("research","Research");
