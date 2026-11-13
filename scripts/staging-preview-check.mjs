@@ -5,6 +5,7 @@
  * Secrets are used only inside the authenticated GitHub Actions environment.
  * They must never be printed, included in reports or passed to a browser.
  */
+import {verifyHeadquartersD1Isolation} from "../functions/_lib/hq-resource-isolation.js";
 const PROJECT = "yorphives-admin-staging";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const SHA = /^[a-f0-9]{40}$/;
@@ -32,6 +33,25 @@ export function sameHeadquartersCanonical(before,after){
  return Boolean(before&&after&&before.id===after.id&&
   before.sha===after.sha&&before.branch===after.branch);
 }
+/** Read-only Pages project D1 isolation probe. Never lists row data or writes D1. */
+export async function readHeadquartersD1Isolation({accountId,apiToken,fetcher=globalThis.fetch}){
+ if(!/^[a-f0-9]{32}$/i.test(String(accountId||""))||
+    !apiToken||typeof fetcher!=="function")
+  throw Error("Read-only Cloudflare D1 isolation verification credentials required.");
+ const response=await fetcher(
+  "https://api.cloudflare.com/client/v4/accounts/"+accountId+
+   "/pages/projects/yorphives-admin-staging",
+  {method:"GET",headers:{authorization:"Bearer "+apiToken,accept:"application/json"},
+   signal:AbortSignal.timeout(12000)}
+ );
+ const body=await response.json().catch(()=>null);
+ if(response.status!==200||body?.success!==true)
+  throw Error("Cloudflare Pages environment bindings could not be verified.");
+ const result=verifyHeadquartersD1Isolation(body.result);
+ if(!result.isolated)throw Error(result.reason);
+ return result;
+}
+
 export async function readHeadquartersCanonical({accountId,apiToken,fetcher=globalThis.fetch}){
  if(!/^[a-f0-9]{32}$/i.test(String(accountId||""))||
     !apiToken||typeof fetcher!=="function")
