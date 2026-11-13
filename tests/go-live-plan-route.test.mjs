@@ -12,6 +12,7 @@ const auth=asUrl(
  "new Response('Cloudflare Access required',{status:403});};");
 const live=asUrl("export const readLiveGoLiveReadiness=async()=>globalThis.__releaseCandidate;");
 const plan=asUrl("export const planHeadquartersFastForward=args=>globalThis.__buildReleasePlan(args);");
+const drift=asUrl("export const diagnoseHeadquartersDrift=args=>globalThis.__diagnoseDrift(args);");
 const readiness=asUrl(
  'export const REPO="solopreneursid/yorpHives-2.0";'+
  'export const RELEASE_BASE_BRANCH={headquarters:"build/yorphives-admin-reliability"};'+
@@ -22,6 +23,7 @@ for(const [name,url] of [
  ['"../../_lib/admin-auth"',auth],
  ['"../../_lib/go-live-live.js"',live],
  ['"../../_lib/hq-go-live-plan.js"',plan],
+ ['"../../_lib/hq-release-drift.js"',drift],
  ['"../../_lib/go-live-readiness.js"',readiness]
 ]){assert.ok(source.includes(name),name);source=source.replace(name,JSON.stringify(url));}
 const {onRequestGet}=await import(asUrl(source));
@@ -44,6 +46,7 @@ function context(actor="owner",extraEnv={}){
 test("the founder can inspect an exact release plan via read-only provider calls",async()=>{
  const oldFetch=globalThis.fetch,calls=[];
  globalThis.__releaseCandidate=candidate;
+ globalThis.__diagnoseDrift=()=>({status:"aligned",reconciled:true,production_deployment_enabled:false});
  globalThis.__buildReleasePlan=given=>{
   assert.equal(given.readiness.candidate.sha,sha);
   assert.equal(given.compareBase,base);
@@ -81,19 +84,38 @@ test("automated service identities and unauthenticated requests cannot see found
  assert.equal(body.eligible,false);
  assert.equal(body.production_deployment_enabled,false);
 });
-test("incomplete live checks or missing provider permissions lock the release plan",async()=>{
- const oldFetch=globalThis.fetch;
+test("incomplete checks still expose founder-only read-only drift without planning a release",async()=>{
+ const oldFetch=globalThis.fetch,calls=[];
+ globalThis.__releaseCandidate={...candidate,ready_for_preview:false,blockers:["CI is incomplete"]};
+ globalThis.__diagnoseDrift=()=>({status:"source_ahead_of_served",
+  reconciled:false,source_sha:base,served_sha:"c".repeat(40),
+  previous_deployment_id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",
+  ahead_by:2,reason:"Verified canonical source drift.",production_deployment_enabled:false});
+ globalThis.fetch=async(url,options)=>{
+  calls.push({url,method:options.method});
+  if(url.includes("/branches/"))return Response.json({
+   name:"build/yorphives-admin-reliability",commit:{sha:base}});
+  if(url.includes("/pages/projects/"))return Response.json({success:true,result:{
+   name:"yorphives-admin-staging",
+   canonical_deployment:{deployment_trigger:{metadata:{commit_hash:"c".repeat(40)}}}
+  }});
+  if(url.includes("/compare/"))return Response.json({status:"ahead",ahead_by:2,behind_by:0,
+   base_commit:{sha:"c".repeat(40)},merge_base_commit:{sha:"c".repeat(40)}});
+  throw Error("Unapproved provider request");
+ };
  try{
-  let calls=0;
-  globalThis.fetch=async()=>{calls++;throw Error("No provider call should happen");};
-  globalThis.__releaseCandidate={...candidate,ready_for_preview:false,blockers:["CI is incomplete"]};
-  const rejected=await onRequestGet(context());
-  assert.equal((await rejected.json()).eligible,false);
-  assert.equal(calls,0);
-  globalThis.__releaseCandidate=candidate;
+  const response=await onRequestGet(context()),body=await response.json();
+  assert.equal(body.eligible,false);
+  assert.equal(body.plan,null);
+  assert.equal(body.drift.status,"source_ahead_of_served");
+  assert.equal(body.production_deployment_enabled,false);
+  assert.ok(body.blockers.includes("CI is incomplete"));
+  assert.equal(calls.length,3);
+  assert.ok(calls.every(x=>x.method==="GET"));
+  calls.length=0;
   const noToken=await onRequestGet(context("owner",{HQ_RELEASE_GITHUB_READ_TOKEN:""}));
   assert.equal((await noToken.json()).eligible,false);
-  assert.equal(calls,0);
+  assert.equal(calls.length,0);
  }finally{globalThis.fetch=oldFetch;}
 });
 
