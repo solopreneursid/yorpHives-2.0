@@ -153,6 +153,32 @@
         details.textContent = data.blockers.slice(0, 3).map(s => String(s).slice(0, 240)).join(" ") ||
           "Release evidence is incomplete. The team can continue working without administrator approval.";
       }
+      // Founder-only, read-only diagnosis; never infer permission to publish.
+      if (target === "headquarters") {
+        try {
+          const diagnosisResponse = await fetch("/api/admin/go-live-plan", {
+            credentials: "same-origin", cache: "no-store",
+            headers: { accept: "application/json" }
+          });
+          if (diagnosisResponse.ok && !diagnosisResponse.redirected) {
+            const diagnosis = await diagnosisResponse.json();
+            const drift = diagnosis?.drift;
+            if (diagnosis?.production_deployment_enabled === false &&
+                drift?.production_deployment_enabled === false &&
+                drift.status === "source_ahead_of_served" &&
+                /^[a-f0-9]{40}$/.test(drift.source_sha || "") &&
+                /^[a-f0-9]{40}$/.test(drift.served_sha || "") &&
+                Number.isSafeInteger(drift.ahead_by) && drift.ahead_by > 0) {
+              status.textContent = "Deployment mismatch · Go Live locked";
+              details.textContent = "GitHub is " + drift.ahead_by +
+                " commit(s) ahead of the version Cloudflare serves. " +
+                "Source " + drift.source_sha.slice(0, 12) +
+                " · Served " + drift.served_sha.slice(0, 12) +
+                ". Preserve the live deployment for recovery and complete the release checks before publishing.";
+            }
+          }
+        } catch { /* Keep existing fail-closed release status. */ }
+      }
     } catch {
       status.textContent = "Verification unavailable";
       details.textContent = "Live release checks could not be confirmed. Keep developing; publishing is locked.";
