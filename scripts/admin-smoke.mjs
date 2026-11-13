@@ -1,4 +1,5 @@
 import { chromium, request } from "playwright";
+import {makePrivatePreviewAccessRouter,privatePreviewOrigin} from "./admin-smoke-network-policy.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 
 const baseUrl = (process.env.ADMIN_BASE_URL || "").replace(/\/$/, "");
@@ -12,8 +13,8 @@ if (!clientId || !clientSecret) {
 }
 const parsedBase = new URL(baseUrl);
 if (parsedBase.protocol !== "https:") throw new Error("Admin staging tests require HTTPS.");
-if (!parsedBase.hostname.endsWith(".yorphives-admin-staging.pages.dev")) {
-  throw new Error("Refusing to test a non-staging Pages hostname.");
+if (!privatePreviewOrigin(baseUrl)) {
+  throw new Error("Refusing to send Access credentials to a non-isolated Headquarters preview.");
 }
 
 const accessHeaders = {
@@ -38,8 +39,16 @@ async function run() {
   try {
     context = await browser.newContext({
       viewport: { width: 1440, height: 1000 },
-      extraHTTPHeaders: accessHeaders
+      serviceWorkers: "block"
     });
+    // Never set service credentials as browser-global extraHTTPHeaders.
+    // A malicious preview can request external resources or redirect; the
+    // route proxy refuses non-allowlisted origins and DOES NOT follow redirects.
+    await context.route("**/*", makePrivatePreviewAccessRouter({
+      origin: parsedBase.origin, clientId, clientSecret
+    }));
+    // Outbound browser WebSockets are unnecessary for the read-only smoke test.
+    await context.routeWebSocket("**/*", socket => socket.close());
     const page = await context.newPage();
     const pageErrors = [];
     page.on("pageerror", error => pageErrors.push(error.message.slice(0, 180)));
