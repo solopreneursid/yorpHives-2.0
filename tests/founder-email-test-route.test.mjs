@@ -12,7 +12,7 @@ const auth=toModule("export const adminJson=(body,status=200)=>Response.json(bod
   "?{email:'owner@example.com',serviceToken:false}:"+
   "Response.json({error:{code:'NO_OWNER'}},{status:401});");
 const helper=toModule(await source("../functions/_lib/founder-email-otp.js"));
-const route=(await source("../functions/api/admin/founder-email-test.ts"))
+const route=(await source("../functions/api/admin/founder-email-check.ts"))
   .replace('"../../_lib/admin-auth"',JSON.stringify(auth))
   .replace('"../../_lib/founder-email-otp.js"',JSON.stringify(helper));
 const handler=await import(toModule(route));
@@ -38,7 +38,7 @@ function fixture(){
     FOUNDER_OTP_HMAC_KEY:"test only secret with 32+ bytes of random-looking text",
     FOUNDER_MAIL:{async send(m){outgoing.push(m);return{messageId:"fixture"};}}};
   const request=(options={})=>({env:{...env,...options.env},
-    request:new Request("https://headquarters.example/api/admin/founder-email-test",{
+    request:new Request("https://headquarters.example/api/admin/founder-email-check",{
       method:"POST",
       headers:{"origin":options.origin||"https://headquarters.example",
         "x-test-owner":options.owner===false?"no":"yes",
