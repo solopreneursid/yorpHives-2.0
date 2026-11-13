@@ -1,4 +1,5 @@
 import { recommendTeamActions, MAX_TEAM_AGENTS_SCANNED, MAX_TEAM_JOBS_SCANNED } from "../functions/_lib/yorpmind-team.js";
+import { suggestRepairCoaching } from "../functions/_lib/yorpmind-repair-coaching.js";
 
 export async function scanYorpMindTeam(db, clock = () => new Date()) {
   if (!db) return { status: "unavailable", reports_created: 0 };
@@ -16,8 +17,31 @@ export async function scanYorpMindTeam(db, clock = () => new Date()) {
   ]);
   const recommendations = recommendTeamActions(staff.results || [], agents.results || [], jobs.results || [], departments.results || [], now,
     { dailyMissionsUsed: Number(daily?.used || 0) });
+
+  // Failed repair attempts are only *coaching evidence* for Engineering and QA.
+  // They are never written to approved YorpMind skills or repair experiences.
+  // Older local fixtures without repair tables still support the team scan.
+  const repairSchema = await db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND " +
+    "name IN ('admin_repair_jobs','admin_repair_finding_links','admin_asset_findings','admin_assets')"
+  ).all();
+  let repairFailures = [];
+  if (new Set((repairSchema.results || []).map(row => row.name)).size === 4) {
+    const recent = await db.prepare(
+      "SELECT j.id AS source_job_id,j.status,j.result_summary AS failure_summary," +
+      "l.finding_source,f.finding_key,a.url AS asset_url " +
+      "FROM admin_repair_jobs j " +
+      "LEFT JOIN admin_repair_finding_links l ON l.job_id=j.id " +
+      "LEFT JOIN admin_asset_findings f ON l.finding_source='asset' AND f.id=l.finding_id " +
+      "LEFT JOIN admin_assets a ON a.id=f.asset_id " +
+      "WHERE j.status='failed' ORDER BY j.updated_at DESC LIMIT 6"
+    ).all();
+    repairFailures = recent.results || [];
+  }
+  const coaching = suggestRepairCoaching(repairFailures, staff.results || [], date);
   let count = 0;
-  for (const item of recommendations) {
+  let trainingReportsCreated = 0;
+  for (const item of [...recommendations, ...coaching]) {
     const inserted = await db.prepare(
       "INSERT OR IGNORE INTO yorpmind_team_reports " +
       "(report_id,report_day,report_key,manager_id,subject_agent_id,source_job_id,recommendation,severity,summary,evidence_json,state,created_at) " +
@@ -27,10 +51,16 @@ export async function scanYorpMindTeam(db, clock = () => new Date()) {
       item.subject_agent_id, item.source_job_id, item.recommendation, item.severity,
       item.summary, JSON.stringify(item.evidence), now.toISOString(), date
     ).first();
-    if (inserted?.report_id) count++;
+    if (inserted?.report_id) {
+      count++;
+      if (item.report_key.startsWith("coaching:")) trainingReportsCreated++;
+    }
   }
   return {
     status: "completed", date, reports_created: count,
+    coaching_reports_created: trainingReportsCreated,
+    coaching_is_not_approved_skill: true,
+    failed_repairs_scanned: repairFailures.length,
     jobs_scanned: (jobs.results || []).length, agents_scanned: (agents.results || []).length,
     model_calls: 0, agent_dispatches: 0, production_changes: 0
   };
