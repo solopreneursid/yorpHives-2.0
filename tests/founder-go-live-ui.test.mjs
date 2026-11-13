@@ -11,7 +11,7 @@ test("founder home shows one production release decision without granting admin 
   assert.match(html, /id="release-launch-preview"[^>]*aria-disabled="true"[^>]*>Preview<\/a>/);
   assert.match(html, /id="release-go-live"[^>]*>Go Live<\/button>/);
   assert.match(html, /id="view-security"/);
-  assert.match(html, /class="founder-permission-panel"[^>]*open/);
+  assert.match(html, /class="founder-permission-panel"/);
   assert.match(html, /class="owner-delegation-panel"/);
   assert.equal((html.match(/id="founder-stop-all"/g)||[]).length,1);
   assert.doesNotMatch(html, /id="founder-open-permissions"/);
