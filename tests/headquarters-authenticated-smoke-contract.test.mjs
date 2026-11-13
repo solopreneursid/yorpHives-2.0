@@ -21,15 +21,19 @@ test("authenticated smoke proves actual manager records, not just present UI", (
   assert.match(smoke, /production_execution_enabled===false/);
 });
 
-test("private staging workflow requires the exact owner-reviewed source SHA", () => {
+test("private staging workflow is one-checkbox, exact-SHA, manual, nondeploying and protected", () => {
   assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /reviewed_commit_sha:/);
+  assert.match(workflow, /confirm_preview_reviewed:/);
+  assert.match(workflow, /type: boolean/);
   assert.match(workflow, /required: true/);
-  assert.match(workflow, /PAGES_COMMIT_SHA: \$\{\{ inputs\.reviewed_commit_sha \}\}/);
-  assert.match(workflow, /\[\[ "\$REVIEWED_SHA" =~ \^\[0-9a-f\]\{40\}\$ \]\]/);
+  assert.match(workflow, /CONFIRM_PREVIEW_REVIEWED/);
+  assert.match(workflow, /\$\{\{ github\.sha \}\}/);
   assert.match(workflow, /git rev-parse HEAD/);
-  assert.match(workflow, /\$PAGES_BRANCH" = "main"/);
+  assert.match(workflow, /PAGES_BRANCH" = "main"/);
   assert.doesNotMatch(workflow, /^  push:/m);
+  assert.doesNotMatch(workflow, /reviewed_deployment_id:/);
+  assert.doesNotMatch(workflow, /npm run deploy:pages-preview/);
+  assert.match(workflow, /verify-existing-admin-preview\.mjs/);
   assert.match(workflow, /staging-deployments/);
   assert.match(workflow, /CF_ACCESS_CLIENT_ID/);
   assert.match(workflow, /CF_ACCESS_CLIENT_SECRET/);
