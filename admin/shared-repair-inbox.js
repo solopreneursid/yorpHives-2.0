@@ -18,7 +18,7 @@
   async function load() {
     if (fetching) return;
     fetching = true;
-    status().textContent = "Loading GitHub issues through the private repair Worker…";
+    status().textContent = "Checking the problems shared with your assistants…";
     try {
       const result = await api("/api/admin/repair-inbox");
       if (result?.repository !== repo || result?.read_only !== true ||
@@ -29,7 +29,7 @@
       const list = output();
       list.replaceChildren();
       if (!result.issues.length) {
-        list.append(text("p", "shared-repair-empty", "No open GitHub issues were returned. You can create an issue here or from ChatGPT."));
+        list.append(text("p", "shared-repair-empty", "No shared problems were found. You can add one here or ask ChatGPT to record one."));
       }
       for (const issue of result.issues) {
         const card = text("article", "shared-repair-card");
@@ -38,11 +38,11 @@
           text("strong", "", issue.title));
         const summary = text("p", "shared-repair-description", issue.body_excerpt.slice(0, 650));
         const buttons = text("div", "shared-repair-controls");
-        const open = text("a", "shared-repair-link", "View in GitHub ↗");
+        const open = text("a", "shared-repair-link", "View original report ↗");
         open.href = issue.url;
         open.target = "_blank";
         open.rel = "noopener noreferrer";
-        const prepare = text("button", "shared-repair-prepare", "Prepare investigation →");
+        const prepare = text("button", "shared-repair-prepare", "Give to YorpMind →");
         prepare.type = "button";
         prepare.addEventListener("click", () => {
           const request = document.getElementById("repair-request");
@@ -58,22 +58,29 @@
             "admin" : "auto";
           document.getElementById("repair-message").textContent =
             "GitHub issue #" + issue.number + " copied into the investigation form. " +
-            "Review the text, then submit explicitly. Nothing has been dispatched.";
+            "Read the description, then choose Request investigation if you want to start. Nothing started automatically.";
           document.getElementById("repair-form").scrollIntoView({
             behavior: "smooth", block: "center"
           });
           request.focus({preventScroll:true});
         });
-        buttons.append(open, prepare);
+        const chat = text("button", "shared-repair-prepare", "Work with ChatGPT →");
+        chat.type = "button";
+        chat.addEventListener("click", () => window.HQChooseAssistant?.({
+          title: issue.title, why: issue.body_excerpt,
+          next_step: "Investigate the original problem and prepare a safe fix.",
+          link: issue.url
+        }, "chatgpt"));
+        buttons.append(prepare, chat, open);
         card.append(heading, summary, buttons);
         list.append(card);
       }
-      status().textContent = "GitHub issue reports · untrusted until independently reproduced · reading uses zero AI credits";
+      status().textContent = "These are reported problems, not confirmed fixes. Just reading them does not start paid AI work.";
       loaded = true;
     } catch {
-      status().textContent = "Issue inbox unavailable. Check the private GitHub Worker and Access session; nothing was dispatched.";
+      status().textContent = "We could not load the shared problems. No work was started.";
       output().replaceChildren(text("p", "shared-repair-empty",
-        "Use the existing repair form or GitHub directly. Do not treat an unavailable inbox as a successful sync."));
+        "You can still describe a problem in the form above or continue through ChatGPT."));
     } finally { fetching = false; }
   }
   async function create() {
@@ -91,11 +98,11 @@
       status().textContent = "Start the description with a clear issue title of at least eight characters.";
       return;
     }
-    if (!confirm("Create a GitHub issue for ChatGPT and Headquarters to share? " +
-      "This only saves the issue. It does not dispatch AI, approve code or deploy production.")) return;
+    if (!confirm("Share this problem with both ChatGPT and YorpMind? " +
+      "This saves the problem, but does not start paid work or publish anything.")) return;
     const button = document.getElementById("repair-github-create");
     button.disabled = true;
-    status().textContent = "Saving a shared GitHub issue…";
+    status().textContent = "Saving the problem so both assistants can see it…";
     try {
       const result = await api("/api/admin/repair-inbox",{
         method:"POST",body:JSON.stringify({title,details,scope,confirm:true})
@@ -104,7 +111,7 @@
           result?.url !== "https://github.com/" + repo + "/issues/" + result.number)
         throw new Error("Unexpected issue creation response");
       status().textContent = "GitHub issue #" + result.number +
-        " created. ChatGPT and Headquarters can now reference it; no agent was started.";
+        " saved. You can now choose ChatGPT or YorpMind to work on it. Nothing was started.";
       await load();
     } catch {
       status().textContent =
