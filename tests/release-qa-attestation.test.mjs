@@ -5,7 +5,7 @@ const sha="a".repeat(40),now=Date.parse("2026-11-13T13:00:00Z");
 const host="aaa7346f.yorphives-admin-staging.pages.dev";
 const preview={staging_project:"yorphives-admin-staging",verified_commit_sha:sha,
  deployment_id:"aaa7346f-9150-4aa5-81be-2103f76d263d",preview_url:"https://"+host,
- verified_existing_deployment:true,access_boundary_verified:true,
+ verified_existing_deployment:true,access_boundary_verified:true,database_isolation_verified:true,
  anonymous_paths_checked:[{route:"/admin/",access_blocked:true,status:302,
   denial_kind:"verified_cloudflare_access_redirect",access_redirect_verified:true},
  {route:"/api/admin/yorpmind-team",access_blocked:true,status:403,
@@ -30,6 +30,8 @@ test("wrong commit, host, access denial, expired or mutable preview fails",()=>{
  {...preview,verified_commit_sha:"b".repeat(40)},
  {...preview,preview_url:"https://yorphives.com"},
  {...preview,access_boundary_verified:false},
+ {...preview,database_isolation_verified:false},
+ {...preview,database_isolation_verified:undefined},
  {...preview,no_production_change:false},
  {...preview,canonical_after:{...preview.canonical_after,sha:"e".repeat(40)}},
  {...preview,canonical_before:undefined},
