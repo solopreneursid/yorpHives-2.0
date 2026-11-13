@@ -119,7 +119,7 @@ test("one email code activates both assistants together, only once",async()=>{
     assert.deepEqual(result.selected_assistants,["yorpmind","chatgpt"]);
     assert.equal(result.production_allowed,false);
     assert.deepEqual(sqlite.prepare(
-      "SELECT assistant,state FROM founder_temporary_grants ORDER BY assistant").all(),
+      "SELECT assistant,state FROM founder_temporary_grants ORDER BY assistant").all().map(({assistant,state})=>({assistant,state})),
       [{assistant:"chatgpt",state:"active"},{assistant:"yorpmind",state:"active"}]);
     assert.equal((await routes.onRequestPost(req({action:"verify",challenge_id:challenge,code}))).status,409);
     assert.equal(sqlite.prepare(
@@ -151,7 +151,7 @@ test("resend invalidates the first code and a rejected email fails closed",async
     assert.equal(outgoing.length,2);
     const fourth=await routes.onRequestPost(req({action:"send",...grant}));
     assert.equal(fourth.status,429);
-    assert.equal((await routes.onRequestGet(req(null,{env:{FOUNDER_OTP_ENABLED:"no"}})).json()).can_request,false);
+    assert.equal((await (await routes.onRequestGet(req(null,{env:{FOUNDER_OTP_ENABLED:"no"}}))).json()).can_request,false);
   }finally{sqlite.close();}
 });
 test("Cross-origin, nonfounder and disconnected agents are denied before email",async()=>{
