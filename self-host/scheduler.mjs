@@ -4,6 +4,7 @@ import { scanYorpMindTeam } from '../hq-intelligence/yorpmind-team-scan.js';
 // Local, zero-inference observation. Existing scanners retain their daily
 // idempotency limits; proposed lessons never grant execution or publishing.
 export function createObservationScheduler({ db, intervalMs = 60 * 60 * 1000 }) {
+  if (!Number.isSafeInteger(intervalMs) || intervalMs < 1 || intervalMs > 2147483647) throw new RangeError('Observation interval must be a positive timer-safe integer.');
   let running = null, stopped = false;
   let latest = { status: 'not_run', model_calls: 0, agent_dispatches: 0 };
   function runOnce() {
@@ -23,5 +24,5 @@ export function createObservationScheduler({ db, intervalMs = 60 * 60 * 1000 }) 
   }
   const timer = setInterval(() => { void runOnce(); }, intervalMs);
   timer.unref();
-  return { runOnce, status: () => latest, async close() { stopped = true; clearInterval(timer); if (running) await running; } };
+  return { runOnce, status: () => ({ ...latest, stopped, running: Boolean(running), interval_ms: intervalMs }), async close() { stopped = true; clearInterval(timer); if (running) await running; } };
 }

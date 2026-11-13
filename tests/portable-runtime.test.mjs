@@ -146,3 +146,16 @@ test('online backup retains committed SQLite records and private file permission
     assert.equal((await db.prepare("SELECT COUNT(*) AS n FROM agent_departments WHERE department_id='backup-test'").first()).n, 1);
   } finally { db.close(); await rm(directory, { recursive: true, force: true }); }
 });
+
+test('HTTP readiness reports disabled monitoring while liveness remains available', async t => {
+  const { request } = await fixture(t);
+  assert.equal((await request('/health')).status, 200);
+  const response = await request('/ready');
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    service: 'YorpHives Headquarters', status: 'degraded', database: 'available', monitoring: 'disabled'
+  });
+  const head = await request('/ready', { method: 'HEAD' });
+  assert.equal(head.status, 503);
+  assert.equal(await head.text(), '');
+});

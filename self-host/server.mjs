@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { createDatabase } from './sqlite.mjs';
 import { authorizeOwnerRequest, adminJson } from './auth.mjs';
 import { createObservationScheduler } from './scheduler.mjs';
+import { assessRuntimeReadiness } from './readiness.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('../', import.meta.url)));
 const API_ROOT = resolve(ROOT, 'functions/api/admin');
@@ -114,6 +115,10 @@ export async function createHeadquartersServer({
     const method = nodeRequest.method || 'GET';
     const write = !['GET', 'HEAD'].includes(method);
     if (write && nodeRequest.headers.origin !== origin.origin) return adminJson({ error: { message: 'Use a same-origin owner request.' } }, 403);
+    if (pathname === '/ready' && ['GET', 'HEAD'].includes(method)) {
+      const readiness = await assessRuntimeReadiness({ db, observations });
+      return adminJson(readiness, readiness.status === 'ready' ? 200 : 503);
+    }
     if (pathname === '/health' && !write) return adminJson({ service: 'YorpHives Headquarters', status: 'online' });
     if (pathname === '/auth/login') {
       if (method === 'GET') return session(nodeRequest) ? redirect('/admin/') : loginPage();

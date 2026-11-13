@@ -11,7 +11,7 @@ Requires **Node.js 24.12 or later** (the application is tested on Node.js 24). C
 For a fresh checkout:
 
 ```sh
-git clone --branch build/headquarters-founder-cockpit --single-branch https://github.com/solopreneursid/yorpHives-2.0.git yorphives-headquarters
+git clone --branch fix/founder-approval-at-production-only --single-branch https://github.com/solopreneursid/yorpHives-2.0.git yorphives-headquarters
 cd yorphives-headquarters
 node --version
 node self-host/setup.mjs
@@ -28,7 +28,7 @@ cat self-host/data/owner-password
 
 Enter that password only into the local sign-in screen. `setup.mjs` preserves an existing password and protects the password directory/file with owner-only filesystem permissions. The startup log does not print it. For an externally managed password, set `YORPHIVES_OWNER_PASSWORD` in your server's private process environment instead. Never commit a real password or paste one into chat.
 
-The first launch applies all 29 existing schema migrations to `self-host/data/headquarters.sqlite`. Subsequent launches verify the migration checksums and apply only new migrations. A changed historical migration stops startup for investigation. Existing cloud migrations and databases are untouched.
+The first launch applies all existing schema migrations to `self-host/data/headquarters.sqlite`. Subsequent launches verify the migration checksums and apply only new migrations. A changed historical migration stops startup for investigation. Existing cloud migrations and databases are untouched.
 
 ## What works
 
@@ -98,3 +98,7 @@ node --test tests/portable-runtime.test.mjs tests/portable-mission-engine.test.m
 Tests cover actual HTTP sign-in and mission persistence, rejected forged/cross-origin requests, private-file denial, body limits, login throttling, atomic database rollback, migration history, local observation idempotency, and the model execution contract. Model tests use a controlled test server/fixture; they do not claim a real model is installed on your machine.
 
 The optional Node module-resolution adapter is activated only by this runtime. It attaches a verified owner identity to an exact in-process Request object. No HTTP header or environment string becomes an authentication bypass. The existing Cloudflare Access verifier remains unchanged for Pages deployments.
+
+## Runtime supervision
+
+`GET /health` reports process liveness. `GET /ready` returns HTTP 200 only when the database migration table is readable and the observation scheduler has completed a successful scan within two configured intervals. Failed, stopped, stale or disabled observations return HTTP 503. These endpoints expose only service status and require the configured Host header. An independent supervisor can poll `/ready` and alert you when coverage is degraded. Configuring that external supervisor on your server remains a deployment step. This readiness result covers the local runtime dependencies, not release approval or external data integrations.

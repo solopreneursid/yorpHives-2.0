@@ -22,7 +22,7 @@ test("Headquarters has one navigation destination for every preserved workspace"
   assert.match(html,/id="nav-group-explore"/);
   assert.match(html,/id="nav-group-tools"/);
   assert.match(html,/<summary>Ideas &amp; opportunities<\/summary>/);
-  assert.match(html,/<summary>Tools &amp; records<\/summary>/);
+  assert.match(html,/<summary>Monitoring &amp; records<\/summary>/);
 });
 
 test("compact refinement is loaded after other styling and remains progressive",()=>{
