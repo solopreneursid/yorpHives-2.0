@@ -10,7 +10,7 @@ export function normalizeModelUsage(result) {
   const input = usage.prompt_tokens, output = usage.completion_tokens;
   if (!good(input) || !good(output)) return null;
   const total = usage.total_tokens;
-  if (total !== undefined && total !== null && (!good(total) || total < input || total < output))
+  if (total !== undefined && total !== null && (!good(total) || total < input + output))
     return null;
   return {
     input_tokens: input,
