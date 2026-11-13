@@ -74,8 +74,12 @@
       securityReady=false;
       $("founder-permission-submit").disabled=true;
       $("founder-permission-list").replaceChildren(create("p","founder-empty",
-        "We couldn't confirm permission records. No assistant has been given new access."));
-      setStatus("Permission information is unavailable. Try refreshing after checking your secure sign-in.");
+        "Temporary permissions aren't ready to use yet. No new access has been given."));
+      $("founder-security-note").textContent=
+        "Not ready yet · the separate security approval and permission records must be set up first.";
+      $("founder-connection-note").textContent=
+        "ChatGPT and YorpMind still work through their normal tools. Neither has temporary administrator access from this screen.";
+      setStatus("Nothing has changed. You remain in full control.");
     }
   }
   async function submit(event) {
