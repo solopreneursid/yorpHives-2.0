@@ -177,7 +177,8 @@ async function run() {
       "/api/admin/audit",
       "/api/admin/repair-jobs",
       "/api/admin/yorpmind",
-      "/api/admin/yorpmind-team"
+      "/api/admin/yorpmind-team",
+      "/api/admin/website-proof"
     ];
     for (const endpoint of readEndpoints) {
       try {
@@ -192,6 +193,43 @@ async function run() {
         record("read_api_" + endpoint.split("/").pop().replace(/[^a-z0-9-]/gi, "-"), false, "Request failed");
       }
     }
+
+    // Authenticate and inspect the actual public-response proof. This GET
+    // is allowed to read the website but not to write D1 or start AI tasks.
+    const proofResponse=await page.request.get(baseUrl+"/api/admin/website-proof",{
+      headers:accessHeaders,timeout:60000
+    });
+    const proofData=proofResponse.status()===200?await proofResponse.json().catch(()=>null):null;
+    const proofRows=Array.isArray(proofData?.checks)?proofData.checks:[];
+    record("website_proof_real_staging_api",
+      proofResponse.status()===200 && proofData?.source==="real_public_http_get" &&
+      proofData.origin==="https://yorphives.com" &&
+      proofRows.length===7 && new Set(proofRows.map(r=>r.path)).size===7 &&
+      proofData.basic_passed+proofData.needs_attention+proofData.unverified===7 &&
+      proofData.previous_findings_auto_resolved===false &&
+      proofData.new_ai_model_calls===0 &&
+      proofData.database_writes===0 && proofData.production_changes===0,
+      "Actual public response evidence is bounded, read-only and does not close findings");
+    await page.evaluate(()=>document.querySelector('.nav-item[data-view="issues"]')?.click());
+    await page.locator("#view-issues").waitFor({state:"visible",timeout:15000});
+    await page.locator("#website-proof-run").click();
+    await page.locator(".website-proof-item").first().waitFor({state:"visible",timeout:60000});
+    record("website_proof_real_browser_seven_rows",
+      await page.locator(".website-proof-item").count()===7 &&
+      await page.locator("#website-proof-foot").isVisible(),
+      "The founder can see the seven actual checks in a compact scrollable list");
+    await page.locator("#website-proof-chatgpt").click();
+    record("website_proof_real_chatgpt_handoff",
+      await page.locator("#founder-handoff-dialog").isVisible() &&
+      (await page.locator("#founder-handoff-text").inputValue()).includes("Do not make a production change"),
+      "ChatGPT handoff is visible from Problems but no message is sent automatically");
+    await page.locator("#founder-handoff-close").click();
+    await page.locator("#website-proof-yorpmind").click();
+    record("website_proof_real_yorpmind_handoff",
+      await page.locator("#view-agents").isVisible() &&
+      (await page.locator("#repair-request").inputValue()).includes("YorpHives website: real public route checks"),
+      "YorpMind receives an unsent draft only; owner can review before any request");
+    await page.evaluate(()=>document.querySelector('.nav-item[data-view="headquarters"]')?.click());
 
     // Human-first owner hierarchy and bounded temporary rights are visible
     // independently of whether the optional security approval is configured.
@@ -242,6 +280,15 @@ async function run() {
       members.filter(item=>item.staff_id==="yorpmind" && item.reports_to===null).length===1 &&
       members.filter(item=>item.staff_id!=="yorpmind" && item.reports_to==="yorpmind").length===5,
       "The actual staging database must have the expected chief and five managers");
+    const coachingNotes=Array.isArray(realTeam?.saved_reports)?
+      realTeam.saved_reports.filter(r=>String(r.report_key||"").startsWith("coaching:")):[];
+    record("yorpmind_real_coaching_unapproved",
+      coachingNotes.length>=2 &&
+      coachingNotes.some(r=>r.manager_id==="yorpmind1") &&
+      coachingNotes.some(r=>r.manager_id==="yorpmind5") &&
+      coachingNotes.every(r=>r.evidence?.approved_skill===false &&
+        r.evidence?.tested_fix!==true && r.state!=="approved"),
+      "Engineering and Quality leads can read source-backed coaching without an approved skill");
     record("yorpmind_manager_scan_no_autonomous_release",
       realTeam?.autonomous_dispatch===false &&
       realTeam?.production_execution===false &&
@@ -969,6 +1016,10 @@ async function run() {
       const anonymousResponse = await unauthenticated.get("/api/admin/overview", { timeout: 15000 });
       const protectedStatus = [302, 303, 401, 403].includes(anonymousResponse.status());
       record("admin_api_requires_access", protectedStatus, "Unauthenticated HTTP " + anonymousResponse.status());
+      const anonymousProof=await unauthenticated.get("/api/admin/website-proof",{timeout:15000});
+      record("website_proof_anonymous_access_denied",
+        [301,302,303,307,308,401,403].includes(anonymousProof.status()),
+        "Website evidence remains private: anonymous HTTP "+anonymousProof.status());
       const anonymousQa = await unauthenticated.get("/api/admin/repair-qa?job_id=invalid", { timeout: 15000 });
       record("repair_qa_requires_cloudflare_access",
         [302, 303, 401, 403].includes(anonymousQa.status()),
