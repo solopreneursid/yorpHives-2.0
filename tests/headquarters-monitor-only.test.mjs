@@ -79,3 +79,16 @@ test("release remains founder-only and OTP guarded; monitoring is not publishing
  assert.match(otp,/FOUNDER_ONLY/);
  assert.match(otp,/HQ_GO_LIVE_OTP_TEST_ENABLED/);
 });
+
+test("internal repair Worker and Durable Workflow also reject any attempt to write",async()=>{
+ const worker=await read("admin-agent/worker.js");
+ const fetchStart=worker.slice(worker.indexOf("export default {"),
+  worker.indexOf('const url = new URL(request.url);',worker.indexOf("export default {")));
+ assert.match(fetchStart,/request\.method !== "GET"/);
+ assert.match(fetchStart,/MONITOR_ONLY/);
+ assert.match(fetchStart,/status:405/);
+ const start=worker.indexOf("export class AdminRepairWorkflow");
+ const runStart=worker.slice(start,worker.indexOf("const payload = event.payload",start));
+ assert.match(runStart,/throw new Error\("MONITOR_ONLY:/);
+ assert.doesNotMatch(runStart,/this\.env\.AI\.run|github\(/);
+});
