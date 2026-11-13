@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="/admin/yorpmind.css">
 <link rel="stylesheet" href="/admin/yorpmind-evolution.css">
 <link rel="stylesheet" href="/admin/yorpmind-team.css">
+<link rel="stylesheet" href="/admin/yorpmind-workforce.css">
 <link rel="stylesheet" href="/admin/yorpmind-mission-planning.css">
 <link rel="stylesheet" href="/admin/business-intelligence.css">
 <link rel="stylesheet" href="/admin/headquarters-refined.css">
@@ -312,6 +313,59 @@
           <div class="ym-policy-lock">PUBLIC ACCESS OFF · AI EXECUTION OFF · PRODUCTION LOCKED</div>
         </aside>
       </header>
+      <section class="yw-panel" aria-labelledby="yw-heading">
+        <div class="yw-heading">
+          <div>
+            <span class="yw-label">YOUR COMPANY · YORPMIND INDEPENDENT WORKFORCE</span>
+            <h2 id="yw-heading">Your AI employees</h2>
+            <p>Founder's private organization: specialized employees, their managers, local model roles and evidence-linked work orders. Designed to run without ChatGPT or hosted AI accounts.</p>
+          </div>
+          <button class="button" id="yw-refresh" type="button">↻ Refresh workforce</button>
+        </div>
+        <div class="yw-metrics" aria-label="Independent workforce readiness">
+          <div><small>Registered employees</small><strong id="yw-count">—</strong></div>
+          <div><small>Verified model slots</small><strong id="yw-models">—</strong></div>
+          <div><small>Private execution</small><strong id="yw-execution">OFF</strong></div>
+          <div><small>Planned tasks</small><strong id="yw-queue">—</strong></div>
+        </div>
+        <p class="yw-status" id="yw-status" role="status" aria-live="polite">Checking independent workforce registry…</p>
+        <div class="yw-table-wrap" id="yw-workers" aria-label="AI employee roster"><p class="yw-muted">Reading employees…</p></div>
+        <div class="yw-actions">
+          <details>
+            <summary>+ Give an employee a task</summary>
+            <form class="yw-form" id="yw-form">
+              <label for="yw-worker">Choose AI employee
+                <select id="yw-worker" required></select>
+              </label>
+              <label for="yw-asset">Company asset
+                <select id="yw-asset" required>
+                  <option value="yorphives_website">YorpHives.com — public product</option>
+                  <option value="headquarters">YorpHives Headquarters — company</option>
+                  <option value="company_portfolio">Future products &amp; opportunities</option>
+                </select>
+              </label>
+              <label for="yw-title">Work title
+                <input id="yw-title" required minlength="8" maxlength="160" placeholder="Investigate tool onboarding friction">
+              </label>
+              <label for="yw-brief">What should be investigated or prepared?
+                <textarea id="yw-brief" required minlength="40" maxlength="2000" rows="3"
+                  placeholder="Describe the problem, expected deliverable, and what must stay untouched."></textarea>
+              </label>
+              <label for="yw-criteria">How should independent QA verify the result?
+                <textarea id="yw-criteria" required minlength="40" maxlength="1200" rows="3"
+                  placeholder="Specify evidence, independent tests, and measurable success criteria."></textarea>
+              </label>
+              <button class="button primary" id="yw-create" type="submit" disabled>Save planned task</button>
+            </form>
+            <p class="yw-muted">Saving a task does not dispatch a model, edit code, spend money or publish anything.</p>
+          </details>
+          <details open>
+            <summary>Company work queue · plans only</summary>
+            <div class="yw-orders" id="yw-work-orders" aria-live="polite"><p class="yw-muted">Loading work orders…</p></div>
+          </details>
+        </div>
+        <p class="yw-policy">Founder remains the only permanent administrator. Internal employees use company-owned model runtimes when installed and verified; none is connected yet. A proposed lesson requires independent evidence review before it can become an approved skill. Production releases remain locked.</p>
+      </section>
       <section class="ym-team-panel" aria-labelledby="ym-team-title">
         <div class="ym-team-head">
           <div>
@@ -1075,6 +1129,7 @@
 <script src="/admin/yorpmind.js" defer></script>
 <script src="/admin/yorpmind-evolution.js" defer></script>
 <script src="/admin/yorpmind-team.js" defer></script>
+<script src="/admin/yorpmind-workforce.js" defer></script>
 <script src="/admin/yorpmind-search.js" defer></script>
 <script src="/admin/headquarters.js" defer></script>
 <script type="module" src="/admin/yorpmind-mission-planning.js"></script>
