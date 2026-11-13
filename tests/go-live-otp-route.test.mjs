@@ -12,6 +12,8 @@ const auth=url(
  "{email:'founder@example.org',serviceToken:false}:"+
  "c.request.headers.get('x-test-owner')==='service'?"+
  "{email:'founder@example.org',serviceToken:true}:"+
+ "c.request.headers.get('x-test-owner')==='collaborator'?"+
+ "{email:'collaborator@example.org',serviceToken:false}:"+
  "new Response('Denied',{status:403});"
 );
 const live=url("export async function readLiveGoLiveReadiness(env,target){return globalThis.__liveRelease(target);}");
@@ -78,6 +80,7 @@ async function fixture(){
 test("requires founder and explicit test-only flag; AI or CI cannot issue OTP",async()=>{
  const x=await fixture();try{
   assert.equal((await onRequestPost(x.request(x.issue,{identity:"service"}))).status,403);
+  assert.equal((await onRequestPost(x.request(x.issue,{identity:"collaborator"}))).status,403);
   assert.equal((await onRequestPost(x.request(x.issue,{identity:"unknown"}))).status,403);
   assert.equal((await onRequestPost(x.request(x.issue,{env:{HQ_GO_LIVE_OTP_TEST_ENABLED:"no"}}))).status,503);
   assert.equal((await onRequestPost(x.request(x.issue,{origin:"https://evil.example"}))).status,403);
@@ -123,6 +126,26 @@ test("release OTP is action bound, attempt-limited, replay-safe and DOES NOT pub
   assert.equal(replay.status,409);
   assert.equal(x.sqlite.prepare("SELECT state FROM hq_go_live_challenges WHERE challenge_id=?").get(id).state,"verified");
   assert.equal(x.sqlite.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n,1);
+ }finally{x.sqlite.close();}
+});
+test("a different signed-in human admin cannot verify founder OTP or acquire release authority",async()=>{
+ const x=await fixture();try{
+  const begin=await onRequestPost(x.request(x.issue));
+  assert.equal(begin.status,202);
+  const {challenge_id}=await begin.json();
+  const code=/code is: ([0-9]{6})/.exec(x.mails[0].text)[1];
+  const payload={action:"verify",challenge_id,code};
+  const unrelated=await onRequestPost(x.request(payload,{identity:"collaborator"}));
+  const service=await onRequestPost(x.request(payload,{identity:"service"}));
+  assert.equal(unrelated.status,403);
+  assert.equal(service.status,403);
+  assert.equal(x.sqlite.prepare("SELECT state FROM hq_go_live_challenges WHERE challenge_id=?").get(challenge_id).state,"sent");
+  assert.equal(x.sqlite.prepare("SELECT COUNT(*) AS n FROM admin_audit_events").get().n,0);
+  const founder=await onRequestPost(x.request(payload));
+  assert.equal(founder.status,200);
+  const verified=await founder.json();
+  assert.equal(verified.production_deployed,false);
+  assert.equal(verified.production_approved,false);
  }finally{x.sqlite.close();}
 });
 test("new source revision invalidates an otherwise valid OTP without consuming it",async()=>{
