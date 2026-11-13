@@ -31,8 +31,14 @@ export function assessRepairIntake(finding) {
       explanation: "Headquarters could not identify the monitored problem." };
   }
   let path = "";
-  try { path = new URL(String(finding.asset_url || "")).pathname; }
-  catch { return { permitted: false, code: "INVALID_ASSET_URL",
+  try {
+    const address = new URL(String(finding.asset_url || ""), "https://yorphives.com");
+    if (address.origin !== "https://yorphives.com" ||
+        address.username || address.password || address.search || address.hash) {
+      throw new Error("Unapproved website target");
+    }
+    path = address.pathname;
+  } catch { return { permitted: false, code: "INVALID_ASSET_URL",
       explanation: "The affected website address cannot be checked safely." }; }
   const machineFile = MACHINE_PATHS.includes(path) ||
     /\.(?:json|ya?ml|xml|txt)$/i.test(path);
