@@ -134,8 +134,10 @@
       "Live release blockers · verification incomplete";
     box.hidden = false;
   }
+  let readinessGeneration = 0;
   async function loadGoLiveReadiness() {
-    const target = $("release-target")?.value === "headquarters" ? "headquarters" : "website";
+    const generation = ++readinessGeneration;
+    const target = $("release-target")?.value === "website" ? "website" : "headquarters";
     const status = $("release-launch-status");
     const details = $("release-launch-description");
     const preview = $("release-launch-preview");
@@ -151,10 +153,11 @@
     try {
       const response = await fetch("/api/admin/go-live?target=" + target, {
         credentials: "same-origin", cache: "no-store",
-        headers: { accept: "application/json" }
+        headers: { accept: "application/json" }, signal: AbortSignal.timeout(30000)
       });
       if (response.redirected || !response.ok) throw new Error("Private release verifier unavailable");
       const data = await response.json();
+      if (generation !== readinessGeneration) return;
       if (data.target !== target || data.production_approved !== false ||
           data.production_deployment_enabled !== false ||
           typeof data.ready_for_preview !== "boolean" ||
@@ -178,10 +181,11 @@
         try {
           const diagnosisResponse = await fetch("/api/admin/go-live-plan", {
             credentials: "same-origin", cache: "no-store",
-            headers: { accept: "application/json" }
+            headers: { accept: "application/json" }, signal: AbortSignal.timeout(30000)
           });
           if (diagnosisResponse.ok && !diagnosisResponse.redirected) {
             const diagnosis = await diagnosisResponse.json();
+            if (generation !== readinessGeneration) return;
             const drift = diagnosis?.drift;
             if (diagnosis?.production_deployment_enabled === false &&
                 drift?.production_deployment_enabled === false &&
@@ -202,6 +206,7 @@
         } catch { /* Keep existing fail-closed release status. */ }
       }
     } catch {
+      if (generation !== readinessGeneration) return;
       renderLiveBlockers(["Live release checks could not be independently verified."]);
       status.textContent = "Verification unavailable";
       details.textContent = "Live release checks could not be confirmed. Keep developing; publishing is locked.";
@@ -216,7 +221,7 @@
     try {
       const response = await fetch("/api/admin/release-evidence", {
         credentials: "same-origin", cache: "no-store",
-        headers: { accept: "application/json" }
+        headers: { accept: "application/json" }, signal: AbortSignal.timeout(30000)
       });
       if (response.redirected || [401, 403].includes(response.status)) {
         throw new Error("Cloudflare Access authorization is required.");
@@ -250,7 +255,7 @@
   function init() {
     const refresh = $("release-evidence-refresh");
     if (refresh) refresh.addEventListener("click", () => window.loadReleaseEvidence());
-    $("release-target")?.addEventListener("change", () => window.loadReleaseEvidence());
+    $("release-target")?.addEventListener("change", loadGoLiveReadiness);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();

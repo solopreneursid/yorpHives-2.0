@@ -8,7 +8,6 @@ const date = (value) => value ? new Date(value).toLocaleString() : "—";
 const number = (value) => new Intl.NumberFormat().format(Number(value || 0));
 const text = (value) => String(value ?? "—");
 const state = { view: "headquarters", loaded: new Set(), assets: [], findings: [], dependencies: [], range: "7d", findingFilter: "active", assetFilter: "all", assetQuery: "", dependencyQuery: "" };
-let repairAgentReady = false;
 let analyticsSnapshot = null;
 
 function showSystemMessage(message, options = {}) {
@@ -33,7 +32,8 @@ async function api(path, options = {}) {
       headers: { "content-type": "application/json", ...(options.headers || {}) },
       cache: "no-store",
       credentials: "same-origin",
-      redirect: "follow"
+      redirect: "follow",
+      signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000)
     });
   } catch (error) {
     showSystemMessage("The Admin API could not be reached. Check your connection and use Refresh to retry.", { kind: "error" });
@@ -44,7 +44,16 @@ async function api(path, options = {}) {
     throw new Error("An authorized owner session is required. Sign in and refresh.");
   }
   const contentType = response.headers.get("content-type") || "";
-  const data = contentType.includes("application/json") ? await response.json().catch(() => ({})) : {};
+  if (!contentType.includes("application/json")) {
+    showSystemMessage("The server returned an unexpected response. Refresh to retry.", { kind: "error" });
+    throw new Error("Expected a JSON response from Headquarters.");
+  }
+  let data;
+  try { data = await response.json(); }
+  catch {
+    showSystemMessage("The server response was incomplete. Refresh to retry.", { kind: "error" });
+    throw new Error("Invalid JSON response from Headquarters.");
+  }
   if (!response.ok) {
     const message = data.error?.message || data.message || "Admin request failed (" + response.status + ")";
     showSystemMessage(message, { kind: "error" });
@@ -472,29 +481,10 @@ async function loadAgents(refresh=true) {
         card.append(head,description,detail,last);roster.append(card);
       }
     }
-    repairAgentReady=false; // Monitoring-only: no repair dispatch regardless of Worker health.
     const status=$("agent-state");
     if(status){status.textContent="Monitoring and recommendations only · manual fixes by founder";status.classList.remove("ready");}
-    if($("repair-submit"))$("repair-submit").disabled=!repairAgentReady;
-    if($("agent-count"))$("agent-count").textContent=repairAgentReady?"Ready": "Setup";
+    if($("agent-count"))$("agent-count").textContent="Monitoring";
     if($("agent-summary"))$("agent-summary").textContent=(jobs.data||[]).length+" recorded repair jobs";
-    if($("repair-finding")){
-      const selected=$("repair-finding").value;
-      const findings=await api("/api/admin/findings");
-      const select=$("repair-finding");select.replaceChildren();
-      select.dataset.linksReady=jobs.finding_links_ready===true?"true":"false";
-      const general=document.createElement("option");general.value="";general.textContent="General investigation";select.append(general);
-      for(const finding of findings.data||[]){
-        const option=document.createElement("option");
-        option.value=finding.id;
-        option.dataset.source=finding.source_type==="asset"?"asset":"monitor";
-        option.textContent="["+finding.severity+"] "+finding.title;
-        // Before migration 0022, asset findings are not valid repair FK targets.
-        if(option.dataset.source==="asset" && !jobs.finding_links_ready)option.disabled=true;
-        select.append(option);
-      }
-      select.value=Array.from(select.options).some(option=>option.value===selected&&!option.disabled)?selected:"";
-    }
     const target=$("repair-jobs");
     if(target){
       target.replaceChildren();
@@ -514,7 +504,6 @@ async function loadAgents(refresh=true) {
       }
     }
   }catch(error){
-    repairAgentReady=false;
     if($("repair-submit"))$("repair-submit").disabled=true;
     if($("agent-state"))$("agent-state").textContent="Monitoring history temporarily unavailable. No repair dispatch is possible.";
   }

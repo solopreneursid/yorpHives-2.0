@@ -61,17 +61,20 @@ export async function createHeadquartersServer({
   let origin = publicOrigin ? new URL(publicOrigin) : null;
   if (origin && (origin.username || origin.password || origin.pathname !== '/' || origin.search || origin.hash || !['http:', 'https:'].includes(origin.protocol))) throw new Error('publicOrigin must be an HTTP(S) origin without path, credentials or parameters.');
   if (!loopback && origin?.protocol !== 'https:') throw new Error('Remote access requires HTTPS at your reverse proxy.');
+  const routes = new Set((await readdir(API_ROOT)).filter(name => /^[a-z][a-z-]+\.ts$/.test(name)).map(name => name.slice(0, -3)));
   const db = await createDatabase({ filename: resolve(dataDirectory, 'headquarters.sqlite') });
   const env = { ...extraEnvironment, DB: db, ADMIN_ALLOWED_EMAILS: ownerEmail,
     // Match the local owner for readiness reads. No sender, OTP flag, assistant
     // identity or mail transport is configured by this reference identity.
     FOUNDER_OWNER_EMAIL: extraEnvironment.FOUNDER_OWNER_EMAIL || ownerEmail };
-  if (createMissionEngine) env.HQ_ENGINE_SERVICE = await createMissionEngine({ db });
+  try {
+    if (createMissionEngine) env.HQ_ENGINE_SERVICE = await createMissionEngine({ db });
+  } catch (error) { db.close(); throw error; }
   const observations = enableObservationSchedule ? createObservationScheduler({ db }) : null;
-  if (observations) await observations.runOnce();
+  // Begin bounded checks after the HTTP listener is available.
   const salt = randomBytes(32), expectedPassword = scryptSync(password, salt, 32);
   const sessions = new Map(), failures = new Map(), modules = new Map();
-  const routes = new Set((await readdir(API_ROOT)).filter(name => /^[a-z][a-z-]+\.ts$/.test(name)).map(name => name.slice(0, -3)));
+
   function session(request) {
     const token = cookieToken(request.headers.cookie);
     const expires = token && sessions.get(token);
@@ -198,8 +201,15 @@ export async function createHeadquartersServer({
   server.keepAliveTimeout = 5000;
   try {
     await new Promise((resolveListen, reject) => { server.once('error', reject); server.listen(port, hostname, resolveListen); });
+    if (observations) void observations.runOnce();
     if (!origin) origin = new URL(`http://${hostname.includes(':') ? '[' + hostname + ']' : hostname}:${server.address().port}`);
-  } catch (error) { if (observations) await observations.close(); if (env.HQ_ENGINE_SERVICE?.close) await env.HQ_ENGINE_SERVICE.close(); db.close(); throw error; }
+  } catch (error) {
+    try {
+      if (observations) await observations.close();
+      if (env.HQ_ENGINE_SERVICE?.close) await env.HQ_ENGINE_SERVICE.close();
+    } finally { db.close(); }
+    throw error;
+  }
   return {
     server, db, env, origin: origin.origin,
     async close() {
@@ -207,8 +217,9 @@ export async function createHeadquartersServer({
       // Stop accepting requests before shutting down workers and their storage.
       await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()));
       if (observations) await observations.close();
-      if (env.HQ_ENGINE_SERVICE?.close) await env.HQ_ENGINE_SERVICE.close();
-      db.close();
+      try {
+        if (env.HQ_ENGINE_SERVICE?.close) await env.HQ_ENGINE_SERVICE.close();
+      } finally { db.close(); }
     }
   };
 }

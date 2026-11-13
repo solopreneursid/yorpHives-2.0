@@ -71,7 +71,10 @@ export async function checkMonitor(monitor) {
  */
 export async function runAdminHealthChecks(db, triggerSource) {
   const monitorRows = await db.prepare(
-    "SELECT id, name, url, environment FROM admin_monitors WHERE enabled = 1 ORDER BY environment, name LIMIT 10",
+    `SELECT m.id, m.name, m.url, m.environment FROM admin_monitors m
+     WHERE m.enabled = 1
+     ORDER BY (SELECT MAX(c.checked_at) FROM admin_checks c WHERE c.monitor_id = m.id) ASC, m.id
+     LIMIT 10`,
   ).all();
   /** @type {MonitorRow[]} */
   const monitors = monitorRows.results;
@@ -100,7 +103,7 @@ export async function runAdminHealthChecks(db, triggerSource) {
       const fingerprint = "http-health:" + monitor.id;
       if (result.ok) {
         statements.push(db.prepare(
-          "UPDATE admin_findings SET status = 'verified', resolved_at = ?, last_verified = ? WHERE fingerprint = ? AND status IN ('open', 'investigating', 'awaiting_approval')",
+          "UPDATE admin_findings SET status = 'verified', resolved_at = ?, last_verified = ? WHERE fingerprint = ? AND status IN ('open', 'investigating', 'awaiting_approval', 'fixed')",
         ).bind(completedAt, completedAt, fingerprint));
       } else {
         const severity = monitor.environment === "production" ? "high" : "medium";

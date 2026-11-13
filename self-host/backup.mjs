@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdir, chmod } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -6,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 export async function createBackup(dataDirectory) {
   const directory = resolve(dataDirectory, 'backups');
   await mkdir(directory, { recursive: true, mode: 0o700 });
-  const filename = resolve(directory, `headquarters-${new Date().toISOString().replace(/[:.]/g, '-')}.sqlite`);
+  const filename = resolve(directory, `headquarters-${new Date().toISOString().replace(/[:.]/g, '-')}-${randomUUID()}.sqlite`);
   const db = new DatabaseSync(resolve(dataDirectory, 'headquarters.sqlite'), { readOnly: true });
   try { db.exec("VACUUM INTO '" + filename.replaceAll("'", "''") + "'"); }
   finally { db.close(); }

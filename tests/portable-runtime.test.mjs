@@ -116,13 +116,15 @@ test('SQLite compatibility layer migrates all schema, rolls back batches and det
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
-test('local observation schedule records a real daily scan without dispatch or fabricated lessons', async () => {
+test('local observation schedule records fresh health checks and daily analysis without dispatch', async t => {
+  t.mock.method(globalThis, 'fetch', async () => new Response('healthy', { status: 200 }));
   const { createObservationScheduler } = await import('../self-host/scheduler.mjs');
   const db = await createDatabase({ filename: ':memory:' });
   const schedule = createObservationScheduler({ db });
   try {
     const result = await schedule.runOnce();
     assert.equal(result.status, 'completed');
+    assert.ok(result.health.monitor_count > 0);
     assert.equal(result.model_calls, 0);
     assert.equal(result.agent_dispatches, 0);
     assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM yorpmind_evolution_runs').first()).n, 1);
@@ -158,4 +160,17 @@ test('HTTP readiness reports disabled monitoring while liveness remains availabl
   const head = await request('/ready', { method: 'HEAD' });
   assert.equal(head.status, 503);
   assert.equal(await head.text(), '');
+});
+
+
+test('startup releases database when model initialization fails', async () => {
+  const directory = await mkdtemp(resolve(tmpdir(), 'yorphives-startup-'));
+  let openedDatabase;
+  try {
+    await assert.rejects(createHeadquartersServer({
+      password, dataDirectory: directory,
+      createMissionEngine: async ({ db }) => { openedDatabase = db; throw new Error('model setup failed'); }
+    }), /model setup failed/);
+    assert.throws(() => openedDatabase.raw.prepare('SELECT 1'), /closed|not open/i);
+  } finally { await rm(directory, { recursive: true, force: true }); }
 });

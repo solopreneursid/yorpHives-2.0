@@ -36,7 +36,7 @@ The first launch applies all existing schema migrations to `self-host/data/headq
 - Persistent mission creation, replay protection, cancellation, review and audit history using the actual existing Headquarters APIs.
 - Genuine database totals, founder action queue, mission detail, team hierarchy, opportunity records and private YorpMind memory/skill review.
 - Owner-requested fixed-route public website checks and saved monitor checks. They require internet access to your public website and do not modify it.
-- A local observation loop runs at startup and hourly, reusing the existing daily/idempotent YorpMind team and evolution scanners. It proposes findings only from actual records; it makes **zero model calls**, dispatches no agents and grants no permissions. Set `HQ_OBSERVATION_SCHEDULE=no` to disable it.
+- A local observation loop runs after startup and every five minutes. Each run checks up to ten enabled HTTP monitors, selecting unchecked or oldest-checked routes first, then runs the existing daily/idempotent YorpMind team and evolution scanners. It proposes findings only from actual records; it makes **zero model calls**, dispatches no agents and grants no permissions. Set `HQ_OBSERVATION_SCHEDULE=no` to disable it.
 - Optional real AI recommendation briefs from your own local model server, described below.
 
 An empty new database correctly shows no historical work, revenue or proven lessons. Seeded specialists are records, not evidence that autonomous employees are already running. Scheduling observation does not create verified experiences from untested AI output.
@@ -59,7 +59,7 @@ The model adapter is `self-host/mission-engine.mjs`; storage is `self-host/sqlit
 
 ## Keep your records safe
 
-Create a consistent online backup, including committed WAL data:
+Create a consistent online backup, including committed WAL data. Each backup has a unique filename so simultaneous requests preserve independent copies:
 
 ```sh
 node self-host/backup.mjs
