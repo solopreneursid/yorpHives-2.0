@@ -141,3 +141,54 @@ test("owner can retrieve a Markdown permissions summary without granting rights"
     assert.match(await out.text(),/You remain the owner/);
   }finally{sqlite.close();}
 });
+
+test("one-click emergency stop cancels both assistants atomically, without OTP",async()=>{
+  const {sqlite,DB}=await fixture();
+  try{
+    const a=await main.onRequestPost(request(DB,"POST",{...input,assistant:"yorpmind"}));
+    const b=await main.onRequestPost(request(DB,"POST",input));
+    assert.equal(a.status,201);
+    assert.equal(b.status,201);
+    const first=(await a.json()).grant_id;
+    const second=(await b.json()).grant_id;
+    const stamp=new Date().toISOString();
+    sqlite.prepare("UPDATE founder_temporary_grants SET state='active',activated_at=?,"+
+      "activated_by=?,active_expires_at=? WHERE grant_id=?").run(
+      stamp,"owner@example.com",new Date(Date.now()+15*60_000).toISOString(),first);
+    assert.equal(sqlite.prepare(
+      "SELECT state FROM founder_temporary_grants WHERE grant_id=?").get(second).state,"awaiting_mfa");
+    const stop=await main.onRequestPatch(request(DB,"PATCH",{action:"revoke_all"}));
+    assert.equal(stop.status,200);
+    const result=await stop.json();
+    assert.deepEqual({cancelled:result.cancelled,
+      count:result.revoked_count,ended:result.assistant_access_ended,
+      production_allowed:result.production_allowed},{
+      cancelled:true,count:2,ended:true,production_allowed:false
+    });
+    assert.deepEqual(sqlite.prepare(
+      "SELECT assistant,state FROM founder_temporary_grants ORDER BY assistant").all(),
+      [{assistant:"chatgpt",state:"revoked"},{assistant:"yorpmind",state:"revoked"}]);
+    assert.equal(sqlite.prepare(
+      "SELECT COUNT(*) AS n FROM admin_audit_events "+
+      "WHERE action='temporary_permissions_all_revoked'").get().n,1);
+    const repeated=await main.onRequestPatch(request(DB,"PATCH",{action:"revoke_all"}));
+    assert.equal(repeated.status,200);
+    assert.equal((await repeated.json()).revoked_count,0);
+    assert.equal((await main.onRequestPatch(request(DB,"PATCH",{action:"revoke_all"},
+      {owner:false}))).status,401);
+    assert.equal((await main.onRequestPatch(request(DB,"PATCH",{action:"revoke_all"},
+      {origin:"https://wrong.example"}))).status,403);
+    assert.equal((await main.onRequestPatch(request(DB,"PATCH",
+      {action:"revoke_all",grant_id:second}))).status,400);
+  }finally{sqlite.close();}
+});
+test("Founder Control exposes stop-all but clearly keeps collective OTP and applying fixes locked",async()=>{
+  const html=await source("../admin/index.html");
+  const js=await source("../admin/founder-control-center.js");
+  assert.match(html,/id="founder-stop-all"/);
+  assert.match(html,/id="founder-open-permissions"/);
+  assert.match(html,/value="both" disabled/);
+  assert.match(html,/email-code approval and joint access are not connected yet/);
+  assert.match(js,/action:"revoke_all"/);
+  assert.match(js,/assistantNames/);
+});
