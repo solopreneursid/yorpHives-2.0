@@ -1,0 +1,36 @@
+/* YorpMind Sovereign Workforce — original compact HQ view */
+.yw-panel{margin:16px 0 19px;padding:16px 18px;background:linear-gradient(135deg,rgba(10,29,48,.94),rgba(7,16,29,.98));border:1px solid #34516b;border-radius:14px;color:#d9edfa}
+.yw-heading{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.yw-heading h2{margin:3px 0;font-size:1.19rem;color:#eefaff}
+.yw-heading p{margin:4px 0 0;color:#9fc4d8;font-size:.83rem;max-width:690px;line-height:1.5}
+.yw-label{color:#67e8f9;letter-spacing:.08em;font-size:.68rem;font-weight:750}
+.yw-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.yw-metrics div{display:grid;gap:3px;border:1px solid #2b485e;border-radius:9px;padding:9px 12px;background:#0b2135}
+.yw-metrics small{color:#a6cada;font-size:.67rem}.yw-metrics strong{color:#f3ffff;font-size:1.18rem}
+.yw-status{font-size:.76rem;line-height:1.5;color:#9cbed3;margin:8px 0 11px}
+.yw-status[data-error="yes"]{color:#ffb9b9}
+.yw-table-wrap{overflow:auto;max-height:300px;border:1px solid #274a64;border-radius:9px;background:#0a1b2b}
+.yw-table{width:100%;border-collapse:collapse;min-width:680px;font-size:.75rem;line-height:1.55}
+.yw-table th{text-align:left;position:sticky;top:0;background:#102c42;color:#a6def8;z-index:1;font-size:.7rem;letter-spacing:.02em}
+.yw-table th,.yw-table td{padding:9px 12px;border-bottom:1px solid #284258}
+.yw-table tbody tr:last-child td{border-bottom:0}
+.yw-table .yw-strong{font-weight:700;color:#e9f7ff}
+.yw-planned{color:#ffcf8f}.yw-ready{color:#7bf3c2}
+.yw-actions{margin-top:11px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.yw-actions>details{border:1px solid #27485f;border-radius:10px;padding:11px;background:rgba(7,24,38,.6);min-width:0}
+.yw-actions>details>summary{color:#d3f5ff;font-weight:800;font-size:.83rem;cursor:pointer}
+.yw-form{display:grid;gap:8px;margin:12px 0}
+.yw-form label{display:grid;gap:5px;color:#bed4e3;font-size:.74rem}
+.yw-form input,.yw-form select,.yw-form textarea{width:100%;padding:9px 10px;background:#071725;border:1px solid #416178;color:#f6fcff;border-radius:7px;font:inherit}
+.yw-form textarea{resize:vertical;min-height:66px}
+.yw-form button{justify-self:start}
+.yw-orders{margin-top:8px;overflow:auto;max-height:325px;display:grid;gap:7px}
+.yw-order{border:1px solid #2c4c62;border-radius:8px;padding:10px;background:#091d2f}
+.yw-order strong{display:block;font-size:.8rem;color:#f0fbff}
+.yw-order small{display:block;margin-top:4px;color:#8cc8e1;font-size:.67rem}
+.yw-order p{margin:8px 0 5px;font-size:.74rem;line-height:1.5;color:#b5cede}
+.yw-order summary{font-size:.7rem;color:#7dd3fc;cursor:pointer}
+.yw-muted{font-size:.8rem;color:#adccdd}
+.yw-policy{font-size:.71rem;line-height:1.6;border-left:2px solid #52ccdf;padding-left:9px;color:#9fcde4;margin:11px 0 0}
+@media(max-width:850px){.yw-actions{grid-template-columns:1fr}.yw-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.yw-panel{padding:12px}.yw-metrics{gap:5px}.yw-metrics div{padding:8px}.yw-heading h2{font-size:1.03rem}}
