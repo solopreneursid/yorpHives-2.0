@@ -11,6 +11,7 @@
 .hq-proof-check strong{font-size:.82rem;color:#e2e8f0}
 .hq-proof-check small{font-size:.76rem;color:#9eafc1;margin-top:3px;line-height:1.5}
 .hq-proof-failure{font-size:.83rem;color:#fda4af;background:#45182688;border-radius:8px;padding:12px}
+.hq-proof-usage{font-size:.8rem;color:#a5f3fc;border:1px solid #2c6170;padding:10px;border-radius:8px;margin:10px 0;background:#064e3b25}
 .hq-proof-loading,.hq-proof-disclaimer{font-size:.78rem;color:#94a3b8;line-height:1.5}
 .hq-proof-next{font-size:.86rem;color:#d5edf7;line-height:1.6;margin:13px 0}
 .hq-proof-verify{padding:14px;border:1px solid #3b5370;border-radius:9px;margin-top:11px}
