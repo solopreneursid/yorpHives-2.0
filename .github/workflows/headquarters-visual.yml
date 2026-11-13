@@ -4,12 +4,6 @@ on:
   pull_request:
     branches:
       - ops/headquarters-staging-schema-complete
-    paths:
-      - "admin/**"
-      - "functions/**"
-      - "scripts/headquarters-offline-visual.mjs"
-      - ".github/workflows/headquarters-visual.yml"
-      - "package.json"
   workflow_dispatch:
 
 permissions:
