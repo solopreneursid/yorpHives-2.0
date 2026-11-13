@@ -226,9 +226,8 @@ test("Historical repair worker remains auditable but Headquarters dispatch is re
   assert.match(adminUi, /Monitoring and recommendations only/);
   assert.match(adminUi, /setInterval\(\(\)=>/);
   assert.match(adminHtml, /id="monitor-only-guidance"/);
-  assert.doesNotMatch(route, /admin-agent\\.internal\\/instances/);
   assert.match(route, /MONITOR_ONLY/);
-  assert.doesNotMatch(route, /admin-agent\\.internal\\/instances/);
+  assert.equal(route.includes("admin-agent.internal/instances"),false);
   assert.match(route, /security_audit_partial/);
   assert.match(route, /securityEvidence.checked === securityEvidence.target_count/);
   assert.match(route, /securityFresh/);
