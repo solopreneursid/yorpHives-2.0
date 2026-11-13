@@ -32,3 +32,15 @@
 A task is **implemented** only when source is committed and its tests pass. It is **verified live** only with real environment receipts for the exact revision. It is **production-ready** only after independent QA, recovery, cost, security, reconciliation and founder-exclusive release gates all pass. Do not equate a proposed work order, migration file, existing deployment, green CI, or OTP dry run with those later states.
 
 **Current known constraints (recheck before use):** PR #48 is draft and substantial; the existing canonical HQ Pages revision and GitHub base branch differ; protected browser QA and current-schema recovery proof remain incomplete. No production authorization is present.
+
+## Founder dashboard and Security workspace (14 November 2026)
+
+The Home founder bar now shows only **Development issues**, **Preview** and **Go Live** shortcuts. Both release shortcuts open the Publishing workspace, where the separately rendered Preview link and disabled Go Live button remain authoritative. A Home shortcut cannot publish or issue an OTP.
+
+**Tools & records → Security & access** is the sole interface location for emergency **Revoke legacy access**, historical assistant permission records and archived delegated-release records. The emergency button keeps the original founder-authenticated PATCH `revoke_all` route. That route only cancels older assistant grants and pending legacy email challenges; it does not remove the founder identity, production credentials, YorpMind memory or other provider tokens. The assistant-grant creation and step-up forms remain retired; Security has no permission issuance controls.
+
+The protected browser QA now checks that legacy revocation is visible in Security, absent from Home and Publishing, the three Home controls are present and Go Live remains locked. It **does not click the destructive revoke button** or try to publish.
+
+## Verified anonymous Access redirects
+
+The staging Access preflight accepts redirects only to the verified private preview's own HTTPS `/cdn-cgi/access/` path or an HTTPS `*.cloudflareaccess.com` Access path, without embedded credentials or a nondefault port. An unrelated site using the same URL path is not accepted. The attestor requires the preflight's explicit denial provenance for both tested paths. A direct 401/403 is recorded as an HTTP authentication denial—not cryptographic proof of an Access login. Authenticated browser QA remains necessary before marking the private boundary fully verified for any exact release.
