@@ -148,6 +148,7 @@
       card.append(footer);
       const result = renderResult(mission);
       if (result) card.append(result);
+      if (window.HQMissionProof?.attach) window.HQMissionProof.attach(mission, card);
       target.append(card);
     }
   }

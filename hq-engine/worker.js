@@ -1,6 +1,7 @@
 import { WorkflowEntrypoint } from "cloudflare:workers";
 import { missionMemoryContext } from "./yorpmind-context.js";
 import { parseMissionBrief } from "./brief-output.js";
+import { normalizeModelUsage } from "./usage-receipt.js";
 
 const MODEL = "@cf/qwen/qwen3.8-27b";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -116,7 +117,7 @@ export class MissionWorkflow extends WorkflowEntrypoint {
           chat_template_kwargs: { enable_thinking: false },
           temperature: 0.2
         });
-        return parseMissionBrief(response);
+        return { ...parseMissionBrief(response), provider_usage: normalizeModelUsage(response) };
       });
       await step.do("persist-brief-and-review-gate", async () => {
         const saved = await this.env.DB.prepare(
@@ -136,7 +137,11 @@ export class MissionWorkflow extends WorkflowEntrypoint {
             source_count: historicalMemory.references.length,
             references: historicalMemory.references,
             note: "Historical QA/skill identifiers only. No lesson text, live source verification, agent execution, or production approval."
-          }]),
+          }, ...(brief.provider_usage ? [{
+            kind: "provider_usage_report", verified: false, billing_verified: false,
+            ...brief.provider_usage,
+            note: "Token counts reported by the Workers AI response. Not an invoice, actual billing receipt or proof of independent QA."
+          }] : [])]),
           jobId
         ).first();
         if (!saved?.job_id) {

@@ -16,13 +16,15 @@ const routeURL = dataURL(
 const { onRequestGet, onRequestPost, onRequestPatch } = await import(routeURL);
 const retrievalURL = dataURL(await source("../functions/_lib/yorpmind-retrieval.js"));
 const briefOutputURL = dataURL(await source("../hq-engine/brief-output.js"));
+const usageURL = dataURL(await source("../hq-engine/usage-receipt.js"));
 const missionContextURL = dataURL((await source("../hq-engine/yorpmind-context.js"))
   .replace('"../functions/_lib/yorpmind-retrieval.js"', JSON.stringify(retrievalURL)));
 const engineSource = (await source("../hq-engine/worker.js"))
   .replace('import { WorkflowEntrypoint } from "cloudflare:workers";',
     "class WorkflowEntrypoint { constructor() { this.env = {}; } }")
   .replace('"./yorpmind-context.js"', JSON.stringify(missionContextURL))
-  .replace('"./brief-output.js"', JSON.stringify(briefOutputURL));
+  .replace('"./brief-output.js"', JSON.stringify(briefOutputURL))
+  .replace('"./usage-receipt.js"', JSON.stringify(usageURL));
 const { MissionWorkflow, default: missionWorker } = await import(dataURL(engineSource));
 
 const key = await crypto.subtle.generateKey({
@@ -130,7 +132,8 @@ test("mission execution requires authenticated owner, allowed specialist and hea
         assert.equal(modelInput.historical_memory.references[0].memory_id, referencedMemory);
         assert.ok(!JSON.stringify(modelInput).includes(untrustedLesson));
         assert.match(params.messages[0].content, /not independently current-verified/);
-        return { choices: [{ message: { content: JSON.stringify(brief()) } }] };
+        return { choices: [{ message: { content: JSON.stringify(brief()) } }],
+          usage: { prompt_tokens: 120, completion_tokens: 80, total_tokens: 200 } };
       }
     },
     MISSION_WORKFLOW: {
@@ -186,6 +189,11 @@ test("mission execution requires authenticated owner, allowed specialist and hea
     assert.ok(firstAttempt.attempted, "The one paid AI attempt must be recorded in D1");
     assert.equal(JSON.parse(record.result_json).verified, false);
     assert.deepEqual(JSON.parse(record.result_json).actions, brief().actions);
+    assert.equal(JSON.parse(record.result_json).provider_usage.input_tokens,120);
+    assert.equal(JSON.parse(record.result_json).provider_usage.total_tokens,200);
+    assert.equal(JSON.parse(record.result_json).provider_usage.billing_verified,false);
+    assert.equal(JSON.parse(record.evidence_json)[2].kind,"provider_usage_report");
+    assert.equal(JSON.parse(record.evidence_json)[2].billing_verified,false);
     assert.equal(JSON.parse(record.evidence_json)[0].source_count, 0);
     const recordedMemory = JSON.parse(record.evidence_json)[1];
     assert.equal(recordedMemory.kind, "yorpmind_historical_references");
