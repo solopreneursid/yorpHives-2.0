@@ -46,6 +46,7 @@ export function attestIndependentReleaseQA({preview,smoke,sha,now=Date.now()}){
    fail("Anonymous protection missing: "+route);
  }
  if(!smoke||smoke.target_host!==host||
+  smoke.source_commit!==sha||smoke.deployment_id!==preview?.deployment_id||
   !Number.isSafeInteger(smoke?.summary?.total)||
   smoke.summary.total<REQUIRED_CHECKS.length||smoke.summary.failed!==0||
   smoke.summary.passed!==smoke.summary.total||
