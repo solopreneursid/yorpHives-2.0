@@ -176,7 +176,8 @@ async function run() {
       "/api/admin/findings",
       "/api/admin/audit",
       "/api/admin/repair-jobs",
-      "/api/admin/yorpmind"
+      "/api/admin/yorpmind",
+      "/api/admin/yorpmind-team"
     ];
     for (const endpoint of readEndpoints) {
       try {
@@ -215,11 +216,38 @@ async function run() {
       headers: accessHeaders,timeout:20000
     });
     const permBody=await permReply.json().catch(()=>null);
-    record("temporary_permissions_fail_closed_or_are_read_only",
-      permReply.status()===503 && permBody?.error?.code==="PERMISSIONS_NOT_READY" ||
-      permReply.status()===200 && permBody?.owner_is_in_charge===true &&
-      permBody?.production_execution_enabled===false,
-      "Missing private migration blocks access; when installed, production remains locked");
+    record("temporary_permissions_staging_schema_ready_but_access_locked",
+      permReply.status()===200 &&
+      permBody?.name==="Your assistant permissions" &&
+      permBody?.owner_is_in_charge===true &&
+      permBody?.production_execution_enabled===false &&
+      Array.isArray(permBody?.assistants) &&
+      permBody.assistants.every(item=>item.production_allowed===false),
+      "Temporary permission records are readable but do not authorize production changes");
+    const realTeamReply = await page.request.get(baseUrl+"/api/admin/yorpmind-team", {
+      headers: accessHeaders,timeout:20000
+    });
+    const realTeam = realTeamReply.ok() ?
+      await realTeamReply.json().catch(()=>null) : null;
+    const people = realTeam?.reporting_hierarchy?.staff;
+    const members = Array.isArray(people) ? people : [];
+    const ids = new Set(members.map(item=>item.staff_id));
+    record("yorpmind_six_managers_real_staging_read",
+      realTeamReply.status()===200 &&
+      realTeam?.system==="yorpmind_team_management" &&
+      realTeam?.scope==="private_headquarters" &&
+      ids.size===6 &&
+      ["yorpmind","yorpmind1","yorpmind2","yorpmind3","yorpmind4","yorpmind5"]
+        .every(id=>ids.has(id)) &&
+      members.filter(item=>item.staff_id==="yorpmind" && item.reports_to===null).length===1 &&
+      members.filter(item=>item.staff_id!=="yorpmind" && item.reports_to==="yorpmind").length===5,
+      "The actual staging database must have the expected chief and five managers");
+    record("yorpmind_manager_scan_no_autonomous_release",
+      realTeam?.autonomous_dispatch===false &&
+      realTeam?.production_execution===false &&
+      realTeam?.review_is_not_approval===true &&
+      realTeam?.model_calls_per_team_scan===0,
+      "Reading team recommendations does not dispatch AI, approve a repair or deploy production");
     const fakeAgent = await page.request.post(baseUrl+"/api/admin/assistant-actions",{
       headers: {...accessHeaders,"content-type":"application/json"},
       data:{request_id:crypto.randomUUID(),action:"create_issue",scope:"website",
