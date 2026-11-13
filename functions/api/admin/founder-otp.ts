@@ -1,6 +1,6 @@
 import {adminJson,isAdminResponse,requireAdmin,type AdminRequestContext} from "../../_lib/admin-auth";
 import {otpUUID,otpEnabled,generateSixDigitCode,normalizeGrantRequest,
-  canonicalGrantPayload,otpDigest} from "../../_lib/founder-email-otp.js";
+  canonicalGrantPayload,otpDigest,sendFounderMail} from "../../_lib/founder-email-otp.js";
 
 type Selection="yorpmind"|"chatgpt"|"both";
 interface Challenge {
@@ -14,7 +14,8 @@ interface MailSender {
 type Context=AdminRequestContext & {env:AdminRequestContext["env"] & {
   FOUNDER_OTP_ENABLED?:string; FOUNDER_OWNER_EMAIL?:string;
   FOUNDER_OTP_HMAC_KEY?:string; FOUNDER_OTP_FROM?:string;
-  FOUNDER_MAIL?:MailSender; ADMIN_AGENT_SERVICE?:unknown;
+  FOUNDER_MAIL?:MailSender; FOUNDER_EMAIL_API_TOKEN?:string;
+  FOUNDER_CF_ACCOUNT_ID?:string; ADMIN_AGENT_SERVICE?:unknown;
 }};
 const fail=(code:string,message:string,status:number)=>adminJson({
   error:{code,message},permission_active:false,production_allowed:false
@@ -131,7 +132,7 @@ export async function onRequestPost(context:Context):Promise<Response>{
         grant.duration_minutes,grant.purpose,digest,timestamp,expires).run();
       try{
         const destination=owner.email;
-        const sendResult=await context.env.FOUNDER_MAIL!.send({
+        await sendFounderMail(context.env,{
           from:context.env.FOUNDER_OTP_FROM!,to:destination,
           subject:"YorpHives Founder Control · one-time approval code",
           text:"Your YorpHives approval code is "+code+"\n"+
@@ -141,9 +142,7 @@ export async function onRequestPost(context:Context):Promise<Response>{
             "This code expires after 5 minutes and can be used once. "+
             "If you did not request this, do not share it.\n"
         });
-        if(sendResult==null || (typeof sendResult==="object" &&
-            "success" in sendResult && (sendResult as {success?:boolean}).success===false))
-          throw Error("Sending not accepted");
+
       }catch{
         await db.prepare(
           "UPDATE founder_otp_challenges SET state='cancelled' "+
