@@ -198,19 +198,29 @@ export async function onRequestPatch(context:AdminRequestContext):Promise<Respon
       if(!await hasSchema(context))
         return error("PERMISSIONS_NOT_READY","Temporary permissions are not available.",503);
       const now=new Date().toISOString();
-      const results=await context.env.DB!.batch([
+      const otpTable=await context.env.DB!.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' "+
+        "AND name='founder_otp_challenges'"
+      ).first<{name:string}>();
+      const operations=[
         context.env.DB!.prepare(
           "UPDATE founder_temporary_grants SET state='revoked',revoked_by=?,revoked_at=? "+
           "WHERE owner_email=? AND state IN ('awaiting_mfa','active')"
         ).bind(identity.email,now,identity.email),
+        ...(otpTable?[context.env.DB!.prepare(
+          "UPDATE founder_otp_challenges SET state='cancelled' "+
+          "WHERE owner_email=? AND state IN ('issuing','sent','used')"
+        ).bind(identity.email)]:[]),
         context.env.DB!.prepare(
           "INSERT INTO admin_audit_events(id,actor,action,resource_type,resource_id,details_json,created_at) "+
           "VALUES(?,?,'temporary_permissions_all_revoked','assistant_permissions',?,?,?)"
         ).bind(crypto.randomUUID(),identity.email,"all",JSON.stringify({
           owner_emergency_stop:true,scope:"all_assistants",
+          cancels_unspent_email_codes:true,
           prevents_new_actions:true,production_allowed:false
         }),now)
-      ]) as Array<{meta?:{changes?:number}}>;
+      ];
+      const results=await context.env.DB!.batch(operations) as Array<{meta?:{changes?:number}}>;
       const count=Number(results[0]?.meta?.changes);
       if(!Number.isSafeInteger(count)||count<0)throw Error("Missing revocation receipt");
       return adminJson({cancelled:true,revoked_count:count,
