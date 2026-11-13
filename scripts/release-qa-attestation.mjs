@@ -1,5 +1,6 @@
 import {readFile} from "node:fs/promises";
 import {fileURLToPath} from "node:url";
+import {sameHeadquartersCanonical} from "./staging-preview-check.mjs";
 /** Independent, read-only attestation of authenticated staging browser evidence. */
 export const REQUIRED_CHECKS=Object.freeze([
 "access_identity_resolved","yorpmind_six_managers_real_staging_read",
@@ -19,6 +20,9 @@ export function attestIndependentReleaseQA({preview,smoke,sha,now=Date.now()}){
  if(preview?.staging_project!=="yorphives-admin-staging"||preview?.verified_commit_sha!==sha||
   preview?.verified_existing_deployment!==true||preview?.access_boundary_verified!==true||
   preview?.no_deployment_created!==true||preview?.no_production_change!==true||
+  !sameHeadquartersCanonical(preview?.canonical_before,preview?.canonical_after)||
+  !/^[a-f0-9]{40}$/.test(preview?.canonical_before?.sha||"")||
+  preview?.canonical_before?.branch!=="build/yorphives-admin-reliability"||
   preview?.owner_mfa_verified!==false||preview?.assistant_grants_created!==0||
   preview?.ai_model_calls!==0||preview?.database_writes!==0||
   !UUID.test(preview?.deployment_id||""))

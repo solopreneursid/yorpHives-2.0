@@ -1,7 +1,8 @@
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
-  locateMatchingAdminPreview, verifyAnonymousBoundary
+  locateMatchingAdminPreview, verifyAnonymousBoundary,
+  readHeadquartersCanonical, sameHeadquartersCanonical
 } from "./staging-preview-check.mjs";
 
 const checkedOut = process.env.GITHUB_SHA || "";
@@ -13,6 +14,7 @@ if (!process.env.GITHUB_ENV) {
   throw new Error("This protected verification only runs inside an approved GitHub Actions job.");
 }
 
+const before=await readHeadquartersCanonical({accountId:process.env.CF_ACCOUNT_ID||"",apiToken:process.env.CF_API_TOKEN||""});
 const preview = await locateMatchingAdminPreview({
   accountId: process.env.CF_ACCOUNT_ID || "",
   apiToken: process.env.CF_API_TOKEN || "",
@@ -21,6 +23,8 @@ const preview = await locateMatchingAdminPreview({
 });
 
 const boundary = await verifyAnonymousBoundary(preview.url);
+const after=await readHeadquartersCanonical({accountId:process.env.CF_ACCOUNT_ID||"",apiToken:process.env.CF_API_TOKEN||""});
+if(!sameHeadquartersCanonical(before,after))throw Error("HQ canonical production deployment changed during QA.");
 const report = {
   source: "verified_cloudflare_pages_deployment_metadata_and_anonymous_access",
   staging_project: "yorphives-admin-staging",
@@ -32,7 +36,9 @@ const report = {
   anonymous_paths_checked: boundary.routes,
   authenticated_browser_test_completed: false,
   no_deployment_created: true,
-  no_production_change: true,
+  canonical_before: before,
+  canonical_after: after,
+  no_production_change: sameHeadquartersCanonical(before,after),
   owner_mfa_verified: false,
   assistant_grants_created: 0,
   ai_model_calls: 0,

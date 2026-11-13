@@ -12,6 +12,44 @@ const BRANCH = /^(?:build|design|ops|qa|fix)\/[a-z0-9][a-z0-9-]{2,110}$/;
 const DISALLOWED = new Set(["main", "master"]);
 const ACCESS_ROUTES = Object.freeze(["/admin/", "/api/admin/yorpmind-team"]);
 
+/** Real, read-only production invariant for private Headquarters staging. */
+export function validateHeadquartersCanonical(project){
+ const branch="build/yorphives-admin-reliability";
+ const d=project?.canonical_deployment;
+ if(project?.name!=="yorphives-admin-staging"||
+    project?.production_branch!==branch||project?.source?.type!=="github"||
+    project.source.config?.owner!=="solopreneursid"||
+    project.source.config?.repo_name!=="yorpHives-2.0"||
+    project.source.config?.production_branch!==branch||
+    d?.environment!=="production"||d.latest_stage?.name!=="deploy"||
+    d.latest_stage.status!=="success"||
+    d.deployment_trigger?.metadata?.branch!==branch||
+    !UUID.test(String(d?.id||""))||
+    !SHA.test(String(d?.deployment_trigger?.metadata?.commit_hash||""))) return null;
+ return Object.freeze({id:d.id,sha:d.deployment_trigger.metadata.commit_hash,branch});
+}
+export function sameHeadquartersCanonical(before,after){
+ return Boolean(before&&after&&before.id===after.id&&
+  before.sha===after.sha&&before.branch===after.branch);
+}
+export async function readHeadquartersCanonical({accountId,apiToken,fetcher=globalThis.fetch}){
+ if(!/^[a-f0-9]{32}$/i.test(String(accountId||""))||
+    !apiToken||typeof fetcher!=="function")
+  throw Error("Read-only Cloudflare canonical verification credentials required.");
+ const response=await fetcher(
+  "https://api.cloudflare.com/client/v4/accounts/"+accountId+
+   "/pages/projects/yorphives-admin-staging",
+  {method:"GET",headers:{authorization:"Bearer "+apiToken,accept:"application/json"},
+   signal:AbortSignal.timeout(12000)}
+ );
+ const payload=await response.json().catch(()=>null);
+ const checked=response.status===200&&payload?.success===true?
+  validateHeadquartersCanonical(payload.result):null;
+ if(!checked)throw Error("Canonical private Headquarters deployment cannot be independently verified.");
+ return checked;
+}
+
+
 export function validateExistingAdminPreview(deployment, expected) {
   if (!expected || expected.project !== PROJECT ||
     !UUID.test(String(expected.deploymentId || "")) ||

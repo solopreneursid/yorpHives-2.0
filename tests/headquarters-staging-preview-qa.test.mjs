@@ -160,3 +160,36 @@ test("Signed-in QA is non-deploying and needs no founder approval before release
   assert.match(smoke,/website_proof_anonymous_access_denied/);
   assert.match(smoke,/yorpmind_real_coaching_unapproved/);
 });
+
+test("Cloudflare canonical production state is really inspected before trusting no-change evidence",async()=>{
+ const {readHeadquartersCanonical,validateHeadquartersCanonical,sameHeadquartersCanonical}=
+  await import("../scripts/staging-preview-check.mjs");
+ const branch="build/yorphives-admin-reliability";
+ const canonical={id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",environment:"production",
+  latest_stage:{name:"deploy",status:"success"},
+  deployment_trigger:{metadata:{branch,commit_hash:sha}}};
+ const project={name:"yorphives-admin-staging",production_branch:branch,
+  source:{type:"github",config:{owner:"solopreneursid",repo_name:"yorpHives-2.0",production_branch:branch}},
+  canonical_deployment:canonical};
+ const valid=validateHeadquartersCanonical(project);
+ assert.equal(valid.sha,sha);
+ assert.equal(sameHeadquartersCanonical(valid,{...valid}),true);
+ assert.equal(sameHeadquartersCanonical(valid,{...valid,id:"123e4567-e89b-42d3-a456-000000000009"}),false);
+ for(const wrong of [
+  {...project,production_branch:"main"},
+  {...project,source:{...project.source,config:{...project.source.config,repo_name:"YorpHives"}}},
+  {...project,canonical_deployment:{...canonical,latest_stage:{name:"deploy",status:"failure"}}},
+  {...project,canonical_deployment:{...canonical,environment:"preview"}}
+ ])assert.equal(validateHeadquartersCanonical(wrong),null);
+ const calls=[];
+ const fetcher=async(url,options)=>{calls.push({url,method:options.method});
+  return Response.json({success:true,result:project});};
+ const actual=await readHeadquartersCanonical({accountId:account,apiToken:"read-only",fetcher});
+ assert.deepEqual(actual,valid);
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].method,"GET");
+ assert.match(calls[0].url,/pages\/projects\/yorphives-admin-staging$/);
+ await assert.rejects(()=>readHeadquartersCanonical({accountId:account,apiToken:"read-only",
+  fetcher:async()=>Response.json({success:true,result:{...project,canonical_deployment:{...canonical,id:null}}})}),
+  /cannot be independently verified/);
+});

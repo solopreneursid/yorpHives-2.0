@@ -9,7 +9,10 @@ const preview={staging_project:"yorphives-admin-staging",verified_commit_sha:sha
  anonymous_paths_checked:[{route:"/admin/",access_blocked:true,status:302},
  {route:"/api/admin/yorpmind-team",access_blocked:true,status:403}],
  authenticated_browser_test_completed:false,no_deployment_created:true,
- no_production_change:true,owner_mfa_verified:false,assistant_grants_created:0,
+ no_production_change:true,
+ canonical_before:{id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",sha:"f".repeat(40),branch:"build/yorphives-admin-reliability"},
+ canonical_after:{id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",sha:"f".repeat(40),branch:"build/yorphives-admin-reliability"},
+ owner_mfa_verified:false,assistant_grants_created:0,
  ai_model_calls:0,database_writes:0,checked_at:"2026-11-13T12:56:00Z"};
 const smoke={target_host:host,generated_at:"2026-11-13T12:58:00Z",
  summary:{total:REQUIRED_CHECKS.length,passed:REQUIRED_CHECKS.length,failed:0},
@@ -26,6 +29,8 @@ test("wrong commit, host, access denial, expired or mutable preview fails",()=>{
  {...preview,preview_url:"https://yorphives.com"},
  {...preview,access_boundary_verified:false},
  {...preview,no_production_change:false},
+ {...preview,canonical_after:{...preview.canonical_after,sha:"e".repeat(40)}},
+ {...preview,canonical_before:undefined},
  {...preview,assistant_grants_created:1},
  {...preview,anonymous_paths_checked:[{route:"/admin/",access_blocked:false,status:200}]},
  {...preview,checked_at:"2026-11-12T10:00:00Z"}
