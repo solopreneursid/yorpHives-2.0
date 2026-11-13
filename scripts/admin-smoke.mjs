@@ -137,6 +137,40 @@ async function run() {
     // Return to real authenticated evidence after the browser-local synthetic fixture.
     await page.evaluate(() => window.loadOwnerActionCenter?.(true));
 
+    // Probe the real read-only evidence endpoint using an existing private
+    // owner mission if present; never create/dispatch a test job in browser CI.
+    const proofMissionsResponse = await page.request.get(baseUrl + "/api/admin/headquarters", {
+      headers: accessHeaders, timeout: 20000
+    });
+    const proofMissions = proofMissionsResponse.ok() ?
+      await proofMissionsResponse.json().catch(() => null) : null;
+    const proofJob = (proofMissions?.missions || []).find(row =>
+      row.job_id && /^[a-f0-9-]{36}$/i.test(row.job_id) &&
+      row.status !== "planned");
+    if (proofJob) {
+      const proofResponse = await page.request.get(baseUrl +
+        "/api/admin/mission-proof?job_id=" + encodeURIComponent(proofJob.job_id), {
+          headers: accessHeaders, timeout: 20000
+        });
+      const evidence = proofResponse.ok() ? await proofResponse.json().catch(() => null) : null;
+      record("real_staging_mission_receipt_read_only",
+        proofResponse.status() === 200 &&
+        evidence?.system === "headquarters_mission_proof" &&
+        evidence?.proof?.job_id === proofJob.job_id &&
+        evidence?.independent_qa_passed === false &&
+        evidence?.production_release_permitted === false &&
+        evidence?.new_inference_calls === 0,
+        "The staging mission record is examined without model calls or approval");
+    } else {
+      const invalidProof = await page.request.get(baseUrl +
+        "/api/admin/mission-proof?job_id=not-a-uuid", {
+          headers: accessHeaders, timeout: 20000
+        });
+      record("mission_proof_validation_without_seeded_mission",
+        invalidProof.status() === 400,
+        "No existing mission; invalid input is rejected without model calls");
+    }
+
     // Verify the real private D1 schema before installing synthetic browser GET fixtures.
     const repairLinksResponse = await page.request.get(baseUrl + "/api/admin/repair-jobs", {
       headers: accessHeaders, timeout: 20000
