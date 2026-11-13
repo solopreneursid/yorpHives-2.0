@@ -32,14 +32,14 @@ export function proposeEngineeringQaWork(repairs,staff,day){
   out.push({
    report_key:"work-order:engineering:"+id,manager_id:MEMBERS.engineering,
    subject_agent_id:"engineering-lead",source_job_id:id,
-   recommendation:"prepare_isolated_repair",severity:"high",
+   recommendation:"investigate_failed_mission",severity:"high",
    summary:"Investigate the referenced failed repair in an isolated development environment. Document a reproducible failing check before preparing any patch. No automatic retry or paid inference is authorized.",
    evidence:{...evidence,phase:"engineering",next_phase:"independent_qa"}
   });
   out.push({
    report_key:"work-order:quality:"+id,manager_id:MEMBERS.quality,
    subject_agent_id:"quality-engineer",source_job_id:id,
-   recommendation:"verify_isolated_repair",severity:"high",
+   recommendation:"investigate_failed_mission",severity:"high",
    summary:"Independently reproduce the original defect and verify any proposed patch against the exact source revision. Never attest tests that were not actually run.",
    evidence:{...evidence,phase:"independent_qa",prerequisite:"verified_engineering_patch"}
   });
