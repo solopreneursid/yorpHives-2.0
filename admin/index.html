@@ -977,6 +977,11 @@
             <button id="release-go-live" class="button" type="button" disabled>Go Live</button>
           </div>
           <small>Go Live requires your verified identity, exact candidate revision, successful checks, and a one-time code. No one else receives administrator rights.</small>
+          <details class="release-live-blockers" id="release-live-blockers" hidden>
+            <summary id="release-live-blockers-title">Live release blockers</summary>
+            <p>These checks come from the private, read-only release verifier. A missing check means no verified approval, not that development must stop.</p>
+            <ul id="release-live-blockers-list" aria-live="polite"></ul>
+          </details>
         </div>
         <details class="release-evidence-details">
           <summary>Technical release evidence and remaining checks</summary>
