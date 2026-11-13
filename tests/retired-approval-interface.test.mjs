@@ -29,3 +29,20 @@ test("old delegated-approval handlers are intentionally read-only",async()=>{
  assert.match(legacyApi,/retired_delegation_history/);
  assert.match(legacyApi,/LEGACY_APPROVAL_RETIRED/);
 });
+
+test("founder Home has no assistant-grant request or temporary-access OTP form",async()=>{
+ const html=await source("admin/index.html");
+ const start=html.indexOf('<details class="founder-permission-panel"');
+ const end=html.indexOf('<details class="cockpit-reference">',start);
+ assert.ok(start>0&&end>start);
+ const panel=html.slice(start,end);
+ assert.doesNotMatch(panel,/<form\b|founder-permission-submit|founder-secure-link/);
+ assert.match(panel,/Archived access history/);
+ assert.doesNotMatch(html,/id="founder-otp-dialog"/);
+ const script=await source("admin/founder-control-center.js");
+ assert.match(script,/retired/);
+ assert.doesNotMatch(script,/method:\s*["']POST["']|send_test|action:"send"|action:"verify"/);
+ assert.doesNotMatch(script,/step-up\/assistant-permissions/);
+ assert.match(script,/action:"revoke_all"/);
+ assert.match(script,/window.HQChooseAssistant/);
+});
