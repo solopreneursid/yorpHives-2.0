@@ -19,6 +19,8 @@ test("legacy D1 receipts never unlock production in the browser", async () => {
   const css = await read("../admin/release-evidence.css");
   assert.match(js, /goLive\.disabled = true/);
   assert.match(js, /preview\.setAttribute\("aria-disabled", "true"\)/);
+  assert.match(js, /\/api\/admin\/go-live\?target=/);
+  assert.match(js, /data\.production_deployment_enabled !== false/);
   assert.match(js, /data\.production_deployment_enabled !== false/);
   assert.match(css, /#release-go-live:disabled/);
 });

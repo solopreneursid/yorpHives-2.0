@@ -6,20 +6,9 @@ on:
       - main
       - "build/**"
       - feature/founder-one-tap-controls
+  # All development PRs receive contract tests, including stacked feature branches.
+  # This job is read-only and cannot deploy or consume Workers AI.
   pull_request:
-    branches:
-      - main
-      - build/headquarters-staging-mission-proof
-      - build/headquarters-durable-staging-rehearsal
-      - build/headquarters-shared-repair-learning
-      - build/headquarters-founder-temporary-permissions
-      - design/headquarters-compact-workspace
-      - design/headquarters-prism-brand-theme
-      - ops/headquarters-staging-schema-complete
-      - qa/headquarters-browser-launch-check
-      - fix/headquarters-repair-intake-learning
-      - fix/headquarters-live-website-proof
-      - qa/headquarters-authenticated-preview-rehearsal
 
 permissions:
   contents: read

@@ -998,7 +998,7 @@
       <section class="release-evidence-section" aria-labelledby="release-evidence-title">
         <div class="release-evidence-head">
           <div><span class="eyebrow">PRODUCTION RELEASE</span><h2 id="release-evidence-title">Preview → Go Live</h2><p id="release-evidence-updated" role="status" aria-live="polite">Checking private evidence…</p></div>
-          <button class="button" id="release-evidence-refresh" type="button">Refresh evidence ↻</button>
+          <label class="release-target-label">Release <select id="release-target" aria-label="Release target"><option value="website">YorpHives website</option><option value="headquarters">Headquarters</option></select></label>
         </div>
         <div class="release-launch-desk" aria-label="Founder-only production approval">
           <span class="release-launch-badge" id="release-launch-status">Checking readiness</span>
@@ -1011,6 +1011,7 @@
         </div>
         <details class="release-evidence-details">
           <summary>Technical release evidence and remaining checks</summary>
+          <button class="button" id="release-evidence-refresh" type="button">Refresh evidence ↻</button>
           <p class="release-evidence-notice"><strong>Not production-ready yet.</strong> These historical records are not live commit, preview, MFA or rollback attestations. The button remains disabled until a separate verified release executor is implemented.</p>
           <div class="release-evidence-metrics" id="release-evidence-summary" aria-label="Release evidence totals"></div>
           <div class="release-evidence-list" id="release-evidence-list"><p class="release-evidence-empty">Reading recent repair records…</p></div>

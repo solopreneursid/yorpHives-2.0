@@ -104,6 +104,61 @@
     }
   }
 
+  const validPreview = (value, target) => {
+    try {
+      const project = target === "headquarters" ? "yorphives-admin-staging" : "yorphives-2-preview";
+      const url = new URL(value);
+      return url.protocol === "https:" &&
+        url.hostname.endsWith("." + project + ".pages.dev") &&
+        url.hostname.split(".").length === 4 &&
+        /^[a-z0-9-]+$/.test(url.hostname.split(".")[0]) &&
+        !url.username && !url.password && !url.port && !url.search && !url.hash &&
+        url.pathname === "/" ? url.origin : null;
+    } catch { return null; }
+  };
+  async function loadGoLiveReadiness() {
+    const target = $("release-target")?.value === "headquarters" ? "headquarters" : "website";
+    const status = $("release-launch-status");
+    const details = $("release-launch-description");
+    const preview = $("release-launch-preview");
+    const goLive = $("release-go-live");
+    if (goLive) goLive.disabled = true; // No OTP executor exists yet.
+    if (preview) {
+      preview.removeAttribute("href");
+      preview.setAttribute("aria-disabled", "true");
+    }
+    status.textContent = "Checking production readiness";
+    details.textContent = "Verifying the exact code revision, automated checks and Cloudflare preview.";
+    try {
+      const response = await fetch("/api/admin/go-live?target=" + target, {
+        credentials: "same-origin", cache: "no-store",
+        headers: { accept: "application/json" }
+      });
+      if (response.redirected || !response.ok) throw new Error("Private release verifier unavailable");
+      const data = await response.json();
+      if (data.target !== target || data.production_approved !== false ||
+          data.production_deployment_enabled !== false ||
+          typeof data.ready_for_preview !== "boolean" ||
+          !Array.isArray(data.blockers)) throw new Error("Invalid release verification evidence");
+      const url = data.ready_for_preview === true ? validPreview(data.preview?.url, target) : null;
+      if (url && data.status === "verified_preview" && data.blockers.length === 0) {
+        preview.href = url;
+        preview.setAttribute("aria-disabled", "false");
+        status.textContent = "Preview verified · Go Live not connected";
+        details.textContent = "All current release checks passed for " +
+          (data.candidate?.title || "this change") +
+          ". Open Preview to inspect the exact candidate. Publishing stays unavailable until the founder-only OTP release executor is verified.";
+      } else {
+        status.textContent = "Not production-ready";
+        details.textContent = data.blockers.slice(0, 3).map(s => String(s).slice(0, 240)).join(" ") ||
+          "Release evidence is incomplete. The team can continue working without administrator approval.";
+      }
+    } catch {
+      status.textContent = "Verification unavailable";
+      details.textContent = "Live release checks could not be confirmed. Keep developing; publishing is locked.";
+    }
+  }
+
   let loading = false;
   window.loadReleaseEvidence = async function loadReleaseEvidence() {
     if (loading) return;
@@ -139,12 +194,14 @@
       if ($("release-launch-status")) $("release-launch-status").textContent = "Verification unavailable";
     } finally {
       loading = false;
+      await loadGoLiveReadiness();
     }
   };
 
   function init() {
     const refresh = $("release-evidence-refresh");
     if (refresh) refresh.addEventListener("click", () => window.loadReleaseEvidence());
+    $("release-target")?.addEventListener("change", () => window.loadReleaseEvidence());
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();
