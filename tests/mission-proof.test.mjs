@@ -48,6 +48,17 @@ test("provider-reported usage is visible but cannot claim verified billing",()=>
   assert.equal(counterfeit.provider_usage,null);
   assert.equal(counterfeit.provider_billing_verified,false);
 });
+test("a successful synthetic staging Workflow never asks for owner approval",()=>{
+  const synthetic=inspectMissionReceipt({...job(),origin_type:"staging_rehearsal"},events);
+  assert.equal(synthetic.evidence_status,"recorded_staging_rehearsal");
+  assert.equal(synthetic.staging_rehearsal_completed,true);
+  assert.equal(synthetic.is_staging_rehearsal,true);
+  assert.equal(synthetic.records_sufficient_for_owner_review,false);
+  assert.equal(synthetic.checks.filter(c=>c.result==="recorded").length,5);
+  assert.match(synthetic.checks[0].label,/Synthetic staging/);
+  assert.equal(synthetic.release_authorized,false);
+  assert.match(synthetic.suggested_admin_action,/no founder acknowledgement/);
+});
 test("missing attempt, duplicate queue and fabricated model claims block readiness",()=>{
   const first=inspectMissionReceipt(job("awaiting_owner_approval","{}"),events);
   assert.equal(first.records_sufficient_for_owner_review,false);
