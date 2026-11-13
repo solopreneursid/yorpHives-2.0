@@ -16,6 +16,9 @@ export interface AdminEnv {
   ADMIN_CI_SERVICE_TOKEN_IDS?: string;
   CF_ACCESS_STEP_UP_AUD?: string;
   CF_ACCESS_STEP_UP_MFA_POLICY_CONFIRMED?: string;
+  CF_ACCESS_AGENT_AUD?: string;
+  CF_ACCESS_YORPMIND_SERVICE_TOKEN_ID?: string;
+  CF_ACCESS_CHATGPT_SERVICE_TOKEN_ID?: string;
 }
 export interface AdminIdentity {
   email: string;
@@ -132,6 +135,58 @@ export async function requireOwnerStepUp(context: AdminRequestContext): Promise<
       message: "The MFA-protected session must be fresh and short-lived. Sign in again." } }, 403);
   }
   return identity;
+}
+
+/**
+ * AI assistant identities are Cloudflare Access service tokens with a DISTINCT
+ * audience and explicit allowlisted token IDs. An AI's text, user-supplied
+ * header, normal CI identity or founder browser session cannot impersonate one.
+ * These identities NEVER inherit requireAdmin privileges.
+ */
+export async function verifyTemporaryAssistantAccess(
+  request: Request, env: AdminEnv
+): Promise<"yorpmind" | "chatgpt" | null> {
+  const audience = (env.CF_ACCESS_AGENT_AUD || "").trim();
+  const base = new Set((env.CF_ACCESS_AUD || "").split(",").map(s => s.trim()));
+  const stepUp = (env.CF_ACCESS_STEP_UP_AUD || "").trim();
+  const ids = {
+    yorpmind: (env.CF_ACCESS_YORPMIND_SERVICE_TOKEN_ID || "").trim(),
+    chatgpt: (env.CF_ACCESS_CHATGPT_SERVICE_TOKEN_ID || "").trim()
+  };
+  if (!audience || base.has(audience) || audience === stepUp ||
+      ids.yorpmind.length < 8 || ids.chatgpt.length < 8 ||
+      ids.yorpmind === ids.chatgpt) return null;
+  let teamDomain = (env.CF_ACCESS_TEAM_DOMAIN || "").trim();
+  teamDomain = teamDomain.replace(/^https?:\\/\\//, "").replace(/\\/$/, "");
+  if (!teamDomain || !/^[a-z0-9.-]+$/i.test(teamDomain)) return null;
+  const token = request.headers.get("cf-access-jwt-assertion");
+  if (!token) return null;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const header = decodeJsonPart<{ alg?: string; kid?: string }>(parts[0]);
+    const claims = decodeJsonPart<AccessClaims>(parts[1]);
+    const now = Math.floor(Date.now() / 1000);
+    if (header.alg !== "RS256" || !header.kid ||
+        claims.iss !== "https://" + teamDomain ||
+        !Number.isSafeInteger(claims.exp) || claims.exp <= now ||
+        (claims.iat !== undefined && (!Number.isSafeInteger(claims.iat) ||
+          claims.iat > now + 30)) ||
+        !claims.service_token_status ||
+        !Array.isArray(claims.aud) && claims.aud !== audience ||
+        Array.isArray(claims.aud) && !claims.aud.includes(audience)) return null;
+    const identity = (claims.service_token_id || "").trim();
+    const actor = identity === ids.yorpmind ? "yorpmind" :
+      identity === ids.chatgpt ? "chatgpt" : null;
+    if (!actor) return null;
+    const jwk = (await getAccessKeys(teamDomain)).find(key => key.kid === header.kid);
+    if (!jwk) return null;
+    const publicKey = await crypto.subtle.importKey("jwk", jwk,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+    const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", publicKey,
+      decodeBase64Url(parts[2]), new TextEncoder().encode(parts[0] + "." + parts[1]));
+    return valid ? actor : null;
+  } catch { return null; }
 }
 
 export async function requireAdmin(context: AdminRequestContext): Promise<AdminIdentity | Response> {
