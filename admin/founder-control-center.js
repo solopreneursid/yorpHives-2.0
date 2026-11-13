@@ -213,7 +213,7 @@
     button.disabled=true;
     setStatus("Submitting a harmless email test. This cannot grant assistant access.");
     try{
-      const response=await api("/api/admin/founder-email-test",{
+      const response=await api("/api/admin/founder-email-check",{
         method:"POST",body:'{"action":"send_test"}'
       });
       if(response?.accepted!==true||response?.permission_active!==false||
