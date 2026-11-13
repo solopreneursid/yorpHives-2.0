@@ -1080,7 +1080,7 @@ async function run() {
       verified.staging_project !== "yorphives-admin-staging" ||
       previewUrl.origin !== parsedBase.origin ||
       !/^[a-f0-9]{40}$/.test(verified.verified_commit_sha || "") ||
-      !/^[a-f0-9]{8}-[a-f0-9-]{27,}$/.test(verified.deployment_id || "") ||
+      !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(verified.deployment_id || "") ||
       verified.no_production_change !== true) {
     throw new Error("Browser QA is not bound to verified exact deployment metadata.");
   }
