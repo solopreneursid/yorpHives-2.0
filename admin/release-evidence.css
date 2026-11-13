@@ -43,3 +43,13 @@
 
 .release-launch-controls #release-launch-preview[aria-disabled="true"]{opacity:.6;pointer-events:none;cursor:not-allowed}
 .release-launch-controls #release-launch-preview:not([href]){border:1px solid #43566d}
+
+/* Only live server-sourced blockers appear here, not historical approvals. */
+.release-live-blockers{padding:10px 12px;margin-top:6px;border:1px solid #35556b;border-radius:9px;background:#0b1b2b}
+.release-live-blockers[hidden]{display:none}
+.release-live-blockers summary{font-size:.79rem;font-weight:750;color:#a9e4f0;cursor:pointer}
+.release-live-blockers summary:hover{color:#e7f8ff}
+.release-live-blockers summary:focus-visible{outline:2px solid #67e8f9;outline-offset:3px}
+.release-live-blockers p{font-size:.75rem;color:#9ebbd0;margin:10px 0 5px}
+.release-live-blockers ul{list-style:disc;margin:9px 0 3px;padding-left:22px;display:grid;gap:6px;max-height:230px;overflow-y:auto}
+.release-live-blockers li{font-size:.76rem;line-height:1.55;color:#cbdce9;overflow-wrap:anywhere}
