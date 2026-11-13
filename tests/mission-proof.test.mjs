@@ -35,6 +35,19 @@ test("complete persisted event chain permits only founder planning-brief review"
   assert.equal(receipt.release_authorized,false);
   assert.equal(receipt.production_deployed,false);
 });
+test("provider-reported usage is visible but cannot claim verified billing",()=>{
+  const usage={source:"provider_response",input_tokens:123,output_tokens:349,
+    total_tokens:472,billing_verified:false,actual_cost_usd:null};
+  const evidence=inspectMissionReceipt(job("awaiting_owner_approval",job().input_json,
+    JSON.stringify({...report,provider_usage:usage})),events);
+  assert.equal(evidence.provider_usage.total_tokens,472);
+  assert.equal(evidence.provider_billing_verified,false);
+  const counterfeit=inspectMissionReceipt(job("awaiting_owner_approval",job().input_json,
+    JSON.stringify({...report,provider_usage:{...usage,billing_verified:true,
+      actual_cost_usd:999999}})),events);
+  assert.equal(counterfeit.provider_usage,null);
+  assert.equal(counterfeit.provider_billing_verified,false);
+});
 test("missing attempt, duplicate queue and fabricated model claims block readiness",()=>{
   const first=inspectMissionReceipt(job("awaiting_owner_approval","{}"),events);
   assert.equal(first.records_sufficient_for_owner_review,false);
