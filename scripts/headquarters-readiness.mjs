@@ -74,6 +74,7 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   "scripts/website-preview-contrast.mjs",
   "scripts/staging-preview-check.mjs",
   "scripts/verify-existing-admin-preview.mjs",
+  "docs/HEADQUARTERS-PHASE-18-AUTHENTICATED-STAGING.md",
   ".github/workflows/website-public-evidence.yml",
   "docs/HEADQUARTERS-PHASE-17-LIVE-WEBSITE-PROOF.md",
   "admin/website-proof.js",
