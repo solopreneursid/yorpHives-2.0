@@ -731,6 +731,77 @@ export class AdminRepairWorkflow extends WorkflowEntrypoint {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    // These GitHub issue operations are reachable through a private Worker
+    // service binding; no browser or unauthenticated public HTTP route is used.
+    if (url.pathname === "/issue-inbox" &&
+        (request.method === "GET" || request.method === "POST")) {
+      if (request.headers.get("x-yorphives-internal-inbox") !== "1")
+        return Response.json({error:"Private service-binding operation."},{status:403});
+      if (!env.GITHUB_TOKEN)
+        return Response.json({error:"GitHub issue access is unavailable."},{status:503});
+      try {
+        if (request.method === "GET") {
+          const data = await github(env,
+            "/repos/" + REPOSITORY + "/issues?state=open&per_page=40&sort=updated&direction=desc");
+          const issues = (Array.isArray(data) ? data : [])
+            .filter(item => !item.pull_request && Number.isSafeInteger(item.number) &&
+              item.number > 0 && item.number <= 100000000)
+            .slice(0, 20).map(item => ({
+              number: item.number,
+              title: String(item.title || "").slice(0, 160),
+              body_excerpt: String(item.body || "").slice(0, 1200),
+              updated_at: String(item.updated_at || "").slice(0, 40),
+              state: "open",
+              url: "https://github.com/" + REPOSITORY + "/issues/" + item.number,
+              labels: (Array.isArray(item.labels) ? item.labels : [])
+                .map(label => String(label?.name || "").slice(0, 48)).slice(0, 6)
+            }));
+          return Response.json({repository:REPOSITORY,issues,
+            inspected_limit:40,returned_limit:20,read_only:true,
+            new_model_calls:0,production_approved:false},
+            {headers:{"cache-control":"no-store"}});
+        }
+        const raw = await request.text();
+        if (raw.length > 7000)
+          return Response.json({error:"Issue request exceeds safe size."},{status:413});
+        let input;
+        try { input = JSON.parse(raw); } catch {
+          return Response.json({error:"Expected valid JSON."},{status:400});
+        }
+        const title = typeof input?.title === "string" ? input.title.trim() : "";
+        const detail = typeof input?.details === "string" ? input.details.trim() : "";
+        const scope = input?.scope;
+        if (!input || input.confirm !== true ||
+            title.length < 8 || title.length > 160 ||
+            detail.length < 30 || detail.length > 3000 ||
+            /[\u0000-\u001f\u007f]/.test(title) || detail.includes("\u0000") ||
+            !["website","headquarters","tools","products","api","auto"].includes(scope))
+          return Response.json({error:"Invalid or unconfirmed issue description."},{status:400});
+        const scopeLabel = scope === "headquarters" ? "headquarters" : scope;
+        const body = [
+          "## Problem / requested investigation", "",
+          detail, "", "## YorpHives routing", "",
+          "Area: " + scopeLabel,
+          "Provenance: founder-authenticated Headquarters UI.",
+          "This is an issue report, not a verified fix, QA receipt or approval.",
+          "Next: investigate in an isolated branch; attach a draft PR and independent QA.",
+          "Production changes require founder preview review and separate MFA."
+        ].join("\n");
+        const result = await github(env, "/repos/" + REPOSITORY + "/issues",
+          "POST", {title,body});
+        if (!Number.isSafeInteger(result?.number) || result.number < 1)
+          throw new Error("GitHub did not return an issue identifier.");
+        return Response.json({created:true,number:result.number,
+          title, url:"https://github.com/" + REPOSITORY + "/issues/" + result.number,
+          new_model_calls:0,production_approved:false},
+          {status:201,headers:{"cache-control":"no-store"}});
+      } catch (error) {
+        console.warn(JSON.stringify({event:"repair_issue_bridge_error",
+          method:request.method,reason:String(error instanceof Error?error.message:error).slice(0,140)}));
+        return Response.json({error:"GitHub issue inbox is unavailable. No AI or production action was performed."},
+          {status:503,headers:{"cache-control":"no-store"}});
+      }
+    }
     if (!((request.method === "GET" && url.pathname === "/health") || (request.method === "POST" && (url.pathname === "/instances" || url.pathname === "/permission-probe")))) {
       return new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } });
     }
