@@ -132,14 +132,15 @@ test("Automatic staging preview search matches exact branch and SHA; never write
   }),/No successful, matching-code/);
 });
 
-test("Actual signed-in workflow is manual one-checkbox and cannot deploy",async()=>{
+test("Signed-in QA is non-deploying and needs no founder approval before release",async()=>{
   const workflow=await readFile(new URL("../.github/workflows/admin-staging-quality.yml",import.meta.url),"utf8");
   const smoke=await readFile(new URL("../scripts/admin-smoke.mjs",import.meta.url),"utf8");
   const verifier=await readFile(new URL("../scripts/verify-existing-admin-preview.mjs",import.meta.url),"utf8");
   assert.match(workflow,/workflow_dispatch:/);
-  assert.match(workflow,/confirm_preview_reviewed:/);
-  assert.match(workflow,/type: boolean/);
-  assert.match(workflow,/CONFIRM_PREVIEW_REVIEWED/);
+  assert.doesNotMatch(workflow,/confirm_preview_reviewed:/);
+  assert.doesNotMatch(workflow,/CONFIRM_PREVIEW_REVIEWED/);
+  assert.match(workflow,/Verify isolated staging revision without founder approval/);
+  assert.match(workflow,/Only isolated development branches can be tested here/);
   assert.match(workflow,/PAGES_COMMIT_SHA:/);
   assert.match(workflow,/staging-deployments/);
   assert.match(workflow,/verify-existing-admin-preview\.mjs/);

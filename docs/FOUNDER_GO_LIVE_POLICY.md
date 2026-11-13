@@ -35,3 +35,8 @@ The OTP must not be shown to or stored by assistants. If the same email is used 
 Build a read-only server-side release-candidate verifier that joins an exact commit, real green CI, independent QA, verified Cloudflare preview, migration/recovery and rollback evidence, all using canonical sources; then implement an owner-only single-use OTP release executor with scope-limited production credentials and immediate post-release verification.
 
 Do not enable this button with browser booleans, a record saying `needs_review`, draft PRs, owner-reported QA alone, or a historical D1 receipt. No new provider or spending authorized.
+
+
+## Updated 13 November 2026 — development QA policy
+
+The authenticated staging browser workflow no longer requires prior founder preview approval. QA remains non-deploying and exact-SHA bound. The final Go Live step is the **only routine publication approval**, not permission to test. Dedicated sensitive billing/security administration remains owner-only.

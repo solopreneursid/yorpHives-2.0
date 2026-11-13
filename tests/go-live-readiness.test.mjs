@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {REPO,REQUIRED_RELEASE_CHECKS,chooseReleaseCandidate,verifyRequiredChecks,exactPreview,evaluateReleaseReadiness}
+import {REPO,REQUIRED_RELEASE_CHECKS,HEADQUARTERS_REQUIRED_RELEASE_CHECKS,
+ requiredChecksForTarget,chooseReleaseCandidate,verifyRequiredChecks,exactPreview,evaluateReleaseReadiness}
  from "../functions/_lib/go-live-readiness.js";
 const sha="a".repeat(40);
 const pr={number:48,title:"Website release",state:"open",draft:false,
@@ -47,4 +48,23 @@ test("verified preview never constitutes founder approval or release execution",
  const no=evaluateReleaseReadiness({pulls:[pr],checkRuns:checks.slice(1),deployments:[deployment],target:"website"});
  assert.equal(no.ready_for_preview,false);
  assert.equal(no.preview,null);
+});
+
+test("Headquarters requires its real browser/visual check names, never website-only checks",()=>{
+ const hqChecks=HEADQUARTERS_REQUIRED_RELEASE_CHECKS.map((name,i)=>({
+  name,id:i+30,head_sha:sha,app:{slug:"github-actions"},status:"completed",
+  conclusion:"success",started_at:"2026-11-13T10:00:00Z",completed_at:"2026-11-13T10:01:00Z"
+ }));
+ assert.ok(requiredChecksForTarget("headquarters").includes("Authenticated Admin browser smoke tests"));
+ assert.ok(!requiredChecksForTarget("headquarters").includes("Lighthouse performance audit"));
+ assert.equal(verifyRequiredChecks(hqChecks,sha,"headquarters").verified,true);
+ assert.equal(verifyRequiredChecks(checks,sha,"headquarters").verified,false);
+ assert.equal(verifyRequiredChecks(hqChecks,sha,"website").verified,false);
+ assert.equal(verifyRequiredChecks(hqChecks,sha,"unknown").verified,false);
+});
+test("the latest failed rerun blocks an older passing check for the same revision",()=>{
+ const first=checks[0];
+ const recent={...first,id:999,started_at:"2026-11-13T11:00:00Z",
+  completed_at:"2026-11-13T11:03:00Z",conclusion:"failure"};
+ assert.equal(verifyRequiredChecks([...checks,recent],sha).verified,false);
 });

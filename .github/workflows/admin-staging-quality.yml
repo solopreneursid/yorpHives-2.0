@@ -1,14 +1,10 @@
 name: YorpHives authenticated Admin staging smoke tests
 
 on:
-  # Founder-reviewed authenticated testing is manual and non-deploying.
-  # Credential-free Chromium tests run separately on pull requests.
+  # Development QA does NOT require founder approval.
+  # This is a manually dispatchable, read-only staging verifier until a trusted
+  # automated dispatch identity is configured. The founder only approves Go Live.
   workflow_dispatch:
-    inputs:
-      confirm_preview_reviewed:
-        description: "I reviewed the private Headquarters preview and want to run the read-only sign-in checks"
-        required: true
-        type: boolean
 
 permissions:
   contents: read
@@ -37,26 +33,22 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
-      - name: Verify founder review and automatically selected code revision
+      - name: Verify isolated staging revision without founder approval
         env:
-          CONFIRM_PREVIEW_REVIEWED: ${{ inputs.confirm_preview_reviewed }}
           EXPECTED_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ "$CONFIRM_PREVIEW_REVIEWED" != "true" ]; then
-            echo "::error::Review the private preview and check the review-confirmation box before testing."
-            exit 1
-          fi
           if ! [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || [ "$EXPECTED_SHA" != "$(git rev-parse HEAD)" ]; then
-            echo "::error::The selected branch source does not match the exact GitHub revision."
+            echo "::error::The checked-out revision does not match the exact GitHub commit."
             exit 1
           fi
-          if [ "$PAGES_BRANCH" = "main" ] || [ "$PAGES_BRANCH" = "master" ]; then
-            echo "::error::The public website branch is not a private staging preview."
+          if ! [[ "$PAGES_BRANCH" =~ ^(build|feature|fix|qa|design|ops)/[a-z0-9._/-]+$ ]] ||
+             [ "$PAGES_BRANCH" = "main" ] || [ "$PAGES_BRANCH" = "master" ]; then
+            echo "::error::Only isolated development branches can be tested here."
             exit 1
           fi
-          echo "Founder review confirmed; exact source revision verified without manual technical IDs."
+          echo "Development QA authorized by the staging workflow policy; no founder approval needed."
       - name: Verify required deployment and Access credentials
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

@@ -1,10 +1,20 @@
 /** Read-only, exact-revision production preview checks. Never publishes. */
 export const REPO="solopreneursid/yorpHives-2.0";
 export const RELEASE_PROJECT=Object.freeze({website:"yorphives-2-preview",headquarters:"yorphives-admin-staging"});
+const COMMON_RELEASE_CHECKS=Object.freeze(["contract-tests","Independent release QA","Release recovery and rollback"]);
 export const REQUIRED_RELEASE_CHECKS=Object.freeze([
-"contract-tests","Deploy isolated Cloudflare Pages preview","Browser smoke tests and SEO crawl",
-"Code review","Lighthouse performance audit","Independent release QA","Release recovery and rollback"
+...COMMON_RELEASE_CHECKS,"Deploy isolated Cloudflare Pages preview",
+"Browser smoke tests and SEO crawl","Code review","Lighthouse performance audit"
 ]);
+export const HEADQUARTERS_REQUIRED_RELEASE_CHECKS=Object.freeze([
+...COMMON_RELEASE_CHECKS,
+"Screenshot and safe interaction tests (no live API)",
+"Authenticated Admin browser smoke tests"
+]);
+export function requiredChecksForTarget(target){
+ return target==="website"?REQUIRED_RELEASE_CHECKS:
+  target==="headquarters"?HEADQUARTERS_REQUIRED_RELEASE_CHECKS:null;
+}
 const SHA=/^[0-9a-f]{40}$/i;
 const BRANCH=/^(?:build|feature|fix|qa|design|ops)\/[a-z0-9][a-z0-9._/-]{1,110}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,10 +37,13 @@ export function chooseReleaseCandidate(pulls,target){
   title:typeof pr.title==="string"?pr.title.slice(0,180):"YorpHives release"
  },reason:null};
 }
-export function verifyRequiredChecks(checkRuns,sha){
- if(!Array.isArray(checkRuns)||!SHA.test(sha||""))return {verified:false,missing:[...REQUIRED_RELEASE_CHECKS]};
+export function verifyRequiredChecks(checkRuns,sha,target="website"){
+ const required=requiredChecksForTarget(target);
+ if(!required)return {verified:false,missing:["Unknown release target."]};
+ if(!Array.isArray(checkRuns)||!SHA.test(sha||""))
+  return {verified:false,missing:[...required]};
  const missing=[];
- for(const name of REQUIRED_RELEASE_CHECKS){
+ for(const name of required){
   const runs=checkRuns.filter(r=>r?.name===name&&String(r.head_sha||"").toLowerCase()===sha.toLowerCase()&&
    r?.app?.slug==="github-actions").sort((a,b)=>
     String(b.started_at||"").localeCompare(String(a.started_at||""))||
@@ -64,7 +77,7 @@ export function evaluateReleaseReadiness({pulls,checkRuns,deployments,target}){
  if(!selected.candidate)return {target,status:"working",ready_for_preview:false,
   candidate:null,preview:null,blockers:[selected.reason],
   production_approved:false,production_deployment_enabled:false};
- const candidate=selected.candidate,ci=verifyRequiredChecks(checkRuns,candidate.sha);
+ const candidate=selected.candidate,ci=verifyRequiredChecks(checkRuns,candidate.sha,target);
  const preview=exactPreview(deployments,candidate),blockers=[];
  if(!ci.verified)blockers.push("Missing or failing release checks: "+ci.missing.join(", ")+".");
  if(!preview)blockers.push("No successful preview matches the exact source branch and SHA.");
