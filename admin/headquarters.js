@@ -77,7 +77,11 @@
     target.replaceChildren();
     const filter = el("hq-filter").value;
     const selected = snapshot.missions.filter(m =>
-      filter === "all" || (filter === "active" ? !closed.has(m.status) : filter === "review" ? m.status === "awaiting_owner_approval" : m.status === filter)
+      filter === "all" ||
+      (filter === "staging" ? m.origin_type === "staging_rehearsal" :
+      m.origin_type !== "staging_rehearsal" &&
+      (filter === "active" ? !closed.has(m.status) :
+        filter === "review" ? m.status === "awaiting_owner_approval" : m.status === filter))
     );
     if (!selected.length) {
       const empty = make("div", "hq-empty");
@@ -85,16 +89,21 @@
       target.append(empty);
     }
     for (const mission of selected) {
+      const synthetic = mission.origin_type === "staging_rehearsal";
       const agent = snapshot.specialists.find(x => x.agent_id === mission.agent_id);
       const card = make("article", "hq-mission-card");
       const top = make("div", "hq-mission-top");
       const left = make("div", "hq-mission-meta");
       left.append(make("span", "hq-priority hq-priority-" + mission.priority, mission.priority), make("span", "hq-specialist", agent?.display_name || "Unassigned"));
-      top.append(left, make("span", statusClass(mission.status), labels[mission.status] || mission.status.replaceAll("_", " ")));
+      top.append(left, make("span", statusClass(mission.status),
+        synthetic && mission.status === "awaiting_owner_approval" ? "Synthetic brief saved" :
+        labels[mission.status] || mission.status.replaceAll("_", " ")));
       card.append(top, make("h3", "hq-mission-title", mission.title), make("p", "hq-mission-desc", mission.request_summary));
+      if (synthetic) card.append(make("p", "hq-staging-note",
+        "STAGING REHEARSAL · This was started by an isolated test Workflow, not dispatched by you. Read its evidence without acknowledging, approving or deploying anything."));
       const footer = make("div", "hq-mission-footer");
       footer.append(make("span", "", date(mission.created_at)));
-      if (mission.status === "planned") {
+      if (mission.status === "planned" && !synthetic) {
         const supported = Boolean(snapshot.engine_available && agent?.enabled === 1 && agent?.status === "ready" && agent?.autonomy_level === "recommend");
         const remaining = Number(snapshot.mission_budget?.remaining ?? 0);
         const permitted = supported && remaining > 0;
@@ -121,7 +130,7 @@
       if (mission.status === "queued" || mission.status === "running") {
         footer.append(make("span", "hq-inprogress", "The durable workflow is processing this request."));
       }
-      if (mission.status === "awaiting_owner_approval" && mission.result_json) {
+      if (mission.status === "awaiting_owner_approval" && mission.result_json && !synthetic) {
         const actions = make("div", "hq-mission-actions");
         const review = make("button", "hq-small-primary", "Mark brief reviewed ✓");
         review.type = "button";
@@ -141,10 +150,13 @@
         actions.append(review, discard);
         footer.append(actions);
       }
+      if (synthetic && mission.status === "awaiting_owner_approval") {
+        footer.append(make("span", "hq-inprogress", "Staging result saved · inspect evidence below · no owner approval required."));
+      }
       if (mission.status === "completed" && mission.result_json) {
         footer.append(make("span", "hq-inprogress", "Brief acknowledged · model claims still unverified."));
       }
-      if (window.HQMissionMemory?.addMissionReview) window.HQMissionMemory.addMissionReview(mission, footer);
+      if (!synthetic && window.HQMissionMemory?.addMissionReview) window.HQMissionMemory.addMissionReview(mission, footer);
       card.append(footer);
       const result = renderResult(mission);
       if (result) card.append(result);
@@ -204,9 +216,10 @@
       const budget = snapshot.mission_budget;
       el("hq-mission-budget").textContent = budget ? "AI recommendation briefs today (UTC): " + budget.used + " / " + budget.limit + " · " + budget.remaining + " remaining · excludes research and repair costs" : "AI mission budget unavailable";
       const missions = snapshot.missions;
-      el("hq-open").textContent = missions.filter(m => !closed.has(m.status)).length;
-      el("hq-running").textContent = missions.filter(m => ["queued", "running"].includes(m.status)).length;
-      el("hq-review").textContent = missions.filter(m => m.status === "awaiting_owner_approval").length;
+      const ownerMissions = missions.filter(m => m.origin_type !== "staging_rehearsal");
+      el("hq-open").textContent = ownerMissions.filter(m => !closed.has(m.status)).length;
+      el("hq-running").textContent = ownerMissions.filter(m => ["queued", "running"].includes(m.status)).length;
+      el("hq-review").textContent = ownerMissions.filter(m => m.status === "awaiting_owner_approval").length;
       el("hq-departments").textContent = snapshot.departments.length;
       el("hq-ready").textContent = snapshot.specialists.filter(a => a.enabled && a.status === "ready" && a.autonomy_level === "recommend").length;
       const selected = el("hq-agent").value;
