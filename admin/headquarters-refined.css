@@ -482,6 +482,25 @@ body {
   max-width: 580px;
   color: #e5effb;
 }
+.hq-issue-title {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #e8f4ff;
+  font-weight: 730;
+}
+.hq-issue-detail {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  overflow: hidden;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: #9eb4c8;
+  margin-top: 3px;
+}
+#view-issues #findings-list td:last-child { min-width: 174px; }
 #view-issues #findings-list td:last-child .button {
   min-height: 27px;
   min-width: 70px;
