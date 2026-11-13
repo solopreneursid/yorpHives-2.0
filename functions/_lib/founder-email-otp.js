@@ -6,6 +6,18 @@ export const otpUUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3
 const encoder=new TextEncoder();
 export const validEmailAddress=(value)=>typeof value==="string" &&
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length<=254;
+/**
+ * Recognize a one-time legacy Cloudflare dashboard copy/paste typo.
+ * Prefer the canonical name, and fail closed for ambiguous aliases.
+ * Do not log secret values. Remove the compatibility path after correction.
+ */
+export function founderEmailToken(env){
+  if(typeof env?.FOUNDER_EMAIL_API_TOKEN==="string")
+    return env.FOUNDER_EMAIL_API_TOKEN;
+  const aliases=Object.keys(env||{}).filter(key=>
+    key!=="FOUNDER_EMAIL_API_TOKEN"&&key.trim()==="FOUNDER_EMAIL_API_TOKEN");
+  return aliases.length===1&&typeof env[aliases[0]]==="string"?env[aliases[0]]:"";
+}
 export const otpEnabled=(env,email)=>env?.FOUNDER_OTP_ENABLED==="yes" &&
   typeof env?.FOUNDER_OTP_HMAC_KEY==="string" &&
   encoder.encode(env.FOUNDER_OTP_HMAC_KEY).byteLength>=32 &&
@@ -14,8 +26,7 @@ export const otpEnabled=(env,email)=>env?.FOUNDER_OTP_ENABLED==="yes" &&
   env.FOUNDER_OWNER_EMAIL.toLowerCase()===String(email).toLowerCase() &&
   (typeof env?.FOUNDER_MAIL?.send==="function" ||
     typeof env?.FOUNDER_MAIL?.fetch==="function" ||
-    (typeof env?.FOUNDER_EMAIL_API_TOKEN==="string" &&
-      env.FOUNDER_EMAIL_API_TOKEN.length>=32 &&
+    (founderEmailToken(env).length>=32 &&
       /^[0-9a-f]{32}$/i.test(String(env?.FOUNDER_CF_ACCOUNT_ID||""))));
 
 export function generateSixDigitCode(){
@@ -81,14 +92,14 @@ export async function sendFounderMail(env,message){
     if(result==null || result?.success===false)throw Error("Mail was not accepted");
     return true;
   }
-  if(typeof env?.FOUNDER_EMAIL_API_TOKEN!=="string"||
-    env.FOUNDER_EMAIL_API_TOKEN.length<32 ||
+  const bearer=founderEmailToken(env);
+  if(bearer.length<32 ||
     !/^[0-9a-f]{32}$/i.test(String(env?.FOUNDER_CF_ACCOUNT_ID||"")))
     throw Error("Email transport is not configured");
   const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+
     env.FOUNDER_CF_ACCOUNT_ID+"/email/sending/send",{
     method:"POST",signal:AbortSignal.timeout(8000),
-    headers:{"authorization":"Bearer "+env.FOUNDER_EMAIL_API_TOKEN,
+    headers:{"authorization":"Bearer "+bearer,
       "content-type":"application/json"},
     body:JSON.stringify(message)
   });
