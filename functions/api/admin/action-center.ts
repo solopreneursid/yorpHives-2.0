@@ -6,6 +6,7 @@ import { founderActionQueue } from "../../_lib/owner-action-center.js";
 interface SourceJob {
   job_id: string;
   status: string;
+  origin_type: string | null;
   result_json: string | null;
   updated_at: string;
 }
@@ -79,7 +80,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
   const db = context.env.DB!;
   try {
     const [jobs, repairs, monitor, tables] = await Promise.all([
-      db.prepare("SELECT job_id,status,result_json,updated_at FROM agent_jobs " +
+      db.prepare("SELECT job_id,status,origin_type,result_json,updated_at FROM agent_jobs " +
         "WHERE job_type='owner_mission' ORDER BY updated_at DESC LIMIT 50").all<SourceJob>(),
       db.prepare("SELECT COUNT(*) AS count FROM admin_repair_jobs WHERE status='needs_review'")
         .first<CountRecord>(),
