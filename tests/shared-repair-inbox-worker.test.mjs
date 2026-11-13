@@ -6,11 +6,13 @@ const file=path=>readFile(new URL(path,import.meta.url),"utf8");
 const uri=code=>"data:text/javascript;base64,"+Buffer.from(code).toString("base64");
 const evidenceURI=uri(await file("../admin-agent/repair-evidence.js"));
 const securityURI=uri(await file("../admin-agent/repair-security.js"));
+const modelURI=uri(await file("../admin-agent/model-output.js"));
 const workerSource=(await file("../admin-agent/worker.js"))
   .replace('import { WorkflowEntrypoint } from "cloudflare:workers";',
     'class WorkflowEntrypoint { constructor() { this.env={}; } }')
   .replace('"./repair-evidence.js"',JSON.stringify(evidenceURI))
-  .replace('"./repair-security.js"',JSON.stringify(securityURI));
+  .replace('"./repair-security.js"',JSON.stringify(securityURI))
+  .replace('"./model-output.js"',JSON.stringify(modelURI));
 const {default:worker}=await import(uri(workerSource));
 const originalFetch=globalThis.fetch;
 const env={GITHUB_TOKEN:"synthetic-test-token"};
