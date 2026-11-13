@@ -7,7 +7,8 @@ test("founder home shows one production release decision without granting admin 
   const html = await read("../admin/index.html");
   assert.match(html, /id="founder-open-release"/);
   assert.match(html, /id="release-go-live"[^>]*disabled/);
-  assert.match(html, /id="release-launch-preview"[^>]*hidden/);
+  assert.match(html, /id="release-launch-preview"[^>]*aria-disabled="true"[^>]*>Preview<\/a>/);
+  assert.match(html, /id="release-go-live"[^>]*>Go Live<\/button>/);
   assert.match(html, /class="founder-permission-panel"[^>]*hidden/);
   assert.match(html, /class="owner-delegation-panel"[^>]*hidden/);
   assert.doesNotMatch(html, /id="founder-open-permissions"/);
@@ -17,7 +18,7 @@ test("legacy D1 receipts never unlock production in the browser", async () => {
   const js = await read("../admin/release-evidence.js");
   const css = await read("../admin/release-evidence.css");
   assert.match(js, /goLive\.disabled = true/);
-  assert.match(js, /preview\.hidden = true/);
+  assert.match(js, /preview\.setAttribute\("aria-disabled", "true"\)/);
   assert.match(js, /data\.production_deployment_enabled !== false/);
   assert.match(css, /#release-go-live:disabled/);
 });

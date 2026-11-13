@@ -25,7 +25,7 @@ The OTP must not be shown to or stored by assistants. If the same email is used 
 ## Stage implemented in this branch
 
 - Founder home navigates directly to a compact **Preview → Go Live** review page; obsolete “Grant temporary access” controls are hidden.
-- The private release desk deliberately renders **Not production-ready**, with no preview URL and a disabled **Go Live · OTP** control, because the existing D1 evidence endpoint cannot attest live SHA/preview/release readiness.
+- The private release desk deliberately renders **Not production-ready**, showing exactly two side-by-side controls: **Preview** and **Go Live**. The first has no navigable URL; the second is disabled. Both become usable only for a release independently verified production-ready, with the **Go Live** action protected by the founder's OTP. The existing D1 evidence endpoint cannot yet attest live SHA/preview/release readiness.
 - Existing historical CI/QA details remain available in a collapsed technical section.
 - Draft mission and repair notices are called **team work**, not production decisions; no production permissions are changed.
 - Historical temporary-grant backend endpoints and revocation mechanism have not been rewritten. Confirm their feature flags are disabled, revoke any active grants, then remove old issuance routes in a separately tested cleanup.

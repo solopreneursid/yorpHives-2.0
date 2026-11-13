@@ -40,3 +40,6 @@
 #release-go-live:disabled{opacity:.6;cursor:not-allowed}
 .release-evidence-details{margin:14px 0}
 .release-evidence-details>summary{cursor:pointer;padding:10px 0;color:#b6d8eb;font-weight:650}
+
+.release-launch-controls #release-launch-preview[aria-disabled="true"]{opacity:.6;pointer-events:none;cursor:not-allowed}
+.release-launch-controls #release-launch-preview:not([href]){border:1px solid #43566d}

@@ -40,8 +40,8 @@
     const preview = $("release-launch-preview");
     if (goLive) goLive.disabled = true;
     if (preview) {
-      preview.hidden = true;
       preview.removeAttribute("href");
+      preview.setAttribute("aria-disabled", "true");
     }
     if ($("release-launch-status")) $("release-launch-status").textContent = "Not production-ready";
     if ($("release-launch-description")) {
@@ -132,7 +132,10 @@
       );
       $("release-evidence-updated").textContent = "Could not verify evidence";
       if ($("release-go-live")) $("release-go-live").disabled = true;
-      if ($("release-launch-preview")) $("release-launch-preview").hidden = true;
+      if ($("release-launch-preview")) {
+        $("release-launch-preview").removeAttribute("href");
+        $("release-launch-preview").setAttribute("aria-disabled", "true");
+      }
       if ($("release-launch-status")) $("release-launch-status").textContent = "Verification unavailable";
     } finally {
       loading = false;
