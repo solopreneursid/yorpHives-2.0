@@ -57,6 +57,7 @@
       <button class="nav-item" data-view="analytics"><span class="nav-icon" aria-hidden="true">▥</span>Visitor numbers</button>
       <button class="nav-item" data-view="updates"><span class="nav-icon" aria-hidden="true">↻</span>Updates<span class="nav-count" id="nav-updates">—</span></button>
       <button class="nav-item" data-view="releases"><span class="nav-icon" aria-hidden="true">⇧</span>Publishing</button>
+      <button class="nav-item" data-view="security"><span class="nav-icon" aria-hidden="true">⬡</span>Security &amp; access</button>
       <button class="nav-item" data-view="activity"><span class="nav-icon" aria-hidden="true">◷</span>Past activity</button>
     </nav>
   </details>
@@ -144,19 +145,10 @@
         <div class="founder-quick-actions" aria-label="Founder quick controls">
           <div class="founder-quick-label"><strong>Founder Control</strong><small>Build freely · only you approve production</small></div>
           <button id="founder-find-fixes" type="button">Development issues</button>
-          <button id="founder-open-release" type="button">Preview → Go Live</button>
-          <button id="founder-stop-all" type="button" class="founder-quick-stop">■ Revoke legacy access</button>
+          <button id="founder-open-preview" type="button">Preview</button>
+          <button id="founder-open-release" type="button">Go Live</button>
         </div>
         <p class="cockpit-access-note">No AI receives administrator rights. Authorized employees can build, fix and test in isolated previews. You approve only verified changes going live.</p>
-        <details class="founder-permission-panel" aria-labelledby="founder-permission-heading" hidden>
-          <summary id="founder-permission-heading"><strong>Archived access history</strong><span>Read-only records and emergency revocation</span></summary>
-          <p class="founder-permission-explain">Temporary AI administrator grants have been retired. No assistant can receive Go Live authority. Normal development and testing continue under restricted work identities.</p>
-          <button class="founder-permission-refresh" id="founder-permission-refresh" type="button">Refresh history</button>
-          <p id="founder-security-note" class="founder-security-note" role="status" aria-live="polite">Old approvals cannot be reactivated.</p>
-          <p id="founder-connection-note" class="founder-connection-note">Assistant identities are not administrative identities.</p>
-          <p id="founder-permission-status" class="founder-permission-status" role="status" aria-live="polite"></p>
-          <div id="founder-permission-list" class="founder-permission-list" aria-live="polite"></div>
-        </details>
         <details class="cockpit-reference">
           <summary>How your assistants work</summary>
           <div class="founder-you"><strong>You · Owner &amp; Administrator</strong><small>Final say on money, permissions, and publishing</small></div>
@@ -994,7 +986,35 @@
           <div class="release-evidence-list" id="release-evidence-list"><p class="release-evidence-empty">Reading recent repair records…</p></div>
         </details>
       </section>
-      <section class="owner-delegation-panel" id="owner-delegation-panel" aria-labelledby="owner-delegation-title" hidden>
+      <div class="page-heading"><div><span class="eyebrow">OWNER APPROVAL GATE</span><h1>Releases</h1><p>Review proposed changes before anything reaches production.</p></div><span class="pill warning">Production locked</span></div>
+      <div class="release-state"><div class="release-lock">▣</div><div><h2>Production deployment is disabled</h2><p>This Admin workspace can prepare and verify changes, but it does not have an enabled production deployment action. Keep release execution in your existing reviewed deployment process until the full approval gate is implemented and tested.</p></div></div>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">RELEASE CHECKLIST</span><h2>Required evidence</h2></div></div><div class="checklist"><div><span>01</span><div><strong>Reviewed pull request</strong><small>Changes and affected components inspected</small></div><b>Required</b></div><div><span>02</span><div><strong>CI and security checks</strong><small>Automated tests and dependency checks pass</small></div><b>Required</b></div><div><span>03</span><div><strong>Staging verification</strong><small>Preview tested on desktop and mobile</small></div><b>Required</b></div><div><span>04</span><div><strong>Owner approval</strong><small>Explicit release authorization</small></div><b>Required</b></div></div></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">SOURCE CONTROL</span><h2>Review changes</h2></div></div><div class="link-grid"><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/pulls" target="_blank" rel="noopener noreferrer">Open pull requests ↗</a><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/actions" target="_blank" rel="noopener noreferrer">CI &amp; security runs ↗</a><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/commits/build/yorphives-admin-reliability" target="_blank" rel="noopener noreferrer">Staging branch history ↗</a></div></section>
+    </section>
+
+    <section class="view" id="view-security" data-title="Security & access">
+      <div class="page-heading"><div><span class="eyebrow">FOUNDER SECURITY</span><h1>Security &amp; access</h1>
+        <p>Review old access records and revoke any remaining legacy permissions. This does not manage or enable production publishing.</p></div>
+        <span class="pill warning">AI admin delegation retired</span></div>
+      <section class="panel security-access-panel" aria-label="Legacy access emergency controls">
+        <div class="panel-head"><div><span class="eyebrow">EMERGENCY CONTROL · FOUNDER ONLY</span>
+          <h2>Legacy access revocation</h2>
+          <p>This control revokes any remaining active or pending temporary assistant permissions issued by the retired system. It does not remove your administrator account, erase YorpMind memory, or stop normal restricted development work.</p></div></div>
+        <div class="security-access-actions">
+          <button id="founder-stop-all" type="button" class="security-legacy-stop">■ Revoke legacy access</button>
+          <span class="security-access-explainer">Always verify the result; this does not revoke unrelated Cloudflare or GitHub credentials.</span>
+        </div>
+      </section>
+        <details class="founder-permission-panel" aria-labelledby="founder-permission-heading" open>
+          <summary id="founder-permission-heading"><strong>Archived access history</strong><span>Read-only records and emergency revocation</span></summary>
+          <p class="founder-permission-explain">Temporary AI administrator grants have been retired. No assistant can receive Go Live authority. Normal development and testing continue under restricted work identities.</p>
+          <button class="founder-permission-refresh" id="founder-permission-refresh" type="button">Refresh history</button>
+          <p id="founder-security-note" class="founder-security-note" role="status" aria-live="polite">Old approvals cannot be reactivated.</p>
+          <p id="founder-connection-note" class="founder-connection-note">Assistant identities are not administrative identities.</p>
+          <p id="founder-permission-status" class="founder-permission-status" role="status" aria-live="polite"></p>
+          <div id="founder-permission-list" class="founder-permission-list" aria-live="polite"></div>
+        </details>
+      <section class="owner-delegation-panel" id="owner-delegation-panel" aria-labelledby="owner-delegation-title">
         <div class="owner-delegation-heading">
           <div><span class="eyebrow">ARCHIVED HISTORY · READ ONLY</span>
             <h2 id="owner-delegation-title">Previous delegation records</h2>
@@ -1005,10 +1025,7 @@
         <p class="owner-delegation-notice"><strong>Legacy approval disabled:</strong> This area cannot issue permissions, start an approval request, or publish. Development and staging QA use restricted work identities, without founder approvals.</p>
         <div id="owner-delegation-list" class="owner-delegation-list" aria-live="polite"><p class="release-evidence-empty">Reading archived records…</p></div>
       </section>
-      <div class="page-heading"><div><span class="eyebrow">OWNER APPROVAL GATE</span><h1>Releases</h1><p>Review proposed changes before anything reaches production.</p></div><span class="pill warning">Production locked</span></div>
-      <div class="release-state"><div class="release-lock">▣</div><div><h2>Production deployment is disabled</h2><p>This Admin workspace can prepare and verify changes, but it does not have an enabled production deployment action. Keep release execution in your existing reviewed deployment process until the full approval gate is implemented and tested.</p></div></div>
-      <section class="panel"><div class="panel-head"><div><span class="eyebrow">RELEASE CHECKLIST</span><h2>Required evidence</h2></div></div><div class="checklist"><div><span>01</span><div><strong>Reviewed pull request</strong><small>Changes and affected components inspected</small></div><b>Required</b></div><div><span>02</span><div><strong>CI and security checks</strong><small>Automated tests and dependency checks pass</small></div><b>Required</b></div><div><span>03</span><div><strong>Staging verification</strong><small>Preview tested on desktop and mobile</small></div><b>Required</b></div><div><span>04</span><div><strong>Owner approval</strong><small>Explicit release authorization</small></div><b>Required</b></div></div></section>
-      <section class="panel"><div class="panel-head"><div><span class="eyebrow">SOURCE CONTROL</span><h2>Review changes</h2></div></div><div class="link-grid"><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/pulls" target="_blank" rel="noopener noreferrer">Open pull requests ↗</a><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/actions" target="_blank" rel="noopener noreferrer">CI &amp; security runs ↗</a><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/commits/build/yorphives-admin-reliability" target="_blank" rel="noopener noreferrer">Staging branch history ↗</a></div></section>
+
     </section>
 
     <section class="view" id="view-activity" data-title="Activity & audit">
