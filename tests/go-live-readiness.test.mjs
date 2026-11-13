@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {REPO,RELEASE_BASE_BRANCH,PUBLISH_DESTINATION,requiresIndependentPromotion,REQUIRED_RELEASE_CHECKS,HEADQUARTERS_REQUIRED_RELEASE_CHECKS,
+import {REPO,RELEASE_BASE_BRANCH,PUBLISH_DESTINATION,requiresIndependentPromotion,verifyHeadquartersCanonicalBranch,REQUIRED_RELEASE_CHECKS,HEADQUARTERS_REQUIRED_RELEASE_CHECKS,
  requiredChecksForTarget,chooseReleaseCandidate,verifyRequiredChecks,exactPreview,evaluateReleaseReadiness}
  from "../functions/_lib/go-live-readiness.js";
 const sha="a".repeat(40);
@@ -106,4 +106,22 @@ test("headquarters can verify a candidate in the same repository without cross-r
  assert.equal(ready.ready_for_preview,true);
  assert.equal(ready.preview.url,"https://8c21d1ed.yorphives-admin-staging.pages.dev");
  assert.equal(ready.production_deployment_enabled,false);
+});
+
+test("a Git branch two commits ahead of the deployed canonical HEAD is a release blocker",()=>{
+ const base=RELEASE_BASE_BRANCH.headquarters,source="d".repeat(40),canonical="e".repeat(40);
+ const project={
+  name:"yorphives-admin-staging",production_branch:base,
+  source:{type:"github",config:{owner:"solopreneursid",repo_name:"yorpHives-2.0",production_branch:base}},
+  canonical_deployment:{id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",
+   environment:"production",latest_stage:{name:"deploy",status:"success"},
+   deployment_trigger:{metadata:{branch:base,commit_hash:canonical}}}
+ };
+ const branch={name:base,commit:{sha:source}};
+ const drift=verifyHeadquartersCanonicalBranch(branch,project);
+ assert.equal(drift.verified,false);
+ assert.match(drift.reason,/drifted/);
+ assert.equal(verifyHeadquartersCanonicalBranch({name:base,commit:{sha:canonical}},project).verified,true);
+ assert.equal(verifyHeadquartersCanonicalBranch(branch,{...project,production_branch:"main"}).verified,false);
+ assert.equal(verifyHeadquartersCanonicalBranch(branch,{...project,source:{type:"github",config:{owner:"attacker",repo_name:"yorpHives-2.0",production_branch:base}}}).verified,false);
 });

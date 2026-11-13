@@ -40,6 +40,36 @@ export function requiredChecksForTarget(target){
 const SHA=/^[0-9a-f]{40}$/i;
 const BRANCH=/^(?:build|feature|fix|qa|design|ops)\/[a-z0-9][a-z0-9._/-]{1,110}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Do not assume a GitHub production ref matches what Cloudflare serves.
+ * A moved branch is not a safe rollback anchor without canonical agreement.
+ */
+export function verifyHeadquartersCanonicalBranch(branch,project) {
+ const base=RELEASE_BASE_BRANCH.headquarters;
+ const commit=branch?.commit?.sha;
+ const deployment=project?.canonical_deployment;
+ const actual=deployment?.deployment_trigger?.metadata;
+ const bad=why=>({verified:false,reason:why});
+ if(branch?.name!==base||!SHA.test(String(commit||"")))
+  return bad("The private production source branch cannot be independently verified.");
+ if(project?.name!==PUBLISH_DESTINATION.headquarters.project||
+    project.production_branch!==base||project.source?.type!=="github"||
+    project.source.config?.owner!=="solopreneursid"||
+    project.source.config?.repo_name!=="yorpHives-2.0"||
+    project.source.config?.production_branch!==base||
+    deployment?.environment!=="production"||
+    deployment.latest_stage?.name!=="deploy"||
+    deployment.latest_stage.status!=="success"||
+    actual?.branch!==base||!SHA.test(String(actual?.commit_hash||""))||
+    !UUID.test(String(deployment?.id||"")))
+  return bad("The canonical Headquarters Pages deployment identity or release status is unverified.");
+ if(commit.toLowerCase()!==actual.commit_hash.toLowerCase())
+  return bad("Headquarters production branch has drifted from its canonical live Cloudflare deployment; recovery target must be reconciled before Go Live.");
+ return {verified:true,reason:null,sourceSha:commit.toLowerCase(),
+  canonicalSha:actual.commit_hash.toLowerCase(),canonicalDeploymentId:deployment.id};
+}
+
 const labelsOf=value=>new Set(Array.isArray(value)?value.map(x=>typeof x?.name==="string"?x.name:""):[]);
 export function chooseReleaseCandidate(pulls,target){
  if(!Object.hasOwn(RELEASE_PROJECT,target))return {candidate:null,reason:"Unknown release target."};

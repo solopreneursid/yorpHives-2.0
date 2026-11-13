@@ -2,7 +2,7 @@
  * This is the SINGLE source for both the founder's Preview and future OTP
  * revalidation. It never sends email, spends AI credits, publishes or writes D1.
  */
-import { REPO, RELEASE_PROJECT, evaluateReleaseReadiness } from "./go-live-readiness.js";
+import { REPO, RELEASE_PROJECT, RELEASE_BASE_BRANCH, verifyHeadquartersCanonicalBranch, evaluateReleaseReadiness } from "./go-live-readiness.js";
 
 const invalid=(target,message)=>({
  target,status:"verification_unavailable",ready_for_preview:false,
@@ -26,6 +26,12 @@ async function readJson(url, token, provider, fetchImpl){
   if(body?.success!==true||!Array.isArray(body.result))throw Error("Invalid Pages evidence.");
   return body.result;
  }
+ if(provider==="cloudflare-project"){
+  if(body?.success!==true||!body.result||
+     typeof body.result!=="object"||Array.isArray(body.result))
+   throw Error("Invalid canonical Pages metadata.");
+  return body.result;
+ }
  return body;
 }
 
@@ -42,6 +48,23 @@ export async function readLiveGoLiveReadiness(env,target,fetchImpl=fetch){
   if(!Array.isArray(pulls))return invalid(target,"GitHub candidate inventory invalid.");
   const chosen=evaluateReleaseReadiness({pulls,checkRuns:[],deployments:[],target});
   if(!chosen.candidate)return chosen;
+  // Read-only canonical branch vs actual served deployment consistency check.
+  // An old deploy can lag GitHub's branch. That makes an automatic rollback
+  // ambiguous even when CI is green, so block the founder release workflow.
+  if(target==="headquarters"){
+   const branch=await readJson("https://api.github.com/repos/"+REPO+
+    "/branches/"+RELEASE_BASE_BRANCH.headquarters,github,"github",fetchImpl);
+   const project=await readJson("https://api.cloudflare.com/client/v4/accounts/"+
+    account+"/pages/projects/"+RELEASE_PROJECT.headquarters,
+    cloudflare,"cloudflare-project",fetchImpl);
+   const consistent=verifyHeadquartersCanonicalBranch(branch,project);
+   if(!consistent.verified)return {
+    target,status:"canonical_drift",candidate:chosen.candidate,
+    ready_for_preview:false,preview:null,
+    blockers:[consistent.reason],production_approved:false,
+    production_deployment_enabled:false
+   };
+  }
   const checks=await readJson("https://api.github.com/repos/"+REPO+
    "/commits/"+chosen.candidate.sha+"/check-runs?per_page=100",
    github,"github",fetchImpl);
