@@ -104,7 +104,7 @@ test("Workers AI response reader supports wrappers but never executes its reason
   assert.throws(()=>parseWorkersAiJson("<think>just thoughts</think>"),/MODEL_JSON_INVALID/);
 });
 
-test("monitor and repair worker use the shared safe policies with no automatic inference retries",async()=>{
+test("monitor maintains safe findings while retired repair route never dispatches",async()=>{
   const monitor=await readFile(new URL("../admin-monitor/asset-intelligence.js",import.meta.url),"utf8");
   const worker=await readFile(new URL("../admin-agent/worker.js",import.meta.url),"utf8");
   const router=await readFile(new URL("../functions/api/admin/repair-jobs.ts",import.meta.url),"utf8");
