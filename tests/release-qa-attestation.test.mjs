@@ -1,0 +1,44 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {REQUIRED_CHECKS,attestIndependentReleaseQA} from "../scripts/release-qa-attestation.mjs";
+const sha="a".repeat(40),now=Date.parse("2026-11-13T13:00:00Z");
+const host="aaa7346f.yorphives-admin-staging.pages.dev";
+const preview={staging_project:"yorphives-admin-staging",verified_commit_sha:sha,
+ deployment_id:"aaa7346f-9150-4aa5-81be-2103f76d263d",preview_url:"https://"+host,
+ verified_existing_deployment:true,access_boundary_verified:true,
+ anonymous_paths_checked:[{route:"/admin/",access_blocked:true,status:302},
+ {route:"/api/admin/yorpmind-team",access_blocked:true,status:403}],
+ authenticated_browser_test_completed:false,no_deployment_created:true,
+ no_production_change:true,owner_mfa_verified:false,assistant_grants_created:0,
+ ai_model_calls:0,database_writes:0,checked_at:"2026-11-13T12:56:00Z"};
+const smoke={target_host:host,generated_at:"2026-11-13T12:58:00Z",
+ summary:{total:REQUIRED_CHECKS.length,passed:REQUIRED_CHECKS.length,failed:0},
+ checks:REQUIRED_CHECKS.map(name=>({name,ok:true}))};
+const attest=(over={})=>attestIndependentReleaseQA({
+ preview:over.preview??preview,smoke:over.smoke??smoke,sha:over.sha??sha,now:over.now??now});
+test("real signed-in preview proof can pass without granting production rights",()=>{
+ const x=attest();assert.equal(x.evidence_verified,true);
+ assert.equal(x.production_deployed,false);assert.equal(x.production_approved,false);
+});
+test("wrong commit, host, access denial, expired or mutable preview fails",()=>{
+ for(const p of [
+ {...preview,verified_commit_sha:"b".repeat(40)},
+ {...preview,preview_url:"https://yorphives.com"},
+ {...preview,access_boundary_verified:false},
+ {...preview,no_production_change:false},
+ {...preview,assistant_grants_created:1},
+ {...preview,anonymous_paths_checked:[{route:"/admin/",access_blocked:false,status:200}]},
+ {...preview,checked_at:"2026-11-12T10:00:00Z"}
+ ])assert.equal(attest({preview:p}).evidence_verified,false);
+});
+test("incomplete or stale browser assertions prevent independent QA",()=>{
+ for(const x of [
+ {...smoke,target_host:"fake.example"},
+ {...smoke,checks:smoke.checks.map((v,i)=>i?v:{...v,ok:false})},
+ {...smoke,checks:smoke.checks.slice(1)},
+ {...smoke,summary:{...smoke.summary,failed:1}},
+ {...smoke,generated_at:"2026-11-13T08:00:00Z"},
+ {...smoke,generated_at:"2026-11-13T12:40:00Z"}
+ ])assert.equal(attest({smoke:x}).evidence_verified,false);
+ assert.equal(attest({sha:"c".repeat(40)}).evidence_verified,false);
+});
