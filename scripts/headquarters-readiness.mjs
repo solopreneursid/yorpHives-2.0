@@ -50,6 +50,8 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   "admin-monitor/worker.js",
   "admin-agent/worker.js",
   "hq-engine/worker.js",
+  "hq-engine/staging-rehearsal-entry.js",
+  "hq-engine/wrangler.rehearsal.jsonc",
   "hq-intelligence/worker.js",
   ".github/workflows/ci.yml",
   ".github/workflows/codeql.yml",
@@ -119,6 +121,43 @@ export async function assessHeadquarters(root) {
   }
   add("platform-ci", /npm run check/.test(workflow) && /pull_request:/.test(workflow),
     "CI must run platform checks on pull requests");
+
+  let rehearsalConfig;
+  try {
+    rehearsalConfig = JSON.parse(await readFile(join(root, "hq-engine/wrangler.rehearsal.jsonc"), "utf8"));
+  } catch {
+    rehearsalConfig = null;
+  }
+  const rehearsalPolicy = Boolean(
+    rehearsalConfig?.name === "yorphives-hq-mission-rehearsal" &&
+    rehearsalConfig?.main === "./staging-rehearsal-entry.js" &&
+    rehearsalConfig?.workers_dev === false &&
+    rehearsalConfig?.ai?.binding === "AI" &&
+    Array.isArray(rehearsalConfig?.d1_databases) &&
+    rehearsalConfig.d1_databases.length === 1 &&
+    rehearsalConfig.d1_databases[0]?.binding === "DB" &&
+    rehearsalConfig.d1_databases[0]?.database_id === "e8690813-b139-44a2-a1c7-bea2d2777ead" &&
+    Array.isArray(rehearsalConfig?.workflows) &&
+    rehearsalConfig.workflows.length === 1 &&
+    rehearsalConfig.workflows[0]?.name === "yorphives-hq-missions-rehearsal" &&
+    rehearsalConfig.workflows[0]?.class_name === "MissionWorkflow" &&
+    rehearsalConfig.workflows[0]?.binding === "MISSION_WORKFLOW" &&
+    !rehearsalConfig?.triggers &&
+    !rehearsalConfig?.routes
+  );
+  add("rehearsal-worker-isolation", rehearsalPolicy,
+    "The rehearsal must use one preview D1, an isolated one-concurrency Workflow, no public subdomain or routes and no production Worker binding");
+  let rehearsalEntry = "";
+  try {
+    rehearsalEntry = await readFile(join(root, "hq-engine/staging-rehearsal-entry.js"), "utf8");
+  } catch {
+    // Component check reports the missing file.
+  }
+  add("rehearsal-http-entrypoint", /status:\s*404/.test(rehearsalEntry) &&
+    /export\s+\{\s*MissionWorkflow\s*\}/.test(rehearsalEntry) &&
+    !/MISSION_WORKFLOW\.create\(/.test(rehearsalEntry) &&
+    !/AI\.run\(/.test(rehearsalEntry),
+    "Public HTTP requests to the rehearsal worker must be inert and cannot launch AI");
 
   let guard = "";
   try {
