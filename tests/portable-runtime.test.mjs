@@ -104,7 +104,7 @@ test('SQLite compatibility layer migrates all schema, rolls back batches and det
   const filename = resolve(directory, 'data.sqlite');
   try {
     const db = await createDatabase({ filename });
-    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM self_host_migrations').first()).n, 29);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM self_host_migrations').first()).n, 30);
     await assert.rejects(db.batch([
       db.prepare("INSERT INTO agent_departments(department_id,slug,name,mission) VALUES ('batch-test','batch-test','Test','Test')"),
       db.prepare('INSERT INTO table_does_not_exist VALUES (1)')

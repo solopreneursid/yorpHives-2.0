@@ -47,12 +47,12 @@ function observe(db, definitions, ledger = false) {
   });
 }
 
-test("repository contains a complete numbered 29-migration schema chain", async () => {
+test("repository contains a complete numbered 30-migration schema chain", async () => {
   const inventory = await readHeadquartersMigrations();
-  assert.equal(inventory.length, 29);
+  assert.equal(inventory.length, 30);
   assert.equal(inventory[0].name, "0001_catalogue.sql");
-  assert.equal(inventory.at(-1).name, "0029_founder_email_otp.sql");
-  assert.equal(expectedSchemaNames(inventory).size, 147);
+  assert.equal(inventory.at(-1).name, "0030_go_live_otp.sql");
+  assert.equal(expectedSchemaNames(inventory).size, 151);
   assert.deepEqual(
     parseMigrationDefinition(
       "0029_sample.sql",
@@ -73,14 +73,14 @@ test("a complete schema without a ledger is never marked release-ready", async (
     assert.equal(audit.schemaMatches, true);
     assert.equal(audit.ledgerMatches, false);
     assert.equal(audit.ready, false);
-    assert.equal(audit.checkedMigrations, 29);
-    assert.equal(audit.expectedObjects, 147);
+    assert.equal(audit.checkedMigrations, 30);
+    assert.equal(audit.expectedObjects, 151);
     assert.equal(audit.missingObjects.length, 0);
     assert.equal(audit.unexpectedObjects.length, 0);
     assert.equal(audit.missingColumns.length, 0);
     const plan = planMigrationLedgerReconciliation(audit, definitions);
     assert.equal(plan.createTable, WRANGLER_MIGRATION_TABLE_SQL);
-    assert.equal(plan.parameters.length, 29);
+    assert.equal(plan.parameters.length, 30);
     assert.match(plan.note, /reconciliation date/);
   } finally {
     db.close();
@@ -139,7 +139,7 @@ test("missing columns, indexes and ledger entries block the ready decision", asy
     );
     const missing = observe(db, definitions, true);
     assert.ok(missing.missingLedgerEntries.includes(
-      "0029_founder_email_otp.sql"
+      "0030_go_live_otp.sql"
     ));
     assert.equal(missing.ledgerMatches, false);
 
