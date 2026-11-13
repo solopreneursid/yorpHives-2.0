@@ -7,7 +7,8 @@ const migrations=Array.from({length:30},(_,i)=>({
  applied_at:i===29?"2026-11-13 14:00:00":"2026-11-13 04:25:24"
 }));
 const backup={key:"backups/headquarters-staging/2026-11-13-after-0030-with-ledger.json",
- size:356200,last_modified:"2026-11-13T14:05:00.000Z",etag:"abcdef012345"};
+ size:356200,last_modified:"2026-11-13T14:05:00.000Z",etag:"abcdef012345",
+ sha256:"a".repeat(64)};
 const receipt={backup_key:backup.key,backup_etag:backup.etag,
  backup_sha256:"a".repeat(64),migration_id:30,table_count:64,row_count:603,
  foreign_key_violations:0,schema_equal:true,all_rows_equal:true,
@@ -40,6 +41,9 @@ test("a stale, mismatched or unverified receipt fails closed",()=>{
  {objects:[{...backup,last_modified:"2026-11-13T13:50:00Z"}]},
  {objects:[{...backup,key:"backups/headquarters-staging/2026-11-13-after-00300-with-ledger.json"}],restoreReceipts:[{...receipt,backup_key:"backups/headquarters-staging/2026-11-13-after-00300-with-ledger.json"}]},
  {objects:[{...backup,key:"backups/headquarters-staging/2026-11-13-after-00301-with-ledger.json"}],restoreReceipts:[{...receipt,backup_key:"backups/headquarters-staging/2026-11-13-after-00301-with-ledger.json"}]},
+ {objects:[{...backup,sha256:undefined}]},
+ {objects:[{...backup,sha256:"b".repeat(64)}]},
+ {restoreReceipts:[{...receipt,backup_sha256:"b".repeat(64)}]},
  {objects:[backup],restoreReceipts:[{...receipt,backup_etag:"other"}]},
  {restoreReceipts:[{...receipt,backup_sha256:"INVALID"}]},
  {restoreReceipts:[{...receipt,foreign_key_violations:1}]},
