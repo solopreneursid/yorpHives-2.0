@@ -47,3 +47,32 @@ test("incomplete or stale browser assertions prevent independent QA",()=>{
  ])assert.equal(attest({smoke:x}).evidence_verified,false);
  assert.equal(attest({sha:"c".repeat(40)}).evidence_verified,false);
 });
+
+test("duplicate or ambiguous Access and signed-in QA evidence fails closed",()=>{
+ const repeatedRoutes={...preview,anonymous_paths_checked:[
+  preview.anonymous_paths_checked[0],preview.anonymous_paths_checked[0]
+ ]};
+ assert.equal(attest({preview:repeatedRoutes}).evidence_verified,false);
+ const extraRoute={...preview,anonymous_paths_checked:[
+  ...preview.anonymous_paths_checked,
+  {route:"/admin/",access_blocked:false,status:200}
+ ]};
+ assert.equal(attest({preview:extraRoute}).evidence_verified,false);
+ const duplicateChecks={...smoke,
+  summary:{total:smoke.checks.length+1,passed:smoke.checks.length+1,failed:0},
+  checks:[...smoke.checks,smoke.checks[0]]};
+ assert.equal(attest({smoke:duplicateChecks}).evidence_verified,false);
+});
+test("QA timestamps must be explicit UTC and valid",()=>{
+ for(const checked_at of [
+  "2026-11-13T12:56:00",
+  "2026-11-13 12:56:00",
+  "2026-11-13T12:56:00+00:00",
+  "not a timestamp"
+ ])assert.equal(attest({preview:{...preview,checked_at}}).evidence_verified,false);
+ for(const generated_at of [
+  "2026-11-13T12:58:00",
+  "2026-11-13 12:58:00",
+  "2026-11-13T12:58:00+00:00"
+ ])assert.equal(attest({smoke:{...smoke,generated_at}}).evidence_verified,false);
+});
