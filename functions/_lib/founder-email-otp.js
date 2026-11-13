@@ -7,16 +7,12 @@ const encoder=new TextEncoder();
 export const validEmailAddress=(value)=>typeof value==="string" &&
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length<=254;
 /**
- * Recognize a one-time legacy Cloudflare dashboard copy/paste typo.
- * Prefer the canonical name, and fail closed for ambiguous aliases.
- * Do not log secret values. Remove the compatibility path after correction.
+ * Accept only the canonical encrypted environment-secret name.
+ * A misspelled, whitespace-prefixed or ambiguously named key never authenticates.
  */
 export function founderEmailToken(env){
-  if(typeof env?.FOUNDER_EMAIL_API_TOKEN==="string")
-    return env.FOUNDER_EMAIL_API_TOKEN;
-  const aliases=Object.keys(env||{}).filter(key=>
-    key!=="FOUNDER_EMAIL_API_TOKEN"&&key.trim()==="FOUNDER_EMAIL_API_TOKEN");
-  return aliases.length===1&&typeof env[aliases[0]]==="string"?env[aliases[0]]:"";
+  return typeof env?.FOUNDER_EMAIL_API_TOKEN==="string"?
+    env.FOUNDER_EMAIL_API_TOKEN:"";
 }
 export const otpEnabled=(env,email)=>env?.FOUNDER_OTP_ENABLED==="yes" &&
   typeof env?.FOUNDER_OTP_HMAC_KEY==="string" &&
