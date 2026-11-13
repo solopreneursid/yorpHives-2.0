@@ -41,12 +41,16 @@ jobs:
           node-version: 24
       - name: Validate first-party dependency policy
         run: node scripts/dependency-security-guard.mjs
-      - name: Generate temporary exact dependency resolution (no install scripts)
-        run: npm install --package-lock-only --ignore-scripts --no-fund --audit=false
-      - name: Audit resolved dependencies for high or critical vulnerabilities
+      - name: Confirm reproducible committed dependency lockfile
+        run: |
+          git ls-files --error-unmatch package-lock.json >/dev/null
+          node -e "const p=require('./package.json'),l=require('./package-lock.json');const a=JSON.stringify(p.devDependencies||{}),b=JSON.stringify(l.packages?.['']?.devDependencies||{});if(a!==b)process.exit(1);"
+      - name: Install exactly committed package versions without lifecycle scripts
+        run: npm ci --ignore-scripts --no-fund --audit=false
+      - name: Audit exact committed dependency tree for high or critical vulnerabilities
         run: npm audit --audit-level=high --ignore-scripts
-      - name: Verify temporary lockfile is not committed
-        run: git ls-files --error-unmatch package-lock.json >/dev/null 2>&1 && { echo 'Unexpected committed lockfile (review required).'; exit 1; } || test -f package-lock.json
+      - name: Verify dependency lockfile was not changed by auditing
+        run: git diff --exit-code -- package-lock.json
 
   browser-library-audit:
     name: Browser library vulnerability inventory
