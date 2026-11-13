@@ -226,6 +226,11 @@ async function navigate(page, view) {
     nav.click();
   }, view);
   await page.locator("#view-" + view).waitFor({ state: "visible", timeout: TIMEOUT });
+  // Browser layout and route loading can settle after the section is visible.
+  // Wait for the same navigation state we assert, without a fixed sleep.
+  await page.waitForFunction(name => location.hash === "#" + name &&
+    document.querySelector('.nav-item[aria-current="page"]')?.dataset.view === name &&
+    window.scrollY === 0, view, { timeout: TIMEOUT });
   const status = await page.evaluate(name => ({
     hash: location.hash,
     activeCount: document.querySelectorAll(".nav-item.active").length,

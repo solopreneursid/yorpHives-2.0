@@ -14,6 +14,7 @@
   const actionNames = { issues:"Open problems", headquarters:"Open mission desk", monitoring:"Open monitoring", yorpmind:"Open YorpMind", business:"Explore opportunities", intelligence:"Review ideas", activity:"Open activity", agents:"Open investigations", departments:"Open team", overview:"Open overview", releases:"Review publishing" };
   let pending = null;
   let nextAction = null;
+  const scrollBehavior = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth";
 
   async function navigate(view, target) {
     if (!allowedViews.has(view)) return;
@@ -24,7 +25,7 @@
     if (view === "headquarters" && ["active", "review", "failed"].includes(target)) {
       const filter = find("hq-filter");
       if (filter) { filter.value = target; filter.dispatchEvent(new Event("change")); }
-      find("hq-missions")?.scrollIntoView({block:"center",behavior:"smooth"});
+      find("hq-missions")?.scrollIntoView({block:"center",behavior:scrollBehavior()});
       find("hq-missions")?.focus({preventScroll:true});
     }
   }
@@ -34,7 +35,7 @@
     if (destination === "website") {
       await navigate("issues");
       const run = find("website-proof-run");
-      run?.scrollIntoView({block:"center",behavior:"smooth"});
+      run?.scrollIntoView({block:"center",behavior:scrollBehavior()});
       run?.focus({preventScroll:true});
       // The founder explicitly requested this read-only check with this click.
       // Existing website-proof.js owns the bounded request and result display.

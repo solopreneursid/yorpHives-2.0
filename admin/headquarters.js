@@ -244,7 +244,10 @@
   el("hq-new").addEventListener("click", () => {
     el("hq-compose").hidden = false;
     el("hq-title").focus();
-    el("hq-compose").scrollIntoView({ behavior: "smooth", block: "start" });
+    el("hq-compose").scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      block: "start"
+    });
   });
   el("hq-close").addEventListener("click", () => {
     el("hq-compose").hidden = true;

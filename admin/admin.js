@@ -106,7 +106,9 @@ function showView(name) {
   setText("breadcrumb", view.dataset.title || name);
   // The previous page may have been scrolled several screens down.
   // A new page must always open at its beginning, not on a blank old offset.
-  window.scrollTo(0, 0);
+  // Complete the new view's layout, then cancel any previous smooth scroll.
+  view.getBoundingClientRect();
+  window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
   $("sidebar").classList.remove("open");
   $("mobile-scrim").classList.remove("show");
