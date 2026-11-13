@@ -86,6 +86,13 @@
         <span class="founder-eyebrow">YOUR BUSINESS · YOUR DECISIONS</span>
         <h1 id="founder-welcome">Welcome to your Headquarters.</h1>
         <p class="founder-subtitle">You are in charge. Your two assistants can help you understand a problem, find a solution, and prepare changes. You choose who helps and what happens next.</p>
+        <div class="founder-quick-actions" aria-label="Founder quick controls">
+          <div class="founder-quick-label"><strong>Founder Control</strong><small>One place to review work and control assistant access</small></div>
+          <button id="founder-find-fixes" type="button">Review proposed fixes</button>
+          <button id="founder-open-permissions" type="button">Grant temporary access</button>
+          <button id="founder-stop-all" type="button" class="founder-quick-stop">■ End all assistant access</button>
+        </div>
+        <p class="founder-quick-note">Emergency stop needs no email code. Granting access or applying a fix will require your separate approval; email-code approval and joint access are not connected yet.</p>
         <div class="founder-you"><span aria-hidden="true">👑</span><strong>You · Owner &amp; Administrator</strong><small>Final say on money, permissions, and publishing</small></div>
         <div class="founder-arrow" aria-hidden="true">↓</div>
         <div class="founder-assistants" aria-label="Your two equal assistants">
@@ -104,31 +111,18 @@
         <div class="founder-workers">Your AI team · researchers, builders, testers, and other specialists</div>
         <p class="founder-learning">✧ YorpMind learns from a repair after it has been checked—whether you worked with YorpMind or ChatGPT. Suggestions and unfinished work are not treated as proven fixes.</p>
         <details class="founder-permission-panel" aria-labelledby="founder-permission-heading">
-          <summary id="founder-permission-heading"><strong>Give temporary permission</strong><span>Optional · You choose when an assistant can do more</span></summary>
-          <p class="founder-permission-explain">Want an assistant to do more? Choose who, what, where, and for how long. Permission ends by itself, and you can stop it sooner. A separate security check must confirm it first.</p>
+          <summary id="founder-permission-heading"><strong>Temporary access</strong><span>Choose assistant → approve → stop anytime</span></summary>
+          <p class="founder-permission-explain">Choose an assistant and a short time. This development version still requires a separate security check; the requested email OTP flow will replace that extra step once securely connected.</p>
           <form id="founder-permission-form">
-            <div class="founder-permission-grid">
-              <label for="founder-assistant">Who should help?
+            <div class="founder-permission-grid founder-permission-simple">
+              <label for="founder-assistant">Who gets temporary access?
                 <select id="founder-assistant" required>
                   <option value="yorpmind">YorpMind</option>
                   <option value="chatgpt">ChatGPT</option>
+                  <option value="both" disabled>Both together · coming after email approval</option>
                 </select>
               </label>
-              <label for="founder-scope">Which part needs help?
-                <select id="founder-scope" required>
-                  <option value="both">Website and Headquarters</option>
-                  <option value="website">YorpHives website</option>
-                  <option value="headquarters">Headquarters</option>
-                </select>
-              </label>
-              <label for="founder-level">What may they do?
-                <select id="founder-level" required>
-                  <option value="review_findings">Review problems and suggest next steps</option>
-                  <option value="prepare_fixes" selected>Prepare issues and possible fixes</option>
-                  <option value="manage_staging">Prepare changes for the test version</option>
-                </select>
-              </label>
-              <label for="founder-duration">For how long?
+              <label for="founder-duration">How long?
                 <select id="founder-duration" required>
                   <option value="15">15 minutes</option>
                   <option value="30" selected>30 minutes</option>
@@ -136,15 +130,32 @@
                 </select>
               </label>
             </div>
-            <label for="founder-reason">What should they work on?
-              <textarea id="founder-reason" minlength="40" maxlength="700" required rows="3" placeholder="For example: Check why the QR tool doesn't open properly on mobile and prepare a fix for me to review."></textarea>
-            </label>
-            <label class="founder-confirm-line"><input id="founder-understand" type="checkbox" required>
-              <span>I understand this does not share my password, approve live publishing, or give unlimited access. A connected assistant can currently create tracked issues; broader changes require a separately reviewed action.</span>
-            </label>
+            <details class="founder-permission-advanced">
+              <summary>Optional: limit the work or change the task</summary>
+              <div class="founder-permission-grid">
+                <label for="founder-scope">Which part?
+                  <select id="founder-scope" required>
+                    <option value="both">Website and Headquarters</option>
+                    <option value="website">YorpHives website</option>
+                    <option value="headquarters">Headquarters</option>
+                  </select>
+                </label>
+                <label for="founder-level">What may they do?
+                  <select id="founder-level" required>
+                    <option value="review_findings">Review and suggest</option>
+                    <option value="prepare_fixes" selected>Prepare reviewable fixes</option>
+                    <option value="manage_staging">Prepare changes for the test version</option>
+                  </select>
+                </label>
+              </div>
+              <label for="founder-reason">Work requested
+                <textarea id="founder-reason" minlength="40" maxlength="700" required rows="3">Investigate YorpHives problems, prepare reviewable fixes, and do not publish changes without my explicit approval.</textarea>
+              </label>
+            </details>
+            <p class="founder-permission-explain">Only limited work is allowed. Neither assistant receives your password or publishing rights. You can stop every permission with one button.</p>
             <div class="founder-permission-controls">
-              <button class="founder-permission-submit" id="founder-permission-submit" type="submit" disabled>Continue to security check →</button>
-              <button class="founder-permission-refresh" id="founder-permission-refresh" type="button">Refresh permissions</button>
+              <button class="founder-permission-submit" id="founder-permission-submit" type="submit" disabled>Request secure permission →</button>
+              <button class="founder-permission-refresh" id="founder-permission-refresh" type="button">Refresh</button>
               <a id="founder-secure-link" class="founder-grant-confirm" href="/admin/" target="_blank" rel="noopener noreferrer" hidden>Complete my security check</a>
             </div>
           </form>
