@@ -86,7 +86,8 @@ test("responsive layout never requires permanently visible technical sidebars",(
   assert.match(js,/wrapOptional\("#view-demand \.hq-activity-panel"/);
   // Data is still in-place and the scheduled worker/security boundaries have
   // not been changed by the purely presentational route.
-  assert.match(html,/id="repair-form"/);
+  assert.match(html,/id="monitor-only-guidance"/);
+  assert.doesNotMatch(html,/id="repair-form"/);
   assert.match(html,/id="founder-permission-list"/);
   assert.doesNotMatch(html,/id="founder-permission-form"/);
 });
