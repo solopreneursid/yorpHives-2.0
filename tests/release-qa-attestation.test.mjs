@@ -14,7 +14,7 @@ const preview={staging_project:"yorphives-admin-staging",verified_commit_sha:sha
  canonical_after:{id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",sha:"f".repeat(40),branch:"build/yorphives-admin-reliability"},
  owner_mfa_verified:false,assistant_grants_created:0,
  ai_model_calls:0,database_writes:0,checked_at:"2026-11-13T12:56:00Z"};
-const smoke={target_host:host,generated_at:"2026-11-13T12:58:00Z",
+const smoke={target_host:host,source_commit:sha,deployment_id:preview.deployment_id,generated_at:"2026-11-13T12:58:00Z",
  summary:{total:REQUIRED_CHECKS.length,passed:REQUIRED_CHECKS.length,failed:0},
  checks:REQUIRED_CHECKS.map(name=>({name,ok:true}))};
 const attest=(over={})=>attestIndependentReleaseQA({
@@ -39,6 +39,10 @@ test("wrong commit, host, access denial, expired or mutable preview fails",()=>{
 test("incomplete or stale browser assertions prevent independent QA",()=>{
  for(const x of [
  {...smoke,target_host:"fake.example"},
+ {...smoke,source_commit:"b".repeat(40)},
+ {...smoke,deployment_id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0"},
+ {...smoke,source_commit:undefined},
+ {...smoke,deployment_id:undefined},
  {...smoke,checks:smoke.checks.map((v,i)=>i?v:{...v,ok:false})},
  {...smoke,checks:smoke.checks.slice(1)},
  {...smoke,summary:{...smoke.summary,failed:1}},
