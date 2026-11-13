@@ -46,6 +46,16 @@ test("missing attempt, duplicate queue and fabricated model claims block readine
   const bad=inspectMissionReceipt(job("awaiting_owner_approval",job().input_json,claim),events);
   assert.equal(bad.records_sufficient_for_owner_review,false);
 });
+test("acknowledged planning briefs do not become independent verification",()=>{
+  const accepted=inspectMissionReceipt(job("completed"),[
+    ...events,{job_id:jobId,event_type:"brief_review_acknowledged"}
+  ]);
+  assert.equal(accepted.evidence_status,"recorded_review_acknowledged");
+  assert.equal(accepted.records_sufficient_for_owner_review,true);
+  assert.equal(accepted.claims_independently_verified,false);
+  assert.equal(accepted.release_authorized,false);
+  assert.match(accepted.suggested_admin_action,/separate factual/);
+});
 test("failed records are visible but do not count as a successful AI brief",()=>{
   const failed=inspectMissionReceipt(job("failed","{}",JSON.stringify({
     code:"BRIEF_JSON_INVALID",error:"Model returned malformed JSON",verified:false
