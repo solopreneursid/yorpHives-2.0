@@ -1,7 +1,8 @@
 import './register.mjs';
 import { createServer } from 'node:http';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-import { readFile, readdir, realpath, stat } from 'node:fs/promises';
+import { readFile, readdir, realpath, open } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createDatabase } from './sqlite.mjs';
@@ -85,18 +86,23 @@ export async function createHeadquartersServer({
     if (!MIME[extension] || (extension === '.html' && pathname !== '/admin/index.html')) return adminJson({ error: { message: 'Not found.' } }, 404);
     const allowedRoot = resolve(ROOT, isAdmin ? 'admin' : 'brand');
     const candidate = resolve(ROOT, '.' + pathname);
+    let handle;
     try {
       const actual = await realpath(candidate);
       if (!actual.startsWith(allowedRoot + sep) || !candidate.startsWith(allowedRoot + sep)) return adminJson({ error: { message: 'Not found.' } }, 404);
-      const info = await stat(actual);
+      // Check and read the same opened file. A path replacement cannot switch
+      // the asset between the metadata check and the content read.
+      handle = await open(actual, constants.O_RDONLY | constants.O_NOFOLLOW);
+      const info = await handle.stat();
       if (!info.isFile() || info.size > 2 * 1024 * 1024) return adminJson({ error: { message: 'Not found.' } }, 404);
-      let content = await readFile(actual);
+      let content = await handle.readFile();
       if (pathname === '/admin/index.html') {
         content = content.toString('utf8').replace('<html lang="en">', '<html lang="en" data-runtime="self-hosted">')
           .replace('</body>', '<script src="/runtime/session.js" defer></script></body>');
       }
       return new Response(content, { headers: { 'content-type': MIME[extension] } });
     } catch { return adminJson({ error: { message: 'Not found.' } }, 404); }
+    finally { if (handle) await handle.close(); }
   }
   async function handle(nodeRequest) {
     if (!origin || nodeRequest.headers.host !== origin.host) return adminJson({ error: { message: 'Unrecognized workspace host.' } }, 421);
