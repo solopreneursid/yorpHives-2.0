@@ -42,8 +42,10 @@ const patternsURI=data(await file("../functions/_lib/yorpmind-patterns.js"));
 const evolutionURI=data((await file("../hq-intelligence/yorpmind-evolution.js"))
   .replace('"../functions/_lib/yorpmind-patterns.js"',JSON.stringify(patternsURI)));
 const teamLibURI=data(await file("../functions/_lib/yorpmind-team.js"));
+const coachingURI=data(await file("../functions/_lib/yorpmind-repair-coaching.js"));
 const teamScanURI=data((await file("../hq-intelligence/yorpmind-team-scan.js"))
-  .replace('"../functions/_lib/yorpmind-team.js"',JSON.stringify(teamLibURI)));
+  .replace('"../functions/_lib/yorpmind-team.js"',JSON.stringify(teamLibURI))
+  .replace('"../functions/_lib/yorpmind-repair-coaching.js"',JSON.stringify(coachingURI)));
 const releaseEvidenceURI=data(await file("../functions/_lib/release-evidence.js"));
 const yorpmindCoreURI=data(await file("../functions/_lib/yorpmind.js"));
 const verifiedLearningURI=data((await file("../functions/_lib/yorpmind-verified-learning.js"))
