@@ -571,7 +571,9 @@ async function run() {
       ownerDelegationResponse.status() === 200 &&
       ownerDelegationData?.name === "YorpMind" &&
       ownerDelegationData?.execution_enabled === false &&
-      ownerDelegationData?.mechanism === "preview_review_then_owner_mfa_then_scoped_delegation",
+      ownerDelegationData?.mechanism === "retired_delegation_history" &&
+      ownerDelegationData?.can_create === false &&
+      ownerDelegationData?.can_authorize === false,
       "Private 0026 delegation schema is readable; automatic production execution stays locked: HTTP " + ownerDelegationResponse.status());
 
     const forbiddenDelegation = await page.request.post(baseUrl + "/api/admin/owner-delegations", {
