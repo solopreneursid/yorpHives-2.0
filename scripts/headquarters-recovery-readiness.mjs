@@ -34,7 +34,7 @@ export function evaluateHeadquartersRecovery({
  const current=Number.isSafeInteger(latest?.id)?latest.id:null;
  const candidates=Array.isArray(objects)?objects.filter(o=>
   typeof o?.key==="string"&&BACKUP.test(o.key)&&
-  o.key.includes("after-"+String(sourceMigrationCount).padStart(4,"0"))&&
+  new RegExp("(?:^|-)after-"+String(sourceMigrationCount).padStart(4,"0")+"(?:-|\\.)").test(o.key.split("/").at(-1))&&
   Number.isSafeInteger(o.size)&&o.size>1024&&
   typeof o.etag==="string"&&o.etag.length>0&&
   Number.isFinite(Date.parse(o.last_modified||""))&&
