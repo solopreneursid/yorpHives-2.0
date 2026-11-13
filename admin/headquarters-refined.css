@@ -467,6 +467,21 @@ body {
 }
 .radar-card { border-radius: 11px; padding: 14px 16px; }
 
+.incident-choice-buttons {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.incident-choice-buttons .button {
+  min-height: 36px;
+  font-size: 12px;
+  padding: 8px 13px;
+}
+@media(max-width:640px) {
+  .incident-choice-buttons { display: grid; grid-template-columns: 1fr; width: 100%; }
+}
 /* Issues are an action list, not an endless full-page spreadsheet. */
 #view-issues .page-heading { margin-bottom: 14px; }
 #view-issues .panel { margin: 10px 0; padding: 13px 15px; }
