@@ -157,7 +157,9 @@ export async function verifyTemporaryAssistantAccess(
       ids.yorpmind.length < 8 || ids.chatgpt.length < 8 ||
       ids.yorpmind === ids.chatgpt) return null;
   let teamDomain = (env.CF_ACCESS_TEAM_DOMAIN || "").trim();
-  teamDomain = teamDomain.replace(/^https?:\\/\\//, "").replace(/\\/$/, "");
+  if (teamDomain.startsWith("https://")) teamDomain = teamDomain.slice(8);
+  else if (teamDomain.startsWith("http://")) teamDomain = teamDomain.slice(7);
+  if (teamDomain.endsWith("/")) teamDomain = teamDomain.slice(0, -1);
   if (!teamDomain || !/^[a-z0-9.-]+$/i.test(teamDomain)) return null;
   const token = request.headers.get("cf-access-jwt-assertion");
   if (!token) return null;
