@@ -62,9 +62,10 @@ export async function onRequestGet(context:Context):Promise<Response>{
   let schema=false;
   try{schema=await schemaReady(context);}catch{schema=false;}
   const email_ready=otpEnabled(context.env,owner.email)&&schema;
+  const delivery_ready=otpEnabled({...context.env,FOUNDER_OTP_ENABLED:"yes"},owner.email)&&schema;
   const assistants_ready=assistantsConnected(context.env);
   return adminJson({name:"YorpHives founder email approvals",
-    email_ready,assistants_ready,can_request:email_ready&&assistants_ready,
+    email_ready,delivery_ready,assistants_ready,can_request:email_ready&&assistants_ready,
     code_digits:6,code_expires_minutes:5,owner_email_hint:owner.email.replace(/^(.{2}).*(@.*)$/,"$1•••$2"),
     collective_available:email_ready&&assistants_ready,
     production_allowed:false});
