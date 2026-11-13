@@ -77,6 +77,18 @@ export async function onRequestPost(context:Context):Promise<Response>{
     return fail("INVALID_ORIGIN","Use the private Headquarters page.",403);
   const body=await parsedBody(context.request);
   if(!body)return fail("INVALID_REQUEST","Invalid approval request.",400);
+  if(body.action==="cancel"){
+    if(!otpUUID.test(String(body.challenge_id||""))||Object.keys(body).length!==2)
+      return fail("INVALID_CHALLENGE","Choose an existing approval code.",400);
+    try{
+      const updated=await context.env.DB!.prepare(
+        "UPDATE founder_otp_challenges SET state='cancelled' "+
+        "WHERE challenge_id=? AND owner_email=? AND state IN ('issuing','sent')"
+      ).bind(body.challenge_id,owner.email).run();
+      return adminJson({cancelled:true,
+        previously_pending:Number(updated.meta?.changes||0)>0,production_allowed:false});
+    }catch{return fail("CANCEL_UNAVAILABLE","Could not cancel the code request.",503);}
+  }
   if(!otpEnabled(context.env,owner.email))
     return fail("EMAIL_NOT_READY","Founder email verification is not configured.",503);
   if(!assistantsConnected(context.env))
