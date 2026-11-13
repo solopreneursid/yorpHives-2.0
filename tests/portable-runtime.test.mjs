@@ -7,7 +7,7 @@ import { resolve } from 'node:path';
 import { createHeadquartersServer } from '../self-host/server.mjs';
 import { createDatabase } from '../self-host/sqlite.mjs';
 
-const password = 'portable-suite-password-is-not-a-secret';
+const password = crypto.randomUUID();
 async function fixture(t) {
   const directory = await mkdtemp(resolve(tmpdir(), 'yorphives-portable-'));
   const runtime = await createHeadquartersServer({ password, dataDirectory: directory });

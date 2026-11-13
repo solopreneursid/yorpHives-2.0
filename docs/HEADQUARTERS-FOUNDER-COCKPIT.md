@@ -61,3 +61,13 @@ brief does not create a verified lesson or a release approval.
 The existing protected Pages preview remains useful for reviewing the cloud
 deployment. It does not acquire a mission engine merely because the portable
 runtime exists. No public website release is part of this change.
+
+## Configuration review scope
+
+Two existing credential-free CI workflows now cover all pull-request bases and
+the build/feature branch families at Node 24. Their permissions remain
+`contents: read`; no secret, deployment authority or action dependency was added.
+The static change-risk heuristic flags every workflow edit for review, even
+these read-only changes. That review-required signal is retained; it is not a
+failed application test or an authorization for production. The full historical
+Headquarters stack still needs its separate cumulative release review.

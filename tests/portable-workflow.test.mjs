@@ -35,7 +35,7 @@ test('signed-in founder can save, execute and review a mission through the actua
   const directory = await mkdtemp(join(tmpdir(), 'yorphives-workflow-'));
   let runtime;
   try {
-    const password = 'integration-password-for-local-tests';
+    const password = crypto.randomUUID();
     runtime = await createHeadquartersServer({ password, dataDirectory: directory,
       createMissionEngine: ({ db }) => createLocalMissionEngine({ db, modelUrl: `http://127.0.0.1:${model.address().port}/v1` }) });
     const call = (path, options = {}) => fetch(runtime.origin + path, { redirect: 'manual', ...options });
