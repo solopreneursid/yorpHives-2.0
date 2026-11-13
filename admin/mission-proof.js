@@ -1,7 +1,7 @@
 (() => {
   "use strict";
   const allowedStatuses = new Set(["queued","running","awaiting_owner_approval","completed","failed"]);
-  const statuses = {recorded_review_ready:"Recorded review gate",recorded_failure:"Recorded failure",
+  const statuses = {recorded_review_ready:"Recorded review gate",recorded_review_acknowledged:"Planning brief acknowledged",recorded_failure:"Recorded failure",
     incomplete_record:"Missing evidence",unavailable:"Unavailable"};
   const element = (tag, cls, text) => {
     const n=document.createElement(tag);
