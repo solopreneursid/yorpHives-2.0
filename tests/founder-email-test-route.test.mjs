@@ -87,10 +87,12 @@ test("owner identity, origin, body and sender failure all fail closed",async()=>
     assert.equal(outgoing.length,0);
   }finally{sqlite.close();}
 });
-test("Founder Control exposes a test button without enabling administrator access",async()=>{
+test("Founder release UI hides legacy email-grant controls while preserving safe revoke",async()=>{
   const js=await source("../admin/founder-control-center.js");
   const html=await source("../admin/index.html");
-  assert.match(html,/id="founder-test-email" type="button" disabled/);
+  assert.doesNotMatch(html,/id="founder-test-email" type="button"/);
+  assert.match(html,/id="release-go-live"[^>]*disabled/);
+  assert.match(html,/id="founder-stop-all"/);
   assert.match(js,/deliveryReady=otp\?\.delivery_ready===true/);
   assert.match(js,/body:'\{"action":"send_test"\}'/);
   assert.match(js,/founder-stop-all/);
