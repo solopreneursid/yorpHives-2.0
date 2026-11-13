@@ -2,7 +2,7 @@ import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
   locateMatchingAdminPreview, verifyAnonymousBoundary,
-  readHeadquartersCanonical, sameHeadquartersCanonical
+  readHeadquartersCanonical, readHeadquartersD1Isolation, sameHeadquartersCanonical
 } from "./staging-preview-check.mjs";
 
 const checkedOut = process.env.GITHUB_SHA || "";
@@ -14,6 +14,12 @@ if (!process.env.GITHUB_ENV) {
   throw new Error("This protected verification only runs inside an approved GitHub Actions job.");
 }
 
+// The canonical and preview Pages configurations must point to DIFFERENT
+// D1 databases. With a shared DB, even a signed-in staging test can damage
+// canonical data if a route behaves unexpectedly.
+const isolatedBefore=await readHeadquartersD1Isolation({
+  accountId:process.env.CF_ACCOUNT_ID||"",apiToken:process.env.CF_API_TOKEN||""
+});
 const before=await readHeadquartersCanonical({accountId:process.env.CF_ACCOUNT_ID||"",apiToken:process.env.CF_API_TOKEN||""});
 const preview = await locateMatchingAdminPreview({
   accountId: process.env.CF_ACCOUNT_ID || "",
@@ -25,6 +31,12 @@ const preview = await locateMatchingAdminPreview({
 const boundary = await verifyAnonymousBoundary(preview.url);
 const after=await readHeadquartersCanonical({accountId:process.env.CF_ACCOUNT_ID||"",apiToken:process.env.CF_API_TOKEN||""});
 if(!sameHeadquartersCanonical(before,after))throw Error("HQ canonical production deployment changed during QA.");
+const isolatedAfter=await readHeadquartersD1Isolation({
+  accountId:process.env.CF_ACCOUNT_ID||"",apiToken:process.env.CF_API_TOKEN||""
+});
+if(!isolatedBefore.isolated||!isolatedAfter.isolated)
+ throw Error("D1 environment isolation changed during QA.");
+
 const report = {
   source: "verified_cloudflare_pages_deployment_metadata_and_anonymous_access",
   staging_project: "yorphives-admin-staging",
@@ -33,6 +45,7 @@ const report = {
   preview_url: preview.url,
   verified_existing_deployment: true,
   access_boundary_verified: boundary.access_boundary_verified,
+  database_isolation_verified: true,
   anonymous_paths_checked: boundary.routes,
   authenticated_browser_test_completed: false,
   no_deployment_created: true,
