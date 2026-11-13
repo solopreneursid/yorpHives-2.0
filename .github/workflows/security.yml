@@ -3,16 +3,16 @@ name: YorpHives dependency, secret and passive security checks
 on:
   push:
     branches: [main, "build/**"]
+  # HQ release candidates are reviewed on their actual private deployment branch.
   pull_request:
-    branches: [main]
+    branches: [main, build/yorphives-admin-reliability]
   schedule:
     - cron: "17 3 * * 3"
   workflow_dispatch:
 
 permissions:
   contents: read
-  security-events: write
-  actions: read
+  # Read-only scanning: no write permissions or administrator identity.
 
 concurrency:
   group: security-${{ github.ref }}
@@ -23,11 +23,11 @@ jobs:
     name: Repository secret scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
       - name: Scan repository for exposed secrets
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2 resolved commit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -35,31 +35,35 @@ jobs:
     name: Dependency and action supply-chain review
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Review dependency changes
-        if: github.event_name == 'pull_request'
-        uses: actions/dependency-review-action@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          fail-on-severity: high
-      - name: Validate package manifest
-        run: node -e "const p=require('./package.json'); if(!p.private) process.exit(1); console.log('Package manifest parsed; runtime dependencies are browser/CDN based and no npm lockfile is present.')"
+          node-version: 24
+      - name: Validate first-party dependency policy
+        run: node scripts/dependency-security-guard.mjs
+      - name: Generate temporary exact dependency resolution (no install scripts)
+        run: npm install --package-lock-only --ignore-scripts --no-fund --audit=false
+      - name: Audit resolved dependencies for high or critical vulnerabilities
+        run: npm audit --audit-level=high --ignore-scripts
+      - name: Verify temporary lockfile is not committed
+        run: git ls-files --error-unmatch package-lock.json >/dev/null 2>&1 && { echo 'Unexpected committed lockfile (review required).'; exit 1; } || test -f package-lock.json
 
   browser-library-audit:
     name: Browser library vulnerability inventory
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 22
+          node-version: 24
       - name: Install current Retire.js scanner
         run: npm install --no-save --no-package-lock retire
       - name: Scan bundled and CDN-referenced browser libraries
         run: |
           mkdir -p artifacts
           npx retire --path . --outputformat json --outputpath artifacts/retirejs.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: yorphives-retirejs-${{ github.run_id }}
@@ -68,12 +72,14 @@ jobs:
           retention-days: 30
 
   zap-passive-baseline:
+    # Do not scan the public website again for changes scoped to private HQ.
+    if: github.event_name != 'pull_request' || github.base_ref == 'main'
     name: OWASP ZAP passive baseline (production)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Passive baseline scan
-        uses: zaproxy/action-baseline@v0.14.0
+        uses: zaproxy/action-baseline@7c4deb10e6261301961c86d65d54a516394f9aed # v0.14.0
         with:
           target: https://yorphives.com/
           cmd_options: "-m 2 -T 10 -I"
