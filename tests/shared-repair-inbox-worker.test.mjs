@@ -47,30 +47,24 @@ test("private GitHub inbox filters pull requests, bounds and normalizes issue li
     assert.equal(result.new_model_calls,0);
   }finally{globalThis.fetch=originalFetch;}
 });
-test("issue creation uses only reviewed inputs and never dispatches a repair",async()=>{
-  globalThis.fetch=async(url,init)=>{
-    assert.equal(init.method,"POST");
-    assert.match(String(url),/\/repos\/solopreneursid\/yorpHives-2\.0\/issues$/);
-    const payload=JSON.parse(init.body);
-    assert.equal(payload.title,"Headquarters navigation shows missing links");
-    assert.match(payload.body,/founder-authenticated Headquarters/i);
-    assert.match(payload.body,/not a verified fix/);
-    return Response.json({number:46,html_url:"https://untrusted.example/spoof"});
-  };
-  try {
-    const r=await worker.fetch(request("POST",{
-      title:"Headquarters navigation shows missing links",
-      details:"Several navigation links fail during mobile use; reproduce on staging before making a fix.",
-      scope:"headquarters",confirm:true
-    }),env);
-    assert.equal(r.status,201);
-    const data=await r.json();
-    assert.equal(data.url,"https://github.com/solopreneursid/yorpHives-2.0/issues/46");
-    assert.equal(data.production_approved,false);
-    assert.equal(data.new_model_calls,0);
-  }finally{globalThis.fetch=originalFetch;}
+test("monitor-only Worker refuses GitHub issue creation before any external request",async()=>{
+ let calls=0;
+ globalThis.fetch=async()=>{calls++;throw Error("should not send write");};
+ try{
+  const r=await worker.fetch(request("POST",{
+   title:"Headquarters navigation shows missing links",
+   details:"Several navigation links fail during mobile use.",
+   scope:"headquarters",confirm:true
+  }),env);
+  assert.equal(r.status,405);
+  const body=await r.json();
+  assert.equal(body.error,"MONITOR_ONLY");
+  assert.equal(body.github_issue_created,false);
+  assert.equal(body.dispatch_performed,false);
+  assert.equal(calls,0);
+ }finally{globalThis.fetch=originalFetch;}
 });
-test("missing binding-only header, token or confirmation blocks all external requests",async()=>{
+test("read-only GET needs private binding and token; any POST is rejected",async()=>{
   let count=0;
   globalThis.fetch=async()=>{count++;return Response.json({})};
   try {
@@ -79,7 +73,7 @@ test("missing binding-only header, token or confirmation blocks all external req
     assert.equal((await worker.fetch(request("POST",{
       title:"Issue title is valid",details:"Long enough details but no confirmation allowed.",
       scope:"website",confirm:false
-    }),env)).status,400);
+    }),env)).status,405);
     assert.equal(count,0);
   }finally{globalThis.fetch=originalFetch;}
 });
