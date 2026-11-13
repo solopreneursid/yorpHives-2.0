@@ -166,7 +166,7 @@ test("one-click emergency stop cancels both assistants atomically, without OTP",
       cancelled:true,count:2,ended:true,production_allowed:false
     });
     assert.deepEqual(sqlite.prepare(
-      "SELECT assistant,state FROM founder_temporary_grants ORDER BY assistant").all(),
+      "SELECT assistant,state FROM founder_temporary_grants ORDER BY assistant").all().map(({assistant,state})=>({assistant,state})),
       [{assistant:"chatgpt",state:"revoked"},{assistant:"yorpmind",state:"revoked"}]);
     assert.equal(sqlite.prepare(
       "SELECT COUNT(*) AS n FROM admin_audit_events "+
@@ -188,7 +188,7 @@ test("Founder Control exposes stop-all but clearly keeps collective OTP and appl
   assert.match(html,/id="founder-stop-all"/);
   assert.match(html,/id="founder-open-permissions"/);
   assert.match(html,/value="both" disabled/);
-  assert.match(html,/email-code approval and joint access are not connected yet/);
+  assert.match(html,/Temporary grants require email verification/);
   assert.match(js,/action:"revoke_all"/);
   assert.match(js,/assistantNames/);
 });
