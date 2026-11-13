@@ -12,7 +12,16 @@ async function fixture() {
     await mkdir(dirname(absolute), { recursive: true });
     await writeFile(absolute, path === ".github/workflows/ci.yml" ?
       "on:\n  pull_request:\njobs:\n  checks:\n    steps:\n      - run: npm run check\n" :
-      path === "functions/_lib/admin-auth.ts" ? "CF_ACCESS_AUD" : "fixture");
+      path === "functions/_lib/admin-auth.ts" ? "CF_ACCESS_AUD" :
+      path === "hq-engine/staging-rehearsal-entry.js" ?
+        'export { MissionWorkflow } from "./worker.js"; export default { async fetch() { return new Response("No route", {status:404}); } };' :
+      path === "hq-engine/wrangler.rehearsal.jsonc" ? JSON.stringify({
+        name: "yorphives-hq-mission-rehearsal", main: "./staging-rehearsal-entry.js",
+        workers_dev: false, ai: {binding:"AI"},
+        d1_databases:[{binding:"DB",database_id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}],
+        workflows:[{binding:"MISSION_WORKFLOW",name:"yorphives-hq-missions-rehearsal",
+          class_name:"MissionWorkflow"}]
+      }) : "fixture");
   }
   await writeFile(join(dir, "package.json"), JSON.stringify({
     scripts: { check: "node --check app.js", test: "node --test" },
@@ -38,6 +47,19 @@ test("valid repository passes static checks but is never approved for production
   }
 });
 
+test("rehearsal isolation gate rejects public exposure and production bindings", async () => {
+  const dir=await fixture();
+  try {
+    const config=JSON.parse(await (await import("node:fs/promises")).readFile(
+      join(dir, "hq-engine/wrangler.rehearsal.jsonc"),"utf8"));
+    config.workers_dev=true;
+    config.d1_databases[0].database_id="unreviewed-production-database";
+    await writeFile(join(dir,"hq-engine/wrangler.rehearsal.jsonc"),JSON.stringify(config));
+    const report=await assessHeadquarters(dir);
+    assert.equal(report.static_checks_passed,false);
+    assert.equal(report.checks.find(x=>x.id==="rehearsal-worker-isolation").status,"fail");
+  } finally { await rm(dir,{recursive:true,force:true}); }
+});
 test("unapproved direct package fails the gate", async () => {
   const dir = await fixture();
   try {
