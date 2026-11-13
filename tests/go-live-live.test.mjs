@@ -30,6 +30,10 @@ const canonicalProject={
  name:"yorphives-admin-staging",production_branch:"build/yorphives-admin-reliability",
  source:{type:"github",config:{owner:"solopreneursid",repo_name:"yorpHives-2.0",
   production_branch:"build/yorphives-admin-reliability"}},
+ deployment_configs:{
+  preview:{d1_databases:{DB:{id:"84c324ac-f7dc-4304-80bf-8da16da18c4c"}}},
+  production:{d1_databases:{DB:{id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}}}
+ },
  canonical_deployment:{id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",
   environment:"production",latest_stage:{name:"deploy",status:"success"},
   deployment_trigger:{metadata:{branch:"build/yorphives-admin-reliability",commit_hash:canonicalBranch}}}
@@ -97,6 +101,21 @@ test("website live readiness cannot be inferred from development-repository prev
  assert.ok(result.blockers.some(x=>x.includes("cross-repository artifact promotion")));
 });
 
+test("shared D1 blocks a release regardless of green CI and canonical consistency",async()=>{
+ const shared="e8690813-b139-44a2-a1c7-bea2d2777ead";
+ const project={...canonicalProject,deployment_configs:{
+  preview:{d1_databases:{DB:{id:shared}}},
+  production:{d1_databases:{DB:{id:shared}}}
+ }};
+ const s=stub({canonicalProject:project});
+ const result=await readLiveGoLiveReadiness(env,target,s.fetchImpl);
+ assert.equal(result.status,"database_isolation_required");
+ assert.equal(result.ready_for_preview,false);
+ assert.equal(result.production_deployment_enabled,false);
+ assert.match(result.blockers.join(" "),/SAME D1 database/);
+ assert.equal(s.calls.some(c=>c.url.includes("/check-runs?")),false);
+ assert.ok(s.calls.every(c=>c.method==="GET"));
+});
 test("live release verifier refuses stale canonical branch before trusting green CI",async()=>{
  const s=stub({baseSha:"f".repeat(40)});
  const result=await readLiveGoLiveReadiness(env,"headquarters",s.fetchImpl);
