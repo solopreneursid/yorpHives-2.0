@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="/admin/owner-action-center.css">
 <link rel="stylesheet" href="/admin/mission-proof.css">
 <link rel="stylesheet" href="/admin/shared-repair-inbox.css">
+<link rel="stylesheet" href="/admin/founder-control-center.css">
 <link rel="stylesheet" href="/admin/yorpmind.css">
 <link rel="stylesheet" href="/admin/yorpmind-evolution.css">
 <link rel="stylesheet" href="/admin/yorpmind-team.css">
@@ -28,7 +29,7 @@
   <a class="brand" href="/admin/" aria-label="YorpHives Admin home"><span class="brand-mark">Y</span><span><strong>yorphives</strong><small>HEADQUARTERS</small></span></a>
   <div class="workspace-label">WORKSPACE</div>
   <nav class="side-nav" aria-label="Admin workspaces">
-    <button class="nav-item active" data-view="headquarters"><span class="nav-icon">◇</span>Headquarters</button>
+    <button class="nav-item active" data-view="headquarters"><span class="nav-icon">◇</span>My Home</button>
     <button class="nav-item" data-view="yorpmind"><span class="nav-icon">✺</span>YorpMind</button>
     <button class="nav-item" data-view="intelligence"><span class="nav-icon">✦</span>Ideas &amp; Intelligence</button>
     <button class="nav-item" data-view="demand"><span class="nav-icon">◉</span>Market Explorer</button>
@@ -42,7 +43,7 @@
   <div class="workspace-label">OPERATIONS</div>
   <nav class="side-nav" aria-label="Operations">
     <button class="nav-item" data-view="issues"><span class="nav-icon">⚑</span>Issues &amp; risks<span class="nav-count" id="nav-issues">—</span></button>
-    <button class="nav-item" data-view="agents"><span class="nav-icon">✳</span>AI operations</button>
+    <button class="nav-item" data-view="agents"><span class="nav-icon">✳</span>Fix problems</button>
     <button class="nav-item" data-view="updates"><span class="nav-icon">↻</span>Updates &amp; maintenance<span class="nav-count" id="nav-updates">—</span></button>
     <button class="nav-item" data-view="releases"><span class="nav-icon">⇧</span>Releases</button>
   </nav>
@@ -69,15 +70,102 @@
   </header>
   <div class="content">
     <div class="system-message" id="system-message" role="status" aria-live="polite" hidden><span class="system-message-text" id="system-message-text"></span><a id="system-message-action" href="/admin/" hidden>Re-authenticate ↗</a><button id="system-message-dismiss" type="button" aria-label="Dismiss message">×</button></div>
-    <div class="global-notice"><span>◆</span><p><strong>Owner-controlled operations.</strong> Agents can investigate, prepare isolated changes and verify them. Production changes remain subject to your explicit approval.</p></div>
+    <div class="global-notice"><span>◆</span><p><strong>You are in charge.</strong> Your assistants can investigate and prepare changes. You choose what happens next, and publishing still needs your separate approval.</p></div>
 
 
-    <section class="view active" id="view-headquarters" data-title="Headquarters">
+    <section class="view active" id="view-headquarters" data-title="My Home">
+      <section class="founder-command" aria-labelledby="founder-welcome">
+        <span class="founder-eyebrow">YOUR BUSINESS · YOUR DECISIONS</span>
+        <h1 id="founder-welcome">Welcome to your Headquarters.</h1>
+        <p class="founder-subtitle">You are in charge. Your two assistants can help you understand a problem, find a solution, and prepare changes. You choose who helps and what happens next.</p>
+        <div class="founder-you"><span aria-hidden="true">👑</span><strong>You · Owner &amp; Administrator</strong><small>Final say on money, permissions, and publishing</small></div>
+        <div class="founder-arrow" aria-hidden="true">↓</div>
+        <div class="founder-assistants" aria-label="Your two equal assistants">
+          <article class="founder-assistant">
+            <strong>✺ YorpMind</strong>
+            <p>Handles work inside Headquarters, oversees the AI team, and remembers lessons from checked repairs.</p>
+            <button id="founder-yorpmind" type="button">Give work to YorpMind →</button>
+          </article>
+          <article class="founder-assistant">
+            <strong>✦ ChatGPT</strong>
+            <p>Helps you here in chat, works with your connected code project, and shares the same issue and repair history.</p>
+            <button id="founder-chatgpt" type="button">Work with ChatGPT →</button>
+          </article>
+        </div>
+        <div class="founder-arrow" aria-hidden="true">↓</div>
+        <div class="founder-workers">Your AI team · researchers, builders, testers, and other specialists</div>
+        <p class="founder-learning">✧ YorpMind learns from a repair after it has been checked—whether you worked with YorpMind or ChatGPT. Suggestions and unfinished work are not treated as proven fixes.</p>
+        <section class="founder-permission-panel" aria-labelledby="founder-permission-heading">
+          <span class="founder-eyebrow">YOU CONTROL THEIR POWERS</span>
+          <h2 id="founder-permission-heading">Give temporary permission</h2>
+          <p class="founder-permission-explain">Want an assistant to do more? Choose who, what, where, and for how long. Permission ends by itself, and you can stop it sooner. A separate security check must confirm it first.</p>
+          <form id="founder-permission-form">
+            <div class="founder-permission-grid">
+              <label for="founder-assistant">Who should help?
+                <select id="founder-assistant" required>
+                  <option value="yorpmind">YorpMind</option>
+                  <option value="chatgpt">ChatGPT</option>
+                </select>
+              </label>
+              <label for="founder-scope">Which part needs help?
+                <select id="founder-scope" required>
+                  <option value="both">Website and Headquarters</option>
+                  <option value="website">YorpHives website</option>
+                  <option value="headquarters">Headquarters</option>
+                </select>
+              </label>
+              <label for="founder-level">What may they do?
+                <select id="founder-level" required>
+                  <option value="review_findings">Review problems and suggest next steps</option>
+                  <option value="prepare_fixes" selected>Prepare issues and possible fixes</option>
+                  <option value="manage_staging">Prepare changes for the test version</option>
+                </select>
+              </label>
+              <label for="founder-duration">For how long?
+                <select id="founder-duration" required>
+                  <option value="15">15 minutes</option>
+                  <option value="30" selected>30 minutes</option>
+                  <option value="60">1 hour</option>
+                </select>
+              </label>
+            </div>
+            <label for="founder-reason">What should they work on?
+              <textarea id="founder-reason" minlength="40" maxlength="700" required rows="3" placeholder="For example: Check why the QR tool doesn't open properly on mobile and prepare a fix for me to review."></textarea>
+            </label>
+            <label class="founder-confirm-line"><input id="founder-understand" type="checkbox" required>
+              <span>I understand this does not share my password, approve live publishing, or give unlimited access. A connected assistant can currently create tracked issues; broader changes require a separately reviewed action.</span>
+            </label>
+            <div class="founder-permission-controls">
+              <button class="founder-permission-submit" id="founder-permission-submit" type="submit" disabled>Continue to security check →</button>
+              <button class="founder-permission-refresh" id="founder-permission-refresh" type="button">Refresh permissions</button>
+              <a id="founder-secure-link" class="founder-grant-confirm" href="/admin/" target="_blank" rel="noopener noreferrer" hidden>Complete my security check</a>
+            </div>
+          </form>
+          <p id="founder-security-note" class="founder-security-note" role="status" aria-live="polite">Checking your separate security approval…</p>
+          <p id="founder-connection-note" class="founder-connection-note">Checking assistant connections…</p>
+          <p id="founder-permission-status" class="founder-permission-status" role="status" aria-live="polite"></p>
+          <details>
+            <summary>See current and past permissions</summary>
+            <div id="founder-permission-list" class="founder-permission-list"></div>
+          </details>
+        </section>
+      </section>
+      <dialog id="founder-handoff-dialog" class="founder-handoff-dialog" aria-labelledby="founder-handoff-title">
+        <h2 id="founder-handoff-title">Work on this with ChatGPT</h2>
+        <p>Here's a ready-to-use message. Copy it into your ChatGPT conversation. Nothing is sent automatically.</p>
+        <textarea id="founder-handoff-text" readonly aria-label="Message for ChatGPT"></textarea>
+        <p id="founder-handoff-status" role="status" aria-live="polite"></p>
+        <div class="founder-handoff-controls">
+          <button type="button" id="founder-handoff-copy">Copy message</button>
+          <a href="https://chatgpt.com/" rel="noopener noreferrer" target="_blank">Open ChatGPT ↗</a>
+          <button type="button" id="founder-handoff-close" class="founder-close">Close</button>
+        </div>
+      </dialog>
       <section class="owner-console" aria-labelledby="owner-action-title">
         <div class="owner-console-header">
           <div>
-            <span class="owner-kicker">YOUR DECISIONS · EVIDENCE FIRST</span>
-            <h2 id="owner-action-title">What should I do next?</h2>
+            <span class="owner-kicker">THINGS THAT MAY NEED YOU</span>
+            <h2 id="owner-action-title">What needs my attention?</h2>
             <p class="owner-console-intro" id="owner-action-intro" role="status" aria-live="polite">Checking private Headquarters activity…</p>
           </div>
           <div class="owner-console-controls">
@@ -93,12 +181,12 @@
       </section>
       <div class="hq-hero">
         <div class="hq-hero-content">
-          <div class="hq-overline"><span class="hq-live-dot" aria-hidden="true"></span> FOUNDER COMMAND · YORPHIVES HEADQUARTERS</div>
-          <h1>Direct the vision.<br><span>Delegate the work.</span></h1>
-          <p>One secure command center for decisions, AI work briefs and the teams building your business. Every action has an owner, a state and an audit trail.</p>
+          <div class="hq-overline"><span class="hq-live-dot" aria-hidden="true"></span> YOUR TEAM AT WORK</div>
+          <h1>Make the decisions.<br><span>We will help with the work.</span></h1>
+          <p>Follow the progress of your website and the AI team. Open any task to see what happened, what needs checking, and what choice is yours.</p>
           <div class="hq-hero-actions">
-            <button class="hq-button hq-button-primary" id="hq-new" type="button">+ Create a mission</button>
-            <a class="hq-button hq-button-secondary" href="/api/admin/headquarters?format=markdown" target="_blank" rel="noopener noreferrer">Agent-readable briefing ↗</a>
+            <button class="hq-button hq-button-primary" id="hq-new" type="button">+ Give the team a task</button>
+            <details><summary>Advanced: view the team report</summary><a class="hq-button hq-button-secondary" href="/api/admin/headquarters?format=markdown" target="_blank" rel="noopener noreferrer">Open detailed report ↗</a></details>
           </div>
         </div>
         <div class="hq-hero-aside" aria-label="Workspace readiness">
@@ -149,7 +237,7 @@
       <div class="hq-workgrid">
         <section class="hq-panel hq-mission-panel">
           <div class="hq-panel-heading">
-            <div><span class="hq-kicker">MISSION CONTROL</span><h2>Work in motion</h2><p>Briefs, execution states and reviewable results in one place.</p></div>
+            <div><span class="hq-kicker">WHAT YOUR TEAM IS DOING</span><h2>Work in progress</h2><p>Open a task to see what happened and what you should check.</p></div>
             <label class="hq-filter">View <select id="hq-filter" class="hq-input"><option value="active">Open work</option><option value="review">Needs review</option><option value="staging">Staging rehearsals</option><option value="all">All missions</option><option value="failed">Failed — investigate</option><option value="cancelled">Cancelled</option></select></label>
           </div>
           <div id="hq-missions" class="hq-mission-list" aria-live="polite"></div>
@@ -904,6 +992,7 @@
 <script src="/admin/owner-action-center.js" defer></script>
 <script src="/admin/mission-proof.js" defer></script>
 <script src="/admin/shared-repair-inbox.js" defer></script>
+<script src="/admin/founder-control-center.js" defer></script>
 <script src="/admin/yorpmind.js" defer></script>
 <script src="/admin/yorpmind-evolution.js" defer></script>
 <script src="/admin/yorpmind-team.js" defer></script>
