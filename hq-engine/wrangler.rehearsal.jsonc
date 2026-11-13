@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
   "name": "yorphives-hq-mission-rehearsal",
-  "main": "./worker.js",
+  "main": "./staging-rehearsal-entry.js",
   "compatibility_date": "2026-11-12",
   "workers_dev": false,
   "ai": { "binding": "AI" },
