@@ -850,7 +850,7 @@
           <footer class="incident-actions">
             <p>Headquarters only reports findings and recommends next steps. You perform the fix and decide whether to publish it.</p>
             <div class="incident-choice-buttons" aria-label="Choose who helps with this problem">
-              <button class="button" type="button" id="incident-chatgpt">Work with ChatGPT</button>
+              <button class="button" type="button" id="incident-chatgpt">Discuss findings with ChatGPT</button>
               <button class="button primary" type="button" id="incident-prepare">Copy finding details</button>
             </div>
           </footer>
@@ -941,16 +941,16 @@
       <section class="panel shared-repair-panel" aria-labelledby="shared-repair-title">
         <div class="shared-repair-header">
           <div>
-            <span class="eyebrow">ONE PROBLEM LIST · TWO ASSISTANTS</span>
+            <span class="eyebrow">ISSUE EVIDENCE · FOUNDER REVIEW</span>
             <h2 id="shared-repair-title">Findings for your review</h2>
             <p class="shared-repair-lede">Keep findings in one place. Review evidence and recommendations, then make any required changes yourself. Past repair history remains available for reference.</p>
           </div>
           <div class="shared-repair-actions">
-            <button class="shared-repair-action" id="repair-github-create" type="button">Share this problem with both →</button>
+            
             <button class="shared-repair-action" id="shared-repair-refresh" type="button">↻ Check for new problems</button>
           </div>
         </div>
-        <p class="shared-repair-status" id="shared-repair-status" role="status" aria-live="polite">Issue inbox has not been loaded.</p>
+        <p class="shared-repair-status" id="shared-repair-status" role="status" aria-live="polite">Read-only issue observations have not been loaded.</p>
         <div class="shared-repair-grid" id="shared-repair-list" aria-label="Shared GitHub issues"></div>
       </section>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">WORKFLOW QUEUE</span><h2>Historical repair records</h2></div><button class="text-button" id="refresh-agents">Refresh jobs ↻</button></div><div id="repair-jobs"><div class="empty-state">Loading repair jobs…</div></div></section>
