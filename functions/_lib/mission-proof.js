@@ -51,6 +51,9 @@ export function inspectMissionReceipt(job, events=[]) {
   ];
   const sufficient=checks.every(x=>x.result==="recorded");
   const code=clean(output.code,64),message=clean(output.error,240);
+  const classification=/^[A-Z_]{3,64}$/.test(code) ? code :
+    /AI response did not contain valid JSON|not a complete structured decision brief/i.test(message) ?
+    "BRIEF_JSON_INVALID" : "UNCLASSIFIED_FAILURE";
   return {
     job_id:job.job_id,status:job.status,agent_id:clean(job.agent_id,90),
     job_title:clean(job.title,160),last_updated_at:date(job.updated_at)?job.updated_at:null,
