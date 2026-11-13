@@ -31,7 +31,8 @@ const evidence={
 await writeFile(resolve(folder,"report.json"),JSON.stringify(evidence,null,2)+"\n");
 const status=report.checks.map(x=>[
   x.status==="verified_basic"?"PASS":x.status==="needs_attention"?"CHECK":"UNKNOWN",
-  x.path,"HTTP",x.http_status??"n/a","expected",x.expected_format
+  x.path,"HTTP",x.http_status??"n/a","expected",x.expected_format,
+  "actual",x.content_type||"unknown","reason",x.note.slice(0,150)
 ].join(" ")).join("\n");
 console.log("Public website HTTP evidence (read only):\n"+status);
 console.log(JSON.stringify({
