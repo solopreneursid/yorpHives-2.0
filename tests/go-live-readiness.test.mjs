@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {REPO,REQUIRED_RELEASE_CHECKS,HEADQUARTERS_REQUIRED_RELEASE_CHECKS,
+import {REPO,RELEASE_BASE_BRANCH,REQUIRED_RELEASE_CHECKS,HEADQUARTERS_REQUIRED_RELEASE_CHECKS,
  requiredChecksForTarget,chooseReleaseCandidate,verifyRequiredChecks,exactPreview,evaluateReleaseReadiness}
  from "../functions/_lib/go-live-readiness.js";
 const sha="a".repeat(40);
@@ -67,4 +67,16 @@ test("the latest failed rerun blocks an older passing check for the same revisio
  const recent={...first,id:999,started_at:"2026-11-13T11:00:00Z",
   completed_at:"2026-11-13T11:03:00Z",conclusion:"failure"};
  assert.equal(verifyRequiredChecks([...checks,recent],sha).verified,false);
+});
+
+test("public website main and private HQ staging canonical are distinct release targets",()=>{
+ assert.equal(RELEASE_BASE_BRANCH.website,"main");
+ assert.equal(RELEASE_BASE_BRANCH.headquarters,"build/yorphives-admin-reliability");
+ const hq={...pr,number:90,
+  labels:[{name:"release-candidate"},{name:"scope:headquarters"}],
+  base:{ref:RELEASE_BASE_BRANCH.headquarters,repo:{full_name:REPO}}};
+ assert.equal(chooseReleaseCandidate([hq],"headquarters").candidate.sha,sha);
+ assert.equal(chooseReleaseCandidate([hq],"website").candidate,null);
+ assert.equal(chooseReleaseCandidate([{...hq,base:{ref:"main",repo:{full_name:REPO}}}],"headquarters").candidate,null);
+ assert.equal(chooseReleaseCandidate([{...pr,base:{ref:RELEASE_BASE_BRANCH.headquarters,repo:{full_name:REPO}}}],"website").candidate,null);
 });

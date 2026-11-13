@@ -31,3 +31,10 @@ A real Cloudflare Pages preview for source `8c184d3fe8f9f007f7a8afb51b610d252504
 Cloudflare Access lists an application on wildcard `*.yorphives-admin-staging.pages.dev` with a founder allow policy and a separate CI service-auth policy. This is configuration evidence only; authenticated browser QA and an independent anonymous HTTP-denial test on this new preview are still required.
 
 The preview client now validates the current GitHub-connected Headquarters project's production branch, source repository and canonical deployment **before** any POST and confirms the canonical deployment ID is unchanged **after** a successful preview response. If canonical state changes or cannot be rechecked, the job fails and refuses to claim success. Only explicit allowlisted development branches are permitted.
+
+
+## Split website vs Headquarters publish branches
+
+**Security-critical correction:** Public YorpHives publishes from the `main` branch of its own Cloudflare Pages project; the existing **private Headquarters staging project's canonical Pages branch** is `build/yorphives-admin-reliability`. The release candidate verifier now demands the target's exact base branch: `website → main`, `headquarters → build/yorphives-admin-reliability`. A PR aimed at the wrong branch is ineligible even with a label or green CI. These are *current installed deployment branches*, not proof that a final separate Headquarters production domain already exists.
+
+Draft PR #48 targets the private HQ staging canonical branch for cumulative review and remains unmerged. It is not a production release authorization. The eventual founder-only Go Live executor must independently verify that only the approved target Pages project will change, and must not merge the HQ release into public website `main`.

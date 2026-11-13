@@ -1,6 +1,12 @@
 /** Read-only, exact-revision production preview checks. Never publishes. */
 export const REPO="solopreneursid/yorpHives-2.0";
 export const RELEASE_PROJECT=Object.freeze({website:"yorphives-2-preview",headquarters:"yorphives-admin-staging"});
+// The public site publishes from main; the existing private Headquarters
+// staging Pages project deploys its canonical version from a different branch.
+// Never use the public main branch as a Headquarters release base.
+export const RELEASE_BASE_BRANCH=Object.freeze({
+ website:"main",headquarters:"build/yorphives-admin-reliability"
+});
 const COMMON_RELEASE_CHECKS=Object.freeze(["contract-tests","Independent release QA","Release recovery and rollback"]);
 export const REQUIRED_RELEASE_CHECKS=Object.freeze([
 ...COMMON_RELEASE_CHECKS,"Deploy isolated Cloudflare Pages preview",
@@ -25,7 +31,7 @@ export function chooseReleaseCandidate(pulls,target){
  const list=pulls.filter(pr=>{
   const labels=labelsOf(pr?.labels);
   return pr?.state==="open"&&pr?.draft===false&&labels.has("release-candidate")&&
-   labels.has("scope:"+target)&&pr?.base?.ref==="main"&&pr?.base?.repo?.full_name===REPO&&
+   labels.has("scope:"+target)&&pr?.base?.ref===RELEASE_BASE_BRANCH[target]&&pr?.base?.repo?.full_name===REPO&&
    pr?.head?.repo?.full_name===REPO&&SHA.test(pr?.head?.sha||"")&&
    BRANCH.test(pr?.head?.ref||"")&&Number.isSafeInteger(pr.number)&&pr.number>0;
  });
