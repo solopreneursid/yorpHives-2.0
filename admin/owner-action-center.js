@@ -8,7 +8,7 @@
     return item;
   };
   const validViews = new Set(["headquarters", "releases", "yorpmind", "monitoring"]);
-  const filters = new Set(["failed", "review", "active", "all"]);
+  const filters = new Set(["failed", "review", "staging", "active", "all"]);
   let fetching = false;
   let lastAttemptAt = 0;
   const RECHECK_MS = 60_000;
