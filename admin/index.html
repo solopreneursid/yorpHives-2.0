@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/admin/headquarters.css">
 <link rel="stylesheet" href="/admin/admin.css">
 <link rel="stylesheet" href="/admin/incident-workspace.css">
+<link rel="stylesheet" href="/admin/website-proof.css">
 <link rel="stylesheet" href="/admin/release-evidence.css">
 <link rel="stylesheet" href="/admin/owner-delegation.css">
 <link rel="stylesheet" href="/admin/owner-action-center.css">
@@ -808,6 +809,26 @@
 
     <section class="view" id="view-issues" data-title="Problems to fix">
       <div class="page-heading"><div><span class="eyebrow">YOUR WEBSITE · PROBLEMS</span><h1>Problems to fix</h1><p>Check what matters most. Open a problem for the explanation and choose what to do next.</p></div><div class="heading-actions"><button class="button" data-go="monitoring">Open monitoring ↗</button></div></div>
+      <section class="website-proof" aria-labelledby="website-proof-title">
+        <div class="website-proof-head">
+          <div>
+            <span class="eyebrow">LIVE WEBSITE · READ ONLY</span>
+            <h2 id="website-proof-title">Is your website working?</h2>
+            <p>Check the real public pages, not just old warnings. Nothing gets changed.</p>
+          </div>
+          <button class="button primary" type="button" id="website-proof-run">Check website now ↗</button>
+        </div>
+        <p class="website-proof-status" id="website-proof-status" role="status" aria-live="polite">No live check requested yet.</p>
+        <div class="website-proof-list" id="website-proof-list" role="region" tabindex="0" aria-label="Scrollable real website check results"></div>
+        <div class="website-proof-foot" id="website-proof-foot" hidden>
+          <span id="website-proof-count"></span>
+          <div class="website-proof-actions">
+            <button class="button" type="button" id="website-proof-chatgpt">Copy results for ChatGPT</button>
+            <button class="button" type="button" id="website-proof-yorpmind">Prepare for YorpMind →</button>
+          </div>
+        </div>
+        <p class="website-proof-note">This checks seven public addresses and basic browser protection. It does not close old problems, verify every feature or grant permission to publish. If a check is blocked, it says “Couldn’t verify” rather than assuming your site is broken.</p>
+      </section>
       <div class="filter-row"><button class="filter-chip active" data-finding-filter="active">Active</button><button class="filter-chip" data-finding-filter="all">All history</button><button class="filter-chip" data-finding-filter="resolved">Resolved / accepted</button></div>
       <dialog class="incident-dialog" id="incident-dialog" aria-labelledby="incident-title" aria-describedby="incident-subtitle">
         <div class="incident-shell">
@@ -1016,6 +1037,7 @@
 
 <script src="/admin/admin.js" defer></script>
 <script src="/admin/incident-workspace.js" defer></script>
+<script src="/admin/website-proof.js" defer></script>
 <script src="/admin/release-evidence.js" defer></script>
 <script src="/admin/owner-delegation.js" defer></script>
 <script src="/admin/owner-action-center.js" defer></script>
