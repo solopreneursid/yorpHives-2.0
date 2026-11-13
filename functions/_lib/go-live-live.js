@@ -3,6 +3,7 @@
  * revalidation. It never sends email, spends AI credits, publishes or writes D1.
  */
 import { REPO, RELEASE_PROJECT, RELEASE_BASE_BRANCH, verifyHeadquartersCanonicalBranch, evaluateReleaseReadiness } from "./go-live-readiness.js";
+import {verifyHeadquartersD1Isolation} from "./hq-resource-isolation.js";
 
 const invalid=(target,message)=>({
  target,status:"verification_unavailable",ready_for_preview:false,
@@ -57,6 +58,13 @@ export async function readLiveGoLiveReadiness(env,target,fetchImpl=fetch){
    const project=await readJson("https://api.cloudflare.com/client/v4/accounts/"+
     account+"/pages/projects/"+RELEASE_PROJECT.headquarters,
     cloudflare,"cloudflare-project",fetchImpl);
+   const isolated=verifyHeadquartersD1Isolation(project);
+   if(!isolated.isolated)return {
+    target,status:"database_isolation_required",candidate:chosen.candidate,
+    ready_for_preview:false,preview:null,
+    blockers:[isolated.reason],production_approved:false,
+    production_deployment_enabled:false
+   };
    const consistent=verifyHeadquartersCanonicalBranch(branch,project);
    if(!consistent.verified)return {
     target,status:"canonical_drift",candidate:chosen.candidate,
