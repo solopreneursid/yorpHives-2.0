@@ -1,6 +1,6 @@
 import { recommendTeamActions, MAX_TEAM_AGENTS_SCANNED, MAX_TEAM_JOBS_SCANNED } from "../functions/_lib/yorpmind-team.js";
 import { suggestRepairCoaching } from "../functions/_lib/yorpmind-repair-coaching.js";
-import { proposeEngineeringQaWork } from "../functions/_lib/yorpmind-engineering-qa.js";
+
 
 export async function scanYorpMindTeam(db, clock = () => new Date()) {
   if (!db) return { status: "unavailable", reports_created: 0 };
@@ -40,13 +40,11 @@ export async function scanYorpMindTeam(db, clock = () => new Date()) {
     repairFailures = recent.results || [];
   }
   const coaching = suggestRepairCoaching(repairFailures, staff.results || [], date);
-  // Assign evidence-bound planning to Engineering and independent QA first.
-  // These are persisted task proposals, not execution or automatic AI calls.
-  const workOrders = proposeEngineeringQaWork(repairFailures, staff.results || [], date);
+  // Monitoring-only: never create Engineering/QA repair work orders.
+  // The founder owns remediation. Existing coaching remains observational.
   let count = 0;
   let trainingReportsCreated = 0;
-  let developmentWorkOrdersCreated = 0;
-  for (const item of [...workOrders, ...recommendations, ...coaching]) {
+  for (const item of [...recommendations, ...coaching]) {
     const inserted = await db.prepare(
       "INSERT OR IGNORE INTO yorpmind_team_reports " +
       "(report_id,report_day,report_key,manager_id,subject_agent_id,source_job_id,recommendation,severity,summary,evidence_json,state,created_at) " +
@@ -59,14 +57,13 @@ export async function scanYorpMindTeam(db, clock = () => new Date()) {
     if (inserted?.report_id) {
       count++;
       if (item.report_key.startsWith("coaching:")) trainingReportsCreated++;
-      if (item.report_key.startsWith("work-order:")) developmentWorkOrdersCreated++;
     }
   }
   return {
     status: "completed", date, reports_created: count,
     coaching_reports_created: trainingReportsCreated,
-    engineering_qa_work_orders_created: developmentWorkOrdersCreated,
-    work_orders_are_proposals_only: true,
+    engineering_qa_work_orders_created: 0,
+    monitoring_only: true, founder_performs_repairs: true,
     coaching_is_not_approved_skill: true,
     failed_repairs_scanned: repairFailures.length,
     jobs_scanned: (jobs.results || []).length, agents_scanned: (agents.results || []).length,
