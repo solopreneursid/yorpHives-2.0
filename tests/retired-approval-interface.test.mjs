@@ -2,20 +2,54 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 const source=path=>readFile(new URL("../"+path,import.meta.url),"utf8");
-
-test("the Releases interface offers only Preview and Go Live, no legacy grant form",async()=>{
+const section=(html,start,end)=>{
+ const from=html.indexOf(start),until=html.indexOf(end,from+start.length);
+ assert.ok(from>=0&&until>from,"Missing view boundary: "+start);
+ return html.slice(from,until);
+};
+test("founder Home has only development, Preview and Go Live shortcuts",async()=>{
  const html=await source("admin/index.html");
- const from=html.indexOf('<section class="owner-delegation-panel"');
- const until=html.indexOf("</section>",from);
- assert.ok(from>0&&until>from);
- const legacy=html.slice(from,until);
- assert.doesNotMatch(legacy,/<form\b/i);
- assert.doesNotMatch(legacy,/step-up\/owner-delegations|prepare MFA approval/i);
- assert.match(legacy,/ARCHIVED HISTORY/);
- assert.match(html,/<a id="release-launch-preview"[^>]*>Preview<\/a>/);
- assert.match(html,/<button id="release-go-live"[^>]*\bdisabled\b[^>]*>Go Live<\/button>/);
+ const home=section(html,'<section class="view active" id="view-headquarters"','<section class="view" id="view-yorpmind"');
+ const bar=section(home,'<div class="founder-quick-actions"','</div>');
+ assert.match(bar,/id="founder-find-fixes"[^>]*>Development issues/);
+ assert.match(bar,/id="founder-open-preview"[^>]*>Preview/);
+ assert.match(bar,/id="founder-open-release"[^>]*>Go Live/);
+ assert.doesNotMatch(home,/id="founder-stop-all"|id="founder-permission-list"|id="founder-otp-dialog"/);
+ assert.doesNotMatch(bar,/id="founder-permission-form"|Revoke legacy/);
+ const script=await source("admin/founder-control-center.js");
+ assert.match(script,/\$\("founder-open-preview"\)/);
+ assert.match(script,/\$\("founder-open-release"\)/);
+ assert.doesNotMatch(script,/method:\s*["']POST["']|send_test|action:"send"|action:"verify"/);
+ assert.match(script,/window.HQChooseAssistant/);
 });
-test("old delegated-approval handlers are intentionally read-only",async()=>{
+test("Publishing contains Preview and locked Go Live, not old delegated controls",async()=>{
+ const html=await source("admin/index.html");
+ const releases=section(html,'<section class="view" id="view-releases"','<section class="view" id="view-security"');
+ assert.match(releases,/<a id="release-launch-preview"[^>]*>Preview<\/a>/);
+ assert.match(releases,/<button id="release-go-live"[^>]*\bdisabled\b[^>]*>Go Live<\/button>/);
+ assert.doesNotMatch(releases,/id="owner-delegation-panel"|id="founder-stop-all"|id="founder-permission-list"|<form[^>]*assistant/i);
+});
+test("Security is the only screen containing legacy emergency stop and archived history",async()=>{
+ const html=await source("admin/index.html");
+ const security=section(html,'<section class="view" id="view-security"','<section class="view" id="view-activity"');
+ assert.match(html,/data-view="security"/);
+ assert.match(security,/id="founder-stop-all"/);
+ assert.match(security,/id="founder-permission-list"/);
+ assert.match(security,/id="owner-delegation-list"/);
+ assert.match(security,/ARCHIVED HISTORY/);
+ assert.doesNotMatch(security,/<form\b|id="founder-permission-submit"|id="founder-otp-dialog"/);
+ assert.equal((html.match(/id="founder-stop-all"/g)||[]).length,1);
+ const admin=await source("admin/admin.js");
+ assert.match(admin,/security:\s*async\s*\(\)\s*=>\s*\{\s*await Promise\.all\(\[window\.loadFounderPermissions\(\),window\.loadOwnerDelegations\(\)\]\)/);
+ assert.match(admin,/releases:\s*async\s*\(\)\s*=>\s*\{\s*await window\.loadReleaseEvidence\(\)/);
+ const js=await source("admin/founder-control-center.js");
+ assert.match(js,/action:"revoke_all"/);
+ assert.match(js,/method:"PATCH"/);
+ const api=await source("functions/api/admin/assistant-permissions.ts");
+ assert.match(api,/requireAdmin/);
+ assert.match(api,/revoke_all/);
+});
+test("old delegated-approval handlers remain read-only",async()=>{
  const code=await source("admin/owner-delegation.js");
  assert.match(code,/retired_delegation_history/);
  assert.doesNotMatch(code,/method:\s*["']POST["']|method:\s*["']PATCH["']/);
@@ -28,21 +62,4 @@ test("old delegated-approval handlers are intentionally read-only",async()=>{
  const legacyApi=await source("functions/api/admin/owner-delegations.ts");
  assert.match(legacyApi,/retired_delegation_history/);
  assert.match(legacyApi,/LEGACY_APPROVAL_RETIRED/);
-});
-
-test("founder Home has no assistant-grant request or temporary-access OTP form",async()=>{
- const html=await source("admin/index.html");
- const start=html.indexOf('<details class="founder-permission-panel"');
- const end=html.indexOf('<details class="cockpit-reference">',start);
- assert.ok(start>0&&end>start);
- const panel=html.slice(start,end);
- assert.doesNotMatch(panel,/<form\b|founder-permission-submit|founder-secure-link/);
- assert.match(panel,/Archived access history/);
- assert.doesNotMatch(html,/id="founder-otp-dialog"/);
- const script=await source("admin/founder-control-center.js");
- assert.match(script,/retired/);
- assert.doesNotMatch(script,/method:\s*["']POST["']|send_test|action:"send"|action:"verify"/);
- assert.doesNotMatch(script,/step-up\/assistant-permissions/);
- assert.match(script,/action:"revoke_all"/);
- assert.match(script,/window.HQChooseAssistant/);
 });
