@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readLiveGoLiveReadiness } from "../functions/_lib/go-live-live.js";
 import { REPO,requiredChecksForTarget } from "../functions/_lib/go-live-readiness.js";
 
-const sha="3".repeat(40),target="website";
+const sha="3".repeat(40),target="headquarters";
 const env={
  HQ_RELEASE_GITHUB_READ_TOKEN:"g".repeat(30),
  HQ_RELEASE_CLOUDFLARE_READ_TOKEN:"c".repeat(30),
@@ -11,17 +11,17 @@ const env={
 };
 const candidate={number:77, title:"Website release",
  state:"open",draft:false,
- labels:[{name:"release-candidate"},{name:"scope:website"}],
- base:{ref:"main",repo:{full_name:REPO}},
+ labels:[{name:"release-candidate"},{name:"scope:headquarters"}],
+ base:{ref:"build/yorphives-admin-reliability",repo:{full_name:REPO}},
  head:{sha,ref:"build/verified-release",repo:{full_name:REPO}}
 };
-const runs=requiredChecksForTarget("website").map((name,i)=>({
+const runs=requiredChecksForTarget("headquarters").map((name,i)=>({
  id:i+1,name,head_sha:sha,app:{slug:"github-actions"},
  status:"completed",conclusion:"success",
  started_at:"2026-11-13T00:00:00Z",completed_at:"2026-11-13T00:01:00Z"
 }));
 const deployment={id:"000982b1-e50e-49e9-93da-3495a2a6e208",
- environment:"preview",url:"https://000982b1.yorphives-2-preview.pages.dev",
+ environment:"preview",url:"https://000982b1.yorphives-admin-staging.pages.dev",
  latest_stage:{name:"deploy",status:"success"},
  deployment_trigger:{metadata:{branch:candidate.head.ref,commit_hash:sha}}
 };
@@ -64,4 +64,21 @@ test("a draft or conflicting release candidate never progresses to checkout",asy
  assert.equal(a.calls.length,1);
  const b=stub({pulls:[candidate,{...candidate,number:78}]});
  assert.equal((await readLiveGoLiveReadiness(env,target,b.fetchImpl)).candidate,null);
+});
+
+test("website live readiness cannot be inferred from development-repository preview checks",async()=>{
+ const website={...candidate,
+  labels:[{name:"release-candidate"},{name:"scope:website"}],
+  base:{ref:"main",repo:{full_name:REPO}}};
+ const copiedChecks=requiredChecksForTarget("website").map((name,i)=>({
+  name,id:200+i,head_sha:sha,app:{slug:"github-actions"},
+  status:"completed",conclusion:"success",started_at:"2026-11-13T01:00:00Z",
+  completed_at:"2026-11-13T01:01:00Z"
+ }));
+ const copiedPreview={...deployment,url:"https://000982b1.yorphives-2-preview.pages.dev"};
+ const mock=stub({pulls:[website],runs:copiedChecks,deployments:[copiedPreview]});
+ const result=await readLiveGoLiveReadiness(env,"website",mock.fetchImpl);
+ assert.equal(result.ready_for_preview,false);
+ assert.equal(result.preview,null);
+ assert.ok(result.blockers.some(x=>x.includes("cross-repository artifact promotion")));
 });

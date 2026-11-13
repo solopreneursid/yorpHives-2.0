@@ -38,3 +38,10 @@ The preview client now validates the current GitHub-connected Headquarters proje
 **Security-critical correction:** Public YorpHives publishes from the `main` branch of its own Cloudflare Pages project; the existing **private Headquarters staging project's canonical Pages branch** is `build/yorphives-admin-reliability`. The release candidate verifier now demands the target's exact base branch: `website → main`, `headquarters → build/yorphives-admin-reliability`. A PR aimed at the wrong branch is ineligible even with a label or green CI. These are *current installed deployment branches*, not proof that a final separate Headquarters production domain already exists.
 
 Draft PR #48 targets the private HQ staging canonical branch for cumulative review and remains unmerged. It is not a production release authorization. The eventual founder-only Go Live executor must independently verify that only the approved target Pages project will change, and must not merge the HQ release into public website `main`.
+
+
+## Public site is connected to a different source repository
+
+Verified by the Cloudflare account on 13 November 2026: the public `yorphives.com` Pages project `yorphives` is connected to `solopreneursid/YorpHives` branch `main`, while the website preview project `yorphives-2-preview` and private Headquarters project are connected to `solopreneursid/yorpHives-2.0`. Both repositories are distinct and connected GitHub resources exist.
+
+**Fail-closed rule:** Even a fully tested preview of the 2.0 repository cannot be represented as production-ready for the public website until a secure, immutable cross-repository promotion, independent source/artifact identity verification, exact public Pages project targeting, and rollback are built and tested. The new `PUBLISH_DESTINATION` mapping records these explicit source destinations; `requiresIndependentPromotion('website')` currently forces website readiness false. Headquarters follows its existing private canonical branch and remains subject to all other release gates. No code in this branch publishes either target.

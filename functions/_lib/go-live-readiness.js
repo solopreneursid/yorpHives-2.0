@@ -1,6 +1,22 @@
 /** Read-only, exact-revision production preview checks. Never publishes. */
 export const REPO="solopreneursid/yorpHives-2.0";
 export const RELEASE_PROJECT=Object.freeze({website:"yorphives-2-preview",headquarters:"yorphives-admin-staging"});
+/** Actual Cloudflare Pages production sources, independently inspected.
+ * Public YorpHives uses another repository; preview != deployable artifact.
+ */
+export const PUBLISH_DESTINATION=Object.freeze({
+ website:Object.freeze({
+  project:"yorphives",repository:"solopreneursid/YorpHives",
+  branch:"main",promotion:"cross_repository_verified_artifact"
+ }),
+ headquarters:Object.freeze({
+  project:"yorphives-admin-staging",repository:"solopreneursid/yorpHives-2.0",
+  branch:"build/yorphives-admin-reliability",promotion:"same_repository_fast_forward"
+ })
+});
+export function requiresIndependentPromotion(target){
+ return target==="website"&&PUBLISH_DESTINATION.website.repository!==REPO;
+}
 // The public site publishes from main; the existing private Headquarters
 // staging Pages project deploys its canonical version from a different branch.
 // Never use the public main branch as a Headquarters release base.
@@ -87,6 +103,11 @@ export function evaluateReleaseReadiness({pulls,checkRuns,deployments,target}){
  const preview=exactPreview(deployments,candidate),blockers=[];
  if(!ci.verified)blockers.push("Missing or failing release checks: "+ci.missing.join(", ")+".");
  if(!preview)blockers.push("No successful preview matches the exact source branch and SHA.");
+ // No code currently promotes an immutable artifact between the development
+ // repo and the SEPARATE public YorpHives repo. Never claim website release
+ // readiness from a preview built in yorpHives-2.0 alone.
+ if(requiresIndependentPromotion(target))
+  blockers.push("Public website publishes from a separate GitHub repository. Verified cross-repository artifact promotion and target verification are not implemented.");
  return {target,status:blockers.length?"verifying":"verified_preview",
   ready_for_preview:!blockers.length,candidate,
   preview:blockers.length?null:preview,blockers,

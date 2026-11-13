@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {REPO,RELEASE_BASE_BRANCH,REQUIRED_RELEASE_CHECKS,HEADQUARTERS_REQUIRED_RELEASE_CHECKS,
+import {REPO,RELEASE_BASE_BRANCH,PUBLISH_DESTINATION,requiresIndependentPromotion,REQUIRED_RELEASE_CHECKS,HEADQUARTERS_REQUIRED_RELEASE_CHECKS,
  requiredChecksForTarget,chooseReleaseCandidate,verifyRequiredChecks,exactPreview,evaluateReleaseReadiness}
  from "../functions/_lib/go-live-readiness.js";
 const sha="a".repeat(40);
@@ -41,8 +41,9 @@ test("preview rejects production, mismatched branch, failed deployments, and hos
 });
 test("verified preview never constitutes founder approval or release execution",()=>{
  const yes=evaluateReleaseReadiness({pulls:[pr],checkRuns:checks,deployments:[deployment],target:"website"});
- assert.equal(yes.ready_for_preview,true);
- assert.equal(yes.preview.url,"https://8c21d1ed.yorphives-2-preview.pages.dev");
+ assert.equal(yes.ready_for_preview,false);
+ assert.equal(yes.preview,null);
+ assert.ok(yes.blockers.some(x=>x.includes("separate GitHub repository")));
  assert.equal(yes.production_approved,false);
  assert.equal(yes.production_deployment_enabled,false);
  const no=evaluateReleaseReadiness({pulls:[pr],checkRuns:checks.slice(1),deployments:[deployment],target:"website"});
@@ -79,4 +80,30 @@ test("public website main and private HQ staging canonical are distinct release 
  assert.equal(chooseReleaseCandidate([hq],"website").candidate,null);
  assert.equal(chooseReleaseCandidate([{...hq,base:{ref:"main",repo:{full_name:REPO}}}],"headquarters").candidate,null);
  assert.equal(chooseReleaseCandidate([{...pr,base:{ref:RELEASE_BASE_BRANCH.headquarters,repo:{full_name:REPO}}}],"website").candidate,null);
+});
+
+test("a website preview in the development repository is never a deployable public site release",()=>{
+ assert.equal(requiresIndependentPromotion("website"),true);
+ assert.equal(requiresIndependentPromotion("headquarters"),false);
+ assert.equal(PUBLISH_DESTINATION.website.project,"yorphives");
+ assert.equal(PUBLISH_DESTINATION.website.repository,"solopreneursid/YorpHives");
+ assert.equal(PUBLISH_DESTINATION.website.branch,"main");
+ assert.equal(PUBLISH_DESTINATION.headquarters.repository,REPO);
+ assert.equal(PUBLISH_DESTINATION.headquarters.branch,RELEASE_BASE_BRANCH.headquarters);
+});
+test("headquarters can verify a candidate in the same repository without cross-repo promotion",()=>{
+ const hq={...pr,number:101,
+  labels:[{name:"release-candidate"},{name:"scope:headquarters"}],
+  base:{ref:RELEASE_BASE_BRANCH.headquarters,repo:{full_name:REPO}}};
+ const values=HEADQUARTERS_REQUIRED_RELEASE_CHECKS.map((name,i)=>({
+  name,id:100+i,head_sha:sha,app:{slug:"github-actions"},status:"completed",conclusion:"success",
+  started_at:"2026-11-13T11:00:00Z",completed_at:"2026-11-13T11:01:00Z"
+ }));
+ const exact={...deployment,url:"https://8c21d1ed.yorphives-admin-staging.pages.dev/",
+  deployment_trigger:{metadata:{branch:hq.head.ref,commit_hash:sha}}};
+ const ready=evaluateReleaseReadiness({pulls:[hq],checkRuns:values,deployments:[exact],target:"headquarters"});
+ assert.equal(ready.status,"verified_preview");
+ assert.equal(ready.ready_for_preview,true);
+ assert.equal(ready.preview.url,"https://8c21d1ed.yorphives-admin-staging.pages.dev");
+ assert.equal(ready.production_deployment_enabled,false);
 });
