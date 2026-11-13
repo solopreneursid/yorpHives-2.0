@@ -46,7 +46,7 @@ test("Headquarters retires the AI repair and write-permission probe",async()=>{
  assert.match(route,/repair_dispatch_enabled: false/);
  assert.match(route,/permission_probe_performed: false/);
  assert.doesNotMatch(html,/id="verify-github-permissions"|id="repair-form"|id="repair-submit"/);
- assert.doesNotMatch(ui,/permission_probe:true|runProbe\\(/);
+ assert.doesNotMatch(ui,/permission_probe:true|runProbe/);
  assert.match(html,/id="monitor-only-guidance"/);
  assert.match(worker,/probeGithubWritePermissions/); // archived worker source only
 });
