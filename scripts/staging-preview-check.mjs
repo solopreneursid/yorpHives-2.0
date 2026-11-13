@@ -116,3 +116,41 @@ export async function locateExactExistingPreview({
   }
   return candidate;
 }
+
+/**
+ * Founder-friendly one-click discovery. Only successful private deployments
+ * whose exact SHA and branch match the checked-out GitHub revision are eligible.
+ * Bounded to 3 pages / 30 items; never creates deployments or trusts a
+ * branch-name-only match.
+ */
+export async function locateMatchingAdminPreview({
+  accountId, apiToken, branch, commitSha, fetcher = globalThis.fetch
+}) {
+  if (!/^[a-f0-9]{32}$/.test(String(accountId || "")) ||
+    !SHA.test(String(commitSha || "")) ||
+    !BRANCH.test(String(branch || "")) ||
+    !apiToken || typeof fetcher !== "function") {
+    throw new Error("A reviewed feature branch and read-only Cloudflare token are required.");
+  }
+  const endpoint = "https://api.cloudflare.com/client/v4/accounts/" + accountId +
+    "/pages/projects/" + PROJECT + "/deployments";
+  const headers = { authorization: "Bearer " + apiToken, accept: "application/json" };
+  for (let page = 1; page <= 3; page++) {
+    const result = await fetcher(endpoint + "?env=preview&per_page=10&page=" + page, {
+      method: "GET", headers, signal: AbortSignal.timeout(12000)
+    });
+    const body = await result.json().catch(() => null);
+    if (result.status !== 200 || body?.success !== true || !Array.isArray(body.result)) {
+      throw new Error("Cloudflare could not confirm the existing private preview.");
+    }
+    for (const item of body.result) {
+      const matched = validateExistingAdminPreview(item, {
+        project: PROJECT, deploymentId: item.id,
+        branch, commitSha
+      });
+      if (matched) return matched;
+    }
+    if (body.result.length < 10) break;
+  }
+  throw new Error("No successful, matching-code Headquarters preview exists. Build and review a private preview before running signed-in tests.");
+}
