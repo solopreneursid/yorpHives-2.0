@@ -182,6 +182,32 @@ async function run() {
 
     await page.waitForFunction(() => document.querySelector("#hq-storage")?.textContent === "Connected", null, { timeout: 20000 });
     record("headquarters_storage_connected", true, "Headquarters loaded the persistent registry");
+    const stagingJobs = (proofMissions?.missions || []).filter(mission =>
+      mission.origin_type === "staging_rehearsal");
+    if (stagingJobs.length) {
+      await page.locator("#hq-filter").selectOption("staging");
+      const staged = page.locator(".hq-mission-card").filter({ hasText: "[STAGING QA]" }).first();
+      await staged.waitFor({ state: "visible", timeout: 10000 });
+      const stagedText = await staged.textContent();
+      const stagedActions = await staged.locator("button").allTextContents();
+      record("synthetic_rehearsal_is_explicitly_labeled",
+        stagedText?.includes("STAGING REHEARSAL") === true &&
+        stagedText?.includes("not dispatched by you") === true,
+        "Synthetic test is not represented as founder dispatch");
+      record("synthetic_rehearsal_has_no_owner_approval_buttons",
+        !stagedActions.some(text => /Mark brief reviewed|Discard brief|Start AI brief|Cancel/i.test(text)),
+        "Rehearsal cannot trigger founder mission approval/discard actions");
+      const proofToggle = staged.locator(".hq-proof summary");
+      await proofToggle.click();
+      await staged.locator(".hq-proof-content").waitFor({ state: "visible", timeout: 15000 });
+      const proofText = await staged.locator(".hq-proof-content").textContent();
+      record("synthetic_rehearsal_proof_is_read_only",
+        proofText?.includes("Staging rehearsal recorded") === true &&
+        proofText?.includes("SYNTHETIC TEST") === true &&
+        !/Production deployment: APPROVED/i.test(proofText || ""),
+        "All five staging records remain distinct from independent QA");
+      await page.locator("#hq-filter").selectOption("active");
+    }
     if (process.env.PAGES_BRANCH === "build/headquarters-mission-execution") {
       const engineResponse = await page.request.get(baseUrl + "/api/admin/headquarters", { headers: accessHeaders });
       const engineSnapshot = engineResponse.ok() ? await engineResponse.json() : null;
