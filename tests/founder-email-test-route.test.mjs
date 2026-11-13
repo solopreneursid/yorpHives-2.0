@@ -93,8 +93,8 @@ test("Founder release UI hides legacy email-grant controls while preserving safe
   assert.doesNotMatch(html,/id="founder-test-email" type="button"/);
   assert.match(html,/id="release-go-live"[^>]*disabled/);
   assert.match(html,/id="founder-stop-all"/);
-  assert.match(js,/deliveryReady=otp\?\.delivery_ready===true/);
-  assert.match(js,/body:'\{"action":"send_test"\}'/);
+  assert.doesNotMatch(html,/id="founder-otp-dialog"/);
+  assert.doesNotMatch(js,/method:"POST"|send_test|action:"send"|action:"verify"/);
   assert.match(js,/founder-stop-all/);
-  assert.match(js,/otpReady=otp\?\.can_request===true/);
+  assert.match(js,/action:"revoke_all"/);
 });
