@@ -34,11 +34,9 @@
     if (!parent) return;
     const details = document.createElement("details");
     const summary = document.createElement("summary");
-    const label = document.createElement("span");
     const hint = document.createElement("small");
     details.className = "compact-optional-block";
     summary.textContent = title;
-    label.textContent = "";
     hint.textContent = note;
     hint.className = "hq-fold-note";
     summary.append(hint);
