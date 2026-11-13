@@ -33,30 +33,30 @@
   <a class="brand" href="/admin/" aria-label="YorpHives Admin home"><span class="brand-mark">Y</span><span><strong>yorphives</strong><small>HEADQUARTERS</small></span></a>
   <div class="workspace-label">YOUR SPACE</div>
   <nav class="side-nav" aria-label="Everyday Headquarters">
-    <button class="nav-item active" data-view="headquarters"><span class="nav-icon" aria-hidden="true">⌂</span>My Home</button>
-    <button class="nav-item" data-view="yorpmind"><span class="nav-icon" aria-hidden="true">✺</span>YorpMind</button>
-    <button class="nav-item" data-view="issues"><span class="nav-icon" aria-hidden="true">⚑</span>Problems to fix<span class="nav-count" id="nav-issues">—</span></button>
-    <button class="nav-item" data-view="agents"><span class="nav-icon" aria-hidden="true">✳</span>Fix guidance</button>
+    <button class="nav-item active" data-view="headquarters"><span class="nav-icon" aria-hidden="true">⌂</span>Home</button>
+    <button class="nav-item" data-view="issues"><span class="nav-icon" aria-hidden="true">⚑</span>Inbox<span class="nav-count" id="nav-issues">—</span></button>
+    <button class="nav-item" data-view="intelligence"><span class="nav-icon" aria-hidden="true">✦</span>Discover</button>
+    <button class="nav-item" data-view="releases"><span class="nav-icon" aria-hidden="true">⇧</span>Releases</button>
   </nav>
   <div class="workspace-label">MORE TO EXPLORE</div>
   <details class="sidebar-group" id="nav-group-explore">
     <summary>Ideas &amp; opportunities</summary>
     <nav class="side-nav" aria-label="Ideas and opportunities">
-      <button class="nav-item" data-view="intelligence"><span class="nav-icon" aria-hidden="true">✦</span>New ideas</button>
       <button class="nav-item" data-view="demand"><span class="nav-icon" aria-hidden="true">◉</span>Explore markets</button>
       <button class="nav-item" data-view="business"><span class="nav-icon" aria-hidden="true">▤</span>Business opportunities</button>
       <button class="nav-item" data-view="radar"><span class="nav-icon" aria-hidden="true">◈</span>Opportunity radar</button>
     </nav>
   </details>
   <details class="sidebar-group" id="nav-group-tools">
-    <summary>Tools &amp; records</summary>
+    <summary>Monitoring &amp; records</summary>
     <nav class="side-nav" aria-label="Additional Headquarters tools">
+      <button class="nav-item" data-view="yorpmind"><span class="nav-icon" aria-hidden="true">✺</span>YorpMind</button>
+      <button class="nav-item" data-view="agents"><span class="nav-icon" aria-hidden="true">✳</span>Review findings</button>
       <button class="nav-item" data-view="departments"><span class="nav-icon" aria-hidden="true">▦</span>AI team</button>
       <button class="nav-item" data-view="overview"><span class="nav-icon" aria-hidden="true">◫</span>Website overview</button>
       <button class="nav-item" data-view="monitoring"><span class="nav-icon" aria-hidden="true">⌁</span>Checks &amp; monitoring</button>
       <button class="nav-item" data-view="analytics"><span class="nav-icon" aria-hidden="true">▥</span>Visitor numbers</button>
       <button class="nav-item" data-view="updates"><span class="nav-icon" aria-hidden="true">↻</span>Updates<span class="nav-count" id="nav-updates">—</span></button>
-      <button class="nav-item" data-view="releases"><span class="nav-icon" aria-hidden="true">⇧</span>Publishing</button>
       <button class="nav-item" data-view="security"><span class="nav-icon" aria-hidden="true">⬡</span>Security &amp; access</button>
       <button class="nav-item" data-view="activity"><span class="nav-icon" aria-hidden="true">◷</span>Past activity</button>
     </nav>
@@ -83,12 +83,12 @@
     <div class="global-notice"><span>◆</span><p><strong>Monitor continuously. You make the fixes.</strong> Headquarters reports findings, updates and opportunities. Only your verified Go Live action needs your OTP.</p></div>
 
 
-    <section class="view active" id="view-headquarters" data-title="My Home">
+    <section class="view active" id="view-headquarters" data-title="Home">
       <header class="cockpit-heading" aria-labelledby="founder-welcome">
         <div>
           <span class="cockpit-eyebrow">FOUNDER WORKSPACE <span aria-hidden="true">/</span> <span id="cockpit-date">TODAY</span></span>
           <h1 id="founder-welcome">Today at Headquarters<span>.</span></h1>
-          <p>Your business in view. Your next decision, one step away.</p>
+          <p>See what needs your attention and what is worth exploring.</p>
         </div>
         <div class="cockpit-heading-actions">
           <button class="cockpit-secondary" id="cockpit-refresh" type="button" aria-label="Refresh founder dashboard">↻ Refresh</button>
@@ -954,7 +954,7 @@
         <div class="shared-repair-grid" id="shared-repair-list" aria-label="Shared GitHub issues"></div>
       </section>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">WORKFLOW QUEUE</span><h2>Historical repair records</h2></div><button class="text-button" id="refresh-agents">Refresh jobs ↻</button></div><div id="repair-jobs"><div class="empty-state">Loading repair jobs…</div></div></section>
-      <section class="panel"><div class="panel-head"><div><span class="eyebrow">AGENT SAFETY</span><h2>Permission boundaries</h2></div></div><div class="permission-grid"><div><strong>Allowed</strong><p>Read repository files, inspect findings, create isolated branches, prepare changes, open draft PRs and inspect CI results.</p></div><div><strong>Not allowed</strong><p>Merge pull requests, deploy production, modify DNS, change Cloudflare account settings, or perform destructive actions.</p></div></div></section>
+      <section class="panel"><div class="panel-head"><div><span class="eyebrow">AGENT SAFETY</span><h2>Permission boundaries</h2></div></div><div class="permission-grid"><div><strong>Allowed</strong><p>Read monitoring evidence, investigate reported issues, research opportunities and recommend next steps for your review.</p></div><div><strong>Not allowed</strong><p>Merge pull requests, deploy production, modify DNS, change Cloudflare account settings, or perform destructive actions.</p></div></div></section>
     </section>
 
     <section class="view" id="view-updates" data-title="Updates & maintenance">
@@ -965,7 +965,7 @@
         <article class="metric-card"><div class="metric-top"><span>Observed dependencies</span><span class="metric-icon">◇</span></div><strong id="dependency-count">—</strong><small>Detected from platform assets</small></article>
       </div>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">DEPENDENCY INTELLIGENCE</span><h2>Available updates</h2></div><input class="field search-field" id="dependency-search" type="search" placeholder="Search packages…"></div><div class="table-wrap"><table><thead><tr><th>Package</th><th>Current</th><th>Latest</th><th>Status</th><th>Details</th></tr></thead><tbody id="dependencies-list"><tr><td colspan="5" class="empty-state">Loading dependencies…</td></tr></tbody></table></div></section>
-      <div class="notice-card">Updates are recommendations, not automatic upgrades. Ask the repair agent to prepare an update in an isolated branch, review the compatibility impact, and verify staging before approving any release.</div>
+      <div class="notice-card">Review the recommended update and its compatibility impact. After you prepare the change, verify its preview before publishing with your Go Live OTP.</div>
     </section>
 
     <section class="view" id="view-releases" data-title="Releases">
