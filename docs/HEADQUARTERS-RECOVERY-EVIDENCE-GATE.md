@@ -17,3 +17,17 @@ node scripts/headquarters-backup-digest.mjs /path/to/downloaded-backup.json /pat
 ```
 
 The utility opens a regular file without following a symlink, checks the on-disk byte count against the R2 size, hashes the bytes with SHA-256, checks file identity for changes while reading, and prints the backup evidence object expected by `evaluateHeadquartersRecovery`. It makes no API calls and never writes to D1 or R2. **This does not authenticate the origin of the supplied metadata or demonstrate successful restoration.** The evidence reviewer must verify the source of the R2 metadata and the downloaded object; independent disposable D1 restoration, full schema/row comparison, and cleanup receipts remain mandatory. Do not mark Go Live ready based on this checksum tool alone.
+
+## Compare closed local SQLite snapshots before the Cloudflare recovery rehearsal
+
+A second, read-only verification utility independently compares a source SQLite snapshot against a separately restored SQLite snapshot:
+
+```sh
+node --experimental-sqlite scripts/headquarters-sqlite-restore-compare.mjs source-snapshot.sqlite restored-snapshot.sqlite
+```
+
+Both inputs must be closed **regular local files**, not symlinks or a live database with `-wal`/`-shm` companion files. The tool opens them read-only, runs SQLite `quick_check` and `foreign_key_check`, compares the exact stored schema including indexes, triggers and views, hashes every row in every table including BLOBs, and compares database schema and content fingerprints. It rejects the same source and destination file, incomplete files and resource limits (250 MiB per file; 200,000 rows per table; 300,000 total rows). It emits no raw row values.
+
+A passing result sets `local_snapshots_match:true`. It intentionally **never** emits `cloudflare_restore_attested:true`, `disposable_restore_destroyed:true`, `recovery_evidence_complete:true`, or production approval. A local snapshot comparison is valuable evidence of deterministically restored content, **not** proof that a backup came from the authenticated staging D1, that a real disposable **Cloudflare D1** was restored, that the disposable instance was destroyed, or that the provider's migration ledger matches source. Each of those remains a separate operationally sourced requirement.
+
+**Connected-resource boundary on 14 November 2026:** the current connected Cloudflare session sees the `yorphives-2-catalogue-preview` D1 and `yorphives-processing-temp` R2 bucket, not a Headquarters D1/backup bucket. Do not substitute the catalogue database, create a pretend backup, apply migration 0030, or mark the recovery check complete using this connection. Obtain the correct authorized access and backup identity first.
