@@ -51,9 +51,24 @@ independent visual-quality judgment.
 
 ### 2. Real authenticated staging checks (still pending)
 
-The separate `.github/workflows/admin-staging-quality.yml` is already a
-manual Access-protected staging pipeline. Do not automatically run it with
-untrusted pull-request code and privileged tokens.
+The separate `.github/workflows/admin-staging-quality.yml` is a
+**manually triggered, exact-commit Access-protected staging pipeline**.
+The old automatic `push: build/**` trigger has been removed: unreviewed
+development branches must not automatically receive credentialed deploy
+tokens. Start it only with `workflow_dispatch` and the full
+`reviewed_commit_sha` input. It checks the checked-out HEAD, selected
+GitHub branch SHA, and input SHA all match, and refuses the `main` branch
+before reading the staging deployment secrets. The GitHub protected
+environment remains required.
+
+It now asserts that real staging returns all six YorpMind manager rows,
+with the chief at the top, five direct managers and no autonomous release.
+It also requires the temporary-permission GET to succeed while
+production execution stays disabled.
+
+**This signed-in pipeline has not been executed as part of this PR.**
+Creating a workflow and writing browser test code is not evidence that
+owner Access, D1 bindings or the full production user journey work.
 
 For real sign-in checks, a trusted operator must:
 
