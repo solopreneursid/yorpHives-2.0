@@ -42,6 +42,8 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   "admin/headquarters-refined.js",
   "admin/headquarters-refined.css",
   "admin/headquarters-prism-theme.css",
+  "scripts/headquarters-schema-audit.mjs",
+  "docs/HEADQUARTERS-STAGING-DATABASE-RECOVERY-2026-11-13.md",
   "functions/_lib/founder-permissions.js",
   "functions/api/admin/assistant-permissions.ts",
   "functions/api/admin/step-up/assistant-permissions.ts",
