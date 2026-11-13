@@ -113,7 +113,7 @@
           dispatch.type = "button";
           dispatch.title = "Create an unverified AI recommendation brief. No website or financial changes.";
           dispatch.addEventListener("click", () => {
-            if (confirm("Start one bounded AI recommendation for this mission? The model will spend inference credits but cannot publish code or make financial commitments.")) transition(mission, "dispatch", dispatch);
+            if (confirm("Start one bounded recommendation using your configured model? Review the result before taking action.")) transition(mission, "dispatch", dispatch);
           });
           buttons.append(dispatch);
         } else {
@@ -128,7 +128,7 @@
         footer.append(buttons);
       }
       if (mission.status === "queued" || mission.status === "running") {
-        footer.append(make("span", "hq-inprogress", "The durable workflow is processing this request."));
+        footer.append(make("span", "hq-inprogress", "Your mission engine is preparing this brief."));
       }
       if (mission.status === "awaiting_owner_approval" && mission.result_json && !synthetic) {
         const actions = make("div", "hq-mission-actions");
