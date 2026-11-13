@@ -171,6 +171,11 @@
       "YorpMind should learn from the checked outcome, whether we work here or in Headquarters."
     ].filter(Boolean).join("\n\n");
     const dialog=$("founder-handoff-dialog");
+    // The founder dialog originally lived inside the hidden Home view.
+    // Move it to document.body before displaying it so handoffs work from
+    // Problems, Monitoring or any other page without hidden ancestors.
+    if(!dialog)return;
+    if(dialog.parentElement!==document.body)document.body.append(dialog);
     $("founder-handoff-text").value=message;
     $("founder-handoff-status").textContent=
       "Copy this message, then paste it into your ChatGPT conversation. Nothing is sent automatically.";
