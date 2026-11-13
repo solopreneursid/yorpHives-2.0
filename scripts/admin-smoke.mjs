@@ -750,6 +750,24 @@ async function run() {
       (await page.locator("#release-evidence-list").innerText()).includes("PRODUCTION LOCKED") &&
       (await page.locator("#view-releases button").allTextContents()).every(label => !/deploy|publish|release to production/i.test(label)),
       "Release status is explanatory only; no publishing action is enabled");
+    // Real signed-in browser confirms founder emergency revocation is in
+    // Security, never on Home or Publishing. This does NOT click revoke, issue
+    // an admin grant or call any production mutation endpoint.
+    await page.locator('.nav-item[data-view="security"]').click();
+    await page.locator("#view-security").waitFor({ state: "visible", timeout: 10000 });
+    record("founder_security_revoke_isolated",
+      (await page.locator("#view-headquarters #founder-stop-all").count()) === 0 &&
+      (await page.locator("#view-headquarters #founder-permission-list").count()) === 0 &&
+      (await page.locator("#view-releases #founder-stop-all").count()) === 0 &&
+      (await page.locator("#view-security #founder-stop-all").isVisible()) &&
+      (await page.locator("#view-security #founder-permission-list").count()) === 1 &&
+      (await page.locator("#view-security #owner-delegation-list").count()) === 1 &&
+      (await page.locator("#founder-open-preview").innerText()) === "Preview" &&
+      (await page.locator("#founder-open-release").innerText()) === "Go Live" &&
+      (await page.locator("#release-go-live").isDisabled()),
+      "Legacy revocation lives only in founder Security. Home has Preview and Go Live shortcuts; release remains locked.");
+    await page.locator('.nav-item[data-view="releases"]').click();
+    await page.locator("#view-releases").waitFor({ state: "visible", timeout: 10000 });
     await page.unroute("**/api/admin/release-evidence");
 
     // YorpMind is first-party and private. Exercise its real read-only API with
