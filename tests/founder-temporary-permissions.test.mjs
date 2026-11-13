@@ -32,9 +32,9 @@ test("the owner chooses a named assistant, target and short expiration",()=>{
   }
   assert.equal(permissionLabels(allowed()).assistant,"YorpMind");
 });
-test("grant policy never allows unlisted actions, wrong actors or expired access",()=>{
+test("retired grants never authorize actions, even when old records appear active",()=>{
   const grant=allowed();
-  assert.equal(grantAllows(grant,"yorpmind","create_issue","website",now),true);
+  assert.equal(grantAllows(grant,"yorpmind","create_issue","website",now),false);
   assert.equal(grantAllows(grant,"chatgpt","create_issue","website",now),false);
   assert.equal(grantAllows(grant,"yorpmind","deploy_production","website",now),false);
   assert.equal(grantAllows({...grant,permission:"review_findings"},
