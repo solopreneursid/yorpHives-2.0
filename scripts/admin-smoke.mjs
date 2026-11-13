@@ -171,6 +171,33 @@ async function run() {
         "No existing mission; invalid input is rejected without model calls");
     }
 
+    // Cross-channel repairs share GitHub issues; this authenticated read is
+    // intentionally model-free and must never dispatch an agent.
+    const sharedInboxResponse = await page.request.get(baseUrl + "/api/admin/repair-inbox", {
+      headers: accessHeaders, timeout: 20000
+    });
+    const sharedInbox = sharedInboxResponse.ok() ?
+      await sharedInboxResponse.json().catch(() => null) : null;
+    record("private_shared_github_inbox_read_only",
+      sharedInboxResponse.status() === 200 &&
+      sharedInbox?.repository === "solopreneursid/yorpHives-2.0" &&
+      sharedInbox?.read_only === true &&
+      sharedInbox?.new_model_calls === 0 &&
+      sharedInbox?.production_approved === false &&
+      Array.isArray(sharedInbox?.issues) && sharedInbox.issues.length <= 20,
+      "Access-protected GitHub issues are observable without AI calls or repair dispatch");
+    const sharedMarkdown = await page.request.get(
+      baseUrl + "/api/admin/repair-inbox?format=markdown", {
+        headers: { ...accessHeaders, accept: "text/markdown" }, timeout: 20000
+      });
+    const sharedMarkdownText = sharedMarkdown.ok() ? await sharedMarkdown.text() : "";
+    record("private_shared_github_inbox_markdown_for_agents",
+      sharedMarkdown.status() === 200 &&
+      /text\\/markdown/i.test(sharedMarkdown.headers()["content-type"] || "") &&
+      sharedMarkdownText.includes("Production release: DISABLED") === false &&
+      sharedMarkdownText.includes("Automated production release: DISABLED"),
+      "Agent-readable Markdown shares the same untrusted GitHub issues and release boundaries");
+
     // Verify the real private D1 schema before installing synthetic browser GET fixtures.
     const repairLinksResponse = await page.request.get(baseUrl + "/api/admin/repair-jobs", {
       headers: accessHeaders, timeout: 20000
