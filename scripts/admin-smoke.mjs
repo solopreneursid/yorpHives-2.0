@@ -1095,6 +1095,7 @@ async function run() {
   const previewUrl = new URL(verified.preview_url);
   if (verified.verified_existing_deployment !== true ||
       verified.access_boundary_verified !== true ||
+      verified.database_isolation_verified !== true ||
       verified.staging_project !== "yorphives-admin-staging" ||
       previewUrl.origin !== parsedBase.origin ||
       !/^[a-f0-9]{40}$/.test(verified.verified_commit_sha || "") ||
