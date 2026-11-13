@@ -95,9 +95,8 @@
         <div class="founder-arrow" aria-hidden="true">↓</div>
         <div class="founder-workers">Your AI team · researchers, builders, testers, and other specialists</div>
         <p class="founder-learning">✧ YorpMind learns from a repair after it has been checked—whether you worked with YorpMind or ChatGPT. Suggestions and unfinished work are not treated as proven fixes.</p>
-        <section class="founder-permission-panel" aria-labelledby="founder-permission-heading">
-          <span class="founder-eyebrow">YOU CONTROL THEIR POWERS</span>
-          <h2 id="founder-permission-heading">Give temporary permission</h2>
+        <details class="founder-permission-panel" aria-labelledby="founder-permission-heading">
+          <summary id="founder-permission-heading"><strong>Give temporary permission</strong><span>Optional · You choose when an assistant can do more</span></summary>
           <p class="founder-permission-explain">Want an assistant to do more? Choose who, what, where, and for how long. Permission ends by itself, and you can stop it sooner. A separate security check must confirm it first.</p>
           <form id="founder-permission-form">
             <div class="founder-permission-grid">
@@ -148,7 +147,7 @@
             <summary>See current and past permissions</summary>
             <div id="founder-permission-list" class="founder-permission-list"></div>
           </details>
-        </section>
+        </details>
       </section>
       <dialog id="founder-handoff-dialog" class="founder-handoff-dialog" aria-labelledby="founder-handoff-title">
         <h2 id="founder-handoff-title">Work on this with ChatGPT</h2>
