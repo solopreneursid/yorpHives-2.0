@@ -13,6 +13,7 @@ export const otpEnabled=(env,email)=>env?.FOUNDER_OTP_ENABLED==="yes" &&
   validEmailAddress(env?.FOUNDER_OWNER_EMAIL) &&
   env.FOUNDER_OWNER_EMAIL.toLowerCase()===String(email).toLowerCase() &&
   (typeof env?.FOUNDER_MAIL?.send==="function" ||
+    typeof env?.FOUNDER_MAIL?.fetch==="function" ||
     (typeof env?.FOUNDER_EMAIL_API_TOKEN==="string" &&
       env.FOUNDER_EMAIL_API_TOKEN.length>=32 &&
       /^[0-9a-f]{32}$/i.test(String(env?.FOUNDER_CF_ACCOUNT_ID||""))));
@@ -63,6 +64,18 @@ export async function otpDigest(secret,id,owner,payload,code){
  * scoped Email Sending API token held in an environment secret.
  */
 export async function sendFounderMail(env,message){
+  if(typeof env?.FOUNDER_MAIL?.fetch==="function"){
+    const result=await env.FOUNDER_MAIL.fetch(new Request(
+      "https://founder-mail.internal/internal/founder-email",{
+        method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify(message)
+      }
+    ));
+    if(!result?.ok)throw Error("Internal email sender rejected the message");
+    const receipt=await result.json();
+    if(receipt?.accepted!==true)throw Error("Internal email sender returned no receipt");
+    return true;
+  }
   if(typeof env?.FOUNDER_MAIL?.send==="function"){
     const result=await env.FOUNDER_MAIL.send(message);
     if(result==null || result?.success===false)throw Error("Mail was not accepted");
