@@ -2,6 +2,7 @@ import {adminJson,isAdminResponse,requireAdmin,type AdminRequestContext}
  from "../../_lib/admin-auth";
 import {readLiveGoLiveReadiness} from "../../_lib/go-live-live.js";
 import {planHeadquartersFastForward} from "../../_lib/hq-go-live-plan.js";
+import {diagnoseHeadquartersDrift} from "../../_lib/hq-release-drift.js";
 import {REPO,RELEASE_BASE_BRANCH,RELEASE_PROJECT} from "../../_lib/go-live-readiness.js";
 const blocked=(reason:string)=>adminJson({eligible:false,plan:null,
  production_deployment_enabled:false,blockers:[reason]});
@@ -31,29 +32,37 @@ export async function onRequestGet(context:AdminRequestContext):Promise<Response
   return adminJson({eligible:false,plan:null,production_deployment_enabled:false,
    blockers:["Only the verified founder may inspect production release plans."]},403);
  const ready=await readLiveGoLiveReadiness(context.env,"headquarters");
- if(!ready.ready_for_preview)return adminJson({
-  eligible:false,plan:null,production_deployment_enabled:false,
-  blockers:ready.blockers||["Independent release checks are incomplete."]
- });
  const gh=String(env.HQ_RELEASE_GITHUB_READ_TOKEN||"");
  const cf=String(env.HQ_RELEASE_CLOUDFLARE_READ_TOKEN||"");
  const account=String(env.HQ_RELEASE_CLOUDFLARE_ACCOUNT_ID||"");
- if(!gh||!cf||!/^[a-f0-9]{32}$/i.test(account))return blocked("Read-only credentials not configured.");
+ if(!gh||!cf||!/^[a-f0-9]{32}$/i.test(account))
+  return blocked("Read-only credentials not configured.");
  try{
   const github="https://api.github.com/repos/"+REPO;
-  const previous=await remote(github+"/branches/"+
-   RELEASE_BASE_BRANCH.headquarters,gh,false);
-  const sourceSha=String(previous?.commit?.sha||"");
-  if(!/^[a-f0-9]{40}$/.test(sourceSha))return blocked("Production HEAD is invalid.");
-  const [project,comparison]=await Promise.all([
+  const [previous,project]=await Promise.all([
+   remote(github+"/branches/"+RELEASE_BASE_BRANCH.headquarters,gh,false),
    remote("https://api.cloudflare.com/client/v4/accounts/"+account+
-    "/pages/projects/"+RELEASE_PROJECT.headquarters,cf,true),
-   remote(github+"/compare/"+sourceSha+"..."+ready.candidate.sha,gh,false)
+    "/pages/projects/"+RELEASE_PROJECT.headquarters,cf,true)
   ]);
+  const sourceSha=String(previous?.commit?.sha||"");
+  const liveSha=String(project?.canonical_deployment?.deployment_trigger?.metadata?.commit_hash||"");
+  // The comparison only inspects Git history; no ref or deployment changes.
+  const ancestry=/^[a-f0-9]{40}$/.test(sourceSha)&&/^[a-f0-9]{40}$/.test(liveSha)&&
+   sourceSha!==liveSha?
+    await remote(github+"/compare/"+liveSha+"..."+sourceSha,gh,false):null;
+  const drift=diagnoseHeadquartersDrift({
+   branch:previous,project,comparison:ancestry,compareBase:liveSha,compareHead:sourceSha
+  });
+  if(!ready.ready_for_preview||!drift.reconciled)
+   return adminJson({
+    eligible:false,plan:null,drift,production_deployment_enabled:false,
+    blockers:[...(ready.blockers||[]),...(drift.reconciled?[]:[drift.reason])]
+   });
+  const comparison=await remote(github+"/compare/"+sourceSha+"..."+ready.candidate.sha,gh,false);
   const result=planHeadquartersFastForward({
    readiness:ready,branch:previous,project,comparison,
    compareBase:sourceSha,compareHead:ready.candidate.sha
   });
-  return adminJson(result);
+  return adminJson({...result,drift});
  }catch{return blocked("Exact production ancestry or canonical rollback inspection is unavailable.");}
 }
