@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { DatabaseSync } from "node:sqlite";
 
 const migrationRoot = new URL("../migrations/", import.meta.url);
-const expectedMigrations = Array.from({ length: 29 }, (_, index) => index + 1);
+const expectedMigrations = Array.from({ length: 30 }, (_, index) => index + 1);
 
 test("complete D1 SQL migration chain can be restored from a disposable SQLite backup", async () => {
   const dir = await mkdtemp(join(tmpdir(), "yorphives-hq-restore-"));
@@ -38,6 +38,9 @@ test("complete D1 SQL migration chain can be restored from a disposable SQLite b
     assert.equal(databaseHas(db, "founder_temporary_grants"), true);
     assert.equal(databaseHas(db, "founder_grant_actions"), true);
     assert.equal(databaseHas(db, "founder_otp_challenges"), true);
+    assert.equal(databaseHas(db, "yorpmind_workers"), true);
+    assert.equal(databaseHas(db, "yorpmind_work_orders"), true);
+    assert.equal(databaseHas(db, "yorpmind_learning_candidates"), true);
     assert.equal(databaseHas(db, "agent_jobs"), true);
     assert.equal(databaseHas(db, "admin_audit_events"), true);
     const before = db.prepare("PRAGMA foreign_key_check").all();
@@ -57,6 +60,8 @@ test("complete D1 SQL migration chain can be restored from a disposable SQLite b
     assert.equal(databaseHas(recovery, "founder_temporary_grants"), true);
     assert.equal(databaseHas(recovery, "founder_grant_actions"), true);
     assert.equal(databaseHas(recovery, "founder_otp_challenges"), true);
+    assert.equal(databaseHas(recovery, "yorpmind_workers"), true);
+    assert.equal(databaseHas(recovery, "yorpmind_work_messages"), true);
     const row = recovery.prepare("SELECT action,details_json FROM admin_audit_events WHERE id=?").get(sentinel);
     assert.equal(row.action, "backup_test");
     assert.equal(JSON.parse(row.details_json).verified, true);
