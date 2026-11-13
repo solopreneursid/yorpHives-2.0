@@ -3,8 +3,8 @@ name: YorpHives CodeQL security analysis
 on:
   push:
     branches: [main, "build/**"]
+  # Scan stacked Headquarters development PRs before they can approach release.
   pull_request:
-    branches: [main]
   schedule:
     - cron: "23 3 * * 1"
 
