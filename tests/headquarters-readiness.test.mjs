@@ -14,7 +14,7 @@ async function fixture() {
       "on:\n  pull_request:\njobs:\n  checks:\n    steps:\n      - run: npm run check\n" :
       path === "functions/_lib/admin-auth.ts" ? "CF_ACCESS_AUD" :
       path === "hq-engine/staging-rehearsal-entry.js" ?
-        'export { MissionWorkflow } from "./worker.js"; export default { async fetch() { return new Response("No route", {status:404}); } };' :
+        'export default { async fetch() { return new Response("No route", {status:404}); } };' :
       path === "hq-engine/wrangler.rehearsal.jsonc" ? JSON.stringify({
         name: "yorphives-hq-mission-rehearsal", main: "./staging-rehearsal-entry.js",
         workers_dev: false, preview_urls: false
