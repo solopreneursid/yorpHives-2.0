@@ -1,0 +1,43 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+const base = new URL("../",import.meta.url);
+const read = path => readFile(new URL(path,base),"utf8");
+const ui = await read("admin/index.html");
+const js = await read("admin/founder-pulse.js");
+const css = await read("admin/founder-pulse.css");
+const cockpit = await read("admin/cockpit.js");
+
+test("the read-only founder feed is part of Headquarters Home", () => {
+  assert.match(ui,/id="hq-pulse"/);
+  assert.match(ui,/id="hq-pulse-feed"/);
+  assert.match(ui,/role="tablist"/);
+  assert.match(ui,/hq-mobile-dock/);
+  assert.match(ui,/admin\/founder-pulse\.css/);
+  assert.match(ui,/admin\/founder-pulse\.js/);
+  assert.match(ui,/Founder Control/);
+});
+test("same authenticated read-only cockpit evidence; no second API or privileged action", () => {
+  assert.match(cockpit,/yorphives:cockpit-evidence/);
+  assert.match(js,/yorphives:cockpit-evidence/);
+  assert.match(js,/read_only !== true/);
+  assert.match(js,/\.replaceChildren/);
+  assert.match(js,/\.textContent/);
+  assert.doesNotMatch(js,/fetch\(|\.innerHTML\s*=|\.insertAdjacentHTML\(|method\s*:\s*["']POST/);
+  assert.doesNotMatch(js,/localStorage|sessionStorage|analytics\.track|sendBeacon/);
+});
+test("only known private routes may be opened, with honest unavailable states", () => {
+  assert.match(js,/const destinations = new Set/);
+  assert.match(js,/\.nav-item\[data-view=/);
+  assert.match(js,/An empty feed does not confirm/);
+  assert.match(js,/not a live website probe/);
+  assert.match(js,/data.availability === "unavailable"/);
+  assert.match(js,/data.availability === "partial"/);
+});
+test("mobile quick bar and keyboard-accessible feed filters", () => {
+  assert.match(css,/@media\(max-width:760px\)/);
+  assert.match(css,/env\(safe-area-inset-bottom\)/);
+  assert.match(js,/ArrowLeft/);
+  assert.match(js,/aria-selected/);
+  assert.match(css,/\.hq-mobile-dock/);
+});
