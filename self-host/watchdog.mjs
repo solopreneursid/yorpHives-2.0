@@ -4,12 +4,15 @@
  * No credentials, repair actions, agent dispatch, model calls or publishing controls.
  */
 import { pathToFileURL } from 'node:url';
-import { inspectCatalogueResponse } from './catalogue-contract.mjs';
+import { inspectCatalogueResponse, reconcileCatalogueObservations } from './catalogue-contract.mjs';
 import { DEFAULT_STATUS_FILE, writeWatchdogEvidence } from './watchdog-evidence.mjs';
 
 const WEBSITE_ROUTES = Object.freeze([
   ['website-home', 'https://yorphives.com/'],
   ['website-tools', 'https://yorphives.com/free-tools/'],
+  // Currently deployed File Studio is the source-owned interactive host.
+  // Optional discovery APIs become required only after the website publishes them.
+  ['website-studio', 'https://yorphives.com/free-tools/file-studio/'],
   ['website-discovery', 'https://yorphives.com/api/v1/free-tools'],
   ['website-manifest', 'https://yorphives.com/free-tools/manifest.json']
 ]);
@@ -25,6 +28,7 @@ export function watchdogTargets(headquartersOrigin = 'http://127.0.0.1:8788') {
     Object.freeze({ id: 'headquarters-ready', system: 'headquarters', url: new URL('/ready', origin).href, kind: 'readiness' }),
     ...WEBSITE_ROUTES.map(([id, url]) => Object.freeze({
       id, system: 'website', url,
+      optional: id === 'website-discovery' || id === 'website-manifest',
       kind: id === 'website-discovery' ? 'catalogue' : id === 'website-manifest' ? 'manifest' : 'http'
     }))
   ]);
@@ -59,7 +63,15 @@ export async function checkWatchdogTarget(target, { fetcher = fetch, timeoutMs =
     });
     observation.http_status = response.status;
     if (response.status < 200 || response.status >= 300) {
-      observation.reason = response.status >= 300 && response.status < 400 ? 'redirect_requires_review' : 'http_unavailable';
+      if (target.optional && [404,410].includes(response.status)) {
+        observation.state = 'unavailable';
+        observation.reason = 'optional_endpoint_missing';
+      } else if (target.optional && [401,403,429].includes(response.status)) {
+        observation.state = 'unavailable';
+        observation.reason = 'optional_endpoint_blocked';
+      } else {
+        observation.reason = response.status >= 300 && response.status < 400 ? 'redirect_requires_review' : 'http_unavailable';
+      }
     } else if (target.kind === 'catalogue' || target.kind === 'manifest') {
       if (!/^(application\/json|[a-z0-9.+-]+\/[a-z0-9.+-]+\+json)(?:\s*;|\s*$)/i.test(
         response.headers.get('content-type') || '')) {
@@ -73,6 +85,9 @@ export async function checkWatchdogTarget(target, { fetcher = fetch, timeoutMs =
           const outcome = inspectCatalogueResponse(target.kind,response.headers.get('content-type') || '',body);
           observation.state = outcome.ok ? 'reachable' : 'degraded';
           observation.reason = outcome.reason;
+          // Only a validated public slug digest is kept temporarily in
+          // this cycle. No raw customer data or response body is persisted.
+          if (outcome.ok) observation.fingerprint = outcome.fingerprint;
         }
       }
     } else if (target.kind !== 'readiness') {
@@ -120,15 +135,28 @@ export function createIndependentWatchdog({
         try { return await check(target); }
         catch { return { target: target.id, system: target.system, checked_at: clock(), state: 'degraded', reason: 'check_failed', http_status: null }; }
       }));
+      // Compare both website-owned discovery surfaces when they exist.
+      // A missing *optional* API is a coverage gap, not a site outage.
+      const api = settled.find((_,index)=>targets[index].id==='website-discovery');
+      const manifest = settled.find((_,index)=>targets[index].id==='website-manifest');
+      if (api?.state==='reachable' && manifest?.state==='reachable' &&
+          !reconcileCatalogueObservations(api,manifest)) {
+        for(const finding of [api,manifest]) {
+          finding.state='degraded';
+          finding.reason='catalogue_sources_disagree';
+        }
+      }
       const observations = settled.map((result, index) => ({
         target: targets[index].id, system: targets[index].system, checked_at: result.checked_at || clock(),
-        state: result.state === 'ready' || result.state === 'reachable' ? result.state : 'degraded',
+        state: ['ready','reachable','unavailable'].includes(result.state) ? result.state : 'degraded',
         reason: typeof result.reason === 'string' ? result.reason : 'unknown',
         http_status: Number.isInteger(result.http_status) ? result.http_status : null
       }));
       for (const result of observations) {
         const old = previous.get(result.target);
-        if (old !== result.state) emit({ event: old === undefined ? 'initial' : result.state === 'degraded' ? 'regression' : 'recovery', ...result });
+        if (old !== result.state) emit({ event: old === undefined ? 'initial' :
+          result.state === 'degraded' ? 'regression' :
+          result.state === 'unavailable' ? 'coverage_gap' : 'recovery', ...result });
         previous.set(result.target, result.state);
       }
       return { checked_at: clock(), state: observations.every(item => item.state !== 'degraded') ? 'reachable' : 'degraded', observations };
