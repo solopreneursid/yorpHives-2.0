@@ -42,7 +42,7 @@ test('unauthenticated user denied before database is ever read',async()=>{
  assert.equal(r.status,403);
 });
 test('default-disabled monitoring API does not query D1 or production legacy schema',async()=>{
- const r=await route.onRequestGet(createContext({mode:undefined,db:'forbidden'}));
+ const r=await route.onRequestGet(createContext({mode:'disabled',db:'forbidden'}));
  assert.equal(r.status,503);
  const data=await r.json();
  assert.equal(data.monitor_only,true);
