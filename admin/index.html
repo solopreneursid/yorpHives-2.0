@@ -37,7 +37,7 @@
     <button class="nav-item active" data-view="headquarters"><span class="nav-icon" aria-hidden="true">⌂</span>Home</button>
     <button class="nav-item" data-view="issues"><span class="nav-icon" aria-hidden="true">⚑</span>Inbox<span class="nav-count" id="nav-issues">—</span></button>
     <button class="nav-item" data-view="intelligence"><span class="nav-icon" aria-hidden="true">✦</span>Discover</button>
-    <button class="nav-item" data-view="releases"><span class="nav-icon" aria-hidden="true">⇧</span>Releases</button>
+    <button class="nav-item" data-view="investigations"><span class="nav-icon" aria-hidden="true">▤</span>Investigations</button>
   </nav>
   <div class="workspace-label">MORE TO EXPLORE</div>
   <details class="sidebar-group" id="nav-group-explore">
@@ -81,7 +81,7 @@
   </header>
   <div class="content">
     <div class="system-message" id="system-message" role="status" aria-live="polite" hidden><span class="system-message-text" id="system-message-text"></span><a id="system-message-action" href="/admin/" hidden>Re-authenticate ↗</a><button id="system-message-dismiss" type="button" aria-label="Dismiss message">×</button></div>
-    <div class="global-notice"><span>◆</span><p><strong>Monitor continuously. You make the fixes.</strong> Headquarters reports findings, updates and opportunities. Only your verified Go Live action needs your OTP.</p></div>
+    <div class="global-notice"><span>◆</span><p><strong>Monitor continuously. You make the fixes.</strong> Headquarters reports findings, updates and opportunities. All development and production changes happen outside Headquarters, under your control.</p></div>
 
 
     <section class="view active" id="view-headquarters" data-title="Home">
@@ -154,11 +154,11 @@
               <p>Priorities are suggestions; evidence stays available for your decision.</p>
               <button type="button" data-pulse-route="issues">Open problem inbox ↗</button>
             </section>
-            <section class="hq-pulse-side-card hq-pulse-release">
-              <span class="hq-pulse-safe">🔒 FOUNDER ONLY</span><h3>Publishing stays in your hands.</h3>
-              <p>Review the exact target preview before any Go Live request. An OTP is required.</p>
-              <button type="button" data-pulse-route="releases">Review releases ↗</button>
-              <p class="hq-pulse-note">Headquarters reports. You fix and approve.</p>
+            <section class="hq-pulse-side-card">
+              <span class="hq-pulse-overline">OPPORTUNITIES</span><h3>Grow YorpHives on your terms.</h3>
+              <p>Explore observed demand, revenue signals and market ideas. Investigate and implement independently.</p>
+              <button type="button" data-pulse-route="business">Explore business insights ↗</button>
+              <p class="hq-pulse-note">Headquarters observes. You choose what to build.</p>
             </section>
           </aside>
         </div>
@@ -192,12 +192,10 @@
       </nav>
       <section class="founder-command cockpit-control" aria-label="Founder controls">
         <div class="founder-quick-actions" aria-label="Founder quick controls">
-          <div class="founder-quick-label"><strong>Founder Control</strong><small>Headquarters monitors · you fix and publish</small></div>
+          <div class="founder-quick-label"><strong>Your action inbox</strong><small>Headquarters detects · you investigate and make changes independently</small></div>
           <button id="founder-find-fixes" type="button">Development issues</button>
-          <button id="founder-open-preview" type="button">Preview</button>
-          <button id="founder-open-release" type="button">Go Live</button>
         </div>
-        <p class="cockpit-access-note">No AI receives administrator rights. Headquarters only monitors, detects risks and researches opportunities. You make changes and approve only the exact final preview going live.</p>
+        <p class="cockpit-access-note">No AI receives administrator rights. Headquarters only monitors, detects risks and researches opportunities. You prepare, test, and publish changes through your own development workflow outside Headquarters.</p>
         <details class="cockpit-reference">
           <summary>How your assistants work</summary>
           <div class="founder-you"><strong>You · Owner &amp; Administrator</strong><small>Final say on money, permissions, and publishing</small></div>
@@ -325,7 +323,7 @@
         <aside class="ym-hero-policy">
           <span class="ym-eyebrow">SECURITY BOUNDARY</span>
           <strong>Knowledge before autonomy.</strong>
-          <p>Learning from recorded QA is automatic and free of additional model calls. Skills are reference text, never executable authority; releases still need your independent approval.</p>
+          <p>Learning from recorded QA is automatic and free of additional model calls. Skills are reference text, never executable authority; publishing happens independently outside Headquarters.</p>
           <div class="ym-policy-lock">PUBLIC ACCESS OFF · AI EXECUTION OFF · PRODUCTION LOCKED</div>
         </aside>
       </header>
@@ -345,7 +343,7 @@
         <div id="ym-team-current" class="ym-team-current"></div>
         <h3 class="ym-team-subhead">Daily manager reports · founder review</h3>
         <div id="ym-team-reports" class="ym-team-reports"></div>
-        <p class="ym-team-guard">Supervisors may inspect and propose. Their reports cannot dispatch work, approve their own QA, spend funds, alter permissions or publish production changes. A release still requires exact-preview review and independent founder MFA.</p>
+        <p class="ym-team-guard">Supervisors may inspect and propose. Their reports cannot dispatch work, approve their own QA, spend funds, alter permissions or publish production changes. Headquarters cannot trigger production releases.</p>
       </section>
       <section class="ym-search-panel" aria-labelledby="ym-search-title">
         <div class="ym-search-head">
@@ -985,7 +983,7 @@
         <div class="panel-head"><div><span class="eyebrow">YOUR FIX WORKSPACE · MONITORING ONLY</span><h2 id="monitor-only-guidance-title">Review findings, then make your changes</h2>
           <p>Headquarters continuously monitors the public website and itself, identifies vulnerabilities and outdated technology, and suggests improvements. It does not initiate repairs, create code changes, or publish.</p>
         </div></div>
-        <p>Open <strong>Problems to fix</strong> to inspect the evidence. Fix issues yourself using your preferred development process. When your completed changes pass the release checks, inspect the exact <strong>Preview</strong>, press <strong>Go Live</strong>, and enter your personal OTP.</p>
+        <p>Open <strong>Problems to fix</strong> to inspect the evidence. Fix issues yourself using your preferred development process. Prepare, test, and publish your completed changes independently outside Headquarters. Return here to monitor the outcome.</p>
       </section>
       <section class="panel shared-repair-panel" aria-labelledby="shared-repair-title">
         <div class="shared-repair-header">
@@ -1014,46 +1012,27 @@
         <article class="metric-card"><div class="metric-top"><span>Observed dependencies</span><span class="metric-icon">◇</span></div><strong id="dependency-count">—</strong><small>Detected from platform assets</small></article>
       </div>
       <section class="panel"><div class="panel-head"><div><span class="eyebrow">DEPENDENCY INTELLIGENCE</span><h2>Available updates</h2></div><input class="field search-field" id="dependency-search" type="search" placeholder="Search packages…"></div><div class="table-wrap"><table><thead><tr><th>Package</th><th>Current</th><th>Latest</th><th>Status</th><th>Details</th></tr></thead><tbody id="dependencies-list"><tr><td colspan="5" class="empty-state">Loading dependencies…</td></tr></tbody></table></div></section>
-      <div class="notice-card">Review the recommended update and its compatibility impact. After you prepare the change, verify its preview before publishing with your Go Live OTP.</div>
+      <div class="notice-card">Review the recommended update and its compatibility impact. After you prepare and test a change independently, choose how to publish it outside Headquarters. Monitoring will help you check the outcome.</div>
     </section>
 
-    <section class="view" id="view-releases" data-title="Releases">
+    <section class="view" id="view-investigations" data-title="Investigations">
+      <div class="page-heading"><div><span class="eyebrow">HISTORICAL RECORDS · READ ONLY</span><h1>Investigations</h1>
+        <p>Review previous findings, quality checks and linked development work. These are historical records, not current production verification.</p></div></div>
       <section class="release-evidence-section" aria-labelledby="release-evidence-title">
         <div class="release-evidence-head">
-          <div><span class="eyebrow">PRODUCTION RELEASE</span><h2 id="release-evidence-title">Preview → Go Live</h2><p id="release-evidence-updated" role="status" aria-live="polite">Checking private evidence…</p></div>
-          <label class="release-target-label">Release <select id="release-target" aria-label="Release target"><option value="headquarters">Headquarters</option><option value="website">YorpHives website</option></select></label>
+          <div><span class="eyebrow">RECORDED EVIDENCE</span><h2 id="release-evidence-title">Investigation history</h2>
+            <p id="release-evidence-updated" role="status" aria-live="polite">Reading private records…</p></div>
+          <button class="button" id="release-evidence-refresh" type="button">Refresh history ↻</button>
         </div>
-        <div class="release-launch-desk" aria-label="Founder-only production approval">
-          <span class="release-launch-badge" id="release-launch-status">Checking readiness</span>
-          <p id="release-launch-description">The team can keep developing. Only a verified, production-ready revision will be offered for release.</p>
-          <div class="release-launch-controls">
-            <a id="release-launch-preview" class="button" role="button" aria-disabled="true" rel="noopener noreferrer" target="_blank">Preview</a>
-            <button id="release-go-live" class="button" type="button" disabled>Go Live</button>
-          </div>
-          <small>Go Live requires your verified identity, exact candidate revision, successful checks, and a one-time code. No one else receives administrator rights.</small>
-          <details class="release-live-blockers" id="release-live-blockers" hidden>
-            <summary id="release-live-blockers-title">Live release blockers</summary>
-            <p>These checks come from the private, read-only release verifier. A missing check means no verified approval, not that development must stop.</p>
-            <ul id="release-live-blockers-list" aria-live="polite"></ul>
-          </details>
-        </div>
-        <details class="release-evidence-details">
-          <summary>Technical release evidence and remaining checks</summary>
-          <button class="button" id="release-evidence-refresh" type="button">Refresh evidence ↻</button>
-          <p class="release-evidence-notice"><strong>Not production-ready yet.</strong> These historical records are not live commit, preview, MFA or rollback attestations. The button remains disabled until a separate verified release executor is implemented.</p>
-          <div class="release-evidence-metrics" id="release-evidence-summary" aria-label="Release evidence totals"></div>
-          <div class="release-evidence-list" id="release-evidence-list"><p class="release-evidence-empty">Reading recent repair records…</p></div>
-        </details>
+        <p class="release-evidence-notice">Headquarters does not prepare, approve or publish changes. Use this evidence to investigate; you decide and make production-ready changes in your own development workspace.</p>
+        <div class="release-evidence-metrics" id="release-evidence-summary" aria-label="Investigation evidence totals"></div>
+        <div class="release-evidence-list" id="release-evidence-list" aria-live="polite"><p class="release-evidence-empty">Loading historical investigations…</p></div>
       </section>
-      <div class="page-heading"><div><span class="eyebrow">OWNER APPROVAL GATE</span><h1>Releases</h1><p>Review proposed changes before anything reaches production.</p></div><span class="pill warning">Production locked</span></div>
-      <div class="release-state"><div class="release-lock">▣</div><div><h2>Production deployment is disabled</h2><p>This Admin workspace can prepare and verify changes, but it does not have an enabled production deployment action. Keep release execution in your existing reviewed deployment process until the full approval gate is implemented and tested.</p></div></div>
-      <section class="panel"><div class="panel-head"><div><span class="eyebrow">RELEASE CHECKLIST</span><h2>Required evidence</h2></div></div><div class="checklist"><div><span>01</span><div><strong>Reviewed pull request</strong><small>Changes and affected components inspected</small></div><b>Required</b></div><div><span>02</span><div><strong>CI and security checks</strong><small>Automated tests and dependency checks pass</small></div><b>Required</b></div><div><span>03</span><div><strong>Staging verification</strong><small>Preview tested on desktop and mobile</small></div><b>Required</b></div><div><span>04</span><div><strong>Owner approval</strong><small>Explicit release authorization</small></div><b>Required</b></div></div></section>
-      <section class="panel"><div class="panel-head"><div><span class="eyebrow">SOURCE CONTROL</span><h2>Review changes</h2></div></div><div class="link-grid"><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/pulls" target="_blank" rel="noopener noreferrer">Open pull requests ↗</a><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/actions" target="_blank" rel="noopener noreferrer">CI &amp; security runs ↗</a><a class="button" href="https://github.com/solopreneursid/yorpHives-2.0/commits/build/yorphives-admin-reliability" target="_blank" rel="noopener noreferrer">Staging branch history ↗</a></div></section>
     </section>
 
     <section class="view" id="view-security" data-title="Security & access">
       <div class="page-heading"><div><span class="eyebrow">FOUNDER SECURITY</span><h1>Security &amp; access</h1>
-        <p>Review old access records and revoke any remaining legacy permissions. This does not manage or enable production publishing.</p></div>
+        <p>Review old access records and revoke any remaining legacy permissions. Headquarters has no production publishing controls.</p></div>
         <span class="pill warning">AI admin delegation retired</span></div>
       <section class="panel security-access-panel" aria-label="Legacy access emergency controls">
         <div class="panel-head"><div><span class="eyebrow">EMERGENCY CONTROL · FOUNDER ONLY</span>
@@ -1066,7 +1045,7 @@
       </section>
         <details class="founder-permission-panel" aria-labelledby="founder-permission-heading">
           <summary id="founder-permission-heading"><strong>Archived access history</strong><span>Read-only records and emergency revocation</span></summary>
-          <p class="founder-permission-explain">Temporary AI administrator grants have been retired. No assistant can receive Go Live authority. Normal development and testing continue under restricted work identities.</p>
+          <p class="founder-permission-explain">Temporary AI administrator grants have been retired. No assistant receives production publishing authority through Headquarters. Normal development and testing continue under restricted work identities.</p>
           <button class="founder-permission-refresh" id="founder-permission-refresh" type="button">Refresh history</button>
           <p id="founder-security-note" class="founder-security-note" role="status" aria-live="polite">Old approvals cannot be reactivated.</p>
           <p id="founder-connection-note" class="founder-connection-note">Assistant identities are not administrative identities.</p>
@@ -1077,7 +1056,7 @@
         <div class="owner-delegation-heading">
           <div><span class="eyebrow">ARCHIVED HISTORY · READ ONLY</span>
             <h2 id="owner-delegation-title">Previous delegation records</h2>
-            <p>Historical records only. No assistant, manager, collaborator, or CI identity can be granted administrator authority to publish. New releases use Preview and your personal Go Live OTP.</p>
+            <p>Historical records only. No assistant, manager, collaborator, or CI identity can be granted administrator authority to publish. Production releases are handled entirely outside Headquarters.</p>
           </div>
           <button class="button" id="owner-delegation-refresh" type="button">Refresh history</button>
         </div>
@@ -1096,7 +1075,7 @@
       </div>
     </section>
 
-    <footer class="app-footer"><span>YorpHives Admin · Private operations</span><span>Cloudflare Access · D1 audit trail · Owner approval required</span></footer>
+    <footer class="app-footer"><span>YorpHives Admin · Private operations</span><span>Private records · Monitoring only · Founder-controlled changes</span></footer>
   </div>
 </main>
 </div>
@@ -1105,7 +1084,7 @@
   <button type="button" data-pulse-route="headquarters" aria-current="page"><span aria-hidden="true">⌂</span>Home</button>
   <button type="button" data-pulse-route="issues"><span aria-hidden="true">⚑</span>Inbox</button>
   <button type="button" data-pulse-route="intelligence"><span aria-hidden="true">✦</span>Discover</button>
-  <button type="button" data-pulse-route="releases"><span aria-hidden="true">⇧</span>Releases</button>
+  <button type="button" data-pulse-route="business"><span aria-hidden="true">▤</span>Business</button>
 </nav>
 
 <script src="/admin/admin.js" defer></script>

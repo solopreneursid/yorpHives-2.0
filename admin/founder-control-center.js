@@ -56,7 +56,7 @@
       if(note)note.textContent="Approval links and assistant-administrator OTPs are retired.";
       const connection=$("founder-connection-note");
       if(connection)connection.textContent="YorpMind and ChatGPT use restricted development work identities. Neither can publish.";
-      setStatus("Only your personal Go Live OTP can authorize a verified production release.");
+      setStatus("Production changes are managed by you outside Headquarters.");
     }catch{
       list.replaceChildren(create("p","founder-empty",
         "Private permission history unavailable. New administrator grants are disabled."));
@@ -112,7 +112,7 @@
       "Suggested next check: "+String(next_step||"Investigate independently."),
       link?"Source: "+link:"",
       "Find the cause, prepare changes on a draft branch, and run tests.",
-      "Show me a clear preview and explain the results in simple language.",
+      "Explain test results and evidence in simple language; I will handle publishing separately.",
       "Do not make a production change without my separate approval.",
       "YorpMind should learn from the checked outcome, whether we work here or in Headquarters."
     ].filter(Boolean).join("\n\n");
@@ -145,12 +145,6 @@
     $("founder-stop-all")?.addEventListener("click",stopAll);
     $("founder-find-fixes")?.addEventListener("click",()=>{
       document.querySelector('.nav-item[data-view="issues"]')?.click();
-    });
-    $("founder-open-preview")?.addEventListener("click",()=>{
-      document.querySelector('.nav-item[data-view="releases"]')?.click();
-    });
-    $("founder-open-release")?.addEventListener("click",()=>{
-      document.querySelector('.nav-item[data-view="releases"]')?.click();
     });
     $("founder-handoff-copy")?.addEventListener("click",copyHandoff);
     $("founder-handoff-close")?.addEventListener("click",()=>$("founder-handoff-dialog").close());

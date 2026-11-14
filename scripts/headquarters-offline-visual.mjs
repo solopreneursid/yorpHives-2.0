@@ -444,7 +444,7 @@ async function main() {
       "headquarters", "yorpmind", "issues", "agents",
       "intelligence", "demand", "business", "radar",
       "departments", "overview", "monitoring", "analytics",
-      "updates", "releases", "security", "activity"
+      "updates", "investigations", "security", "activity"
     ]) await navigate(page, route);
 
     await measure(page, 1440, 960, "headquarters");
@@ -512,7 +512,7 @@ async function main() {
 
     check("pulse:mobile-dock-visible",
       await page.locator('.hq-mobile-dock [data-pulse-route="issues"]').isVisible(),
-      "Mobile offers direct Home / Inbox / Discover / Releases navigation.");
+      "Mobile offers direct Home / Inbox / Discover / Business navigation.");
     await page.locator('.hq-mobile-dock [data-pulse-route="issues"]').click();
     check("pulse:mobile-dock-navigation",
       await page.locator("#view-issues").isVisible() &&

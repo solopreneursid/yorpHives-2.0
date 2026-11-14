@@ -38,7 +38,7 @@ test("founder choices and permission locks are covered in browser QA", () => {
   for (const view of [
     "headquarters", "yorpmind", "issues", "agents", "intelligence", "demand",
     "business", "radar", "departments", "overview", "monitoring", "analytics",
-    "updates", "releases", "activity"
+    "updates", "investigations", "activity"
   ]) assert.ok(visual.includes('"' + view + '"'), view);
   assert.match(visual, /await measure\(page, 1440, 960, "headquarters"\)/);
   assert.match(visual, /await measure\(page, 1024, 768, "demand"\)/);

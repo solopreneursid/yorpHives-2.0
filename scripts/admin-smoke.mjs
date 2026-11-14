@@ -731,43 +731,33 @@ async function run() {
         })
       });
     });
-    await page.locator('.nav-item[data-view="releases"]').click();
-    await page.locator("#view-releases").waitFor({ state: "visible", timeout: 10000 });
-    await page.locator(".release-evidence-details > summary").click();
+    await page.locator('.nav-item[data-view="investigations"]').click();
+    await page.locator("#view-investigations").waitFor({ state: "visible", timeout: 10000 });
     await page.locator(".release-evidence-card").first().waitFor({ state: "visible", timeout: 10000 });
-    record("yorpmind_owner_approval_only_at_go_live",
-      !(await page.locator("#owner-delegation-form").isVisible()) &&
-      (await page.locator("#release-go-live").isDisabled()) &&
-      !(await page.locator("#release-launch-preview").isVisible()) &&
-      (await page.locator("#release-launch-status").innerText()).includes("Not production-ready"),
-      "Routine development does not request administrator rights; Go Live stays locked pending verified release and OTP");
+    record("headquarters_monitor_only_no_release_controls",
+      (await page.locator("#release-go-live, #release-launch-preview, #founder-open-preview, #founder-open-release, #view-releases").count()) === 0 &&
+      (await page.locator('.nav-item[data-view="releases"]').count()) === 0,
+      "Headquarters contains no Preview, Go Live, or publishing navigation controls.");
     record("release_evidence_board_founder_visible",
-      (await page.locator("#release-evidence-summary").innerText()).includes("Recent investigations") &&
+      (await page.locator("#release-evidence-summary").innerText()).includes("Historical investigations") &&
       (await page.locator("#release-evidence-list").innerText()).includes("Synthetic preview repair verification"),
-      "First-party release evidence appears in the founder workspace");
-    record("release_evidence_no_implicit_production_approval",
-      (await page.locator("#view-releases").innerText()).includes("Production remains locked") &&
-      (await page.locator("#release-evidence-list").innerText()).includes("PRODUCTION LOCKED") &&
-      (await page.locator("#view-releases button").allTextContents()).every(label => !/deploy|publish|release to production/i.test(label)),
-      "Release status is explanatory only; no publishing action is enabled");
-    // Real signed-in browser confirms founder emergency revocation is in
-    // Security, never on Home or Publishing. This does NOT click revoke, issue
-    // an admin grant or call any production mutation endpoint.
+      "Historical investigation records remain readable without approval controls.");
+    record("investigation_history_no_implicit_approval",
+      (await page.locator("#view-investigations").innerText()).includes("READ ONLY") &&
+      (await page.locator("#view-investigations button").allTextContents()).every(label => !/Go Live|publish|deploy/i.test(label)),
+      "Investigation history is a read-only monitor, not a publishing screen.");
+    // Emergency revocation is retained in Security; do not click it in QA.
     await page.locator('.nav-item[data-view="security"]').click();
     await page.locator("#view-security").waitFor({ state: "visible", timeout: 10000 });
     record("founder_security_revoke_isolated",
       (await page.locator("#view-headquarters #founder-stop-all").count()) === 0 &&
-      (await page.locator("#view-headquarters #founder-permission-list").count()) === 0 &&
-      (await page.locator("#view-releases #founder-stop-all").count()) === 0 &&
+      (await page.locator("#view-investigations #founder-stop-all").count()) === 0 &&
       (await page.locator("#view-security #founder-stop-all").isVisible()) &&
       (await page.locator("#view-security #founder-permission-list").count()) === 1 &&
-      (await page.locator("#view-security #owner-delegation-list").count()) === 1 &&
-      (await page.locator("#founder-open-preview").innerText()) === "Preview" &&
-      (await page.locator("#founder-open-release").innerText()) === "Go Live" &&
-      (await page.locator("#release-go-live").isDisabled()),
-      "Legacy revocation lives only in founder Security. Home has Preview and Go Live shortcuts; release remains locked.");
-    await page.locator('.nav-item[data-view="releases"]').click();
-    await page.locator("#view-releases").waitFor({ state: "visible", timeout: 10000 });
+      (await page.locator("#view-security #owner-delegation-list").count()) === 1,
+      "Only Security holds the founder's retired-grant emergency revoke button.");
+    await page.locator('.nav-item[data-view="investigations"]').click();
+    await page.locator("#view-investigations").waitFor({ state: "visible", timeout: 10000 });
     await page.unroute("**/api/admin/release-evidence");
 
     // YorpMind is first-party and private. Exercise its real read-only API with

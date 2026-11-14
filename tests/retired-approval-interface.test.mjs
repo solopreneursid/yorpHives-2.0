@@ -7,27 +7,22 @@ const section=(html,start,end)=>{
  assert.ok(from>=0&&until>from,"Missing view boundary: "+start);
  return html.slice(from,until);
 };
-test("founder Home has only development, Preview and Go Live shortcuts",async()=>{
+test("founder Home only offers issue triage and external development handoff",async()=>{
  const html=await source("admin/index.html");
  const home=section(html,'<section class="view active" id="view-headquarters"','<section class="view" id="view-yorpmind"');
  const bar=section(home,'<div class="founder-quick-actions"','<p class="cockpit-access-note">');
  assert.match(bar,/id="founder-find-fixes"[^>]*>Development issues/);
- assert.match(bar,/id="founder-open-preview"[^>]*>Preview/);
- assert.match(bar,/id="founder-open-release"[^>]*>Go Live/);
+ assert.doesNotMatch(bar,/Go Live|>Preview<|founder-open-preview|founder-open-release/);
  assert.doesNotMatch(home,/id="founder-stop-all"|id="founder-permission-list"|id="founder-otp-dialog"/);
- assert.doesNotMatch(bar,/id="founder-permission-form"|Revoke legacy/);
  const script=await source("admin/founder-control-center.js");
- assert.match(script,/\$\("founder-open-preview"\)/);
- assert.match(script,/\$\("founder-open-release"\)/);
- assert.doesNotMatch(script,/method:\s*["']POST["']|send_test|action:"send"|action:"verify"/);
+ assert.doesNotMatch(script,/founder-open-preview|founder-open-release/);
  assert.match(script,/window.HQChooseAssistant/);
 });
-test("Publishing contains Preview and locked Go Live, not old delegated controls",async()=>{
+test("Investigations contains history and no publishing controls",async()=>{
  const html=await source("admin/index.html");
- const releases=section(html,'<section class="view" id="view-releases"','<section class="view" id="view-security"');
- assert.match(releases,/<a id="release-launch-preview"[^>]*>Preview<\/a>/);
- assert.match(releases,/<button id="release-go-live"[^>]*\bdisabled\b[^>]*>Go Live<\/button>/);
- assert.doesNotMatch(releases,/id="owner-delegation-panel"|id="founder-stop-all"|id="founder-permission-list"|<form[^>]*assistant/i);
+ const history=section(html,'<section class="view" id="view-investigations"','<section class="view" id="view-security"');
+ assert.match(history,/id="release-evidence-summary"|id="release-evidence-list"/);
+ assert.doesNotMatch(history,/Go Live|>Preview<|release-launch|release-go-live|founder-stop-all|<form/);
 });
 test("Security is the only screen containing legacy emergency stop and archived history",async()=>{
  const html=await source("admin/index.html");
@@ -41,7 +36,7 @@ test("Security is the only screen containing legacy emergency stop and archived 
  assert.equal((html.match(/id="founder-stop-all"/g)||[]).length,1);
  const admin=await source("admin/admin.js");
  assert.match(admin,/security:\s*async\s*\(\)\s*=>\s*\{\s*await Promise\.all\(\[window\.loadFounderPermissions\(\),window\.loadOwnerDelegations\(\)\]\)/);
- assert.match(admin,/releases:\s*async\s*\(\)\s*=>\s*\{\s*await window\.loadReleaseEvidence\(\)/);
+ assert.match(admin,/investigations:\s*async\s*\(\)\s*=>\s*\{\s*await window\.loadInvestigationHistory\(\)/);
  const js=await source("admin/founder-control-center.js");
  assert.match(js,/action:"revoke_all"/);
  assert.match(js,/method:"PATCH"/);

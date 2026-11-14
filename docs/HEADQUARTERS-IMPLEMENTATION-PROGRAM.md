@@ -1,79 +1,56 @@
 # YorpHives Headquarters — implementation program
-**Scope (founder clarified, 14 November 2026):** private, continuous monitoring and business intelligence for both the live YorpHives website and Headquarters. Headquarters never makes code fixes. The founder makes changes and alone decides what goes live. This is a live engineering checklist, not a production attestation.
+**Policy revision:** 14 November 2026. **Monitoring and intelligence only.** The founder has retired all Headquarters Preview, Go Live, OTP and publishing workflows. For the current authority boundary see `docs/HEADQUARTERS-MONITORING-ONLY-POLICY.md`; older release/OTP design documents are historical records, not active requirements.
 
-## Permanent authority boundary
-- Founder alone may publish an exact reviewed release by **Preview → Go Live → personal OTP → final confirmation**.
-- All assistant/admin grants and separate production delegation routes remain retired. AI roles, CI and service tokens cannot inherit founder identity or production write privileges.
-- Continuous read-only monitoring, vulnerability observations, update detection, market research, revenue evidence and recommendations run within authorized scopes and budgets. Headquarters must NOT dispatch repairs, modify source code, create fix branches, or grant production authority.
-- The founder makes fixes using their preferred workflow, then reviews the exact verified final Preview. Only pressing Go Live and entering a valid founder OTP may authorize the reviewed release. No new paid service, autonomous production data write or cost commitment is authorized.
+## Product promise
+A private, social-style Home / Inbox / Discover / Business / YorpMind / Investigations workspace that continuously monitors the public YorpHives website, its tools and products, Headquarters itself, infrastructure/security, technology, global market openings, traffic and revenue. It explains verified evidence, flags missing/unavailable data, prioritizes founder decisions and learns from independently verified outcomes.
 
-## Phase 1 — finish production readiness (blocking)
-1. Maintain an exact-SHA private preview of the latest draft revision. Confirm Cloudflare's served SHA and preview identity after every change.
-2. Run the protected real-browser QA workflow with Cloudflare Access, using exact SHA/deployment receipts; independently attest its results. A green offline screenshot job does not satisfy this check.
-3. Audit the applied D1 migration ledger; apply any missing staging migration only after actual verified backup. Obtain SHA-256 of real R2 object bytes, complete a disposable full-schema/full-rows restore and verify cleanup. Historical or synthetic receipts do not suffice.
-4. Reconcile GitHub branch and the actually served canonical Pages deployment without force-push or blind production promotion. Preserve the verified previous deployment ID for rollback.
-5. Independently inspect cumulative changes, code permissions, secrets, supply chain and real authenticated owner-only mutations.
-6. Verify actual Cloudflare usage/billing and prevent unapproved new spend. Policy thresholds do not prove provider-level billing caps.
-7. Build and test the founder-only, one-use OTP release executor with exact-revision binding, branch compare-and-swap, audit receipts, post-release health and safe rollback. Keep executor disabled until every gate has independent evidence.
-8. Run a final exact-candidate review in **Preview**. Only a verified founder identity and OTP can enable **Go Live**.
+**Headquarters finds and recommends. The founder investigates, codes, tests and publishes through separate development and deployment tools.** No AI employee, scheduled scanner or UI action may fix code, submit repairs, send production OTPs or launch releases.
 
-## Phase 2 — reliable constant monitoring and recommendations
-- Monitor public YorpHives and private Headquarters uptime, errors, route health, broken features, changing dependencies, security misconfiguration and performance regressions.
-- Record source URL, observed timestamp, evidence, risk, affected system, confidence and suggested steps for the founder. Distinguish live observations from historical or synthetic evidence.
-- Monitor new technology, competitors, unmet market needs, product ideas, international opportunities, SEO and available revenue signals. Recommendations never execute code or paid campaigns.
-- Keep observations bounded, deduplicated and attributable. Escalate urgent risks without automatically applying fixes.
-- Older Engineering/QA **work orders are historical**. No new agent repair work orders or repair dispatch are permitted. Historical records remain readable.
-- The existing repair-jobs and repair-inbox APIs reject POST with `MONITOR_ONLY`. Repair history and reported issue evidence remain read-only.
+## Permanent project identity
+- Headquarters repository: `solopreneursid/yorpHives-2.0` in the independent `headquarters/` checkout.
+- Public website repository: `solopreneursid/YorpHives` in the independent `website/` checkout.
+- A fresh ChatGPT session MUST read `AGENTS.md`, `PROJECT-IDENTITY.json`, verify Git origin, and keep edits isolated. Historical website-preview files in the HQ repo are not authoritative site source.
+- Distinct storage, credentials, deployment targets and monitoring observations must be preserved; no implicit cross-system writes.
 
-## Phase 3 — evidence-based revenue and opportunity intelligence
-- Track verified, accessible earnings, traffic, conversion and advertising evidence; explicitly flag missing or stale accounts instead of inventing income.
-- Continuously identify and rank possible new revenue sources and product opportunities by evidence, cost, complexity, demand and risk.
-- Suggest opportunities to the founder. Headquarters does not launch campaigns, build products, rewrite the website, buy services or publish.
-- When the founder implements a fix or improvement, only the reviewed exact-candidate **Preview → Go Live → founder OTP → Publish** process can release it. Post-release monitoring detects regressions and reports any failures.
+## Phase A — retire publishing controls (current development slice)
+1. Remove Preview and Go Live buttons from Home, mobile navigation, release desk and all founder shortcuts.
+2. Replace Releases with **Investigations**: historical, authenticated, read-only evidence and safe links to development records.
+3. Keep permanent authenticated `410 MONITOR_ONLY` responses on retired `/api/admin/go-live`, `/api/admin/go-live-plan`, `/api/admin/go-live-otp` routes. No email, DB mutation, release planning or publishing from these routes.
+4. Preserve Security's narrow emergency legacy-grant revocation. It is not a production release permission control.
+5. Update Node/API tests, signed-in staging QA, offline visual QA and operator docs to prevent accidental restoration of the old publishing design.
+6. Never confuse a draft PR or passing static contract checks with a deployed, production-verified feature.
 
-## Evidence rules
-A task is **implemented** only when source is committed and its tests pass. It is **verified live** only with real environment receipts for the exact revision. It is **production-ready** only after independent QA, recovery, cost, security, reconciliation and founder-exclusive release gates all pass. Do not equate a proposed work order, migration file, existing deployment, green CI, or OTP dry run with those later states.
+## Phase B — continuous monitoring
+- Read-only website/home/tools/API probes with source timestamp, last success, failure reason, deduplicated findings and bounded request budgets.
+- Function-level checks for actual tools and user journeys (not just 2xx); authenticated checks only with separate least-privilege service identities.
+- Independent self-hosted Headquarters watchdog and OS supervisor with restart, recorded heartbeat and alert route. An in-app scheduler alone cannot detect its own downtime.
+- Report infrastructure/dependency/CVE findings, changes in published pages, security posture and monitoring coverage. Unchecked or stale routes are never marked healthy.
+- After the founder deploys an external fix, re-run relevant checks and mark the observation verified only on actual supporting evidence.
 
-**Current known constraints (recheck before use):** PR #48 is draft and substantial; the existing canonical HQ Pages revision and GitHub base branch differ; protected browser QA and current-schema recovery proof remain incomplete. No production authorization is present.
+## Phase C — source-backed research and opportunity discovery
+- Modular scanners for emerging open-source models, frameworks, competitor/product changes and global market needs.
+- Store evidence URL, publication/observed date, region, confidence, hypothesis and counter-evidence.
+- YorpMind deduplicates findings and makes practical, founder-readable investigation recommendations; agents never write code or publish.
 
-## Founder dashboard and Security workspace (14 November 2026)
+## Phase D — business and revenue intelligence
+- Read-only, consented, self-hostable integrations for website analytics, verified revenue, advertising, conversion and costs where available.
+- Compare recorded trends over real intervals; distinguish estimated potential from measured earnings and missing accounts from zero revenue.
+- Rank product ideas, sponsored/guest-post opportunities and monetization options by evidence, costs, risk and fit; no automatic purchases or campaigns.
 
-The Home founder bar now shows only **Development issues**, **Preview** and **Go Live** shortcuts. Both release shortcuts open the Publishing workspace, where the separately rendered Preview link and disabled Go Live button remain authoritative. A Home shortcut cannot publish or issue an OTP.
+## Phase E — straightforward social-style interface
+- Home: short updates prioritized by severity, freshness and impact.
+- Inbox: issues and monitored changes needing founder attention, with one-tap copyable context for independent coding.
+- Discover: technologies, global problems and market opportunities.
+- Business: traffic, costs, revenue and opportunities with clear data-source status.
+- YorpMind: research roles, saved knowledge and evidence, not fake autonomous activity.
+- Investigations: read-only historical evidence. No development/deployment/OTP button anywhere.
 
-**Tools & records → Security & access** is the sole interface location for emergency **Revoke legacy access**, historical assistant permission records and archived delegated-release records. The emergency button keeps the original founder-authenticated PATCH `revoke_all` route. That route only cancels older assistant grants and pending legacy email challenges; it does not remove the founder identity, production credentials, YorpMind memory or other provider tokens. The assistant-grant creation and step-up forms remain retired; Security has no permission issuance controls.
+## Phase F — operational production hardening, externally managed
+- Verify full test suite, private staging browser auth, independent safety checks, server supervision, real backup/restore and recovery rehearsals before the founder separately deploys Headquarters.
+- **Important current infrastructure limitation, last observed 14 November 2026:** preview and canonical Headquarters Pages environments were documented as sharing physical D1 ID `e8690813-b139-44a2-a1c7-bea2d2777ead`. The older migration ledger had 29 applied migrations. This must be rechecked; do not mutate shared staging data, apply migration 0030, create new paid resources, or claim backups without explicit owner authorization and evidence.
+- No code in this repository can claim the founder's real production deployment has been verified without exact live evidence. A draft branch or preview deployment is not a live Headquarters rollout.
 
-The protected browser QA now checks that legacy revocation is visible in Security, absent from Home and Publishing, the three Home controls are present and Go Live remains locked. It **does not click the destructive revoke button** or try to publish.
+## Current milestone and verification truth
+The codebase already contains an internal scheduled observation loop, partial monitoring/market/revenue interfaces, a social-style Founder Pulse, and a newly drafted independent watchdog. A monitoring-only UI/API retirement is being implemented in a separate draft PR. Fully operational independent alerts, revenue integrations, broad functional checks, autonomous verified research and live operational QA remain incomplete.
 
-## Verified anonymous Access redirects
-
-The staging Access preflight accepts redirects only to the verified private preview's own HTTPS `/cdn-cgi/access/` path or an HTTPS `*.cloudflareaccess.com` Access path, without embedded credentials or a nondefault port. An unrelated site using the same URL path is not accepted. The attestor requires the preflight's explicit denial provenance for both tested paths. A direct 401/403 is recorded as an HTTP authentication denial—not cryptographic proof of an Access login. Authenticated browser QA remains necessary before marking the private boundary fully verified for any exact release.
-
-## Critical environment finding — shared D1 database (14 November 2026)
-
-**Verified directly from read-only Cloudflare Pages metadata and D1 table/migration queries:**
-
-- Pages project `yorphives-admin-staging`, **preview** D1 binding `DB` and **canonical/production** D1 binding `DB` both point to the *same physical database* UUID `e8690813-b139-44a2-a1c7-bea2d2777ead` (`yorphives-2-catalogue-preview`).
-- The physical D1 has **29 applied migrations**, latest `0029_founder_email_otp.sql`; `0030` and its dedicated Go Live challenge table are not applied.
-- The account's R2 inventory shows `yorphives-processing-temp`; this is not verified as a durable Headquarters recovery backup bucket. The Pages project does not expose an R2 binding for HQ backups.
-- The previous assumption that the Headquarters database was absent was **incorrect**. The actual blocker is that it is **shared with the canonical environment** and cannot safely be treated as disposable staging data.
-
-**Implemented hard controls:**
-
-1. `verifyHeadquartersD1Isolation` validates Cloudflare Pages project provenance and requires independently identified, different physical D1 UUIDs for preview and canonical configurations.
-2. Both live release readiness and exact-revision fast-forward planning **fail closed** when the D1 databases are shared.
-3. The founder-only read-only release plan surfaces the isolation status alongside source/deployment drift.
-4. Protected staging browser preflight checks database isolation from real Cloudflare Pages metadata **before sending test credentials**. Independent QA attestation rejects missing isolation evidence.
-5. These are readiness blockers, **not authorization to create a new D1**, apply migrations, change bindings, take backups, or publish.
-
-**Owner intervention required before isolated staging QA and migration 0030:**
-
-- Explicitly authorize a *new dedicated preview-only D1* under the existing Cloudflare account, after confirming the free-tier/cost impact. This must be created with a new unique database ID, then **only preview** Pages DB binding `DB` can be moved to it. Do not overwrite the currently shared D1 or modify the canonical production binding.
-- Verify backup and restore evidence for the original canonical database and a separate, *disposable*, appropriately budgeted restoration target before modifying production-related configuration.
-- Rerun a full schema audit and necessary **staging-only** migrations on the new isolated preview database, with a post-migration backup, restore test, and cleanup evidence.
-- Run signed-in protected browser QA on a fresh exact-SHA preview. An isolated binding alone is not proof that the browser workflow passed.
-- Never share founder OTPs, Cloudflare API tokens, or database dumps in chat. Owner credentials remain in the provider's secure UI.
-
-**Go Live stays disabled.** Shared data cannot be fixed by simply changing a green CI flag or marking a checklist complete.
-
-## Clarification: system of observation, not automatic repair
-Headquarters is the founder's monitoring console, research radar, revenue intelligence and controlled release surface. It does not fix issues itself, open code repair PRs, create GitHub work items from a monitoring report, change the live website or alter Headquarters source code. The founder can use any external development assistance they choose to make a fix, but it is outside Headquarters' authority. Headquarters verifies the finished preview and waits for the founder's OTP before publishing. Any old documentation about "autonomous engineering" is superseded by this policy.
+**Do not rebuild the retired Go Live project from archived docs.** The product is an intelligence and monitoring console, not a release platform.

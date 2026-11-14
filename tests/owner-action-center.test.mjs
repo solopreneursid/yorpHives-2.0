@@ -30,7 +30,9 @@ test("unfinished repairs and manager notes are not owner release authorizations"
     pendingMfaCount:1,pendingTeamReports:3,teamSchemaReady:true});
   const ids=result.actions.map(a=>a.id);
   for(const id of ["review-briefs","repair-review","mfa-release","manager-reports"])assert.ok(ids.includes(id));
-  assert.match(result.actions.find(a=>a.id==="mfa-release").next_step,/No assistant needs administrator rights/);
+  assert.equal(result.actions.find(a=>a.id==="repair-review").view,"investigations");
+  assert.equal(result.actions.find(a=>a.id==="mfa-release").view,"security");
+  assert.match(result.actions.find(a=>a.id==="mfa-release").next_step,/revoke any remaining legacy permissions/);
   assert.ok(result.actions.every(a=>a.execution_authorized===false));
 });
 test("untrusted failure text is not surfaced as an action",()=>{

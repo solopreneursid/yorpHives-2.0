@@ -58,7 +58,7 @@ test("Headquarters Home and specialist workspace never show AI repair or GitHub 
  const html=await read("admin/index.html");
  const home=html.slice(html.indexOf('id="view-headquarters"'),html.indexOf('id="view-yorpmind"'));
  const agents=html.slice(html.indexOf('id="view-agents"'),html.indexOf('id="view-activity"'));
- assert.match(home,/you fix and publish|You make changes/);
+ assert.match(home,/you investigate and make changes independently|You prepare, test, and publish changes/);
  assert.match(agents,/id="monitor-only-guidance"/);
  assert.doesNotMatch(agents,/id="repair-form"|id="repair-submit"|id="repair-request"|id="verify-github-permissions"|id="repair-github-create"/);
  assert.match(agents,/Fix guidance|Review monitored issues|monitoring/i);
@@ -69,15 +69,16 @@ test("Headquarters Home and specialist workspace never show AI repair or GitHub 
  assert.doesNotMatch(inbox,/method:\s*["']POST["']/);
  assert.match(inbox,/Copy issue evidence/);
 });
-test("release remains founder-only and OTP guarded; monitoring is not publishing",async()=>{
+test("Headquarters has no release UI or founder OTP release endpoint",async()=>{
  const html=await read("admin/index.html");
- assert.match(html,/id="release-launch-preview"/);
- assert.match(html,/id="release-go-live"[^>]*disabled/);
- assert.match(html,/id="founder-open-preview"/);
- assert.match(html,/id="founder-open-release"/);
+ for(const id of ["founder-open-preview","founder-open-release","release-launch-preview","release-go-live","view-releases"]){
+  assert.doesNotMatch(html,new RegExp('id="'+id+'"'));
+ }
+ assert.match(html,/id="view-investigations"/);
  const otp=await read("functions/api/admin/go-live-otp.ts");
- assert.match(otp,/FOUNDER_ONLY/);
- assert.match(otp,/HQ_GO_LIVE_OTP_TEST_ENABLED/);
+ assert.match(otp,/MONITOR_ONLY/);
+ assert.match(otp,/\}, 410\)/);
+ assert.doesNotMatch(otp,/HQ_GO_LIVE_OTP_TEST_ENABLED|sendFounderMail|INSERT INTO/);
 });
 
 test("internal repair Worker and Durable Workflow also reject any attempt to write",async()=>{

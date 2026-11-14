@@ -8,7 +8,7 @@
 
 | Project | Sibling checkout | Git origin | What it owns |
 | --- | --- | --- | --- |
-| **YorpHives Headquarters** | `headquarters/` | `solopreneursid/yorpHives-2.0` | Private monitoring, security findings, opportunities/revenue intelligence, founder dashboard and release review |
+| **YorpHives Headquarters** | `headquarters/` | `solopreneursid/yorpHives-2.0` | Private monitoring and intelligence for products, infrastructure, revenue, research, security and market opportunities; no publishing controls |
 | **YorpHives Website** | `website/` | `solopreneursid/YorpHives` | Production public site, products, free tools, SEO, ads, commercial pages and public deployment |
 
 Each directory is a **different Git repository** with its own history, tests, environment and deployment. Neither is a child application of the other. Read `docs/PROJECT-DIRECTORIES.md`.
@@ -20,7 +20,7 @@ Each directory is a **different Git repository** with its own history, tests, en
 3. State in your work log: **project, checkout absolute path, exact Git origin, branch/commit and deployment target**.
 4. A request about **Headquarters** only authorizes working in `headquarters/`. A request about the **website** only authorizes working in `website/`. If both are required, produce independent commits, tests and approvals. Never change the other project opportunistically.
 5. For HQ-only changes run `node scripts/workspace-boundaries.mjs guard headquarters <file-relative-to-HQ-root>` before writing. This fails closed for website-only, unknown and shared paths. Unknown/shared files require explicit dependency review.
-6. Verify tests and preview for the targeted project. **Do not deploy, merge or publish** without the founder's review. The exact Preview → Go Live → OTP gate remains mandatory.
+6. For Headquarters, verify code and independent QA on a development branch. **Never merge or deploy without founder instruction.** Headquarters itself is NOT a release-control surface: there are no Preview, Go Live, OTP issuance, fix or production publishing actions. The founder codes and publishes separately, outside Headquarters. Testing an isolated development build is not a user-facing Headquarters publishing feature.
 
 ## Headquarters-owned code
 
@@ -35,8 +35,10 @@ Historical **website-preview** files still exist here: root `index.html`, `app.j
 
 `brand/`, `functions/_lib/`, `functions/_middleware.js`, `migrations/`, root configuration and generic tests/docs are **shared/ambiguous**. Never assume ownership or copy secrets/data between projects.
 
-## Safety and publishing
+## Latest canonical policy: MONITORING ONLY (14 November 2026)
 
-Headquarters is a monitoring system, not an automatic repair/deploy agent. It checks Headquarters and the website, finds vulnerabilities, updates, market openings and revenue opportunities, and queues evidence for the founder. Fixes are made by the founder (with coding assistance). Founder reviews the actual target's final preview and enters an OTP before Go Live. Separate private credentials, backups, environments and release permissions permanently.
+Headquarters watches the live website, its products, itself, infrastructure/security, trends, markets, users, performance and revenue using observable evidence. It collects findings, keeps monitored history and suggests decisions in the Home/Inbox/Discover/Business/YorpMind/Investigations interface. **It does not implement fixes or change production code.** The founder independently prepares, tests and publishes changes using separate development/release tooling and may return to Headquarters to verify observed results.
+
+**DO NOT add back publishing controls.** The retired `/api/admin/go-live`, `/api/admin/go-live-plan` and `/api/admin/go-live-otp` endpoints must remain inert and authenticated (HTTP 410, `MONITOR_ONLY`); do not issue OTPs or contact a release executor. Historical release/investigation records can remain read-only. Old release/OTP specifications are archival, not active requirements. Separate private credentials, databases, backups and environments permanently. Refer to `docs/HEADQUARTERS-MONITORING-ONLY-POLICY.md`.
 
 **If this file is being read without chat memory, the correct first action is to identify the repository and project, not to invent or inherit earlier context.**

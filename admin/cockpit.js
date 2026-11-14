@@ -10,7 +10,7 @@
     const when = new Date(value);
     return Number.isFinite(when.getTime()) ? when.toLocaleString(undefined, {dateStyle:"medium",timeStyle:"short"}) : "time unavailable";
   };
-  const allowedViews = new Set(["headquarters", "issues", "monitoring", "yorpmind", "business", "intelligence", "activity", "agents", "departments", "overview", "releases"]);
+  const allowedViews = new Set(["headquarters", "issues", "monitoring", "yorpmind", "business", "intelligence", "activity", "agents", "departments", "overview", "investigations"]);
   const actionNames = { issues:"Open problems", headquarters:"Open mission desk", monitoring:"Open monitoring", yorpmind:"Open YorpMind", business:"Explore opportunities", intelligence:"Review ideas", activity:"Open activity", agents:"Open investigations", departments:"Open team", overview:"Open overview", releases:"Review publishing" };
   let pending = null;
   let nextAction = null;

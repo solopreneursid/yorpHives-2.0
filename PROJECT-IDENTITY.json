@@ -1,8 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project_id": "yorphives-headquarters",
   "display_name": "YorpHives Headquarters",
-  "role": "private-monitoring-and-founder-control",
+  "role": "private-monitoring-and-business-intelligence",
   "repository": "solopreneursid/yorpHives-2.0",
   "canonical_checkout": "headquarters",
   "not_the_website": true,
@@ -42,9 +42,27 @@
   ],
   "operations_policy": {
     "headquarters_can_monitor_both": true,
+    "monitoring_target_scope": [
+      "website",
+      "website-products",
+      "headquarters",
+      "infrastructure",
+      "security",
+      "revenue",
+      "market",
+      "technology",
+      "global-opportunities"
+    ],
     "automatic_repairs": false,
     "automatic_publishing": false,
-    "founder_exact_preview_required": true,
-    "founder_go_live_otp_required": true
+    "headquarters_release_controls_enabled": false,
+    "headquarters_otp_issuance_enabled": false,
+    "founder_implements_and_publishes_outside_headquarters": true,
+    "historical_investigation_records_read_only": true,
+    "retired_go_live_routes": [
+      "/api/admin/go-live",
+      "/api/admin/go-live-plan",
+      "/api/admin/go-live-otp"
+    ]
   }
 }

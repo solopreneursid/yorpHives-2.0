@@ -149,7 +149,7 @@ async function loadView(name) {
     issues: loadIssues,
     agents: loadAgents,
     updates: loadUpdates,
-    releases: async () => { await window.loadReleaseEvidence(); },
+    investigations: async () => { await window.loadInvestigationHistory(); },
     security: async () => { await Promise.all([window.loadFounderPermissions(),window.loadOwnerDelegations()]); },
     activity: loadActivity
   };

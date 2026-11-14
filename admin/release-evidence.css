@@ -2,7 +2,7 @@
 .release-evidence-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
 .release-evidence-head h2{font-size:1.08rem;font-weight:750;letter-spacing:-.025em;margin:4px 0}
 .release-evidence-head p{font-size:.81rem;color:#94a3b8;line-height:1.5}
-.release-evidence-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+.release-evidence-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
 .release-evidence-metric{display:flex;flex-direction:column;gap:5px;padding:18px;border:1px solid #24354c;border-radius:12px;background:linear-gradient(150deg,#142338,#0d192b);min-width:0}
 .release-evidence-label{font-size:.7rem;color:#a9bfd3;font-weight:650}
 .release-evidence-metric strong{font-size:clamp(1.6rem,3vw,2.05rem);line-height:1.1;letter-spacing:-.05em;color:#e2f5ff}
@@ -30,26 +30,3 @@
 @media(max-width:560px){.release-evidence-metrics{grid-template-columns:1fr 1fr}.release-evidence-metric{padding:13px}.release-evidence-card{padding:14px}.release-evidence-card-head{flex-direction:column;align-items:flex-start}.release-evidence-lock{align-self:flex-start}}
 @media(max-width:375px){.release-evidence-metrics{grid-template-columns:1fr}}
 
-/* Founder release decision: compact, safe until a dedicated verified release API exists. */
-.release-launch-desk{display:flex;flex-direction:column;gap:9px;padding:17px 19px;margin:14px 0;background:linear-gradient(115deg,#13283a,#101b30);border:1px solid #315267;border-radius:13px}
-.release-launch-desk p{font-size:.87rem;line-height:1.55;color:#d2e7f5;margin:0;max-width:850px}
-.release-launch-desk small{font-size:.73rem;color:#9db6c9;line-height:1.5}
-.release-launch-badge{align-self:flex-start;font-size:.72rem;font-weight:750;color:#f8dbac;background:#3c2c1d;border:1px solid #796143;border-radius:99px;padding:6px 11px}
-.release-launch-controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:5px}
-.release-launch-controls .button{border-radius:9px;padding:11px 17px}
-#release-go-live:disabled{opacity:.6;cursor:not-allowed}
-.release-evidence-details{margin:14px 0}
-.release-evidence-details>summary{cursor:pointer;padding:10px 0;color:#b6d8eb;font-weight:650}
-
-.release-launch-controls #release-launch-preview[aria-disabled="true"]{opacity:.6;pointer-events:none;cursor:not-allowed}
-.release-launch-controls #release-launch-preview:not([href]){border:1px solid #43566d}
-
-/* Only live server-sourced blockers appear here, not historical approvals. */
-.release-live-blockers{padding:10px 12px;margin-top:6px;border:1px solid #35556b;border-radius:9px;background:#0b1b2b}
-.release-live-blockers[hidden]{display:none}
-.release-live-blockers summary{font-size:.79rem;font-weight:750;color:#a9e4f0;cursor:pointer}
-.release-live-blockers summary:hover{color:#e7f8ff}
-.release-live-blockers summary:focus-visible{outline:2px solid #67e8f9;outline-offset:3px}
-.release-live-blockers p{font-size:.75rem;color:#9ebbd0;margin:10px 0 5px}
-.release-live-blockers ul{list-style:disc;margin:9px 0 3px;padding-left:22px;display:grid;gap:6px;max-height:230px;overflow-y:auto}
-.release-live-blockers li{font-size:.76rem;line-height:1.55;color:#cbdce9;overflow-wrap:anywhere}
