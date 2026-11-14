@@ -19,11 +19,9 @@ function safeText(value, max) {
 }
 
 async function readGithub(env, resource) {
-  if (!env.GITHUB_TOKEN) throw new Error("GitHub read credential unavailable");
   const response = await fetch("https://api.github.com/repos/" + REPOSITORY + resource, {
     method: "GET",
     headers: {
-      authorization: "Bearer " + env.GITHUB_TOKEN,
       "user-agent": "YorpHives-Headquarters-ReadOnly/1.0",
       accept: "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28"
@@ -55,7 +53,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/health") {
       const dependencies = {
-        github_read_credential_present: Boolean(env.GITHUB_TOKEN),
+        public_github_issue_read: true,
         database: Boolean(env.DB),
         legacy_ai_binding_present: Boolean(env.AI),
         legacy_repair_workflow_binding_present: Boolean(env.ADMIN_REPAIR_WORKFLOW)
@@ -69,7 +67,7 @@ export default {
         github: {
           repository: REPOSITORY,
           credential_scope_verified_read_only: false,
-          credential_present_is_not_authorization: true,
+          public_repository_read_without_token: true,
           repository_write: null
         },
         dependencies,
