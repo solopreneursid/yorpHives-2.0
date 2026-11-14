@@ -86,6 +86,9 @@ test("retired internal worker contains no code-writing or repair operations", as
  assert.match(worker,/request\.method !== "GET"/);
  assert.match(worker,/MONITOR_ONLY/);
  assert.match(worker,/status:405|}, 405/);
+ assert.match(worker,/status: "retired_pending_cloudflare_cleanup"/);
+ assert.match(worker,/ready: false/);
+ assert.match(worker,/}, 503/);
  assert.match(worker,/class AdminRepairWorkflow/);
  assert.match(worker,/throw new Error\("MONITOR_ONLY:/);
  assert.doesNotMatch(worker,/GITHUB_TOKEN[^\n]*write|method:\s*["'](?:POST|PUT|PATCH|DELETE)["']/i);
