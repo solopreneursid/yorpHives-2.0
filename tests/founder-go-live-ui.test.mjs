@@ -3,29 +3,25 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 const read = path => readFile(new URL(path, import.meta.url), "utf8");
 
-test("founder home shows one production release decision without granting admin access", async () => {
-  const html = await read("../admin/index.html");
-  assert.match(html, /id="founder-open-preview"/);
-  assert.match(html, /id="founder-open-release"/);
-  assert.match(html, /id="release-go-live"[^>]*disabled/);
-  assert.match(html, /id="release-launch-preview"[^>]*aria-disabled="true"[^>]*>Preview<\/a>/);
-  assert.match(html, /id="release-go-live"[^>]*>Go Live<\/button>/);
-  assert.match(html, /id="view-security"/);
-  assert.match(html, /class="founder-permission-panel"/);
-  assert.match(html, /class="owner-delegation-panel"/);
-  assert.equal((html.match(/id="founder-stop-all"/g)||[]).length,1);
-  assert.doesNotMatch(html, /id="founder-open-permissions"/);
+test("founder UI has monitoring, investigations and security but no publishing actions", async () => {
+ const html = await read("../admin/index.html");
+ assert.match(html, /id="view-investigations"/);
+ assert.match(html, /data-view="investigations"/);
+ assert.match(html, /data-pulse-route="business"/);
+ for (const id of ["release-go-live", "release-launch-preview", "founder-open-preview", "founder-open-release", "view-releases"]) {
+  assert.doesNotMatch(html, new RegExp('id="' + id + '"'));
+ }
+ assert.match(html, /id="view-security"/);
+ assert.equal((html.match(/id="founder-stop-all"/g) || []).length, 1);
 });
 
-test("legacy D1 receipts never unlock production in the browser", async () => {
-  const js = await read("../admin/release-evidence.js");
-  const css = await read("../admin/release-evidence.css");
-  assert.match(js, /goLive\.disabled = true/);
-  assert.match(js, /preview\.setAttribute\("aria-disabled", "true"\)/);
-  assert.match(js, /\/api\/admin\/go-live\?target=/);
-  assert.match(js, /data\.production_deployment_enabled !== false/);
-  assert.match(js, /data\.production_deployment_enabled !== false/);
-  assert.match(css, /#release-go-live:disabled/);
+test("historical investigation viewer never fetches release readiness or executes actions", async () => {
+ const js = await read("../admin/release-evidence.js");
+ assert.match(js, /window\.loadInvestigationHistory/);
+ assert.match(js, /\/api\/admin\/release-evidence/);
+ assert.match(js, /production_deployment_enabled !== false/);
+ assert.doesNotMatch(js, /\/api\/admin\/go-live(?:\?|\/)|loadGoLiveReadiness|issueOtp|Go Live/);
+ assert.doesNotMatch(js, /method:\s*["'](?:POST|PATCH|DELETE)["']/);
 });
 
 test("unfinished development work is not framed as founder production approval", async () => {
