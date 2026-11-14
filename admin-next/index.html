@@ -34,6 +34,7 @@
    <div class="toolbar" role="group" aria-label="Headquarters views">
     <button class="tab is-active" type="button" data-view="live" aria-pressed="true">Live monitoring</button>
     <button class="tab" type="button" data-view="opportunities" aria-pressed="false">Opportunities & revenue</button>
+    <button class="tab" type="button" data-view="yorpmind" aria-pressed="false">YorpMind AI employees</button>
     <button class="tab" type="button" data-view="history" aria-pressed="false">Evidence history</button>
    </div>
    <section id="live-view" class="view" aria-label="Live website monitoring">
@@ -100,6 +101,32 @@
       <div><strong>Callable</strong><span>Browser-local WebMCP remains experimental; live remote MCP execution is not published.</span></div>
       <div><strong>Payable</strong><span>Agent payment rails and settlement receipts are not enabled.</span></div>
      </div>
+    </section>
+   </section>
+   <section id="yorpmind-view" class="view hidden" aria-label="YorpMind AI operating system">
+    <section class="panel">
+     <div class="section-head"><div><h2>YorpMind — monitoring AI organization</h2>
+      <p>Specialist agents analyze independently collected website and internet evidence using only your private open-weight model. They have no tools to repair, deploy, spend or change their own permissions.</p>
+     </div><span class="badge status-not_published" id="ym-ai-status">Not verified</span></div>
+     <p id="ym-ai-summary" aria-live="polite">Checking private agent roster and inference receipts…</p>
+     <div class="stats" aria-label="YorpMind workforce evidence">
+      <div><span>AI roles configured</span><strong id="ym-roles-count">—</strong><small>Not proof of active agents</small></div>
+      <div><span>Completed private model tasks</span><strong id="ym-model-runs">—</strong><small>Verified run records only</small></div>
+      <div><span>Ideas awaiting founder review</span><strong id="ym-brief-count">—</strong><small>No autonomous release rights</small></div>
+      <div><span>Verified learning records</span><strong id="ym-learning-count">—</strong><small>Founder-reviewed outcomes</small></div>
+     </div>
+     <h3>Specialist AI employees</h3>
+     <div id="ym-roster" class="integration-list">Loading declared roles…</div>
+    </section>
+    <section class="panel">
+     <h2>Agent findings and hypotheses</h2>
+     <p>Evidence-linked analyses appear here only after an actual private model completes an inference task. Missing runs mean AI employees have not been demonstrated as active.</p>
+     <div id="ym-brief-list" class="list" aria-live="polite">No verified agent briefs yet.</div>
+    </section>
+    <section class="panel">
+     <h2>Self-evolving intelligence, not self-authorized code</h2>
+     <p>YorpMind can learn from founder-reviewed outcomes and propose improvements in its investigation methods. Every change to its code, models, permissions or production systems remains an independent founder decision.</p>
+     <div id="ym-lesson-list" class="list">No approved lessons recorded.</div>
     </section>
    </section>
    <section id="history-view" class="view hidden" aria-label="Monitoring history">
