@@ -50,6 +50,21 @@ a configured employee as actively analyzing if private-model run
 receipts are absent. The AI OS can only propose improvements; it cannot
 mutate its own source or permissions, repair websites or deploy.
 
+## Founder-approved YorpMind mission — permanent
+YorpMind is the continually improving **AI operating system of a
+private autonomous monitoring and business intelligence organization**,
+NOT a static admin dashboard or production execution agent. It leads
+six departments: engineering & reliability, security, worldwide market
+research, user/agent traffic & product growth, revenue research and
+YorpMind evolution. Bots and optional *self-hosted* open-weight
+specialists continuously investigate BOTH YorpHives Website and HQ,
+discover internet opportunities and propose founder-reviewed improvements.
+All decisions have source timestamps, evidence, risk, and independent
+verification. Bot-only receipts cannot be represented as AI inference.
+Founder-reviewed learning may refine future proposals, never self-approve
+code or release privileges. See
+`docs/YORPMIND-AGENTIC-ORGANIZATION.md`.
+
 ## Evidence-driven Headquarters foundation — active development (14 November 2026)
 
 A separate scheduled monitoring collector is staged under `monitoring/`.
