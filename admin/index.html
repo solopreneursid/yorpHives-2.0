@@ -116,6 +116,50 @@
         </button>
       </div>
 
+      <section class="hq-watchtower" aria-labelledby="hq-watchtower-title">
+        <div class="hq-watchtower-heading">
+          <div>
+            <span class="hq-watchtower-eyebrow">THE WATCHTOWER · OBSERVABILITY MAP</span>
+            <h2 id="hq-watchtower-title">What Headquarters can actually see<span aria-hidden="true">.</span></h2>
+            <p>Recorded checks, research and financial connections. A reachable URL is not a working product.</p>
+          </div>
+          <span class="hq-watchtower-time" id="hq-watchtower-updated" role="status">Connecting to private evidence…</span>
+        </div>
+        <div class="hq-watchtower-grid" id="hq-watchtower-grid" aria-label="Monitoring coverage by business area">
+          <button class="hq-watchtower-card" type="button" data-pulse-route="monitoring" data-state="unavailable">
+            <span class="hq-watchtower-card-head"><span class="hq-watchtower-icon" aria-hidden="true">◎</span><span>WEBSITE</span></span>
+            <strong id="hq-watchtower-website-value">Checking…</strong>
+            <span class="hq-watchtower-description" id="hq-watchtower-website-detail">Reading recorded route checks</span>
+            <span class="hq-watchtower-badge" id="hq-watchtower-website-state">UNVERIFIED</span>
+          </button>
+          <button class="hq-watchtower-card" type="button" data-pulse-route="overview" data-state="unavailable">
+            <span class="hq-watchtower-card-head"><span class="hq-watchtower-icon" aria-hidden="true">▦</span><span>PRODUCTS &amp; TOOLS</span></span>
+            <strong id="hq-watchtower-products-value">Checking…</strong>
+            <span class="hq-watchtower-description" id="hq-watchtower-products-detail">Checking monitored public routes</span>
+            <span class="hq-watchtower-badge" id="hq-watchtower-products-state">UNVERIFIED</span>
+          </button>
+          <button class="hq-watchtower-card" type="button" data-pulse-route="monitoring" data-state="unavailable">
+            <span class="hq-watchtower-card-head"><span class="hq-watchtower-icon" aria-hidden="true">⬡</span><span>HEADQUARTERS</span></span>
+            <strong id="hq-watchtower-headquarters-value">Checking…</strong>
+            <span class="hq-watchtower-description" id="hq-watchtower-headquarters-detail">Private runtime evidence pending</span>
+            <span class="hq-watchtower-badge" id="hq-watchtower-headquarters-state">UNVERIFIED</span>
+          </button>
+          <button class="hq-watchtower-card" type="button" data-pulse-route="intelligence" data-state="unavailable">
+            <span class="hq-watchtower-card-head"><span class="hq-watchtower-icon" aria-hidden="true">◇</span><span>MARKET SIGNALS</span></span>
+            <strong id="hq-watchtower-market-value">Checking…</strong>
+            <span class="hq-watchtower-description" id="hq-watchtower-market-detail">Reviewing recorded research</span>
+            <span class="hq-watchtower-badge" id="hq-watchtower-market-state">UNVERIFIED</span>
+          </button>
+          <button class="hq-watchtower-card" type="button" data-pulse-route="business" data-state="unavailable">
+            <span class="hq-watchtower-card-head"><span class="hq-watchtower-icon" aria-hidden="true">◈</span><span>REVENUE</span></span>
+            <strong id="hq-watchtower-revenue-value">Checking…</strong>
+            <span class="hq-watchtower-description" id="hq-watchtower-revenue-detail">Checking financial source connection</span>
+            <span class="hq-watchtower-badge" id="hq-watchtower-revenue-state">UNVERIFIED</span>
+          </button>
+        </div>
+        <p class="hq-watchtower-foot">Tap any area to inspect its existing records. No repair, deployment or financial action can start here.</p>
+      </section>
+
       <section class="hq-pulse" id="hq-pulse" aria-labelledby="hq-pulse-title">
         <div class="hq-pulse-heading">
           <div><span class="hq-pulse-overline">THE HIVE / YOUR DAILY DIGEST</span><h2 id="hq-pulse-title">Your daily pulse<span aria-hidden="true"> ✦</span></h2>
@@ -144,7 +188,7 @@
           </div>
           <aside class="hq-pulse-aside" aria-label="Quick status and safe actions">
             <section class="hq-pulse-side-card">
-              <span class="hq-pulse-overline">WATCHTOWER</span><h3>Website monitoring</h3>
+              <span class="hq-pulse-overline">RECORDED CHECKS</span><h3>All configured HTTP routes</h3>
               <strong id="hq-pulse-monitor-summary">Loading…</strong><p id="hq-pulse-monitor-note">Checking recorded observations…</p>
               <button type="button" data-pulse-route="monitoring">See all checks ↗</button>
             </section>
@@ -173,9 +217,9 @@
         </section>
         <section class="cockpit-health" aria-labelledby="cockpit-health-title">
           <div class="cockpit-section-label">OPERATING PICTURE <span class="cockpit-health-indicator" id="cockpit-health-badge">CHECKING</span></div>
-          <h2 id="cockpit-health-title">Website &amp; execution</h2>
+          <h2 id="cockpit-health-title">Monitoring &amp; recorded work</h2>
           <dl class="cockpit-health-list">
-            <div><dt>Website checks</dt><dd id="cockpit-monitor-status">Not yet loaded</dd></div>
+            <div><dt>Recorded HTTP checks</dt><dd id="cockpit-monitor-status">Not yet loaded</dd></div>
             <div><dt>Work in progress</dt><dd id="cockpit-running">—</dd></div>
             <div><dt>Waiting for your review</dt><dd id="cockpit-review">—</dd></div>
             <div><dt>Approved reference skills</dt><dd id="cockpit-skills">—</dd></div>

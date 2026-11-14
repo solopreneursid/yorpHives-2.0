@@ -42,3 +42,25 @@ test("mobile quick bar and keyboard-accessible feed filters", () => {
   assert.match(js,/aria-selected/);
   assert.match(css,/\.hq-mobile-dock/);
 });
+test("Watchtower cards cover all five founder concerns with no privileged controls", () => {
+  for (const name of ["website","products","headquarters","market","revenue"]) {
+    assert.match(ui,new RegExp('id="hq-watchtower-'+name+'-value"'),name);
+    assert.match(ui,new RegExp('id="hq-watchtower-'+name+'-state"'),name);
+  }
+  assert.match(ui,/id="hq-watchtower-grid"/);
+  assert.match(ui,/What Headquarters can actually see/);
+  assert.match(js,/function renderWatchtower\(data\)/);
+  assert.match(js,/product_functionality_verified|Functions|actual tool functions untested/i);
+  assert.match(js,/private runtime uptime unverified/);
+  assert.match(js,/Actual earnings and operating costs are not connected/);
+  assert.doesNotMatch(ui,/id="release-go-live"|id="release-launch-preview"/);
+});
+
+test("Watchtower is swipeable and keyboard-accessible, and uses only saved evidence", () => {
+  assert.match(css,/\.hq-watchtower-card:focus-visible/);
+  assert.match(css,/scroll-snap-type:x mandatory/);
+  assert.match(css,/overscroll-behavior-x:contain/);
+  assert.match(js,/\.textContent = String\(value\)/);
+  assert.match(js,/data\?\.sources\?\.coverage\?\.available === true/);
+  assert.doesNotMatch(js,/fetch\(|innerHTML\s*=|insertAdjacentHTML\(/);
+});

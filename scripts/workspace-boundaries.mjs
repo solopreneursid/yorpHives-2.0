@@ -9,7 +9,7 @@ import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const PROJECTS = Object.freeze({
-  headquarters: Object.freeze({ directory: "headquarters", repo: "solopreneursid/yorpHives-2.0", branch: "feature/headquarters-monitoring-only-20261114" }),
+  headquarters: Object.freeze({ directory: "headquarters", repo: "solopreneursid/yorpHives-2.0", branch: "feature/headquarters-watchtower-coverage-ui-20261114" }),
   website: Object.freeze({ directory: "website", repo: "solopreneursid/YorpHives", branch: "main" })
 });
 const here = resolve(dirname(fileURLToPath(import.meta.url)), "..");
