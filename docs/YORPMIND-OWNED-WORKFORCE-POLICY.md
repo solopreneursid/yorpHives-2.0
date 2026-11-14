@@ -70,3 +70,36 @@ as well.
 - Keep release authority outside the YorpMind runtime; verify founder exact
   preview, OTP, audit record, rollback and production recovery.
 - Do not merge, publish or announce readiness based on this module alone.
+
+## November 14 security follow-up (draft branch only)
+
+The retired `admin-agent/worker.js` was reduced to GET-only health and
+read-only issue evidence. It no longer contains GitHub mutation helpers,
+AI code generation, repair queue dispatch, or draft PR creation.
+`AdminRepairWorkflow.run()` remains a throwing compatibility stub for old
+instances. Its Wrangler source configuration no longer requests DB, Workers
+AI or repair Workflow bindings. These are **unmerged source changes**;
+deployed bindings and secrets have not been inspected or revoked.
+
+### Deployment blockers / operator-controlled security tasks
+
+1. Audit every deployed Worker/service binding and credential, including
+   `GITHUB_TOKEN`. Revoke the legacy write-capable credential; if issue
+   reading is still needed, provision a *new* least-privilege read-only token
+   and verify its effective permissions. Do not print or commit secrets.
+2. Verify the host/platform accepts removal of the old Workflow binding,
+   and determine whether any historical queued instances need retention
+   or archival before changing a deployed service.
+3. Check any client of `/health` that previously expected legacy repair
+   readiness fields. The endpoint now reports the monitor-only contract,
+   not the obsolete repair service's health.
+4. Test private issue listing, denied POST requests, authentication and
+   all dependent UI pages in staging before merging or deployment.
+5. Prove that the other live workers, not only the retired repair worker,
+   lack GitHub-write and infrastructure-mutation permissions.
+6. Independently verify local-model inference, monitoring freshness,
+   restore/rollback, founder approval and OTP before declaring readiness.
+
+**Critical:** a worker returning `monitor_only` does not prove the deployed
+credential itself is read-only. A successful CI run cannot prove it either.
+No production deployment or credential rotation was performed by this change.
