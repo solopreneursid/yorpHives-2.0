@@ -92,7 +92,7 @@ test('two advertised catalogue endpoints must agree on tool slugs before sync is
  let manifest=['a','b'];
  const events=[];
  const {createHash}=await import('node:crypto');
- const fingerprint=slugs=>createHash('sha256').update([...slugs].sort().join('\\n')).digest('hex');
+ const fingerprint=slugs=>createHash('sha256').update([...slugs].sort().join('\n')).digest('hex');
  const monitor=createIndependentWatchdog({targets,clock:time,emit:e=>events.push(e),
    check:async target=>target.kind==='catalogue'||target.kind==='manifest'
      ? {checked_at:time(),state:'reachable',reason:'catalogue_contract_verified',
