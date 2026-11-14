@@ -2,7 +2,8 @@
  * No URLs, cookies, tokens or error messages may appear in the saved evidence.
  * This file is managed by the watchdog process, NOT the HQ application.
  */
-import { mkdir, open, rename, unlink, lstat } from 'node:fs/promises';
+import { mkdir, open, rename, unlink } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { dirname, isAbsolute } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -76,12 +77,18 @@ export async function readWatchdogEvidence(path,{ now = Date.now() } = {}) {
     repairs_authorized:false,production_execution_enabled:false};
   try {
     const destination = filePath(path);
-    const stat = await lstat(destination);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > WATCHDOG_EVIDENCE_LIMIT ||
-        stat.size < 10) return unavailable;
-    const file = await open(destination,'r');
+    // O_NOFOLLOW + fstat on the same descriptor closes the symlink swap
+    // window between a separate lstat() and open(). Reject permissive files.
+    const file = await open(destination,constants.O_RDONLY|constants.O_NOFOLLOW);
     let bytes;
-    try { bytes = await file.readFile(); } finally { await file.close(); }
+    try {
+      const stat = await file.stat();
+      if (!stat.isFile() || stat.nlink !== 1 ||
+          (stat.mode & 0o077) !== 0 ||
+          (typeof process.getuid === 'function' && stat.uid !== process.getuid()) ||
+          stat.size > WATCHDOG_EVIDENCE_LIMIT || stat.size < 10) return unavailable;
+      bytes = await file.readFile();
+    } finally { await file.close(); }
     if (bytes.byteLength > WATCHDOG_EVIDENCE_LIMIT) return unavailable;
     const record = JSON.parse(bytes.toString('utf8'));
     const validated = cleanSnapshot(record);
