@@ -54,6 +54,36 @@ function renderRows(id,records,toRow,empty){
   item.append(label,detail);target.append(item);
  }
 }
+/** Render only independently allowlisted original public source links.
+ * Never turn an arbitrary model-provided string into an outbound URL.
+ */
+function renderResearchCandidates(id,records,kind){
+ const target=$(id);target.replaceChildren();
+ if(!records.length){
+  target.textContent='No independently sourced candidates collected yet.';
+  return;
+ }
+ for(const item of records.slice(0,30)){
+  const src=String(item.evidence_ref||'');
+  const trusted=kind==='market'?
+   /^https:\/\/news\.ycombinator\.com\/item\?id=[1-9][0-9]{0,12}$/.test(src):
+   /^https:\/\/(?:developers|blog)\.cloudflare\.com\/[a-zA-Z0-9/_-]{1,350}\/?$/.test(src);
+  const entry=document.createElement('div');entry.className='row';
+  const title=document.createElement('strong');
+  title.textContent=String(item.title||'Unverified research lead').slice(0,220);
+  const details=document.createElement('small');
+  details.textContent='Candidate only · '+String(item.category||'research')+
+    ' · '+prettyTime(item.observed_at)+' · source not independently market-validated';
+  entry.append(title,details);
+  if(trusted){
+   const link=document.createElement('a');
+   link.href=src;link.target='_blank';link.rel='noopener noreferrer';
+   link.textContent='Review original source ↗';
+   entry.append(link);
+  }
+  target.append(entry);
+ }
+}
 function badge(state){
  const b=document.createElement('span');
  b.className='badge status-'+state;
@@ -267,16 +297,23 @@ async function loadIndependentHistory(){
    label:String(r.target_id).replace(/^watch-target-/,'')+' · '+r.status,
    detail:prettyTime(r.observed_at)+' · '+String(r.note||'').slice(0,190)
   }),'No actual website history has been recorded.');
-  const findings=data.signals.filter(x=>!String(x.id).startsWith('radar-'));
+  const market=data.signals.filter(x=>String(x.id).startsWith('market-hn-'));
+  const radar=data.signals.filter(x=>String(x.id).startsWith('radar-'));
+  const findings=data.signals.filter(x=>!String(x.id).startsWith('radar-')&&
+    !String(x.id).startsWith('market-hn-'));
   renderRows('decision-signal-list',findings.slice(0,35),r=>({
    label:'Priority '+r.priority+' · '+r.title,
    detail:r.state+' · '+r.category+' · '+String(r.evidence_ref).slice(0,220)+
     ' · '+prettyTime(r.observed_at)
-  }),'No issue findings yet; absence of findings does not prove all-clear.');
-  const radar=data.signals.filter(x=>String(x.id).startsWith('radar-'));
+  }),'No independent risk findings yet; absence does not prove an all-clear.');
+  setText('market-source-status',market.length?
+   market.length+' public Ask HN / Show HN research leads found. None represents independently validated customer demand or revenue.':
+   'No independently sourced market research candidates yet. A daily scan must complete before drawing conclusions.');
+  renderResearchCandidates('market-candidate-list',market,'market');
   setText('technology-source-status',radar.length?
-   radar.length+' public technology/security changelog candidates collected. All are unvalidated hypotheses with source references.':
-   'No verified public update-feed candidates yet. Daily RSS schedule/source health is unproven.');
+   radar.length+' public technology/security changelog candidates collected. None is verified business demand.':
+   'No public changelog candidates yet. Feed freshness and daily schedule must be verified.');
+  renderResearchCandidates('radar-candidate-list',radar,'radar');
   if(latest)renderLive();
  }catch{
   watchdogHistory=null;
@@ -286,6 +323,9 @@ async function loadIndependentHistory(){
   setText('history-status','Independent persisted evidence unavailable; no production changes were made.');
   setText('decision-signal-list','Independent founder review evidence is unavailable.');
   setText('technology-source-status','Technology radar has not produced verified source candidates.');
+  setText('market-source-status','Public problem/product candidate history is unavailable.');
+  setText('market-candidate-list','No verified public market leads available.');
+  setText('radar-candidate-list','No verified technology candidates available.');
  }
 }
 
