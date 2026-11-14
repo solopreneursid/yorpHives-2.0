@@ -9,7 +9,7 @@ import {verifyHeadquartersD1Isolation} from "../functions/_lib/hq-resource-isola
 const PROJECT = "yorphives-admin-staging";
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const SHA = /^[a-f0-9]{40}$/;
-const BRANCH = /^(?:build|design|ops|qa|fix)\/[a-z0-9][a-z0-9-]{2,110}$/;
+const BRANCH = /^(?:build|feature|hardening|design|ops|qa|fix)\/[a-z0-9][a-z0-9-]{2,110}$/;
 const DISALLOWED = new Set(["main", "master"]);
 const ACCESS_ROUTES = Object.freeze(["/admin/", "/api/admin/yorpmind-team"]);
 
