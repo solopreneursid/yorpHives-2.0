@@ -6,7 +6,7 @@
   "use strict";
   const id = name => document.getElementById(name);
   let inflight = null, lastAt = 0;
-  const allowed = new Set(["headquarters-ready","website-home","website-tools","website-discovery","website-manifest"]);
+  const allowed = new Set(["headquarters-ready","website-home","website-tools","website-studio","website-discovery","website-manifest"]);
   function show(area,value,details,label,state) {
     const display = id("hq-watchtower-"+area+"-value");
     if (!display) return;
@@ -20,11 +20,11 @@
     if (!data || data.source !== "independent_local_watchdog" ||
         data.connected !== true || !["ready","degraded"].includes(data.status) ||
         data.repairs_authorized !== false || data.production_execution_enabled !== false ||
-        !Array.isArray(data.observations) || data.observations.length > 5) return;
+        !Array.isArray(data.observations) || data.observations.length > 6) return;
     const names = new Set();
     for (const entry of data.observations) {
       if (!entry || !allowed.has(entry.target) || names.has(entry.target) ||
-          !["ready","reachable","degraded"].includes(entry.state) ||
+          !["ready","reachable","degraded","unavailable"].includes(entry.state) ||
           typeof entry.reason !== "string" ||
           !Number.isFinite(Date.parse(entry.checked_at))) return;
       names.add(entry.target);
@@ -53,10 +53,21 @@
         "API NEEDS REVIEW","alert");
     } else if (checks.length === 2 &&
         checks.every(item => item.reason === "catalogue_contract_verified")) {
-      show("products","2 catalogue contracts",
-        "Public tool lists passed bounded schema checks · observed "+when+
-        ". Individual product workflows still need separate tests.",
-        "API CONTRACTS ONLY","limited");
+      show("products","Catalogues in sync",
+        "Two published website tool lists agree on active tool slugs · observed "+when+
+        ". This does not establish that any individual workflow works.",
+        "CATALOGUES MATCH","limited");
+    } else if (checks.some(item => item.state === "unavailable")) {
+      const studio=data.observations.find(item=>item.target==="website-studio");
+      show("products",studio?.state==="reachable"?"Studio reachable":"Discovery pending",
+        "Public File Studio route is checked separately. Catalogue APIs are not yet available or verifiable · observed "+when+
+        ". Individual tool functions remain untested.",
+        "DISCOVERY NOT CONNECTED","limited");
+    } else if (checks.some(item=>item.reason==="catalogue_contract_verified")) {
+      show("products","1 discovery source",
+        "Only one public catalogue was verifiably returned · observed "+when+
+        ". Cross-source consistency and tool functionality are not established.",
+        "PARTIAL SYNC","limited");
     }
   }
   function load() {
