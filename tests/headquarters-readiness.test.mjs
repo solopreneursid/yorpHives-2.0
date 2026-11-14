@@ -35,7 +35,7 @@ test("valid repository passes static checks but is never approved for production
   const dir = await fixture();
   try {
     const report = await assessHeadquarters(dir);
-    assert.equal(report.static_checks_passed, true);
+    assert.equal(report.static_checks_passed, true, JSON.stringify(report.checks.filter(c => c.status === "fail")));
     assert.equal(report.ready_for_production, false);
     assert.equal(report.policy.new_external_paid_services, "prohibited_without_prior_owner_approval");
     assert.equal(report.policy.cost_target_usd_monthly_incremental, 0);
