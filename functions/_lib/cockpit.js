@@ -45,9 +45,9 @@ export function cockpitActions(metrics, sources) {
   if (metrics.missions.review > 0) add("review-missions", "Review your team's work",
     `${metrics.missions.review} mission(s) await your review.`, "headquarters", "attention", "review");
   if (!sources.monitors.available || metrics.monitors.stale > 0 || metrics.monitors.unknown > 0)
-    add("monitor-evidence", "Check website monitoring",
+    add("monitor-evidence", "Check monitoring coverage",
       "Some enabled routes have no current check. Open monitoring to investigate.", "monitoring");
-  if (metrics.monitors.failing > 0) add("monitor-failures", "Inspect failing website checks",
+  if (metrics.monitors.failing > 0) add("monitor-failures", "Inspect failing HTTP checks",
     `${metrics.monitors.failing} enabled route(s) failed their latest current check.`, "monitoring", "urgent");
   if (critical === 0 && issues > 0) add("open-issues", "Investigate website findings",
     `${minimum}${issues} recorded finding(s) remain open.`, "issues");
