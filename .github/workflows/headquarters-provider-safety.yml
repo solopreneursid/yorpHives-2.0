@@ -1,0 +1,39 @@
+name: Headquarters provider safety audit (read-only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hq-live-provider-safety-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-live-isolation:
+    name: Check live staging/production D1 isolation, never modify resources
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: staging-deployments
+    steps:
+      - name: Check out exact audited code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Use Node 24
+        uses: actions/setup-node@49933ea5288ca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - name: Read Cloudflare project identity and D1 binding IDs, fail if shared
+        env:
+          CF_ACCOUNT_ID: 69234e51e08d8013980a7ff869746609
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/headquarters-cloudflare-preflight.mjs
+      - name: Keep sanitized read-only evidence, never secrets or database IDs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: headquarters-live-safety-${{ github.run_id }}
+          path: artifacts/headquarters-readiness/live-provider-isolation.json
+          if-no-files-found: warn
+          retention-days: 14
