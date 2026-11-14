@@ -35,6 +35,24 @@ Historical **website-preview** files still exist here: root `index.html`, `app.j
 
 `brand/`, `functions/_lib/`, `functions/_middleware.js`, `migrations/`, root configuration and generic tests/docs are **shared/ambiguous**. Never assume ownership or copy secrets/data between projects.
 
+## Permanent agentic-internet design mandate (Cloudflare Connect 2026)
+
+**Founder requirement:** Both website and Headquarters must support the open
+agentic Internet: readable, discoverable, callable, payable, and verifiable
+identity, with standard HTTP/JSON/OpenAPI/MCP/WebMCP and optional x402/MPP
+rather than provider-locked SaaS. This is **an architecture mandate, not a
+claim that payments, signed bots or remote MCP are already live**.
+Website owns published tools and all future calls/commerce; HQ ONLY checks
+read-only public contracts and independent signals, never executes those
+operations or handles payments. Read
+`docs/CONNECT-2026-AGENTIC-INTERNET-ARCHITECTURE.md` before modifying
+agents, product discovery, revenue, payment, security or website-monitoring
+contracts. The new isolated preview D1 has a **monitor-only schema with only
+synthetic rows**. Its successful logical restore does NOT imply the older
+production D1 is recoverable or that the live admin UI is staging-compatible.
+Do not re-enable automatic HQ deployments or grant canonical Agent Worker
+permissions as a workaround.
+
 ## Latest canonical policy: MONITORING ONLY (14 November 2026)
 
 Headquarters watches the live website, its products, itself, infrastructure/security, trends, markets, users, performance and revenue using observable evidence. It collects findings, keeps monitored history and suggests decisions in the Home/Inbox/Discover/Business/YorpMind/Investigations interface. **It does not implement fixes or change production code.** The founder independently prepares, tests and publishes changes using separate development/release tooling and may return to Headquarters to verify observed results.
