@@ -11,6 +11,7 @@
  * the future independent self-hosted Node+SQLite adapter.
  */
 import {runLiveWebsiteSnapshot} from '../admin-monitor/live-website-evidence.js';
+import {collectTechnologyCandidates,storeTechnologyCandidates} from './open-technology-radar.mjs';
 
 const TARGET_KIND=Object.freeze({website:'website',security:'security'});
 const MONITOR_SOURCE='hq-staging-independent-watchdog-v1';
@@ -97,19 +98,62 @@ export async function persistMonitoringSnapshot(db,snapshot,{clock=iso}={}){
   review_items_found:issues,production_modified:false,github_writes:false};
 }
 
+/** Non-invasive HTTP security-header audit: absence is a review hint, not proof
+ * of an exploitable vulnerability. No scanners, fuzzing or invasive probes. */
+export async function auditPublicSecurityHeaders(db,{
+ fetcher=globalThis.fetch,clock=iso
+}={}){
+ if(!db?.prepare)throw Error('Read-only header audit needs staging storage');
+ let status='unverified',reason='headers_not_verified',http=null;
+ try{
+  const response=await fetcher('https://yorphives.com/',{
+   method:'HEAD',redirect:'manual',cache:'no-store',
+   signal:AbortSignal.timeout(5000)
+  });
+  http=response.status;
+  if(http===200){
+   if(!response.headers.get('strict-transport-security')){
+    status='review';reason='hsts_header_missing';
+   }else if(!response.headers.get('x-content-type-options')){
+    status='review';reason='nosniff_header_missing';
+   }else{status='observed';reason='basic_transport_headers_present';}
+  }else reason='header_probe_http_'+http;
+  await response.body?.cancel().catch(()=>{});
+ }catch{reason='header_probe_unavailable';}
+ if(status==='review'){
+  const id='security-header-'+reason;
+  await db.prepare(
+   'INSERT OR IGNORE INTO monitor_signals (id,category,state,priority,title,evidence_ref,observed_at,founder_action) VALUES (?,?,?,?,?,?,?,?)'
+  ).bind(id,'security','unreviewed',2,
+   reason==='hsts_header_missing'?'Review website HSTS coverage':'Review website nosniff header',
+   'website:homepage:'+reason,clock(),
+   'Inspect website response headers and security policy; do not treat absence alone as a confirmed exploit.').run();
+ }
+ return {source:'public_http_header_advisory',status,reason,
+  http_status:http,verified_vulnerability:false,production_modified:false};
+}
+
 export default {
  async fetch(){return new Response('Not found',{status:404,headers:{'cache-control':'no-store'}});},
- async scheduled(_event,env,ctx){
-  // A missing binding must never fall back to canonical database.
+ async scheduled(event,env,ctx){
   const task=(async()=>{
    if(!env?.DB?.prepare)throw Error('Isolated watchdog database binding required');
-   const snapshot=await runLiveWebsiteSnapshot();
-   const outcome=await persistMonitoringSnapshot(env.DB,snapshot);
-   console.log(JSON.stringify({event:'staging-watchdog-complete',
-    observations:outcome.observations_written,review_items:outcome.review_items_found}));
+   if(event.cron==='0 2 * * *'){
+    const report=await collectTechnologyCandidates();
+    const result=await storeTechnologyCandidates(env.DB,report);
+    console.log(JSON.stringify({event:'staging-technology-radar',
+      candidates:result.candidate_count,unverified_sources:result.source_failures.length}));
+   }else if(event.cron==='*/5 * * * *'){
+    const snapshot=await runLiveWebsiteSnapshot();
+    const outcome=await persistMonitoringSnapshot(env.DB,snapshot);
+    const audit=await auditPublicSecurityHeaders(env.DB);
+    console.log(JSON.stringify({event:'staging-watchdog-complete',
+     observations:outcome.observations_written,review_items:outcome.review_items_found,
+     header_advisory:audit.status,production_modified:false}));
+   }else throw Error('Unknown cron schedule refused');
   })();
   ctx.waitUntil(task.catch(()=>console.error(JSON.stringify({
-   event:'staging-watchdog-failed',no_production_mutations:true
+   event:'staging-monitoring-schedule-failed',no_production_mutations:true
   }))));
  }
 };
