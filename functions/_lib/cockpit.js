@@ -3,6 +3,8 @@
  * Aggregates cover their whole source tables; six-row lists are explicitly
  * samples. Reading the overview never starts work or grants authority.
  */
+import { readWatchtowerCoverage } from "./watchtower-coverage.js";
+
 export const COCKPIT_RECENT_LIMIT = 6;
 export const MONITOR_FRESHNESS_HOURS = 8;
 
@@ -72,7 +74,7 @@ export async function cockpitSnapshot(db, now = new Date()) {
     opportunities: { proposed:null, shortlisted:null }
   };
   const sources = {};
-  let recent_missions = [], recent_activity = [];
+  let recent_missions = [], recent_activity = [], coverage = null;
 
   await Promise.all([
     (async () => {
@@ -137,6 +139,17 @@ export async function cockpitSnapshot(db, now = new Date()) {
       } catch { sources.monitors = sourceState(false); }
     })(),
     (async () => {
+      try {
+        coverage = await readWatchtowerCoverage(db,now);
+        const observed = ["website","products","headquarters"]
+          .map(key => coverage.surfaces[key].last_checked_at).filter(Boolean).sort().at(-1) || null;
+        sources.coverage = sourceState(true,observed,coverage.truncated);
+      } catch {
+        coverage = null;
+        sources.coverage = sourceState(false);
+      }
+    })(),
+    (async () => {
       const results = await Promise.allSettled([
         first(db, "SELECT COUNT(*) AS count,MAX(created_at) AS observed_at FROM yorpmind_experiences WHERE status='recorded' AND scope='headquarters'"),
         first(db, "SELECT COUNT(*) AS count,MAX(updated_at) AS observed_at FROM yorpmind_skills WHERE status='approved' AND approved_revision=current_revision")
@@ -172,13 +185,13 @@ export async function cockpitSnapshot(db, now = new Date()) {
     name: "YorpHives Founder Cockpit", generated_at, scope:"private_database_evidence",
     availability: available===0 ? "unavailable" : available===Object.keys(sources).length &&
       Object.values(sources).every(source=>!source.partial) ? "ready" : "partial",
-    metrics, sources, recent_missions, recent_activity,
+    metrics, sources, coverage, recent_missions, recent_activity,
     next_actions: cockpitActions(metrics,sources),
     finances: { revenue:null, operating_cost:null, status:"not_connected",
       message:"Revenue and provider bills are not connected. Dispatch counts are not financial costs." },
     read_only:true,
     limitations:"Counts cover each whole source table. Recent mission and activity lists contain at most six records. " +
-      "Monitoring shows recorded checks, not a new live website test. Research ideas are unvalidated hypotheses. " +
+      "Monitoring and Watchtower show only stored HTTP reachability and Access-boundary checks, not product functionality or HQ runtime uptime. Research ideas are unvalidated hypotheses. " +
       "Memory contains recorded QA lessons; skill approval does not grant execution."
   };
 }
