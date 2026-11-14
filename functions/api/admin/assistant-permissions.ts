@@ -119,7 +119,7 @@ export async function onRequestGet(context:AdminRequestContext):Promise<Response
       assistants:(await list(context)).filter(x=>x.owner_email===identity.email)
         .map(row=>({...row,display_state:grantDisplayState(row),
           labels:permissionLabels(row),production_allowed:false})),
-      explanation:"Temporary grants are retired. Agents work in isolated development environments without administrator rights. Founder OTP is reserved for verified production releases."
+      explanation:"Temporary grants are retired. Agents work in isolated development environments without administrator rights. Headquarters never issues OTPs or authorizes production releases."
     };
     const accept=context.request.headers.get("accept")||"";
     const format=new URL(context.request.url).searchParams.get("format");
@@ -137,7 +137,7 @@ export async function onRequestPost(context:AdminRequestContext):Promise<Respons
   // The founder's final decision: no temporary administrator rights for any AI.
   // Keep GET audit and PATCH revoke endpoints for legacy records.
   return error("ASSISTANT_GRANTS_RETIRED",
-    "YorpMind and ChatGPT work in isolated development without administrator grants. Only a verified Go Live release requires founder approval.",410);
+    "YorpMind and ChatGPT work in isolated development without administrator grants. Production publishing happens exclusively through the founder’s separate external workflow.",410);
 }
 export async function onRequestPatch(context:AdminRequestContext):Promise<Response> {
   const identity=await requireAdmin(context);
