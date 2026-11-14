@@ -2,7 +2,7 @@
 
 Run the same Headquarters interface and application APIs on your own computer or server. Your missions, audit events and YorpMind records live in a private SQLite file. This optional runtime uses Node.js and SQLite, with no required Cloudflare account, subscription, proprietary model API or external identity provider.
 
-This is a separate installation with a **new local database**. It does not copy your Cloudflare staging data or change your public website. Live deployment, email approval, assistant gateways, cloud analytics and code-repair workers are separate integrations and remain unavailable until deliberately connected. The runtime reports these limits instead of inventing successful results.
+This is a separate installation with a **new local database**. It does not copy your Cloudflare staging data or change your public website. Production publishing, release OTP issuance, code-repair workers and assistant administrator grants are intentionally absent from Headquarters. The founder handles fixes and releases outside this service. Cloud analytics is an optional separate read-only integration; do not fake missing records. The runtime reports these limits instead of inventing successful results.
 
 ## Start on your computer or server
 
@@ -11,7 +11,7 @@ Requires **Node.js 24.12 or later** (the application is tested on Node.js 24). C
 For a fresh checkout:
 
 ```sh
-git clone --branch fix/founder-approval-at-production-only --single-branch https://github.com/solopreneursid/yorpHives-2.0.git yorphives-headquarters
+git clone --branch feature/headquarters-monitoring-only-20261114 --single-branch https://github.com/solopreneursid/yorpHives-2.0.git yorphives-headquarters
 cd yorphives-headquarters
 node --version
 node self-host/setup.mjs
