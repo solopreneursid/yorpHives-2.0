@@ -7,7 +7,7 @@
     if (text !== undefined) item.textContent = String(text);
     return item;
   };
-  const validViews = new Set(["headquarters", "releases", "yorpmind", "monitoring"]);
+  const validViews = new Set(["headquarters", "investigations", "yorpmind", "monitoring"]);
   const filters = new Set(["failed", "review", "staging", "active", "all"]);
   let fetching = false;
   let lastAttemptAt = 0;
