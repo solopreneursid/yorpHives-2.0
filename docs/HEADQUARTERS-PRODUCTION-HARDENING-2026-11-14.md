@@ -1,5 +1,16 @@
 # YorpHives Headquarters — production hardening and verified blockers
 
+> **Update — 14 November 2026:** This file contains the earlier, now historical
+> shared-D1 finding and the initial remediation plan. The actual Cloudflare
+> configuration has since been changed. The primary HQ preview is now bound to
+> a new empty independent D1; obsolete preview Worker bindings and OTP secrets
+> were removed. The older experimental Pages project no longer has D1 bindings
+> or automatic preview builds. **The canonical HQ production deployment still
+> binds a privileged Agent Worker, and launch is not ready.** Read
+> [the verified updated topology](HEADQUARTERS-LIVE-TOPOLOGY-2026-11-14.md)
+> and the read-only live topology gate before acting on this historical report.
+>
+
 **Review date:** 14 November 2026. **Status:** BLOCKED / NOT PRODUCTION-READY.  
 **Scope:** Headquarters only (`solopreneursid/yorpHives-2.0`). The public YorpHives website is a separate repository and service.
 

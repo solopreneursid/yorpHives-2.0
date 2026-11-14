@@ -45,6 +45,19 @@ export function evaluateHeadquartersProductionEvidence({
     pass("d1-environment-isolation",isolation.isolated,
       isolation.reason,
       "Preview and canonical D1 bindings refer to distinct physical databases."),
+    pass("canonical-no-privileged-execution-services",
+      project?.deployment_configs?.production != null &&
+      Object.keys(project.deployment_configs.production.services||{}).length===0,
+      "Canonical Headquarters still exposes a legacy Worker service binding, potentially capable of code changes or autonomous action. Only remove after safe migration to a tested monitoring-only deployment.",
+      "Canonical runtime no longer exposes privileged service bindings."),
+    pass("preview-no-repair-or-otp-authority",
+      project?.deployment_configs?.preview != null &&
+      Object.keys(project.deployment_configs.preview.services||{}).length===0 &&
+      !Object.keys(project.deployment_configs.preview.env_vars||{}).some(name=>
+       ["FOUNDER_EMAIL_API_TOKEN","FOUNDER_OTP_HMAC_KEY",
+        "FOUNDER_OTP_ENABLED","FOUNDER_OTP_FROM"].includes(name)),
+      "HQ preview still has deprecated repair/AI service bindings or OTP approval configuration.",
+      "HQ preview has no deprecated execution services or internal OTP approval secrets."),
     pass("auth-access-boundaries",
       access?.source==="provider_access_policies" &&
       access?.owner_email_only===true &&
