@@ -18,10 +18,12 @@ const REASONS = new Set([
   'check_failed','unknown','catalogue_contract_verified','catalogue_contract_invalid',
   'catalogue_contract_unverified','catalogue_contract_too_large',
   'catalogue_contract_incompatible','catalogue_sources_disagree','catalogue_sources_match',
-  'optional_endpoint_missing','optional_endpoint_blocked'
+  'optional_endpoint_missing','optional_endpoint_blocked',
+  'agentic_metadata_verified','agentic_metadata_invalid','agentic_metadata_too_large',
+  'agentic_payment_unverified'
 ]);
 const TARGETS = new Set([
-  'headquarters-ready','website-home','website-tools','website-studio','website-discovery','website-manifest'
+  'headquarters-ready','website-home','website-tools','website-studio','website-discovery','website-manifest','website-agent-capabilities'
 ]);
 const safeTime = value => typeof value === 'string' &&
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value) &&
