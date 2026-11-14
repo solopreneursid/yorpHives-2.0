@@ -91,7 +91,8 @@ test("Founder release UI hides legacy email-grant controls while preserving safe
   const js=await source("../admin/founder-control-center.js");
   const html=await source("../admin/index.html");
   assert.doesNotMatch(html,/id="founder-test-email" type="button"/);
-  assert.match(html,/id="release-go-live"[^>]*disabled/);
+  assert.doesNotMatch(html,/id="release-go-live"|id="founder-open-release"|id="founder-open-preview"/);
+   assert.match(html,/id="view-investigations"/);
   assert.match(html,/id="founder-stop-all"/);
   assert.doesNotMatch(html,/id="founder-otp-dialog"/);
   assert.doesNotMatch(js,/method:"POST"|send_test|action:"send"|action:"verify"/);
