@@ -83,7 +83,7 @@ export async function persistMonitoringSnapshot(db,snapshot,{clock=iso}={}){
   }
   await db.prepare(
    'UPDATE monitor_observation_runs SET status=?,finished_at=? WHERE id=?'
-  ).bind('completed',iso(),runId).run();
+  ).bind('completed',clock(),runId).run();
   // Rolling privacy-conscious evidence retention; staging only.
   const cutoff=new Date(Date.parse(now)-30*86400000).toISOString();
   await db.prepare('DELETE FROM monitor_observations WHERE observed_at < ?').bind(cutoff).run();
@@ -91,7 +91,7 @@ export async function persistMonitoringSnapshot(db,snapshot,{clock=iso}={}){
  }catch(err){
   await db.prepare(
    'UPDATE monitor_observation_runs SET status=?,finished_at=? WHERE id=?'
-  ).bind('failed',iso(),runId).run().catch(()=>{});
+  ).bind('failed',clock(),runId).run().catch(()=>{});
   throw err;
  }
  return {source:MONITOR_SOURCE,run_id:runId,observations_written:stored,
