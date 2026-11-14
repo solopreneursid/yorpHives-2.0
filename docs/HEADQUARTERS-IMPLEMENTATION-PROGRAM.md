@@ -27,6 +27,14 @@ A private, social-style Home / Inbox / Discover / Business / YorpMind / Investig
 - Report infrastructure/dependency/CVE findings, changes in published pages, security posture and monitoring coverage. Unchecked or stale routes are never marked healthy.
 - After the founder deploys an external fix, re-run relevant checks and mark the observation verified only on actual supporting evidence.
 
+### Phase B implementation slice — browser journey evidence (14 November 2026)
+
+- Independent, optional Playwright/Chromium watcher has been implemented for four real File Studio text-tool journeys (JSON formatter/minifier, Base64 encoder, URL decoder) with exact output verification.
+- A private 0600 atomic snapshot records source, timestamp, output hashes and verdict; missing/stale/unavailable coverage never counts as healthy. An owner-authenticated self-hosted API exposes it read-only.
+- Self-hosted Founder Pulse has a dedicated functional-monitoring card; core Cloudflare-hosted feed retains its existing data contract.
+- Deterministic mock-browser contract, snapshot, transition, authentication and HTTP API tests have been added.
+- **Not completed:** live browser deployment or authenticated production visual QA; PDF/image/download tools and user journeys; external watchdog alerts; continuous intelligence expansion; revenue integrations; large-scale website-preview extraction. None may be claimed verified solely from this branch.
+
 ## Phase C — source-backed research and opportunity discovery
 - Modular scanners for emerging open-source models, frameworks, competitor/product changes and global market needs.
 - Store evidence URL, publication/observed date, region, confidence, hypothesis and counter-evidence.
