@@ -70,7 +70,8 @@ test('YorpMind UI displays real team state, learning and source-linked recommend
   'ym-lesson-list','ym-roles-count','ym-model-runs','ym-learning-count'])
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.match(js,/fetchPrivateJson\('\/api\/admin\/yorpmind-os-v3'\)/);
- assert.match(js,/configured_not_proven_running/);
+ assert.match(js,/has_completed_model_run/);
+ assert.match(js,/Configured only/);
  assert.doesNotMatch(js,/method:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
  assert.doesNotMatch(js,/innerHTML|document\.write/);
  assert.doesNotMatch(source,/onRequestPost|\.run\(|\.batch\(|ADMIN_AGENT_SERVICE|github\.com/);
