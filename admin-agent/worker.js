@@ -63,11 +63,13 @@ export default {
       // Presence of a token does not prove it is scoped read-only.
       // A privileged token must be rotated by the infrastructure owner.
       return json({
-        ready: Boolean(env.GITHUB_TOKEN),
+        ready: false,
+        status: "retired_pending_cloudflare_cleanup",
         mode: "monitor_only",
         github: {
           repository: REPOSITORY,
           credential_scope_verified_read_only: false,
+          credential_present_is_not_authorization: true,
           repository_write: null
         },
         dependencies,
