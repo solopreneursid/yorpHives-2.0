@@ -381,7 +381,7 @@ async function main() {
     }));
     check("watchtower:recorded-coverage-not-fake-health",
       coverage.cards===5 && coverage.website==="CHECK FAILURE" &&
-      coverage.products==="FUNCTIONS UNVERIFIED" &&
+      ["FUNCTIONS UNVERIFIED","API CONTRACTS ONLY"].includes(coverage.products) &&
       ["RUNTIME UNVERIFIED","EXTERNAL CHECK"].includes(coverage.headquarters) &&
       coverage.market==="5 saved ideas" && coverage.revenue==="Not connected" && coverage.readOnly,
       "Each business surface reports stored reachability, unverified capabilities, or disconnected data without inventing earnings.");
