@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inspectCatalogueResponse } from '../self-host/catalogue-contract.mjs';
+import { inspectCatalogueResponse, reconcileCatalogueObservations } from '../self-host/catalogue-contract.mjs';
 import { watchdogTargets, checkWatchdogTarget } from '../self-host/watchdog.mjs';
 
 const targets=watchdogTargets();
@@ -22,7 +22,7 @@ test('public discovery and manifest probes are fixed bounded GETs, not product w
  assert.equal(manifest.kind,'manifest');
  assert.equal(manifest.url,'https://yorphives.com/free-tools/manifest.json');
  assert.deepEqual(targets.map(x=>x.id),[
-  'headquarters-ready','website-home','website-tools','website-discovery','website-manifest'
+  'headquarters-ready','website-home','website-tools','website-studio','website-discovery','website-manifest'
  ]);
 });
 
@@ -50,6 +50,53 @@ test('invalid structure, JSON fallback, empty or duplicate catalogues cannot be 
 
 test('unavailable/blocked endpoints are not treated as confirmed product functionality',async()=>{
  const response=await checkWatchdogTarget(discovery,mock('Blocked','text/plain',403));
- assert.equal(response.state,'degraded');
- assert.equal(response.reason,'http_unavailable');
+ assert.equal(response.state,'unavailable');
+ assert.equal(response.reason,'optional_endpoint_blocked');
+});
+
+test('versioned source-owned catalogue adapter returns deterministic fingerprint, no untrusted payload',()=>{
+ const api=inspectCatalogueResponse('catalogue','application/json',JSON.stringify({
+  schema_version:1,source:'yorphives-website',count:2,tools:[{slug:'image-resizer'},{slug:'json-formatter'}]
+ }));
+ const manifest=inspectCatalogueResponse('manifest','application/json',JSON.stringify({
+  schema_version:1,source:'yorphives-website',tools:[{slug:'json-formatter'},{slug:'image-resizer'}]
+ }));
+ assert.equal(api.ok,true);
+ assert.equal(api.fingerprint,manifest.fingerprint);
+ assert.equal(api.count,2);
+ assert.equal(api.contract_version,1);
+ assert.equal(reconcileCatalogueObservations(
+  {state:'reachable',reason:'catalogue_contract_verified',fingerprint:api.fingerprint},
+  {state:'reachable',reason:'catalogue_contract_verified',fingerprint:manifest.fingerprint}
+ ),true);
+ assert.doesNotMatch(JSON.stringify(api),/data:|tools|description|image-resizer/);
+});
+
+test('a valid but inconsistent website catalogue cannot be represented as synchronized',()=>{
+ const api=inspectCatalogueResponse('catalogue','application/json',JSON.stringify({data:[{slug:'a'}]}));
+ const manifest=inspectCatalogueResponse('manifest','application/json',JSON.stringify([{slug:'b'}]));
+ assert.equal(api.ok,true);assert.equal(manifest.ok,true);
+ assert.equal(reconcileCatalogueObservations(
+  {state:'reachable',reason:'catalogue_contract_verified',fingerprint:api.fingerprint},
+  {state:'reachable',reason:'catalogue_contract_verified',fingerprint:manifest.fingerprint}
+ ),false);
+ assert.equal(inspectCatalogueResponse('catalogue','application/json',JSON.stringify({
+  schema_version:2,source:'yorphives-website',tools:[{slug:'a'}]
+ })).reason,'catalogue_contract_incompatible');
+ assert.equal(inspectCatalogueResponse('catalogue','application/json',JSON.stringify({
+  schema_version:1,source:'unauthorized',tools:[{slug:'a'}]
+ })).ok,false);
+ assert.equal(inspectCatalogueResponse('catalogue','application/json',JSON.stringify({
+  schema_version:1,source:'yorphives-website',count:2,tools:[{slug:'a'}]
+ })).ok,false);
+});
+
+test('missing optional discovery route is not a false production website outage',async()=>{
+ const x=await checkWatchdogTarget(discovery,mock('Not Found','text/plain',404));
+ assert.equal(x.state,'unavailable');
+ assert.equal(x.reason,'optional_endpoint_missing');
+ assert.equal(x.http_status,404);
+ const studio=targets.find(item=>item.id==='website-studio');
+ assert.equal(studio.url,'https://yorphives.com/free-tools/file-studio/');
+ assert.equal(studio.optional,false);
 });
