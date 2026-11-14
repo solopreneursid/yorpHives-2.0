@@ -93,6 +93,12 @@
         " shortlisted. Ideas are research hypotheses, not verified demand, customers or revenue.",
         "intelligence","Explore ideas",data.sources.opportunities.observed_at,"info","RESEARCH ONLY"));
     }
+    if (data.finances?.status === "not_connected") {
+      result.push(entry("work","Revenue visibility","◈",
+        "Revenue data is not yet connected",
+        "Verified earnings and operating costs are unavailable. No revenue growth or decline can be inferred from other dashboard counts.",
+        "business","Open business intelligence",data.generated_at,"info","DATA GAP · NO ESTIMATES"));
+    }
     if (source(data,"missions")) {
       for (const mission of (Array.isArray(data.recent_missions) ? data.recent_missions : []).slice(0,3)) {
         if (!mission || typeof mission !== "object") continue;
