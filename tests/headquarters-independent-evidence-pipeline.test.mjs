@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {persistMonitoringSnapshot,auditPublicSecurityHeaders}
+import {persistMonitoringSnapshot,auditPublicSecurityHeaders,auditHeadquartersAccessGate}
  from '../monitoring/staging-watchdog.worker.mjs';
 import {parseTechnologyFeed,collectTechnologyCandidates,storeTechnologyCandidates,
  TECHNOLOGY_FEEDS} from '../monitoring/open-technology-radar.mjs';
@@ -137,4 +137,43 @@ test('watchdog has no HTTP control plane',async()=>{
  const res=await worker.fetch(new Request('https://example.test/attempt-live'));
  assert.equal(res.status,404);
  assert.equal((await res.text()),'Not found');
+});
+
+test('Headquarters outside-in Access challenge receipt is read-only and not internal health certification',async()=>{
+ const x=database();
+ try{
+  const sample=await persistMonitoringSnapshot(x.db,fakeSnapshot(),{clock:()=>checked});
+  const status=await auditHeadquartersAccessGate(x.db,sample.run_id,{
+   clock:()=>checked,fetcher:async(url,opts)=>{
+    assert.equal(url,'https://admin-staging.yorphives.com/admin/');
+    assert.equal(opts.method,'GET');assert.equal(opts.redirect,'manual');
+    assert.equal(opts.headers.authorization,undefined);
+    return new Response(null,{status:302,headers:{
+     location:'https://yorphives-zerotrust.cloudflareaccess.com/cdn-cgi/access/login/admin-staging.yorphives.com'
+    }});
+   }
+  });
+  assert.equal(status.status,'verified');
+  assert.equal(status.private_api_verified,false);
+  assert.equal(x.engine.prepare("SELECT COUNT(*) n FROM monitor_observations").get().n,10);
+  assert.equal(x.engine.prepare("SELECT COUNT(*) n FROM monitor_targets WHERE kind='headquarters'").get().n,1);
+  const found=x.engine.prepare("SELECT status,note FROM monitor_observations WHERE target_id='headquarters-access-gate'").get();
+  assert.match(found.note,/external_access_challenge_present/);
+  assert.equal(found.status,'verified');
+  assert.equal(x.engine.prepare("SELECT COUNT(*) n FROM monitor_signals WHERE category='security'").get().n,0);
+ }finally{x.close();}
+});
+test('Headquarters anonymous 200 flags security review rather than claiming owner identity verified',async()=>{
+ const x=database();
+ try{
+  const sample=await persistMonitoringSnapshot(x.db,fakeSnapshot(),{clock:()=>checked});
+  const result=await auditHeadquartersAccessGate(x.db,sample.run_id,{
+   clock:()=>checked,fetcher:async()=>new Response('<html>Admin UI</html>',{status:200})
+  });
+  assert.equal(result.status,'degraded');
+  assert.equal(result.private_api_verified,false);
+  const signal=x.engine.prepare("SELECT * FROM monitor_signals WHERE category='security'").all();
+  assert.equal(signal.length,1);
+  assert.match(signal[0].title,/authentication boundary/);
+ }finally{x.close();}
 });
