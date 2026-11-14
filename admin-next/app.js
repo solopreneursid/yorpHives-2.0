@@ -225,13 +225,16 @@ async function loadYorpMindOS(){
    throw Error('YorpMind OS evidence unverified');
   const summary=d.summary||{};
   const active=d.actual_agent_inference_verified===true;
-  $('ym-ai-status').className='badge '+(active?'status-verified':'status-not_published');
-  $('ym-ai-status').textContent=active?'Private analysis recorded':'AI model not yet verified';
+  const bots=d.deterministic_evidence_bots_verified===true;
+  $('ym-ai-status').className='badge '+(active?'status-verified':bots?'status-reachable':'status-not_published');
+  $('ym-ai-status').textContent=active?'Private AI analysis recorded':bots?'Evidence bots active':'AI model not yet verified';
   setText('ym-ai-summary',active?
-   'Private model analysis receipts have been recorded. Recommendations are evidence-linked, not approved actions.':
-   'Agent roles are configured in isolated staging. No completed private open-weight model inference has yet been independently verified.');
+   'Private open-weight model analysis receipts exist. Proposals require independent human verification before any action.':
+   bots?'Deterministic YorpMind research and security bots are producing review briefs. No private open-weight AI inference has been verified yet.':
+   'Specialist roles are configured, but neither actual evidence-bot work nor private open-weight model inference has been independently verified.');
   for(const [id,key] of [['ym-roles-count','configured_employees'],
    ['ym-model-runs','completed_agent_runs'],
+   ['ym-bot-runs','completed_evidence_bot_reviews'],
    ['ym-brief-count','pending_founder_reviews'],
    ['ym-learning-count','verified_learning_records']])
    setText(id,summary[key]??'—');
@@ -239,9 +242,10 @@ async function loadYorpMindOS(){
   for(const emp of d.employees){
    const card=document.createElement('article');card.className='integration';
    const name=document.createElement('strong');name.textContent=emp.agent_role;
-   const state=badge(emp.activity==='has_completed_model_run'?'verified':'not_published');
-   state.textContent=emp.activity==='has_completed_model_run'?
-    'Analysis recorded':'Configured only';
+   const model=emp.activity==='has_completed_model_run';
+   const bot=emp.activity==='has_completed_evidence_bot_review';
+   const state=badge(model?'verified':bot?'reachable':'not_published');
+   state.textContent=model?'Private model run':bot?'Evidence bot review':'Configured only';
    const detail=document.createElement('small');
    detail.textContent=String(emp.department)+' · local open-weight model · observe & recommend only';
    card.append(name,state,detail);roster.append(card);
