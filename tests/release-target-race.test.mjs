@@ -1,46 +1,49 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 
-test('a slow response for the previous release target cannot overwrite the current preview', async () => {
-  const nodes = new Map();
-  function node() {
-    return { textContent: '', value: '', handlers: {}, children: [],
-      addEventListener(name, handler) { this.handlers[name] = handler; },
-      removeAttribute(name) { delete this[name]; },
-      setAttribute(name, value) { this[name] = value; },
-      replaceChildren(...children) { this.children = children; },
-      append(child) { this.children.push(child); }
+test('simultaneous history refreshes coalesce without making any production release request', async () => {
+  const elements = new Map();
+  function element() {
+    return {
+      textContent: '', disabled: false, children: [], handlers: {},
+      addEventListener(name,handler) { this.handlers[name]=handler; },
+      replaceChildren(...children) { this.children=children; },
+      append(...children) { this.children.push(...children); }
     };
   }
   const document = {
-    readyState: 'complete', createElement: node,
-    getElementById(id) { if (!nodes.has(id)) nodes.set(id, node()); return nodes.get(id); }
+    readyState: 'complete',
+    createElement: element,
+    getElementById(id) { if(!elements.has(id)) elements.set(id,element()); return elements.get(id); }
   };
-  let resolveWebsite;
-  const websiteResponse = new Promise(resolve => { resolveWebsite = resolve; });
-  const result = target => Response.json({ target, production_approved: false,
-    production_deployment_enabled: false, ready_for_preview: true,
-    status: 'verified_preview', blockers: [],
-    preview: { url: 'https://abcd1234.' + (target === 'headquarters' ? 'yorphives-admin-staging' : 'yorphives-2-preview') + '.pages.dev/' }
-  });
+  const window = {};
+  let resolveResponse, requests = 0;
+  const gate = new Promise(resolve => { resolveResponse=resolve; });
   const fetch = async url => {
-    if (url.endsWith('target=website')) return websiteResponse;
-    if (url.endsWith('target=headquarters')) return result('headquarters');
-    return Response.json({}, { status: 503 });
+    assert.equal(url,'/api/admin/release-evidence');
+    requests++;
+    return gate;
   };
-  vm.runInNewContext(await readFile(new URL('../admin/release-evidence.js', import.meta.url), 'utf8'),
-    { document, window: {}, fetch, URL, AbortSignal, Response });
-  const select = document.getElementById('release-target');
-  select.value = 'website';
-  const first = select.handlers.change();
-  select.value = 'headquarters';
-  await select.handlers.change();
-  const preview = document.getElementById('release-launch-preview');
-  assert.equal(preview.href, 'https://abcd1234.yorphives-admin-staging.pages.dev');
-  resolveWebsite(result('website'));
+  vm.runInNewContext(await readFile(new URL('../admin/release-evidence.js',import.meta.url),'utf8'),
+    {document,window,fetch,Date,URL,AbortSignal,Number,Response});
+  const first=window.loadInvestigationHistory();
+  assert.equal(window.loadInvestigationHistory(),first);
+  assert.equal(requests,1);
+  resolveResponse(Response.json({
+    production_approved:false,production_deployment_enabled:false,
+    generated_at:'2026-11-14T00:00:00Z',
+    counts:{repairs:1,ci_attested:1,qa_recorded:0},
+    repairs:[{title:'Verified historical observation',job_status:'needs_review',
+      updated_at:'2026-11-14T00:00:00Z',blockers:['Independent review outstanding'],
+      ci_verified:true,qa_recorded_for_ci_revision:false}]
+  }));
   await first;
-  assert.equal(preview.href, 'https://abcd1234.yorphives-admin-staging.pages.dev');
-  assert.equal(document.getElementById('release-go-live').disabled, true);
+  assert.equal(requests,1);
+  assert.match(elements.get('release-evidence-updated').textContent,/Recorded data retrieved/);
+  assert.equal(elements.get('release-evidence-list').children.length,1);
+  assert.equal(elements.get('release-evidence-refresh').disabled,false);
+  assert.equal(elements.has('release-go-live'),false);
+  assert.equal(elements.has('release-launch-preview'),false);
 });
