@@ -85,6 +85,7 @@ export async function createHeadquartersServer({
   }
   async function asset(pathname) {
     if (pathname === '/runtime/session.js') return new Response(await readFile(new URL('./session.js', import.meta.url)), { headers: { 'content-type': MIME['.js'] } });
+    if (pathname === '/runtime/functional-panel.js') return new Response(await readFile(new URL('./functional-panel.js', import.meta.url)), { headers: { 'content-type': MIME['.js'] } });
     const isAdmin = pathname.startsWith('/admin/'), isBrand = pathname.startsWith('/brand/');
     if (!isAdmin && !isBrand) return adminJson({ error: { message: 'Not found.' } }, 404);
     const extension = extname(pathname);
@@ -103,7 +104,7 @@ export async function createHeadquartersServer({
       let content = await handle.readFile();
       if (pathname === '/admin/index.html') {
         content = content.toString('utf8').replace('<html lang="en">', '<html lang="en" data-runtime="self-hosted">')
-          .replace('</body>', '<script src="/runtime/session.js" defer></script></body>');
+          .replace('</body>', '<script src="/runtime/session.js" defer></script><script src="/runtime/functional-panel.js" defer></script></body>');
       }
       return new Response(content, { headers: { 'content-type': MIME[extension] } });
     } catch { return adminJson({ error: { message: 'Not found.' } }, 404); }
