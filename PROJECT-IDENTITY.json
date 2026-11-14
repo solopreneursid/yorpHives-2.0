@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "project_id": "yorphives-headquarters",
+  "display_name": "YorpHives Headquarters",
+  "role": "private-monitoring-and-founder-control",
+  "repository": "solopreneursid/yorpHives-2.0",
+  "canonical_checkout": "headquarters",
+  "not_the_website": true,
+  "sibling_project": {
+    "project_id": "yorphives-website",
+    "repository": "solopreneursid/YorpHives",
+    "canonical_checkout": "website",
+    "role": "public-website-and-products"
+  },
+  "source_roots": [
+    "admin/",
+    "functions/api/admin/",
+    "admin-monitor/",
+    "hq-intelligence/",
+    "hq-engine/",
+    "self-host/"
+  ],
+  "legacy_website_preview_paths": [
+    "index.html",
+    "app.js",
+    "styles.css",
+    "free-tools/",
+    "discover/",
+    "explore/",
+    "listing/",
+    "builder/",
+    "connect/",
+    "functions/api/v1/"
+  ],
+  "shared_review_required": [
+    "brand/",
+    "functions/_lib/",
+    "functions/_middleware.js",
+    "migrations/",
+    "package.json",
+    ".github/"
+  ],
+  "operations_policy": {
+    "headquarters_can_monitor_both": true,
+    "automatic_repairs": false,
+    "automatic_publishing": false,
+    "founder_exact_preview_required": true,
+    "founder_go_live_otp_required": true
+  }
+}

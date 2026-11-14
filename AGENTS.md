@@ -1,26 +1,42 @@
-# YorpHives Headquarters project boundary
+# AGENTS.md — READ FIRST IN EVERY NEW CHAT / AGENT SESSION
 
-This repository's active project is YorpHives Headquarters, the private monitoring and intelligence system. Use a checkout directory named `headquarters`. The separate public product website belongs in a sibling `website` checkout of https://github.com/solopreneursid/YorpHives.git.
+> **PROJECT IDENTITY: HEADQUARTERS.** This repository is **NOT** the production YorpHives website.
+> Never rely on conversation memory or project name similarities to choose a workspace.
+> Confirm the actual Git origin before reading, editing, testing or deploying files.
 
-## Headquarters scope
+## Identity matrix (authoritative)
 
-- Interface: `admin/`.
-- Private API: `functions/api/admin/`, `functions/admin/`, and related private modules in `functions/_lib/`.
-- Monitoring and research: `admin-monitor/`, `hq-intelligence/`, `hq-engine/`.
-- Self-hosted runtime: `self-host/`.
-- Supporting records: Headquarters migrations, tests, scripts and documentation.
-- Historical repair implementation: `admin-agent/`. Its presence does not authorize autonomous repairs.
+| Project | Sibling checkout | Git origin | What it owns |
+| --- | --- | --- | --- |
+| **YorpHives Headquarters** | `headquarters/` | `solopreneursid/yorpHives-2.0` | Private monitoring, security findings, opportunities/revenue intelligence, founder dashboard and release review |
+| **YorpHives Website** | `website/` | `solopreneursid/YorpHives` | Production public site, products, free tools, SEO, ads, commercial pages and public deployment |
 
-Headquarters observes both systems, collects evidence, researches opportunities and revenue, and recommends actions. The founder owns changes. Publishing requires the founder's exact Preview → Go Live → OTP flow. Keep monitoring permissions separate from release execution.
+Each directory is a **different Git repository** with its own history, tests, environment and deployment. Neither is a child application of the other. Read `docs/PROJECT-DIRECTORIES.md`.
 
-## Website boundary
+## Mandatory pre-edit protocol for ChatGPT / Codex / coding agents
 
-Public products and their production source are maintained in the sibling `website` repository. Resolve repository and branch before editing, testing or releasing. A Headquarters request authorizes Headquarters work. It does not authorize unrelated changes to public products.
+1. Read this `AGENTS.md`, `PROJECT-IDENTITY.json` and `docs/PROJECT-DIRECTORIES.md` — even when no prior chat exists.
+2. Run `git rev-parse --show-toplevel`, `git remote get-url origin` and `git branch --show-current` in the chosen checkout. Or run `node scripts/workspace-boundaries.mjs identify`.
+3. State in your work log: **project, checkout absolute path, exact Git origin, branch/commit and deployment target**.
+4. A request about **Headquarters** only authorizes working in `headquarters/`. A request about the **website** only authorizes working in `website/`. If both are required, produce independent commits, tests and approvals. Never change the other project opportunistically.
+5. For HQ-only changes run `node scripts/workspace-boundaries.mjs guard headquarters <file-relative-to-HQ-root>` before writing. This fails closed for website-only, unknown and shared paths. Unknown/shared files require explicit dependency review.
+6. Verify tests and preview for the targeted project. **Do not deploy, merge or publish** without the founder's review. The exact Preview → Go Live → OTP gate remains mandatory.
 
-This repository still contains legacy website-preview assets (`index.html`, `app.js`, `styles.css`, `free-tools/`, `discover/`, `explore/`, `listing/`, `builder/`, `connect/`, and `functions/api/v1/`). They remain here because current tests and preview tooling reference them. Treat them as legacy website scope, never as Headquarters UI. Migration must update callers, tests and deployment inputs together.
+## Headquarters-owned code
 
-Brand assets, middleware, database history and root build configuration currently have shared callers. Inspect those callers before changing them. Never copy live database files, credentials or runtime state between projects.
+`admin/` = **Headquarters user interface** (not public website);
+`functions/api/admin/`, `functions/admin/` = private APIs;
+`admin-monitor/`, `hq-intelligence/`, `hq-engine/` = monitoring/research;
+`self-host/` = self-hosted runtime and database. `admin-agent/` is historical code: its presence **does not authorize automatic repair**. HQ observes both properties and reports issues; the founder makes fixes and controls deployment.
 
-## Working practice
+## Misleading old paths inside THIS HQ repository
 
-Run Headquarters commands from `headquarters/` and website commands from `website/`. Use explicit working directories. Keep each repository's commits, tests, previews and release target identifiable. A successful website check does not verify Headquarters, and a successful Headquarters check does not verify the website.
+Historical **website-preview** files still exist here: root `index.html`, `app.js`, `styles.css`, `free-tools/`, `discover/`, `explore/`, `listing/`, `builder/`, `connect/`, `functions/api/v1/`, `openapi.yaml`, etc. **They are not the live website's canonical source.** Do NOT build public products in them or confuse them with Headquarters. Existing HQ tests/preview tooling depend on some of them. Their removal requires a gated migration; see `docs/HEADQUARTERS-LEGACY-WEBSITE-EXTRACTION.md`.
+
+`brand/`, `functions/_lib/`, `functions/_middleware.js`, `migrations/`, root configuration and generic tests/docs are **shared/ambiguous**. Never assume ownership or copy secrets/data between projects.
+
+## Safety and publishing
+
+Headquarters is a monitoring system, not an automatic repair/deploy agent. It checks Headquarters and the website, finds vulnerabilities, updates, market openings and revenue opportunities, and queues evidence for the founder. Fixes are made by the founder (with coding assistance). Founder reviews the actual target's final preview and enters an OTP before Go Live. Separate private credentials, backups, environments and release permissions permanently.
+
+**If this file is being read without chat memory, the correct first action is to identify the repository and project, not to invent or inherit earlier context.**
