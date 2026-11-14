@@ -10,7 +10,7 @@
  * ONLY a preview D1 database. The same public evidence source can be run by
  * the future independent self-hosted Node+SQLite adapter.
  */
-import {runLiveWebsiteSnapshot} from '../admin-monitor/live-website-evidence.js';
+import {runLiveWebsiteSnapshot,LIVE_WEBSITE_TARGETS} from '../admin-monitor/live-website-evidence.js';
 import {collectTechnologyCandidates,storeTechnologyCandidates} from './open-technology-radar.mjs';
 
 const TARGET_KIND=Object.freeze({website:'website',security:'security'});
@@ -41,13 +41,17 @@ export async function persistMonitoringSnapshot(db,snapshot,{clock=iso}={}){
  const now=clock(),runId='watch-'+crypto.randomUUID();
  const ids=new Set();
  for(const row of snapshot.observations){
-  if(!row||!allowedStates.has(row.state)||typeof row.id!=='string'||
-     !/^[-a-z0-9]{4,90}$/.test(row.id)||ids.has(row.id)||
-     typeof row.title!=='string'||row.title.length<1||row.title.length>180||
-     typeof row.url!=='string'||!row.url.startsWith('https://yorphives.com/')||
-     typeof row.reason!=='string')throw Error('Invalid fixed-target watchdog row');
+  const target=LIVE_WEBSITE_TARGETS.find(t=>t.id===row?.id);
+  if(!target||!row||!allowedStates.has(row.state)||
+     typeof row.id!=='string'||!/^[-a-z0-9]{4,90}$/.test(row.id)||
+     ids.has(row.id)||row.title!==target.title||row.kind!==target.kind||
+     row.url!=='https://yorphives.com'+target.path||
+     typeof row.reason!=='string'||row.reason.length>100)
+    throw Error('Invalid fixed-target watchdog row');
   ids.add(row.id);
  }
+ if(ids.size!==LIVE_WEBSITE_TARGETS.length)
+  throw Error('Incomplete frozen-target evidence');
  await db.prepare(
   'INSERT INTO monitor_observation_runs (id,started_at,collector,status) VALUES (?,?,?,?)'
  ).bind(runId,now,'external-watchdog','running').run();
