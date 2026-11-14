@@ -25,7 +25,7 @@ async function fixture() {
     devDependencies: { "@tailwindcss/cli": "4.3.5", tailwindcss: "4.3.5" }
   }));
   await mkdir(join(dir, "migrations"), { recursive: true });
-  for (let i = 4; i <= 30; i++) {
+  for (let i = 4; i <= 27; i++) {
     await writeFile(join(dir, "migrations", String(i).padStart(4, "0") + "_test.sql"), "SELECT 1;");
   }
   return dir;
