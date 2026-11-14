@@ -443,7 +443,7 @@ export async function runAssetIntelligence(db) {
       });
       knownPaths.add(path);
     }
-    if (sitemapEntries===0 || (!discovered.size && !knownPaths.size))
+    if (sitemapEntries === 0 || (!discovered.size && !knownPaths.size))
       throw new Error("Sitemap contained no recognized first-party URL entries.");
     for (const asset of discovered.values()) inventory.push(asset);
     if(legacySitemapEntries)
