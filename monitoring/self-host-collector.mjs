@@ -11,7 +11,7 @@ import {readFile,chmod,lstat,mkdir} from 'node:fs/promises';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {runLiveWebsiteSnapshot} from '../admin-monitor/live-website-evidence.js';
-import {persistMonitoringSnapshot,auditPublicSecurityHeaders}
+import {persistMonitoringSnapshot,auditPublicSecurityHeaders,auditHeadquartersAccessGate}
  from './staging-watchdog.worker.mjs';
 import {collectTechnologyCandidates,storeTechnologyCandidates}
  from './open-technology-radar.mjs';
@@ -65,12 +65,14 @@ export async function runStandaloneCycle(adapter,{
 }={}){
  const snapshot=await runLiveWebsiteSnapshot({fetcher,clock});
  const outcome=await persistMonitoringSnapshot(adapter,snapshot,{clock});
- // Header check is advisory only and failure cannot erase a website receipt.
- let header={status:'unavailable'};
+ // Header and Headquarters checks are advisory, never permission to repair.
+ let header={status:'unavailable'},hq={status:'unknown'};
  try{header=await auditPublicSecurityHeaders(adapter,{fetcher,clock});}catch{}
+ try{hq=await auditHeadquartersAccessGate(adapter,outcome.run_id,{fetcher,clock});}catch{}
  return {source:'selfhost_independent_watchdog',observed_at:clock(),
-  observations:outcome.observations_written,header_advisory:header.status,
-  production_modified:false};
+  observations:outcome.observations_written+(hq.status!=='unknown'?1:0),
+  header_advisory:header.status,headquarters_access_gate:hq.status,
+  headquarters_internal_health_verified:false,production_modified:false};
 }
 export async function runStandaloneRadar(adapter,{fetcher=globalThis.fetch}={}){
  const feeds=await collectTechnologyCandidates({fetcher});
