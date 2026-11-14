@@ -10,6 +10,8 @@ export interface AdminD1Database {
 }
 export interface AdminEnv {
   DB?: AdminD1Database;
+  /** Explicit, preview-only read-only monitoring surface; default deny. */
+  HQ_MONITOR_V3_MODE?: string;
   CF_ACCESS_TEAM_DOMAIN?: string;
   CF_ACCESS_AUD?: string;
   ADMIN_ALLOWED_EMAILS?: string;
