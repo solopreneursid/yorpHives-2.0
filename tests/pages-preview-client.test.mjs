@@ -143,6 +143,10 @@ const adminProject={
   production_branch:"build/yorphives-admin-reliability",deployments_enabled:true
  }},
  production_branch:"build/yorphives-admin-reliability",
+ deployment_configs:{
+  preview:{d1_databases:{DB:{id:"84c324ac-f7dc-4304-80bf-8da16da18c4c"}}},
+  production:{d1_databases:{DB:{id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}}}
+ },
  canonical_deployment:{
   id:"77ffbf58-5ff8-4f01-90ba-6e657d9acfc0",
   environment:"production",
@@ -203,4 +207,40 @@ test("HQ production default branch and malformed branch names cannot reach API",
   }),/feature branches/);
   assert.equal(called,false);
  }
+});
+
+test("a shared preview/canonical D1 blocks HQ preview before any POST",async()=>{
+  const seen=[];
+  const shared={...adminProject,deployment_configs:{
+    preview:{d1_databases:{DB:{id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}}},
+    production:adminProject.deployment_configs.production
+  }};
+  const fake=async(url,init)=>{
+    seen.push(init.method);
+    if(init.method==="POST")throw Error("Unsafe deployment: should never POST");
+    return json({success:true,result:shared});
+  };
+  await assert.rejects(createOrReusePreview({...adminBase,fetchImpl:fake}),
+    /SAME D1 database/);
+  assert.deepEqual(seen,["GET"]);
+});
+test("a post-creation Cloudflare binding drift invalidates otherwise successful HQ preview",async()=>{
+  let reads=0;
+  const unsafe={...adminProject,deployment_configs:{
+    preview:{d1_databases:{DB:{id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}}},
+    production:adminProject.deployment_configs.production
+  }};
+  const fake=async(url,init)=>{
+    if(init.method==="GET") {
+      reads++;
+      return json({success:true,result:reads===1?adminProject:unsafe});
+    }
+    return json({success:true,result:deployment({
+      url:"https:/" + "/aaa7346f.yorphives-admin-staging.pages.dev",
+      deployment_trigger:{metadata:{branch:adminBase.branch,commit_hash:adminBase.commitSha}}
+    })});
+  };
+  await assert.rejects(createOrReusePreview({...adminBase,fetchImpl:fake}),
+    /D1 isolation changed/);
+  assert.equal(reads,2);
 });

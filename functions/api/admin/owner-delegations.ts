@@ -1,6 +1,6 @@
 /**
  * Legacy YorpMind production delegation HISTORY ONLY.
- * No separate approvals or administrator grants. Founder Go Live is separate.
+ * No separate approvals or administrator grants. Production publishing is outside Headquarters.
  */
 import {adminJson,isAdminResponse,requireAdmin,type AdminRequestContext}
  from "../../_lib/admin-auth";
@@ -29,5 +29,5 @@ export async function onRequestPost(context:AdminRequestContext):Promise<Respons
  const identity=await requireAdmin(context);
  if(isAdminResponse(identity))return identity;
  return error("LEGACY_APPROVAL_RETIRED",
-  "Separate administrator or production delegation approvals are retired. The founder authorizes only a verified Go Live release.",410);
+  "Separate administrator or production delegation approvals are retired. The founder develops and publishes independently outside Headquarters.",410);
 }

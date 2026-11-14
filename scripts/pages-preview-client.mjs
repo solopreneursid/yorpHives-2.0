@@ -1,8 +1,10 @@
+import {verifyHeadquartersD1Isolation} from "../functions/_lib/hq-resource-isolation.js";
+
 const PROJECTS = Object.freeze({
   "yorphives-2-preview": { output: "SITE_BASE_URL", productionBranch: "main" },
   "yorphives-admin-staging": { output: "ADMIN_BASE_URL", productionBranch: "build/yorphives-admin-reliability" }
 });
-const APPROVED_BRANCH = /^(?:build|feature|fix|qa|design|ops)\/[a-z0-9][a-z0-9._/-]{1,110}$/;
+const APPROVED_BRANCH = /^(?:build|feature|fix|qa|design|ops|hardening)\/[a-z0-9][a-z0-9._/-]{1,110}$/;
 const isSafePreviewBranch = value => typeof value === "string" &&
   APPROVED_BRANCH.test(value) && !value.includes("..") &&
   !value.includes("//") && !value.endsWith("/") && !value.endsWith(".") &&
@@ -99,6 +101,9 @@ export async function createOrReusePreview({
     const previous = await readProject();
     const validated = validateHeadquartersPreviewProject(previous, branch);
     if (!validated) throw Error("Headquarters staging project or production branch did not match the safe allowlist.");
+    // A branch is not isolated if its preview environment shares the D1 DB.
+    const isolation = verifyHeadquartersD1Isolation(previous);
+    if (!isolation.isolated) throw Error("Headquarters preview blocked: " + isolation.reason);
     guardedCanonical = validated.canonicalId;
   }
   const form = new FormData();
@@ -120,6 +125,9 @@ export async function createOrReusePreview({
         payload?.result?.canonical_deployment?.id !== guardedCanonical) {
       throw Error("Headquarters canonical deployment changed or could not be verified; investigate before continuing.");
     }
+    // Recheck the live provider binding after the cloud operation, too.
+    const after = verifyHeadquartersD1Isolation(payload.result);
+    if (!after.isolated) throw Error("Headquarters D1 isolation changed during preview verification: " + after.reason);
   };
   if (response.status === 304) {
     const found = await findExactSuccessfulPreview({

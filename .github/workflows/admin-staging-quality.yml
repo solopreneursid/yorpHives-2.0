@@ -3,7 +3,7 @@ name: YorpHives authenticated Admin staging smoke tests
 on:
   # Development QA does NOT require founder approval.
   # This is a manually dispatchable, read-only staging verifier until a trusted
-  # automated dispatch identity is configured. The founder only approves Go Live.
+  # automated dispatch identity is configured. Headquarters never handles Go Live.
   workflow_dispatch:
 
 permissions:
@@ -43,7 +43,7 @@ jobs:
             echo "::error::The checked-out revision does not match the exact GitHub commit."
             exit 1
           fi
-          if ! [[ "$PAGES_BRANCH" =~ ^(build|feature|fix|qa|design|ops)/[a-z0-9._/-]+$ ]] ||
+          if ! [[ "$PAGES_BRANCH" =~ ^(build|feature|hardening|fix|qa|design|ops)/[a-z0-9._/-]+$ ]] ||
              [ "$PAGES_BRANCH" = "main" ] || [ "$PAGES_BRANCH" = "master" ]; then
             echo "::error::Only isolated development branches can be tested here."
             exit 1
@@ -113,9 +113,9 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  independent-release-qa:
-    # Only verified signed-in staging evidence, checked by an unprivileged job.
-    name: Independent release QA
+  independent-monitoring-qa:
+    # Only verified signed-in staging evidence, checked by an unprivileged QA job.
+    name: Independent monitoring QA
     needs: authenticated-admin-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 5

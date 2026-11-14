@@ -103,8 +103,8 @@ export async function audit() {
       "Verify PR lineage and reconcile changes introduced by both sides when main has diverged.",
       "Complete staging browser, SEO, security, functional, accessibility and performance testing.",
       "Verify actual Cloudflare charges or explicitly mark billing data unavailable (not zero).",
-      "Run and independently validate repair-to-preview functionality.",
-      "Require explicit authenticated founder authorization for exact production commit and recovery plan."
+      "Run and independently validate monitoring-only, owner-authenticated staging observations; no repair or publishing controls.",
+      "Require separate founder-led external deployment decision for the exact production commit and verified rollback plan."
     ]
   };
 }

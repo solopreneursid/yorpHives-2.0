@@ -4,15 +4,5 @@
   "main": "./staging-rehearsal-entry.js",
   "compatibility_date": "2026-11-12",
   "workers_dev": false,
-  "ai": { "binding": "AI" },
-  "d1_databases": [{
-    "binding": "DB",
-    "database_name": "yorphives-2-catalogue-preview",
-    "database_id": "e8690813-b139-44a2-a1c7-bea2d2777ead"
-  }],
-  "workflows": [{
-    "name": "yorphives-hq-missions-rehearsal",
-    "binding": "MISSION_WORKFLOW",
-    "class_name": "MissionWorkflow"
-  }]
+  "preview_urls": false
 }

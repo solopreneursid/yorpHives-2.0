@@ -14,13 +14,10 @@ async function fixture() {
       "on:\n  pull_request:\njobs:\n  checks:\n    steps:\n      - run: npm run check\n" :
       path === "functions/_lib/admin-auth.ts" ? "CF_ACCESS_AUD" :
       path === "hq-engine/staging-rehearsal-entry.js" ?
-        'export { MissionWorkflow } from "./worker.js"; export default { async fetch() { return new Response("No route", {status:404}); } };' :
+        'export default { async fetch() { return new Response("No route", {status:404}); } };' :
       path === "hq-engine/wrangler.rehearsal.jsonc" ? JSON.stringify({
         name: "yorphives-hq-mission-rehearsal", main: "./staging-rehearsal-entry.js",
-        workers_dev: false, ai: {binding:"AI"},
-        d1_databases:[{binding:"DB",database_id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}],
-        workflows:[{binding:"MISSION_WORKFLOW",name:"yorphives-hq-missions-rehearsal",
-          class_name:"MissionWorkflow"}]
+        workers_dev: false, preview_urls: false
       }) : "fixture");
   }
   await writeFile(join(dir, "package.json"), JSON.stringify({
@@ -38,7 +35,7 @@ test("valid repository passes static checks but is never approved for production
   const dir = await fixture();
   try {
     const report = await assessHeadquarters(dir);
-    assert.equal(report.static_checks_passed, true);
+    assert.equal(report.static_checks_passed, true, JSON.stringify(report.checks.filter(c => c.status === "fail")));
     assert.equal(report.ready_for_production, false);
     assert.equal(report.policy.new_external_paid_services, "prohibited_without_prior_owner_approval");
     assert.equal(report.policy.cost_target_usd_monthly_incremental, 0);
@@ -55,7 +52,7 @@ test("rehearsal isolation gate rejects public exposure and production bindings",
     const config=JSON.parse(await (await import("node:fs/promises")).readFile(
       join(dir, "hq-engine/wrangler.rehearsal.jsonc"),"utf8"));
     config.workers_dev=true;
-    config.d1_databases[0].database_id="unreviewed-production-database";
+    config.d1_databases=[{binding:"DB",database_id:"unreviewed-production-database"}];
     await writeFile(join(dir,"hq-engine/wrangler.rehearsal.jsonc"),JSON.stringify(config));
     const report=await assessHeadquarters(dir);
     assert.equal(report.static_checks_passed,false);
@@ -90,4 +87,19 @@ test("missing migration and missing CI checks are independently reported", async
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test("historical shared-D1 rehearsal permissions must never be revived",async()=>{
+  const dir=await fixture();
+  try{
+    const configPath=join(dir,"hq-engine/wrangler.rehearsal.jsonc");
+    const config=JSON.parse(await (await import("node:fs/promises")).readFile(configPath,"utf8"));
+    config.workers_dev=false;
+    config.d1_databases=[{binding:"DB",database_id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}];
+    await writeFile(configPath,JSON.stringify(config));
+    const report=await assessHeadquarters(dir);
+    assert.equal(report.static_checks_passed,false);
+    assert.equal(report.checks.find(c=>c.id==="rehearsal-worker-isolation").status,"fail");
+    assert.equal(report.ready_for_production,false);
+  }finally{await rm(dir,{recursive:true,force:true});}
 });

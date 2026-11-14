@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile, stat, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, stat, symlink, writeFile, chmod, link } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { writeWatchdogEvidence, readWatchdogEvidence } from '../self-host/watchdog-evidence.mjs';
 
 const date = '2026-11-14T02:00:00.000Z';
@@ -68,4 +68,20 @@ test('a degraded HQ runtime remains degraded even when website checks pass',asyn
   const result=await readWatchdogEvidence(path,{now:Date.parse(date)+1000});
   assert.equal(result.connected,true);
   assert.equal(result.status,'degraded');
+});
+
+test('watchdog reports never trust group-readable, hardlinked or unsafe parent files',async t=>{
+  const path=await fixture(t);
+  await writeWatchdogEvidence(path,record());
+  const now=Date.parse(date)+1000;
+  await chmod(path,0o644);
+  assert.equal((await readWatchdogEvidence(path,{now})).connected,false);
+  await chmod(path,0o600);
+  const second=path+'.json';
+  await link(path,second);
+  assert.equal((await readWatchdogEvidence(path,{now})).connected,false);
+  await rm(second);
+  await chmod(dirname(path),0o755);
+  assert.equal((await readWatchdogEvidence(path,{now})).connected,false);
+  await assert.rejects(()=>writeWatchdogEvidence(path,record()),/owner-private/);
 });

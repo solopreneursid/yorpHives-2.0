@@ -30,7 +30,7 @@ export function verifyHeadquartersD1Isolation(project){
  if(!UUID.test(String(p||""))||!UUID.test(String(c||"")))
   return fail("Both preview and canonical Headquarters require independently identified D1 DB bindings.");
  if(p.toLowerCase()===c.toLowerCase())
-  return fail("Preview and canonical Headquarters share the SAME D1 database. Isolate preview D1 before migrations, live QA or Go Live.");
+  return fail("Preview and canonical Headquarters share the SAME D1 database. Isolate preview D1 before migrations, authenticated live QA or any deployment.");
  // We never publish database identifiers to an untrusted browser.
  return Object.freeze({
   schema_version:1,target:"headquarters",isolated:true,
