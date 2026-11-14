@@ -1,4 +1,6 @@
 import { assessAssetRepresentation, isMachineReadableAsset } from "./asset-policy.js";
+import { normalizeWebsiteSitemapUrl, normalizeWebsiteToolInventory }
+ from "./website-inventory-contract.js";
 
 const SITE_ORIGIN = "https://yorphives.com";
 const MAX_ASSETS = 250;
@@ -388,14 +390,22 @@ export async function runAssetIntelligence(db) {
       redirect: "manual",
       signal: AbortSignal.timeout(7000)
     });
-    if (!response.ok) throw new Error("Manifest returned HTTP " + response.status);
-    const manifest = await response.json();
-    if (!Array.isArray(manifest)) throw new Error("Tool manifest is not an array.");
-    for (const tool of manifest) {
-      if (!tool || typeof tool.slug !== "string" || typeof tool.url !== "string" || tool.processing === "planned" || !/^[a-z0-9-]{2,80}$/.test(tool.slug)) continue;
+    if (response.status!==200) throw new Error("Manifest returned HTTP " + response.status);
+    if (!/^(application\/json|[a-z0-9.+-]+\/[a-z0-9.+-]+\+json)(?:;|$)/i.test(
+         (response.headers.get("content-type")||"").trim()))
+      throw new Error("Free Tools manifest was HTML or a non-JSON fallback, not a usable tool inventory.");
+    if (Number(response.headers.get("content-length")||0)>131072)
+      throw new Error("Free Tools manifest exceeded its size limit.");
+    const raw=await readLimited(response);
+    if (raw.byteLength>131072)throw new Error("Free Tools manifest exceeded its size limit.");
+    let manifest;
+    try{manifest=JSON.parse(new TextDecoder().decode(raw));}
+    catch{throw new Error("Free Tools manifest returned malformed JSON.");}
+    for (const tool of normalizeWebsiteToolInventory(manifest)) {
+      if (tool.processing === "planned") continue;
       const url = safeInternalUrl(tool.url);
       if (!url) continue;
-      inventory.push({ key: "tool:" + tool.slug, type: "free_tool", title: String(tool.title || tool.slug).slice(0, 160), url: url.pathname, source: "free-tools/manifest.json" });
+      inventory.push({ key: "tool:" + tool.slug, type: "free_tool", title: tool.title, url: url.pathname, source: "free-tools/manifest.json" });
     }
   } catch (error) { manifestError = error instanceof Error ? error.message : "Tool manifest fetch failed"; }
 
@@ -406,16 +416,21 @@ export async function runAssetIntelligence(db) {
       redirect: "manual",
       signal: AbortSignal.timeout(7000)
     });
-    if (!response.ok) throw new Error("Sitemap returned HTTP " + response.status);
+    if (response.status!==200) throw new Error("Sitemap returned HTTP " + response.status);
+    if (!/^(application\/xml|text\/xml)(?:;|$)/i.test((response.headers.get("content-type")||"").trim()))
+      throw new Error("Sitemap was not XML (possible HTML fallback).");
     const xml = await response.text();
+    if (xml.length>2_000_000 || !/^(?:\s*<\?xml[^>]*>\s*)?<urlset\b/i.test(xml))
+      throw new Error("Sitemap did not contain a bounded XML urlset.");
     const knownPaths = new Set(inventory.map(item => item.url));
     const discovered = new Map();
-    let sitemapEntries = 0;
+    let sitemapEntries = 0, legacySitemapEntries=0;
     for (const match of xml.matchAll(/<loc(?:\s[^>]*)?>\s*([^<]+?)\s*<\/loc>/gi)) {
       sitemapEntries++;
-      const url = safeInternalUrl(match[1].replace(/&amp;/g, "&").trim());
-      if (!url || url.pathname === "/sitemap.xml" || url.pathname === "/free-tools/manifest.json" || knownPaths.has(url.pathname)) continue;
-      const path = url.pathname || "/";
+      const parsed = normalizeWebsiteSitemapUrl(match[1].replace(/&amp;/g, "&").trim());
+      if (!parsed || parsed.path === "/sitemap.xml" || parsed.path === "/free-tools/manifest.json" || knownPaths.has(parsed.path)) continue;
+      if(parsed.legacy_origin)legacySitemapEntries++;
+      const path = parsed.path || "/";
       const toolMatch = path.match(/^\/free-tools\/([a-z0-9-]+)\/$/);
       const slug = toolMatch?.[1];
       const key = slug ? "tool:" + slug : "page:" + path;
@@ -428,8 +443,11 @@ export async function runAssetIntelligence(db) {
       });
       knownPaths.add(path);
     }
-    if (sitemapEntries === 0) throw new Error("Sitemap returned HTTP 200 but contained no <loc> entries.");
+    if (sitemapEntries===0 || (!discovered.size && !knownPaths.size))
+      throw new Error("Sitemap contained no recognized first-party URL entries.");
     for (const asset of discovered.values()) inventory.push(asset);
+    if(legacySitemapEntries)
+      sitemapError="Sitemap uses the previous pages.dev host; first-party paths are monitored at yorphives.com, but the SEO canonical needs a website release.";
   } catch (error) {
     sitemapError = error instanceof Error ? error.message : "Sitemap fetch failed";
   }
@@ -483,8 +501,13 @@ export async function runAssetIntelligence(db) {
         redirect: "manual",
         signal: AbortSignal.timeout(7000)
       });
-      if (!response.ok) throw new Error("Public catalogue returned HTTP " + response.status);
-      const payload = await response.json();
+      if (response.status!==200) throw new Error("Public catalogue returned HTTP " + response.status);
+      if(!/^(application\/json|[a-z0-9.+-]+\/[a-z0-9.+-]+\+json)(?:;|$)/i.test(
+        (response.headers.get("content-type")||"").trim()))
+        throw new Error("Public catalogue endpoint returned HTML or a non-JSON fallback.");
+      let payload;
+      try{payload=await response.json();}
+      catch{throw new Error("Public catalogue endpoint returned malformed JSON.");}
       if (!Array.isArray(payload.data) || !payload.pagination) throw new Error("Public catalogue response is invalid.");
       total = Number(payload.pagination.count || 0);
       for (const product of payload.data) {
