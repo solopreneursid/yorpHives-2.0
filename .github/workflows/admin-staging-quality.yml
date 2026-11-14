@@ -43,7 +43,7 @@ jobs:
             echo "::error::The checked-out revision does not match the exact GitHub commit."
             exit 1
           fi
-          if ! [[ "$PAGES_BRANCH" =~ ^(build|feature|fix|qa|design|ops)/[a-z0-9._/-]+$ ]] ||
+          if ! [[ "$PAGES_BRANCH" =~ ^(build|feature|hardening|fix|qa|design|ops)/[a-z0-9._/-]+$ ]] ||
              [ "$PAGES_BRANCH" = "main" ] || [ "$PAGES_BRANCH" = "master" ]; then
             echo "::error::Only isolated development branches can be tested here."
             exit 1
