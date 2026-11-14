@@ -27,5 +27,5 @@ test("historical investigation viewer never fetches release readiness or execute
 test("unfinished development work is not framed as founder production approval", async () => {
   const js = await read("../functions/_lib/owner-action-center.js");
   assert.match(js, /not production approval requests/);
-  assert.match(js, /No founder production approval is needed/);
+  assert.match(js, /you decide whether to act and implement changes outside Headquarters/);
 });
