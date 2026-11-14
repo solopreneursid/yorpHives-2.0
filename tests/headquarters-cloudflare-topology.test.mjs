@@ -9,7 +9,9 @@ const project=(opts={})=>({
  name:'yorphives-admin-staging',
  production_branch:'build/yorphives-admin-reliability',
  source:{type:'github',config:{owner:'solopreneursid',repo_name:'yorpHives-2.0',
-  production_branch:'build/yorphives-admin-reliability'}},
+  production_branch:'build/yorphives-admin-reliability',
+  production_deployments_enabled:opts.auto===true,
+  preview_deployment_setting:opts.auto===true?'all':'none'}},
  deployment_configs:{
   production:{d1_databases:{DB:{id:old}},
    services:opts.productionService?{ADMIN_AGENT_SERVICE:{service:'yorphives-admin-agent'}}:{}},
@@ -43,6 +45,10 @@ test('synthetic fully compliant topology is only a topology pass, never release 
  assert.equal(r.blockers.length,0);
  assert.equal(r.production_deployment_authorized,false);
  assert.equal(r.no_current_canonical_release_assumed,true);
+});
+test('automatic production or preview deployment is a separate fail-closed condition',()=>{
+ const r=evaluatePagesTopology(project({auto:true}),archive());
+ assert.deepEqual(r.blockers.map(x=>x.name),['canonical_release_automation_disabled']);
 });
 test('shared bindings or old grants are separately blocked',()=>{
  const r=evaluatePagesTopology(project({previewDB:old,previewService:true,otp:true}),archive({sharedDB:true,auto:true}));
