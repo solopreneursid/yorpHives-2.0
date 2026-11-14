@@ -190,7 +190,7 @@ test("Control Center retains repair history and analytics without dispatching ne
   assert.match(repairs, /admin_asset_findings/);
   assert.match(html, /id="view-analytics"/);
   assert.match(html, /id="view-agents"/);
-  assert.match(html, /id="view-releases"/);
+  assert.match(html, /id="view-investigations"/);
   assert.match(script, /loadAnalytics\(\)/);
   assert.match(script, /loadAgents\(\)/);
 });
