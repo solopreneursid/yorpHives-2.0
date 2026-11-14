@@ -9,6 +9,7 @@ import { createDatabase } from './sqlite.mjs';
 import { authorizeOwnerRequest, adminJson } from './auth.mjs';
 import { createObservationScheduler } from './scheduler.mjs';
 import { assessRuntimeReadiness } from './readiness.mjs';
+import { readFunctionalSnapshot } from './functional-state.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('../', import.meta.url)));
 const API_ROOT = resolve(ROOT, 'functions/api/admin');
@@ -84,6 +85,7 @@ export async function createHeadquartersServer({
   }
   async function asset(pathname) {
     if (pathname === '/runtime/session.js') return new Response(await readFile(new URL('./session.js', import.meta.url)), { headers: { 'content-type': MIME['.js'] } });
+    if (pathname === '/runtime/functional-panel.js') return new Response(await readFile(new URL('./functional-panel.js', import.meta.url)), { headers: { 'content-type': MIME['.js'] } });
     const isAdmin = pathname.startsWith('/admin/'), isBrand = pathname.startsWith('/brand/');
     if (!isAdmin && !isBrand) return adminJson({ error: { message: 'Not found.' } }, 404);
     const extension = extname(pathname);
@@ -102,7 +104,7 @@ export async function createHeadquartersServer({
       let content = await handle.readFile();
       if (pathname === '/admin/index.html') {
         content = content.toString('utf8').replace('<html lang="en">', '<html lang="en" data-runtime="self-hosted">')
-          .replace('</body>', '<script src="/runtime/session.js" defer></script></body>');
+          .replace('</body>', '<script src="/runtime/session.js" defer></script><script src="/runtime/functional-panel.js" defer></script></body>');
       }
       return new Response(content, { headers: { 'content-type': MIME[extension] } });
     } catch { return adminJson({ error: { message: 'Not found.' } }, 404); }
@@ -159,6 +161,10 @@ export async function createHeadquartersServer({
       const response = redirect('/auth/login');
       response.headers.set('set-cookie', `yorphives_owner=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${origin.protocol === 'https:' ? '; Secure' : ''}`);
       return response;
+    }
+    if (pathname === '/api/admin/functional-checks') {
+      if (write) return adminJson({ error: { code: 'MONITOR_ONLY', message: 'Functional check evidence is read-only.' } }, 405);
+      return adminJson(await readFunctionalSnapshot(dataDirectory));
     }
     if (pathname === '/api/admin/runtime-status' && !write) return adminJson({ runtime: 'self-hosted', storage: 'private_sqlite', owner: identity.email, inference_configured: Boolean(env.HQ_ENGINE_SERVICE), scheduled_workers: Boolean(observations), observation_schedule: observations?.status() || null, production_execution_enabled: false });
     const match = /^\/api\/admin\/([a-z][a-z-]+)$/.exec(pathname);
