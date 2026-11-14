@@ -39,22 +39,28 @@ export async function onRequestGet(context:AdminRequestContext):Promise<Response
   ]);
   const staff=employees.results||[],history=runs.results||[],
    proposals=briefs.results||[],memory=lessons.results||[];
-  const completed=history.filter(r=>r.status==='completed');
+  const completed=history.filter(r=>r.status==='completed'&&
+   r.model_backend==='local_open_weight'&&Number(r.model_calls)>0);
+  const botReviews=history.filter(r=>r.status==='completed'&&
+   r.model_backend==='unavailable'&&Number(r.model_calls)===0);
   const body={
    schema_version:2,source:'private_yorpmind_monitoring_organization',
    monitor_only:true,production_deployment_authorized:false,
    private_model_configured_from_provider:false,
    actual_agent_inference_verified:completed.length>0,
+   deterministic_evidence_bots_verified:botReviews.length>0,
    model_endpoint_exposed:false,repo_write_capability:false,
    employees:staff.map(s=>({
     ...s,
     activity:completed.some(r=>r.agent_id===s.agent_id)?
-     'has_completed_model_run':'configured_not_proven_running'
+     'has_completed_model_run':botReviews.some(r=>r.agent_id===s.agent_id)?
+     'has_completed_evidence_bot_review':'configured_not_proven_running'
    })),
    recent_runs:history,decision_briefs:proposals,founder_verified_feedback:memory,
    summary:{
     configured_employees:staff.filter(x=>x.status==='configured').length,
     completed_agent_runs:completed.length,
+    completed_evidence_bot_reviews:botReviews.length,
     pending_founder_reviews:proposals.filter(x=>x.review_state==='proposed').length,
     verified_learning_records:memory.filter(x=>x.outcome!=='unverified').length
    },
