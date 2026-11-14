@@ -111,7 +111,9 @@
           "activity","View activity",item.created_at,"info","AUDIT RECORD"));
       }
     }
-    return result.slice(0,LIMIT);
+    // Urgent issues must not be buried below routine mission/activity posts.
+    const severity = {urgent:0,warning:1,info:2};
+    return result.sort((a,b) => severity[a.urgency] - severity[b.urgency]).slice(0,LIMIT);
   }
 
   function post(item) {
@@ -152,6 +154,85 @@
     feed.setAttribute("aria-busy","false");
   }
 
+  /* UI coverage only reuses the one authenticated cockpit snapshot.
+   * A passing route check is reachability, not working features or runtime.
+   * Unknown and absent sources always remain visible as evidence gaps. */
+  function paintCoverage(key, value, detail, badge, state) {
+    const node = id("hq-watchtower-" + key + "-value");
+    if (!node) return;
+    node.textContent = String(value);
+    id("hq-watchtower-" + key + "-detail").textContent = String(detail);
+    id("hq-watchtower-" + key + "-state").textContent = String(badge);
+    const card = node.closest(".hq-watchtower-card");
+    if (card) card.dataset.state = state;
+  }
+
+  function renderWatchtower(data) {
+    const scope = data?.coverage;
+    const valid = data?.sources?.coverage?.available === true &&
+      scope?.scope === "recorded_http_reachability_only" && scope.surfaces;
+    const updated = id("hq-watchtower-updated");
+    if (updated) updated.textContent = valid
+      ? "From private records · " + clock(data.generated_at) +
+        (scope.truncated ? " · Partial inventory" : "")
+      : "Coverage not verified";
+    for (const key of ["website","products","headquarters"]) {
+      const report = valid ? scope.surfaces[key] : null;
+      if (!report || !safeCount(report.configured) || !safeCount(report.recent_passes) ||
+          !safeCount(report.recent_failures) || !safeCount(report.stale) ||
+          !safeCount(report.unchecked)) {
+        paintCoverage(key,"Unavailable","No verifiable monitoring inventory was returned.",
+          "NOT VERIFIED","unavailable");
+        continue;
+      }
+      const monitored = report.configured;
+      if (monitored === 0) {
+        paintCoverage(key,"Not covered",key === "headquarters"
+          ? "No private access checks recorded; runtime readiness is not connected."
+          : "No matching production HTTP monitors enabled.","SETUP NEEDED","attention");
+        continue;
+      }
+      const passing = report.recent_passes, failing = report.recent_failures;
+      const absent = report.stale + report.unchecked;
+      const prefix = scope.truncated ? "At least " : "";
+      const summary = prefix + num(passing) + " / " + num(monitored) + " recent";
+      if (key === "headquarters") {
+        paintCoverage(key, failing > 0 ? num(failing) + " check(s) failed" : summary,
+          num(absent) + " stale/unchecked · Access boundary only; private runtime uptime unverified.",
+          failing > 0 ? "ACCESS ISSUE" : "RUNTIME UNVERIFIED",failing > 0 ? "alert" : "limited");
+      } else if (key === "products") {
+        paintCoverage(key, failing > 0 ? num(failing) + " route(s) failed" : summary,
+          num(absent) + " stale/unchecked · HTTP reachability only; actual tool functions untested.",
+          failing > 0 ? "ROUTE FAILURE" : absent > 0 ? "PARTIAL ROUTES" : "FUNCTIONS UNVERIFIED",
+          failing > 0 ? "alert" : "limited");
+      } else {
+        paintCoverage(key, failing > 0 ? num(failing) + " route(s) failed" : summary,
+          num(absent) + " stale/unchecked · HTTP results, not whole-site certification.",
+          failing > 0 ? "CHECK FAILURE" : absent > 0 ? "PARTIAL CHECKS" : "RECENT HTTP",
+          failing > 0 ? "alert" : absent > 0 ? "attention" : "recorded");
+      }
+    }
+    const research = data?.metrics?.opportunities;
+    if (source(data || {},"opportunities") &&
+        safeCount(research?.proposed) && safeCount(research?.shortlisted)) {
+      const n = research.proposed + research.shortlisted;
+      paintCoverage("market",num(n) + " saved ideas",
+        num(research.shortlisted) + " shortlisted · Research hypotheses, not validated demand.",
+        "RESEARCH ONLY","limited");
+    } else {
+      paintCoverage("market","Unavailable","Source-backed market research has not been verified.",
+        "NOT VERIFIED","unavailable");
+    }
+    // Financial integration cannot be inferred from a recorded mission or traffic.
+    // The current cockpit intentionally reports not_connected; unknown future
+    // schema versions also fail closed instead of manufacturing earnings.
+    paintCoverage("revenue","Not connected",
+      data?.finances?.status === "not_connected"
+        ? "Actual earnings and operating costs are not connected."
+        : "Verified financial data was not supplied by this source.",
+      "NO VERIFIED DATA", "unavailable");
+  }
+
   function renderRail(data) {
     const summary = id("hq-pulse-monitor-summary");
     const detail = id("hq-pulse-monitor-note");
@@ -179,6 +260,7 @@
       snapshot = null;
       entries = [];
       renderRail(null);
+      renderWatchtower(null);
       const status = id("hq-pulse-status");
       if (status) {
         status.textContent = "Could not read private records · Use Refresh to retry.";
@@ -196,6 +278,7 @@
       status.dataset.state = data.availability === "partial" ? "partial" : "ready";
     }
     renderRail(data);
+    renderWatchtower(data);
     renderFeed();
   }
   function chooseFilter(value) {
