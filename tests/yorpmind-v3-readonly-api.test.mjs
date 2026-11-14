@@ -70,7 +70,7 @@ test('YorpMind UI is read-only and differentiates configured agents from genuine
   import('node:fs/promises').then(({readFile})=>readFile(new URL('../admin-next/index.html',import.meta.url),'utf8')),
   import('node:fs/promises').then(({readFile})=>readFile(new URL('../admin-next/app.js',import.meta.url),'utf8'))
  ]);
- for(const id of ['yorpmind-view','ym-ai-summary','ym-ai-status','ym-employee-list','ym-brief-list','ym-memory-list'])
+ for(const id of ['yorpmind-view','ym-ai-summary','ym-ai-status','ym-roster','ym-brief-list','ym-lesson-list'])
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.match(js,/fetchPrivateJson\('\/api\/admin\/yorpmind-os-v3'\)/);
  assert.match(js,/actual_agent_inference_verified/);
