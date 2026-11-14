@@ -9,11 +9,12 @@ export const WEBSITE_PROOF_ORIGIN = "https://yorphives.com";
 export const WEBSITE_PROOF_TARGETS = Object.freeze([
   Object.freeze({ path: "/", type: "website_page", title: "Homepage", security: true }),
   Object.freeze({ path: "/free-tools/", type: "website_page", title: "Free Tools page", security: true }),
-  Object.freeze({ path: "/free-tools/manifest.json", type: "discovery", title: "Free Tools list", security: false }),
-  Object.freeze({ path: "/llms.txt", type: "discovery", title: "AI information file", security: false }),
-  Object.freeze({ path: "/openapi.yaml", type: "discovery", title: "API documentation", security: false }),
-  Object.freeze({ path: "/.well-known/yorphives.json", type: "discovery", title: "AI discovery file", security: false }),
-  Object.freeze({ path: "/api/v1/free-tools", type: "api", title: "Free Tools API", security: false })
+  Object.freeze({ path: "/free-tools/file-studio/", type: "website_page", title: "Public File Studio", security: true }),
+  Object.freeze({ path: "/free-tools/manifest.json", type: "discovery", title: "Free Tools list", security: false, optional: true }),
+  Object.freeze({ path: "/llms.txt", type: "discovery", title: "AI information file", security: false, optional: true }),
+  Object.freeze({ path: "/openapi.yaml", type: "discovery", title: "API documentation", security: false, optional: true }),
+  Object.freeze({ path: "/.well-known/yorphives.json", type: "discovery", title: "AI discovery file", security: false, optional: true }),
+  Object.freeze({ path: "/api/v1/free-tools", type: "api", title: "Free Tools API", security: false, optional: true })
 ]);
 
 const MAX_BYTES = 384 * 1024;
@@ -92,6 +93,13 @@ async function probeOne(target, fetcher) {
       return outcome(target, "not_verified", response.status, type,
         "This check was blocked or rate-limited. Do not treat it as proof that visitors cannot use the page.");
     }
+    // A not-yet-published optional metadata route is a coverage gap, not
+    // evidence that the currently deployed public website is broken.
+    if (target.optional && [404,410].includes(response.status)) {
+      await response.body?.cancel();
+      return outcome(target, "not_published", response.status, type,
+        "Optional discovery contract has not been published by the website repository. Do not confuse it with a live website outage.");
+    }
     if (response.status !== 200) {
       await response.body?.cancel();
       return outcome(target, "needs_attention", response.status, type,
@@ -132,9 +140,11 @@ export async function checkPublicWebsite(fetcher = globalThis.fetch, clock = () 
   }));
   const needsAttention = results.filter(x => x.status === "needs_attention").length;
   const unverified = results.filter(x => x.status === "not_verified").length;
+  const optionalMissing = results.filter(x => x.status === "not_published").length;
   const passed = results.filter(x => x.status === "verified_basic").length;
   const overall = needsAttention ? "needs_attention" :
-    unverified ? "inconclusive" : "basic_routes_passed";
+    unverified ? "inconclusive" :
+    optionalMissing ? "basic_routes_passed_with_unpublished_capabilities" : "basic_routes_passed";
   return {
     source: "real_public_http_get",
     origin: WEBSITE_PROOF_ORIGIN,
@@ -142,7 +152,7 @@ export async function checkPublicWebsite(fetcher = globalThis.fetch, clock = () 
     total: results.length,
     basic_passed: passed,
     needs_attention: needsAttention,
-    unverified,
+    unverified, optional_missing: optionalMissing,
     overall,
     checks: results,
     documents_proven_fully_correct: false,
