@@ -15,7 +15,7 @@ const workerSource=(await file("../admin-agent/worker.js"))
   .replace('"./model-output.js"',JSON.stringify(modelURI));
 const {default:worker}=await import(uri(workerSource));
 const originalFetch=globalThis.fetch;
-const env={GITHUB_TOKEN:"synthetic-test-token"};
+const env={};
 const endpoint="https://worker-internal.invalid/issue-inbox";
 const request=(method="GET",body=null,headers={})=>new Request(endpoint,{
   method,headers:{"x-yorphives-internal-inbox":"1",...headers},
@@ -64,16 +64,16 @@ test("monitor-only Worker refuses GitHub issue creation before any external requ
   assert.equal(calls,0);
  }finally{globalThis.fetch=originalFetch;}
 });
-test("read-only GET needs private binding and token; any POST is rejected",async()=>{
+test("private issue reading uses no GitHub token and rejects malformed upstream data; any POST is rejected",async()=>{
   let count=0;
   globalThis.fetch=async()=>{count++;return Response.json({})};
   try {
     assert.equal((await worker.fetch(new Request(endpoint),env)).status,403);
-    assert.equal((await worker.fetch(request(),{})).status,503);
+    assert.equal((await worker.fetch(request(),{})).status,503); // Malformed public GitHub response
     assert.equal((await worker.fetch(request("POST",{
       title:"Issue title is valid",details:"Long enough details but no confirmation allowed.",
       scope:"website",confirm:false
     }),env)).status,405);
-    assert.equal(count,0);
+    assert.equal(count,1); // One permitted public GET, no write dispatch
   }finally{globalThis.fetch=originalFetch;}
 });
