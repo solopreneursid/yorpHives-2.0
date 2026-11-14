@@ -4,9 +4,9 @@ import {sameHeadquartersCanonical} from "./staging-preview-check.mjs";
 /** Independent, read-only attestation of authenticated staging browser evidence. */
 export const REQUIRED_CHECKS=Object.freeze([
 "access_identity_resolved","yorpmind_six_managers_real_staging_read",
-"yorpmind_manager_scan_no_autonomous_release","yorpmind_owner_approval_only_at_go_live",
+"yorpmind_manager_scan_no_autonomous_release","headquarters_monitor_only_no_release_controls",
 "founder_security_revoke_isolated",
-"release_evidence_no_implicit_production_approval","release_evidence_private_read_only",
+"investigation_history_no_implicit_approval","release_evidence_private_read_only",
 "yorpmind_ci_cannot_pass_mfa_step_up","temporary_permissions_staging_schema_ready_but_access_locked",
 "website_proof_real_staging_api","website_proof_real_browser_seven_rows",
 "yorpmind_ci_identity_cannot_modify_memory","yorpmind_evolution_ci_cannot_review",
