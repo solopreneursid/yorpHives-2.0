@@ -11,6 +11,7 @@
  * the future independent self-hosted Node+SQLite adapter.
  */
 import {runLiveWebsiteSnapshot,LIVE_WEBSITE_TARGETS} from '../admin-monitor/live-website-evidence.js';
+import {runYorpMindEvidenceBots} from './yorpmind-evidence-bots.mjs';
 import {collectTechnologyCandidates,storeTechnologyCandidates} from './open-technology-radar.mjs';
 import {collectMarketCandidates,storeMarketCandidates} from './market-demand-sources.mjs';
 
@@ -211,9 +212,11 @@ export default {
     const outcome=await persistMonitoringSnapshot(env.DB,snapshot);
     const audit=await auditPublicSecurityHeaders(env.DB);
     const headquarters=await auditHeadquartersAccessGate(env.DB,outcome.run_id);
-    console.log(JSON.stringify({event:'staging-watchdog-complete',
+    const bots=await runYorpMindEvidenceBots(env.DB);
+    console.log(JSON.stringify({event:'staging-watchdog-and-yorpmind-bots',
      observations:outcome.observations_written+1,review_items:outcome.review_items_found,
      header_advisory:audit.status,headquarters_external_gate:headquarters.status,
+     bot_proposals:bots.briefs_created,model_calls:0,ai_inference_verified:false,
      private_headquarters_functionality_attested:false,production_modified:false}));
    }else throw Error('Unknown cron schedule refused');
   })();
