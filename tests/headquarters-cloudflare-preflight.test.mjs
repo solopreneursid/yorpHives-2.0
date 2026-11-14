@@ -24,7 +24,10 @@ const fetcher=data=>async(url,opts)=>{
 test('real Cloudflare metadata with a separate preview DB gives read-only isolation evidence',async()=>{
  const x=await inspectLiveHeadquartersIsolation({accountId,apiToken,fetcher:fetcher(project()),clock:()=>now});
  assert.equal(x.d1_isolated,true);
- assert.equal(x.staging_safe_to_test,true);
+ assert.equal(x.staging_binding_safe,true);
+ assert.equal(x.staging_safe_to_test,false);
+ assert.equal(x.schema_verified,false);
+ assert.equal(x.recovery_verified,false);
  assert.equal(x.production_deployment_authorized,false);
  assert.equal(x.migration_allowed,false);
  assert.equal(x.cloud_resources_modified,false);
