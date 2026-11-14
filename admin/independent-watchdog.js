@@ -65,8 +65,13 @@
     lastAt = Date.now();
     inflight = (async () => {
       try {
-        if (typeof window.api !== "function") return;
-        render(await window.api("/api/admin/watchdog-status"));
+        const response = await fetch("/api/admin/watchdog-status",{
+          method:"GET",credentials:"same-origin",cache:"no-store",redirect:"manual",
+          headers:{accept:"application/json"},signal:AbortSignal.timeout(7000)
+        });
+        if (response.status !== 200 || response.redirected ||
+            !response.headers.get("content-type")?.includes("application/json")) return;
+        render(await response.json());
       } catch {
         // A missing or stale local watchdog never becomes a false green state;
         // base Watchtower explicitly labels HQ runtime as UNVERIFIED.
