@@ -64,3 +64,11 @@ footer em{font-style:normal;color:#baf56a}
  main{padding:35px 16px 70px}h1{font-size:36px}.stats>div,.panel{padding:17px}.columns,.integration-list{grid-template-columns:1fr}
  .stamp{white-space:normal}.section-head{flex-direction:column}.milestones{grid-template-columns:1fr}.toolbar{gap:5px}.tab{font-size:12px;padding:9px}
 }
+
+.collector-status{background:linear-gradient(100deg,#10293c,#112136);margin-top:20px}
+.collector-status #collector-summary{font-size:13px;color:#acc8df;line-height:1.6}
+#history-status{padding:10px 0;color:#bed4e9}
+#watchdog-run-list,#watchdog-observation-list,#decision-signal-list{max-height:480px;overflow-y:auto;overflow-wrap:anywhere}
+#decision-signal-list .row strong{color:#ffd998}
+#technology-source-status{margin-bottom:18px;overflow-wrap:anywhere}
+@media(max-width:700px){#watchdog-run-list,#watchdog-observation-list,#decision-signal-list{max-height:none}}
