@@ -87,9 +87,9 @@ function fixture(path) {
         {target:"headquarters-ready",system:"headquarters",checked_at:now,
           state:"ready",reason:"runtime_dependencies_ready",http_status:200},
         {target:"website-discovery",system:"website",checked_at:now,
-          state:"reachable",reason:"catalogue_contract_verified",http_status:200},
+          state:"reachable",reason:"catalogue_sources_match",http_status:200},
         {target:"website-manifest",system:"website",checked_at:now,
-          state:"reachable",reason:"catalogue_contract_verified",http_status:200}
+          state:"reachable",reason:"catalogue_sources_match",http_status:200}
       ]
     };
   }
@@ -381,7 +381,7 @@ async function main() {
     }));
     check("watchtower:recorded-coverage-not-fake-health",
       coverage.cards===5 && coverage.website==="CHECK FAILURE" &&
-      ["FUNCTIONS UNVERIFIED","API CONTRACTS ONLY"].includes(coverage.products) &&
+      ["FUNCTIONS UNVERIFIED","CATALOGUES MATCH"].includes(coverage.products) &&
       ["RUNTIME UNVERIFIED","EXTERNAL CHECK"].includes(coverage.headquarters) &&
       coverage.market==="5 saved ideas" && coverage.revenue==="Not connected" && coverage.readOnly,
       "Each business surface reports stored reachability, unverified capabilities, or disconnected data without inventing earnings.");
@@ -391,7 +391,7 @@ async function main() {
     null, {timeout:TIMEOUT});
     check("watchdog:authenticated-independent-evidence",
       await page.locator("#hq-watchtower-headquarters-value").textContent() === "Runtime ready" &&
-      await page.locator("#hq-watchtower-products-state").textContent() === "API CONTRACTS ONLY",
+      await page.locator("#hq-watchtower-products-state").textContent() === "CATALOGUES MATCH",
       "Synthetic independently reported runtime and catalogue contracts appear without claiming individual tools work.");
     await page.waitForFunction(() =>
       document.querySelectorAll("#hq-pulse-feed .hq-pulse-post").length >= 4,
