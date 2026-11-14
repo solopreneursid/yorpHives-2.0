@@ -77,7 +77,7 @@ export default {
         model_inference_enabled: false,
         deployment_enabled: false,
         production_approved: false
-      }, env.GITHUB_TOKEN ? 200 : 503);
+      }, 503);
     }
     if (url.pathname !== "/issue-inbox") return json({error: "Not found"}, 404);
     if (request.headers.get("x-yorphives-internal-inbox") !== "1") {
