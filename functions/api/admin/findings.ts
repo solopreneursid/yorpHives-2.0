@@ -1,4 +1,5 @@
 import { adminJson, isAdminResponse, requireAdmin, type AdminRequestContext } from "../../_lib/admin-auth";
+import { prioritizeFindingRecords } from "../../_lib/finding-priority.js";
 
 interface FindingRow {
   id: string; severity: string; title: string; details: string; status: string;
@@ -55,7 +56,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     const rank: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
     return (rank[a.severity] ?? 5) - (rank[b.severity] ?? 5) || b.last_verified.localeCompare(a.last_verified);
   });
-  return adminJson({ data: data.slice(0, 250) });
+  return adminJson({ data: prioritizeFindingRecords(data.slice(0, 250)) });
 }
 
 export async function onRequestPatch(context: AdminRequestContext): Promise<Response> {
