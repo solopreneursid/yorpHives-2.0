@@ -29,7 +29,12 @@ export async function inspectLiveHeadquartersIsolation({
     source:"live_cloudflare_pages_project_metadata",
     verified_at:at.toISOString(),
     d1_isolated:isolated,
-    staging_safe_to_test:isolated,
+    // A new empty and physically isolated database is NOT schema-ready,
+    // authenticated, restored or eligible for a functional launch rehearsal.
+    staging_binding_safe:isolated,
+    staging_safe_to_test:false,
+    schema_verified:false,
+    recovery_verified:false,
     migration_allowed:false,
     cloud_resources_modified:false,
     production_deployment_authorized:false,
@@ -48,6 +53,7 @@ async function main(){
   console.log(JSON.stringify({
     source:result.source,verified_at:result.verified_at,
     d1_isolated:result.d1_isolated,
+    staging_safe_to_test:false,
     production_deployment_authorized:false,
     note:result.reason
   }));
