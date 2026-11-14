@@ -64,7 +64,7 @@ test('wrong project ownership cannot pass even with unique D1',()=>{
  const r=evaluatePagesTopology(p,archive());
  assert.equal(r.topology_hardened,false);
  assert.deepEqual(r.blockers.map(x=>x.name),[
-  'canonical_identity','future_preview_db_isolated','canonical_execution_service_retired'
+  'canonical_identity','future_preview_db_isolated','canonical_release_automation_disabled','canonical_execution_service_retired'
  ]);
 });
 test('provider inspector performs exactly two fixed GETs with no write or token in result',async()=>{
