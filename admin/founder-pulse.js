@@ -52,7 +52,7 @@
       const stale = safeCount(mon.stale) ? mon.stale : 0;
       const unknown = safeCount(mon.unknown) ? mon.unknown : 0;
       const needsLook = failed + stale + unknown > 0;
-      const title = mon.enabled === 0 ? "Set up your first website check"
+      const title = mon.enabled === 0 ? "Set up your first monitored route"
         : needsLook ? "Some monitoring checks need attention"
         : "Here is the latest recorded monitoring picture";
       const body = mon.enabled === 0
@@ -246,14 +246,14 @@
     if (!summary || !detail || !attention) return;
     if (!data || !source(data,"monitors")) {
       summary.textContent = "Not verified";
-      detail.textContent = "Monitoring evidence is unavailable. This is not a clean bill of health.";
+      detail.textContent = "HTTP check evidence is unavailable. This is not a clean bill of health.";
     } else if (data.metrics.monitors?.enabled === 0) {
       summary.textContent = "Setup needed";
       detail.textContent = "No enabled monitoring routes are on record.";
     } else {
       const mon = data.metrics.monitors || {};
       summary.textContent = num(mon.passing) + " / " + num(mon.enabled) + " recent passes";
-      detail.textContent = "Last check: " + clock(mon.last_checked_at) + ". Based on stored records.";
+      detail.textContent = "Latest check: " + clock(mon.last_checked_at) + ". Includes website, preview and Access-boundary routes.";
     }
     attention.textContent = data
       ? num(entries.filter(item => item.kind === "attention").length) + " digest updates to review"
