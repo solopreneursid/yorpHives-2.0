@@ -243,6 +243,16 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     const rank: Record<string, number> = { website_page: 0, free_tool: 1, product: 2, api: 3, discovery: 4 };
     return (rank[a.asset_type] ?? 5) - (rank[b.asset_type] ?? 5) || a.title.localeCompare(b.title);
   });
+  // An older stored "healthy HTTP 200" must never override a current,
+  // independently observed invalid/missing machine-readable inventory.
+  // This only annotates this API response; it never rewrites DB history.
+  for(const asset of allAssets){
+    const failed=(publicTools.error && ["/api/v1/free-tools","/free-tools/manifest.json"].includes(asset.url)) ||
+      (publicCatalogue.error && asset.url.startsWith("/api/v1/catalogue")) ||
+      (sitemap.error && asset.url==="/sitemap.xml") ||
+      (openapi.error && asset.url==="/openapi.yaml");
+    if(failed && asset.last_status==="healthy")asset.last_status="unverified";
+  }
   const counts = {
     assets: allAssets.length,
     website_pages: allAssets.filter(row => row.asset_type === "website_page").length,
@@ -250,6 +260,8 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     products: allAssets.filter(row => row.asset_type === "product").length,
     api_discovery: allAssets.filter(row => row.asset_type === "api" || row.asset_type === "discovery").length,
     healthy: allAssets.filter(row => row.last_status === "healthy").length,
+    unverified: allAssets.filter(row => ["not_checked","unverified"].includes(row.last_status || "")).length,
+    incomplete_sources: [publicCatalogue.error,publicTools.error,sitemap.error,openapi.error].filter(Boolean).length,
     degraded: allAssets.filter(row => row.last_status === "degraded").length,
     unavailable: allAssets.filter(row => row.last_status === "unavailable").length,
     open_findings: findings.results.length,
