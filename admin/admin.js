@@ -293,13 +293,18 @@ async function loadOverview() {
   setText("agent-summary", "Open AI Operations for live readiness");
   setText("last-run", "Last check " + date(counts.last_run_at));
   const down = (ac.unavailable || 0) + (ac.degraded || 0);
-  setText("platform-status", down ? down + " asset" + (down === 1 ? "" : "s") + " need attention" : "Monitoring signals are available");
-  setText("platform-summary", number(ac.assets) + " discovered assets · " + number(ac.healthy) + " healthy · " + down + " degraded or unavailable. A successful scan is required to confirm health.");
+  const gaps = Number(ac.incomplete_sources || Object.values(state.sourceErrors).filter(Boolean).length);
+  setText("platform-status", down ? down + " asset" + (down === 1 ? "" : "s") + " need attention" :
+    gaps ? "Discovery coverage incomplete" : "Monitoring signals are available");
+  setText("platform-summary", number(ac.assets) + " discovered assets · " + number(ac.healthy) +
+    " representation-checked healthy · " + down + " degraded or unavailable · " +
+    gaps + " source warnings. A successful live scan and valid API document are needed to confirm health.");
   setText("run-state", "Updated " + new Date().toLocaleTimeString());
   const components = [
     ["Admin Control Center", 1, "Authenticated · Admin API responding"],
     ["Public website", ac.website_pages, "Discovered through sitemap"],
-    ["Free Tools", ac.free_tools, "Discovered through manifest"],
+    ["Free Tools", ac.free_tools, state.sourceErrors.free_tools ?
+      "Sitemap fallback; public tools API not verified" : "Public first-party registry"],
     ["Products & apps", ac.catalogue_applications ?? ac.products, "Shared catalogue · all lifecycle states"],
     ["APIs & discovery", ac.api_discovery, "Registered platform endpoints"],
     ["Dependencies", state.dependencies.length, "Observed pinned packages"]
@@ -333,10 +338,13 @@ async function loadMonitoring() {
   const [assets,overview,changes]=await Promise.all([getAssets(true),getOverview(),api("/api/admin/changes")]);
   renderAssets();renderCatalogue();renderRuns($("runs"),overview.recent_runs || []);renderChanges($("changes-list"),changes.data || []);
   const sourceFailures=Object.entries(state.sourceErrors).filter(([,error])=>error).map(([name,error])=>name+": "+error);
-  setText("inventory-source-status", sourceFailures.length ? "Some live inventory sources are unavailable: " + sourceFailures.join(" · ") : "Live inventory sources connected · public catalogue · Free Tools API · sitemap · OpenAPI");
+  setText("inventory-source-status", sourceFailures.length ?
+    "Some inventory sources need review (HTTP 200 alone is not a valid API): " + sourceFailures.join(" · ") :
+    "Live inventory sources connected · public catalogue · Free Tools API · sitemap · OpenAPI");
   const c=state.assetCounts;
   setText("website-count", number(c.website_pages));
-  setText("tools-count", number(c.free_tools));
+  setText("tools-count", c.free_tools===0 && state.sourceErrors.free_tools ?
+    "Unverified" : number(c.free_tools));
   setText("products-count", number(c.catalogue_applications ?? c.products));
   renderCatalogue();
   setText("asset-down", number((c.unavailable||0)+(c.degraded||0)));

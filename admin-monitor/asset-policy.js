@@ -1,3 +1,5 @@
+import { normalizeWebsiteToolInventory } from './website-inventory-contract.js';
+
 /**
  * Read-only contract for public website assets.
  *
@@ -78,12 +80,13 @@ export function assessAssetRepresentation(asset, rawType, rawBody) {
       return failure("invalid-json", "This endpoint declared JSON but its response could not be parsed.");
     }
     const path = pathOf(asset);
-    if (path === "/free-tools/manifest.json" && !Array.isArray(json)) {
-      return failure("invalid-json", "The Free Tools manifest must contain a JSON array.");
-    }
-    if ((path === "/.well-known/yorphives.json" || path === "/api/v1/free-tools") &&
+    if (path === "/free-tools/manifest.json" || path === "/api/v1/free-tools") {
+      try { normalizeWebsiteToolInventory(json); }
+      catch { return failure("invalid-json",
+        "Website Free Tools discovery must be a versioned website-owned JSON catalogue or valid legacy tool list."); }
+    } else if (path === "/.well-known/yorphives.json" &&
         (!json || typeof json !== "object" || Array.isArray(json))) {
-      return failure("invalid-json", "The machine-readable discovery response must contain a JSON object.");
+      return failure("invalid-json", "The first-party discovery endpoint must contain a JSON object.");
     }
     return success("json", json);
   }

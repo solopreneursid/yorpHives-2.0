@@ -36,9 +36,11 @@ test("HTML canonical tags are not a requirement for discovery manifests, YAML or
 
 test("real discovery documents are validated by format without asking for HTML metadata",()=>{
   const valid=[
-    [asset("/free-tools/manifest.json"),"application/json","[]","json"],
+    [asset("/free-tools/manifest.json"),"application/json",
+      '{"schema_version":1,"source":"yorphives-website","count":1,"tools":[{"slug":"json-formatter","name":"JSON Formatter","category":"text","public_url":"/free-tools/json-formatter/"}]}',"json"],
     [asset("/.well-known/yorphives.json"),"application/json",'{"name":"YorpHives"}',"json"],
-    [asset("/api/v1/free-tools","api"),"application/json",'{"data":[]}',"json"],
+    [asset("/api/v1/free-tools","api"),"application/json",
+      '{"schema_version":1,"source":"yorphives-website","count":1,"tools":[{"slug":"json-formatter","name":"JSON Formatter","category":"text","public_url":"/free-tools/json-formatter/"}]}',"json"],
     [asset("/llms.txt"),"text/plain","# YorpHives\nPublic discovery.","text"],
     [asset("/robots.txt"),"text/plain","User-agent: *\nAllow: /","text"],
     [asset("/openapi.yaml"),"text/yaml","openapi: 3.1.0\ninfo:\n  title: YorpHives","yaml"],
