@@ -1,3 +1,5 @@
+import { assessAssetRepresentation, isMachineReadableAsset } from './asset-policy.js';
+
 /**
  * Shared read-only health-check runner for the Pages admin API and scheduled Worker.
  * @typedef {{ bind(...values: unknown[]): any; all<T>(): Promise<{results:T[]}>; run(): Promise<unknown> }} D1Statement
@@ -33,25 +35,64 @@ export async function checkMonitor(monitor) {
   }
   const started = Date.now();
   try {
+    const asset = { url: url.toString(), type: 'website_page' };
+    const machine=isMachineReadableAsset(asset);
     const response = await fetch(url.toString(), {
       method: "GET",
-      headers: { "user-agent": "YorpHives-SiteHealth/1.0", range: "bytes=0-1023" },
+      headers: machine
+        ? { "user-agent": "YorpHives-SiteHealth/1.0",
+            accept: "application/json,application/xml,text/plain,application/yaml" }
+        : { "user-agent": "YorpHives-SiteHealth/1.0", range: "bytes=0-1023" },
       redirect: "manual",
       signal: AbortSignal.timeout(8000),
     });
-    const duration = Date.now() - started;
-    const ordinarySuccess = response.status >= 200 && response.status < 400;
     const expectedAccessDenial = ACCESS_GATE_MONITORS.has(monitor.id) &&
       (response.status === 401 || response.status === 403) &&
       Boolean(response.headers.get("cf-ray"));
-    const ok = ordinarySuccess || expectedAccessDenial;
-    await response.body?.cancel();
+    let ok=(response.status>=200&&response.status<300)||expectedAccessDenial;
+    let reason=ok?null:"HTTP "+response.status;
+    if(machine && !expectedAccessDenial) {
+      if(response.status!==200){
+        ok=false;
+        reason="Machine-readable route returned HTTP "+response.status+" instead of a full HTTP 200 document.";
+      }else if(Number(response.headers.get('content-length')||0)>131072){
+        ok=false;
+        reason="Machine-readable response exceeded the health-check size limit.";
+      }else{
+        const reader=response.body?.getReader();
+        const chunks=[];
+        let bytes=0;
+        try{
+          if(reader){
+            while(true){
+              const {done,value}=await reader.read();
+              if(done)break;
+              bytes+=value.byteLength;
+              if(bytes>131072)break;
+              chunks.push(value);
+            }
+          }
+        }finally{await reader?.cancel().catch(()=>{});}
+        if(bytes>131072){
+          ok=false;reason="Machine-readable response exceeded the health-check size limit.";
+        }else{
+          const data=new Uint8Array(bytes);
+          let offset=0;
+          for(const chunk of chunks){data.set(chunk,offset);offset+=chunk.byteLength;}
+          const report=assessAssetRepresentation(asset,response.headers.get("content-type")||"",
+            new TextDecoder().decode(data));
+          ok=report.ok;
+          reason=report.ok?null:"Machine-readable content invalid: "+report.code;
+        }
+      }
+    }
+    if(!response.bodyUsed) await response.body?.cancel().catch(()=>{});
     return {
       monitor_id: monitor.id,
       ok,
       status_code: response.status,
-      duration_ms: duration,
-      error_message: ok ? null : "HTTP " + response.status,
+      duration_ms: Date.now()-started,
+      error_message:reason,
     };
   } catch (error) {
     return {
