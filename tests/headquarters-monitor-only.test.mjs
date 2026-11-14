@@ -80,15 +80,16 @@ test("release remains founder-only and OTP guarded; monitoring is not publishing
  assert.match(otp,/HQ_GO_LIVE_OTP_TEST_ENABLED/);
 });
 
-test("internal repair Worker and Durable Workflow also reject any attempt to write",async()=>{
+test("retired internal worker contains no code-writing or repair operations", async () => {
  const worker=await read("admin-agent/worker.js");
- const fetchStart=worker.slice(worker.indexOf("export default {"),
-  worker.indexOf('const url = new URL(request.url);',worker.indexOf("export default {")));
- assert.match(fetchStart,/request\.method !== "GET"/);
- assert.match(fetchStart,/MONITOR_ONLY/);
- assert.match(fetchStart,/status:405/);
- const start=worker.indexOf("export class AdminRepairWorkflow");
- const runStart=worker.slice(start,worker.indexOf("const payload = event.payload",start));
- assert.match(runStart,/throw new Error\("MONITOR_ONLY:/);
- assert.doesNotMatch(runStart,/this\.env\.AI\.run|github\(/);
+ const config=await read("admin-agent/wrangler.jsonc");
+ assert.match(worker,/request\.method !== "GET"/);
+ assert.match(worker,/MONITOR_ONLY/);
+ assert.match(worker,/status:405|}, 405/);
+ assert.match(worker,/class AdminRepairWorkflow/);
+ assert.match(worker,/throw new Error\("MONITOR_ONLY:/);
+ assert.doesNotMatch(worker,/GITHUB_TOKEN[^\n]*write|method:\s*["'](?:POST|PUT|PATCH|DELETE)["']/i);
+ assert.doesNotMatch(worker,/ADMIN_REPAIR_WORKFLOW\.create|github_issue_created:\s*true/);
+ assert.doesNotMatch(worker,/github\/git\/(?:blobs|trees|refs)|create-isolated-agent-branch|open-draft-pull-request/);
+ assert.doesNotMatch(config,/"ai"\s*:|"workflows"\s*:|"REPAIR_BASE_BRANCH"\s*:/);
 });
