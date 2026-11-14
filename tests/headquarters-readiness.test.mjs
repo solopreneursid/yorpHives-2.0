@@ -25,7 +25,7 @@ async function fixture() {
     devDependencies: { "@tailwindcss/cli": "4.3.5", tailwindcss: "4.3.5" }
   }));
   await mkdir(join(dir, "migrations"), { recursive: true });
-  for (let i = 4; i <= 27; i++) {
+  for (let i = 4; i <= 30; i++) {
     await writeFile(join(dir, "migrations", String(i).padStart(4, "0") + "_test.sql"), "SELECT 1;");
   }
   return dir;
@@ -52,7 +52,7 @@ test("rehearsal isolation gate rejects public exposure and production bindings",
     const config=JSON.parse(await (await import("node:fs/promises")).readFile(
       join(dir, "hq-engine/wrangler.rehearsal.jsonc"),"utf8"));
     config.workers_dev=true;
-    config.d1_databases[0].database_id="unreviewed-production-database";
+    config.d1_databases=[{binding:"DB",database_id:"unreviewed-production-database"}];
     await writeFile(join(dir,"hq-engine/wrangler.rehearsal.jsonc"),JSON.stringify(config));
     const report=await assessHeadquarters(dir);
     assert.equal(report.static_checks_passed,false);
