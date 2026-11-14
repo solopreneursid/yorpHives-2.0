@@ -139,11 +139,15 @@ export function createIndependentWatchdog({
       // A missing *optional* API is a coverage gap, not a site outage.
       const api = settled.find((_,index)=>targets[index].id==='website-discovery');
       const manifest = settled.find((_,index)=>targets[index].id==='website-manifest');
-      if (api?.state==='reachable' && manifest?.state==='reachable' &&
-          !reconcileCatalogueObservations(api,manifest)) {
-        for(const finding of [api,manifest]) {
-          finding.state='degraded';
-          finding.reason='catalogue_sources_disagree';
+      if (api?.state==='reachable' && manifest?.state==='reachable') {
+        if (reconcileCatalogueObservations(api,manifest)) {
+          api.reason = 'catalogue_sources_match';
+          manifest.reason = 'catalogue_sources_match';
+        } else {
+          for(const finding of [api,manifest]) {
+            finding.state='degraded';
+            finding.reason='catalogue_sources_disagree';
+          }
         }
       }
       const observations = settled.map((result, index) => ({
