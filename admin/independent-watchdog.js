@@ -6,7 +6,7 @@
   "use strict";
   const id = name => document.getElementById(name);
   let inflight = null, lastAt = 0;
-  const allowed = new Set(["headquarters-ready","website-home","website-tools","website-studio","website-discovery","website-manifest"]);
+  const allowed = new Set(["headquarters-ready","website-home","website-tools","website-studio","website-discovery","website-manifest","website-agent-capabilities"]);
   function show(area,value,details,label,state) {
     const display = id("hq-watchtower-"+area+"-value");
     if (!display) return;
@@ -20,7 +20,7 @@
     if (!data || data.source !== "independent_local_watchdog" ||
         data.connected !== true || !["ready","degraded"].includes(data.status) ||
         data.repairs_authorized !== false || data.production_execution_enabled !== false ||
-        !Array.isArray(data.observations) || data.observations.length > 6) return;
+        !Array.isArray(data.observations) || data.observations.length > 7) return;
     const names = new Set();
     for (const entry of data.observations) {
       if (!entry || !allowed.has(entry.target) || names.has(entry.target) ||
@@ -42,6 +42,14 @@
       show("headquarters","Needs attention",
         "Independent runtime readiness was degraded · observed "+when+".",
         "RUNTIME ISSUE","alert");
+    }
+    const agentMeta=data.observations.find(item=>item.target==="website-agent-capabilities");
+    if (agentMeta?.state==="degraded") {
+      show("products","Agent contract warning",
+        "Published agent capability metadata failed its safety contract · observed "+when+
+        ". No automatic repairs or payments can be initiated here.",
+        "AGENT METADATA REVIEW","alert");
+      return;
     }
     const checks = ["website-discovery","website-manifest"].map(target =>
       data.observations.find(item => item.target === target)).filter(Boolean);

@@ -5,6 +5,7 @@
  */
 import { pathToFileURL } from 'node:url';
 import { inspectCatalogueResponse, reconcileCatalogueObservations } from './catalogue-contract.mjs';
+import { inspectAgentCapabilitiesResponse } from './agentic-internet-contract.mjs';
 import { DEFAULT_STATUS_FILE, writeWatchdogEvidence } from './watchdog-evidence.mjs';
 
 const WEBSITE_ROUTES = Object.freeze([
@@ -14,7 +15,8 @@ const WEBSITE_ROUTES = Object.freeze([
   // Optional discovery APIs become required only after the website publishes them.
   ['website-studio', 'https://yorphives.com/free-tools/file-studio/'],
   ['website-discovery', 'https://yorphives.com/api/v1/free-tools'],
-  ['website-manifest', 'https://yorphives.com/free-tools/manifest.json']
+  ['website-manifest', 'https://yorphives.com/free-tools/manifest.json'],
+  ['website-agent-capabilities', 'https://yorphives.com/api/v1/agent-capabilities']
 ]);
 
 export function watchdogTargets(headquartersOrigin = 'http://127.0.0.1:8788') {
@@ -28,8 +30,10 @@ export function watchdogTargets(headquartersOrigin = 'http://127.0.0.1:8788') {
     Object.freeze({ id: 'headquarters-ready', system: 'headquarters', url: new URL('/ready', origin).href, kind: 'readiness' }),
     ...WEBSITE_ROUTES.map(([id, url]) => Object.freeze({
       id, system: 'website', url,
-      optional: id === 'website-discovery' || id === 'website-manifest',
-      kind: id === 'website-discovery' ? 'catalogue' : id === 'website-manifest' ? 'manifest' : 'http'
+      optional: id === 'website-discovery' || id === 'website-manifest' || id === 'website-agent-capabilities',
+      kind: id === 'website-discovery' ? 'catalogue' :
+        id === 'website-manifest' ? 'manifest' :
+        id === 'website-agent-capabilities' ? 'agentic' : 'http'
     }))
   ]);
 }
@@ -71,6 +75,21 @@ export async function checkWatchdogTarget(target, { fetcher = fetch, timeoutMs =
         observation.reason = 'optional_endpoint_blocked';
       } else {
         observation.reason = response.status >= 300 && response.status < 400 ? 'redirect_requires_review' : 'http_unavailable';
+      }
+    } else if (target.kind === 'agentic') {
+      const type=response.headers.get('content-type')||'';
+      if(!/^application\/json(?:\s*;|\s*$)/i.test(type))
+        observation.reason='agentic_metadata_invalid';
+      else if(Number(response.headers.get('content-length')||0)>65536)
+        observation.reason='agentic_metadata_too_large';
+      else {
+        const body=await boundedRead(response,65536);
+        if(body===null)observation.reason='agentic_metadata_too_large';
+        else{
+          const report=inspectAgentCapabilitiesResponse(type,body);
+          observation.state=report.ok?'reachable':'degraded';
+          observation.reason=report.reason;
+        }
       }
     } else if (target.kind === 'catalogue' || target.kind === 'manifest') {
       if (!/^(application\/json|[a-z0-9.+-]+\/[a-z0-9.+-]+\+json)(?:\s*;|\s*$)/i.test(

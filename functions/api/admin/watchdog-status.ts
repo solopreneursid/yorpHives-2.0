@@ -20,7 +20,7 @@ export async function onRequestGet(context: AdminRequestContext): Promise<Respon
     };
     if (report?.source !== "independent_local_watchdog" ||
         report.repairs_authorized !== false || report.production_execution_enabled !== false ||
-        !Array.isArray(report.observations) || report.observations.length > 6 ||
+        !Array.isArray(report.observations) || report.observations.length > 7 ||
         !["ready","degraded","unavailable"].includes(report.status || "")) {
       throw Error("Unverified local report");
     }

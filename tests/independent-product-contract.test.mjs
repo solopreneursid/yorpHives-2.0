@@ -22,7 +22,7 @@ test('public discovery and manifest probes are fixed bounded GETs, not product w
  assert.equal(manifest.kind,'manifest');
  assert.equal(manifest.url,'https://yorphives.com/free-tools/manifest.json');
  assert.deepEqual(targets.map(x=>x.id),[
-  'headquarters-ready','website-home','website-tools','website-studio','website-discovery','website-manifest'
+  'headquarters-ready','website-home','website-tools','website-studio','website-discovery','website-manifest','website-agent-capabilities'
  ]);
 });
 
