@@ -23,7 +23,13 @@ export function createFunctionalWatchdog({
     if (running) return running;
     running = (async () => {
       const checkedAt = clock();
-      const results = await run({chromium,clock});
+      let results;
+      try { results = await run({chromium,clock}); }
+      catch {
+        // Do not leave a previous green snapshot looking current after a
+        // crashed or missing browser runtime. Persist unavailable coverage.
+        results = await runFunctionalChecks({clock});
+      }
       // Even unavailable browser probes are evidence of a coverage gap; do
       // not silently keep showing an old passing snapshot as current.
       await persist(dataDirectory,results,checkedAt);
