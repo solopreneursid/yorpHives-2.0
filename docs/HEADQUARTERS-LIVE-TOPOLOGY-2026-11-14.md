@@ -8,6 +8,10 @@ snapshots, not a promise of continuous safety.
 
 **Primary private Headquarters Pages project** `yorphives-admin-staging`:
 - Canonical production branch remains `build/yorphives-admin-reliability`.
+- Automatic **production and preview** deployments from GitHub were disabled.
+  An independently authorized external release/build action is now required
+  before changing either Pages environment; the current canonical deployment
+  remains running and unchanged.
 - Canonical D1 binding `DB` **remains exactly as before**:
   `yorphives-2-catalogue-preview` (60 tables at inspection).
 - The **preview** environment now binds a new, distinct D1 database:
@@ -39,7 +43,8 @@ snapshots, not a promise of continuous safety.
 `solopreneursid/YorpHives`. Its tool metadata development is in website
 draft PR #7; corresponding read-only HQ integration is draft PR #57.
 
-**Cloudflare operations performed**: one new empty D1 database, one preview-only
+**Cloudflare operations performed**: disabled primary HQ automatic production
+and preview GitHub deployments in addition to one new empty D1 database, one preview-only
 D1 rebind, one preview-only removal of three privileged Service bindings,
 one preview-only removal of four legacy OTP configuration entries, legacy
 project automatic preview disabled and legacy project D1 unbound. There were
