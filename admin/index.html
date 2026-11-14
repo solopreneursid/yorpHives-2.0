@@ -27,6 +27,7 @@
 <link rel="stylesheet" href="/admin/headquarters-prism-theme.css">
 <link rel="stylesheet" href="/admin/cockpit.css">
 <link rel="stylesheet" href="/admin/founder-pulse.css">
+<link rel="stylesheet" href="/admin/inbox-triage.css">
 </head>
 <body>
 <div class="app-shell">
@@ -917,6 +918,18 @@
         <p class="website-proof-note">This checks seven public addresses and basic browser protection. It does not close old problems, verify every feature or grant permission to publish. If a check is blocked, it says “Couldn’t verify” rather than assuming your site is broken.</p>
       </section>
       <div class="filter-row"><button class="filter-chip active" data-finding-filter="active">Active</button><button class="filter-chip" data-finding-filter="all">All history</button><button class="filter-chip" data-finding-filter="resolved">Resolved / accepted</button></div>
+      <section class="hq-inbox-triage" aria-label="Finding focus and verification freshness">
+        <div class="hq-inbox-triage-heading">
+          <div><span class="eyebrow">FOCUS YOUR INVESTIGATION</span><strong>What deserves attention first?</strong></div>
+          <p id="hq-triage-summary" role="status" aria-live="polite">Reading recorded finding evidence…</p>
+        </div>
+        <div class="hq-inbox-triage-controls" role="group" aria-label="Filter findings by evidence">
+          <button type="button" data-triage-mode="priority" aria-pressed="true">⚑ Priority first</button>
+          <button type="button" data-triage-mode="recheck" aria-pressed="false">◷ Needs recheck</button>
+          <button type="button" data-triage-mode="products" aria-pressed="false">▦ Products &amp; tools</button>
+        </div>
+        <p class="hq-inbox-triage-note">Severity stays unchanged. “Needs recheck” means its last recorded evidence is stale or missing, not necessarily that a new failure occurred.</p>
+      </section>
       <dialog class="incident-dialog" id="incident-dialog" aria-labelledby="incident-title" aria-describedby="incident-subtitle">
         <div class="incident-shell">
           <header class="incident-header">
@@ -1158,5 +1171,6 @@
 <script src="/admin/headquarters-refined.js" defer></script>
 <script src="/admin/cockpit.js" defer></script>
 <script src="/admin/founder-pulse.js" defer></script>
+<script src="/admin/independent-watchdog.js" defer></script>
 </body>
 </html>

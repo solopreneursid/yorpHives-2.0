@@ -7,7 +7,7 @@ const setText = (id, value) => {
 const date = (value) => value ? new Date(value).toLocaleString() : "—";
 const number = (value) => new Intl.NumberFormat().format(Number(value || 0));
 const text = (value) => String(value ?? "—");
-const state = { view: "headquarters", loaded: new Set(), assets: [], findings: [], dependencies: [], range: "7d", findingFilter: "active", assetFilter: "all", assetQuery: "", dependencyQuery: "" };
+const state = { view: "headquarters", loaded: new Set(), assets: [], findings: [], dependencies: [], range: "7d", findingFilter: "active", findingTriage: "priority", assetFilter: "all", assetQuery: "", dependencyQuery: "" };
 let analyticsSnapshot = null;
 
 function showSystemMessage(message, options = {}) {
@@ -356,8 +356,19 @@ async function loadIssues() {
 function renderFindings() {
   const target=$("findings-list");
   const count = $("hq-findings-count");
-  if (count) count.textContent = "· " + (state.findings?.length || 0) + " shown";
-  renderTable(target,state.findings,[
+
+  const records = Array.isArray(state.findings) ? state.findings : [];
+  const stale = records.filter(item=>item.evidence_state !== "recent").length;
+  const visible = records.filter(item=>
+    state.findingTriage === "priority" ||
+    (state.findingTriage === "recheck" && item.evidence_state !== "recent") ||
+    (state.findingTriage === "products" && item.source_type === "asset"));
+  if (count) count.textContent = "· " + visible.length + " shown";
+  const summary = $("hq-triage-summary");
+  if (summary) summary.textContent =
+    records.length + " recorded findings · " + stale +
+    " need fresh verification · " + visible.length + " shown in this view.";
+  renderTable(target,visible,[
     (tr,item)=>{const td=cell(tr,"");td.append(badge(item.severity));},
     (tr,item)=>{
       const td = document.createElement("td");
@@ -382,7 +393,17 @@ function renderFindings() {
     },
     (tr,item)=>cell(tr,item.environment || item.monitor_name || "—"),
     (tr,item)=>{const td=cell(tr,"");td.append(badge(item.status));},
-    (tr,item)=>cell(tr,date(item.last_verified)),
+    (tr,item)=>{
+      const td=cell(tr,date(item.last_verified));
+      const age=document.createElement("small");
+      const evidence=item.evidence_state === "recent" ? "recent" :
+        item.evidence_state === "stale" ? "stale" : "unverified";
+      age.className="hq-triage-evidence";
+      age.dataset.evidenceState=evidence;
+      age.textContent=evidence==="recent"?"RECENT EVIDENCE":
+        evidence==="stale"?"STALE · RECHECK":"NOT VERIFIED";
+      td.append(age);
+    },
     (tr,item)=>{
       const td=document.createElement("td");
       const button=document.createElement("button");button.className="button";
@@ -577,6 +598,14 @@ document.querySelectorAll("[data-asset-filter]").forEach(button=>button.addEvent
 }));
 $("asset-search").addEventListener("input",event=>{state.assetQuery=event.target.value;renderAssets();});
 $("dependency-search").addEventListener("input",event=>{state.dependencyQuery=event.target.value;renderDependencies();});
+document.querySelectorAll("[data-triage-mode]").forEach(button=>button.addEventListener("click",()=>{
+  const chosen=button.dataset.triageMode;
+  if(!["priority","recheck","products"].includes(chosen))return;
+  state.findingTriage=chosen;
+  document.querySelectorAll("[data-triage-mode]").forEach(item=>
+    item.setAttribute("aria-pressed",item===button?"true":"false"));
+  renderFindings();
+}));
 document.querySelectorAll("[data-finding-filter]").forEach(button=>button.addEventListener("click",()=>{
   state.findingFilter=button.dataset.findingFilter;document.querySelectorAll("[data-finding-filter]").forEach(item=>item.classList.toggle("active",item===button));state.loaded.delete("issues");loadIssues();
 }));

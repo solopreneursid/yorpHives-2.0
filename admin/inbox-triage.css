@@ -1,0 +1,16 @@
+/* Evidence-first Inbox controls. Sorting/filtering never patches an issue. */
+.hq-inbox-triage{margin:12px 0 18px;padding:16px 18px;border:1px solid #2b5064;background:linear-gradient(125deg,#102b3d,#101d32);border-radius:15px;min-width:0}
+.hq-inbox-triage-heading{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.hq-inbox-triage-heading strong{display:block;font-size:15px;font-weight:760;color:#eefaff;margin-top:4px}
+.hq-inbox-triage-heading p{margin:0;color:#b2cbd9;font-size:11px;line-height:1.6;max-width:370px;text-align:right}
+.hq-inbox-triage-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.hq-inbox-triage-controls button{border:1px solid #3b5b70;border-radius:999px;background:#193447;color:#acc8da;min-height:38px;font-size:11px;font-weight:750;padding:9px 14px;cursor:pointer}
+.hq-inbox-triage-controls button:hover{border-color:#78d9e4;color:#fff}
+.hq-inbox-triage-controls button[aria-pressed=true]{background:linear-gradient(120deg,#81e9e4,#87c5fc);color:#092636;border-color:#93e9eb}
+.hq-inbox-triage-controls button:focus-visible{outline:3px solid #81e9e4;outline-offset:3px}
+.hq-inbox-triage-note{margin:11px 0 0;color:#90abc1;font-size:10px;line-height:1.65}
+.hq-triage-evidence{display:block;margin-top:5px;font-size:9px;font-weight:790;letter-spacing:.03em;color:#a7e8c8;white-space:nowrap}
+.hq-triage-evidence[data-evidence-state=stale]{color:#f8d6a0}
+.hq-triage-evidence[data-evidence-state=unverified]{color:#e7bdb5}
+@media(max-width:700px){.hq-inbox-triage{padding:14px 12px}.hq-inbox-triage-heading{align-items:flex-start;flex-direction:column;gap:6px}.hq-inbox-triage-heading p{text-align:left}.hq-inbox-triage-controls button{flex:1 1 auto}}
+@media(prefers-reduced-motion:reduce){.hq-inbox-triage-controls button{scroll-behavior:auto}}

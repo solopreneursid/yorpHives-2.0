@@ -138,7 +138,7 @@
         "Treat inconclusive checks as uncertain, not confirmed outages. " +
         "Suggest safe, evidence-based remedies for the founder to evaluate. " +
         "Headquarters and YorpMind never modify code or dispatch repairs. " +
-        "The founder makes and tests changes, then uses Preview → Go Live → OTP.",
+        "The founder makes, tests and publishes changes independently outside Headquarters.",
       link: "https://yorphives.com/"
     }, assistant);
   }

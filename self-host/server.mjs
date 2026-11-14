@@ -9,6 +9,7 @@ import { createDatabase } from './sqlite.mjs';
 import { authorizeOwnerRequest, adminJson } from './auth.mjs';
 import { createObservationScheduler } from './scheduler.mjs';
 import { assessRuntimeReadiness } from './readiness.mjs';
+import { readWatchdogEvidence } from './watchdog-evidence.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('../', import.meta.url)));
 const API_ROOT = resolve(ROOT, 'functions/api/admin');
@@ -51,7 +52,7 @@ function noIntegration(message = 'This integration has not been connected to you
 /** Start the real private application with a separate local SQLite database. */
 export async function createHeadquartersServer({
   password, ownerEmail = 'owner@localhost', hostname = '127.0.0.1', port = 0,
-  dataDirectory = resolve(ROOT, 'self-host/data'), publicOrigin,
+  dataDirectory = resolve(ROOT, 'self-host/data'), publicOrigin, watchdogStatusFile,
   env: extraEnvironment = {}, createMissionEngine, enableObservationSchedule = false
 } = {}) {
   if (typeof password !== 'string' || password.length < 16 || password.length > 512) throw new Error('An owner password of 16–512 characters is required. Run node self-host/setup.mjs.');
@@ -66,7 +67,11 @@ export async function createHeadquartersServer({
   const env = { ...extraEnvironment, DB: db, ADMIN_ALLOWED_EMAILS: ownerEmail,
     // Match the local owner for readiness reads. No sender, OTP flag, assistant
     // identity or mail transport is configured by this reference identity.
-    FOUNDER_OWNER_EMAIL: extraEnvironment.FOUNDER_OWNER_EMAIL || ownerEmail };
+    FOUNDER_OWNER_EMAIL: extraEnvironment.FOUNDER_OWNER_EMAIL || ownerEmail,
+    // The reader is only installed in this self-hosted runtime. Never hand a
+    // filesystem path or unrestricted Node adapter to Cloudflare Pages.
+    HQ_WATCHDOG_READ: () => readWatchdogEvidence(
+      watchdogStatusFile || resolve(dataDirectory,'watchdog-status.json')) };
   try {
     if (createMissionEngine) env.HQ_ENGINE_SERVICE = await createMissionEngine({ db });
   } catch (error) { db.close(); throw error; }
