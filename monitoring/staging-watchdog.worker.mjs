@@ -138,6 +138,59 @@ export async function auditPublicSecurityHeaders(db,{
   http_status:http,verified_vulnerability:false,production_modified:false};
 }
 
+/** Check the private HEADQUARTERS access boundary from outside, without
+ * owning an Access JWT. A 302 to Cloudflare Access is evidence of a boundary,
+ * not proof of internal app health. A provider 403 is not classified healthy.
+ */
+export async function auditHeadquartersAccessGate(db,runId,{
+ fetcher=globalThis.fetch,clock=iso
+}={}){
+ if(!db?.prepare||typeof runId!=='string'||!/^watch-[0-9a-f-]{36}$/i.test(runId))
+  throw Error('Isolated watchdog run receipt required');
+ let status='unknown',reason='access_boundary_unverified',code=null;
+ try{
+  const response=await fetcher('https://admin-staging.yorphives.com/admin/',{
+   method:'GET',redirect:'manual',cache:'no-store',
+   headers:{accept:'text/html'},signal:AbortSignal.timeout(6500)
+  });
+  code=response.status;
+  if([301,302,303,307,308].includes(code)){
+   const location=response.headers.get('location');
+   let target;try{target=new URL(location,'https://admin-staging.yorphives.com');}catch{}
+   if(target?.protocol==='https:'&&
+      target.hostname.endsWith('.cloudflareaccess.com')&&
+      target.pathname.startsWith('/cdn-cgi/access/login/')){
+    status='verified';reason='external_access_challenge_present';
+   }else{
+    status='degraded';reason='unexpected_hq_redirect';
+   }
+  }else if(code===200){status='degraded';reason='anonymous_admin_page_http_200';}
+  else if([401,403].includes(code)){
+   status='unknown';reason='access_blocked_provider_unverified';
+  }else{status='unknown';reason='headquarters_unavailable_or_unverified';}
+  await response.body?.cancel().catch(()=>{});
+ }catch{reason='headquarters_boundary_network_unavailable';}
+ const targetId='headquarters-access-gate';
+ await db.prepare(
+  'INSERT OR IGNORE INTO monitor_targets (id,kind,label,public_url,enabled) VALUES (?,?,?,?,?)'
+ ).bind(targetId,'headquarters','Headquarters external Access challenge',
+  'https://admin-staging.yorphives.com/admin/',1).run();
+ await db.prepare(
+  'INSERT INTO monitor_observations (id,run_id,target_id,observed_at,status,evidence_kind,note) VALUES (?,?,?,?,?,?,?)'
+ ).bind('watch-hq-'+crypto.randomUUID(),runId,targetId,clock(),status,
+  'http-status',('headquarters_external_gate · '+reason+' · HTTP '+(code??'none')).slice(0,240)).run();
+ if(status==='degraded'){
+  await db.prepare(
+   'INSERT OR IGNORE INTO monitor_signals (id,category,state,priority,title,evidence_ref,observed_at,founder_action) VALUES (?,?,?,?,?,?,?,?)'
+  ).bind('watch-signal-hq-'+reason,'security','unreviewed',4,
+   'Investigate the Headquarters external authentication boundary',
+   'headquarters:access:'+reason,clock(),
+   'Privately verify Cloudflare Access challenge and deny behavior; do not infer internal system health from HTTP status.').run();
+ }
+ return{source:'anonymous_hq_access_boundary_probe',status,reason,
+  code,private_api_verified:false,production_modified:false};
+}
+
 export default {
  async fetch(){return new Response('Not found',{status:404,headers:{'cache-control':'no-store'}});},
  async scheduled(event,env,ctx){
@@ -157,9 +210,11 @@ export default {
     const snapshot=await runLiveWebsiteSnapshot();
     const outcome=await persistMonitoringSnapshot(env.DB,snapshot);
     const audit=await auditPublicSecurityHeaders(env.DB);
+    const headquarters=await auditHeadquartersAccessGate(env.DB,outcome.run_id);
     console.log(JSON.stringify({event:'staging-watchdog-complete',
-     observations:outcome.observations_written,review_items:outcome.review_items_found,
-     header_advisory:audit.status,production_modified:false}));
+     observations:outcome.observations_written+1,review_items:outcome.review_items_found,
+     header_advisory:audit.status,headquarters_external_gate:headquarters.status,
+     private_headquarters_functionality_attested:false,production_modified:false}));
    }else throw Error('Unknown cron schedule refused');
   })();
   ctx.waitUntil(task.catch(()=>console.error(JSON.stringify({
