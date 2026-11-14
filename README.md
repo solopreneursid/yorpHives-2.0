@@ -1,32 +1,16 @@
-# YorpHives 2.0
+# YorpHives Headquarters — private monitoring system
 
-**Discover tools. Build solutions. Find opportunities. Adopt applications. Connect AI agents.**
+**This repository is Headquarters, NOT the production YorpHives website.**
 
-YorpHives is a platform connecting five audiences around useful digital capabilities:
+| Project | Git repository | Canonical directory | Responsibility |
+| --- | --- | --- | --- |
+| Headquarters | `solopreneursid/yorpHives-2.0` | `yorphives-workspace/headquarters/` | Monitor HQ and the website, discover issues/opportunities and manage founder review |
+| Website | `solopreneursid/YorpHives` | `yorphives-workspace/website/` | Public website, released tools/products, marketing, monetization |
 
-1. **People** discover practical tools and services.
-2. **Businesses** find builders and build solutions.
-3. **Developers and creators** discover opportunities to earn.
-4. **Application users** discover and adopt useful products.
-5. **AI agents** discover and execute capabilities through structured interfaces.
+**New ChatGPT/Codex session?** Read `AGENTS.md`, `PROJECT-IDENTITY.json` and `docs/PROJECT-DIRECTORIES.md` before editing any files. Verify the Git remote. The Headquarters application starts in `admin/`; the self-hosted runtime is in `self-host/` (read `self-host/README.md`).
 
-## Product principles
+To create or check sibling Git workspaces: `node scripts/workspace-boundaries.mjs setup` or `node scripts/workspace-boundaries.mjs verify`. To check a Headquarters path: `node scripts/workspace-boundaries.mjs guard headquarters admin/index.html`.
 
-- One coherent platform, with clear pathways for each audience.
-- Useful discovery first; avoid empty directories and fabricated popularity metrics.
-- Capabilities should be understandable to both humans and software agents.
-- Trust, pricing, permissions, and execution boundaries must be explicit.
-- Build reusable platform primitives before multiplying products.
-- Monetization must create value for the relevant audience, not obstruct discovery.
+**Migration caveat:** This repository still retains historical website-preview code, including root `index.html` and `free-tools/`, for existing tests and preview routes. Those files are **not** the canonical live website. Do not develop public products here. See `docs/HEADQUARTERS-LEGACY-WEBSITE-EXTRACTION.md`.
 
-## Payments
-
-Dodo Payments is the payment provider for paid applications and memberships. Entitlements are granted or changed only from verified provider events processed server-side. A browser redirect is never proof of payment.
-
-## Current delivery
-
-See [the platform architecture](docs/ARCHITECTURE.md) and [the delivery roadmap](docs/ROADMAP.md).
-
-## Local preview
-
-This initial experience is dependency-free. Serve the repository root with any static HTTP server. Cloudflare Pages can deploy it directly without a build step.
+Headquarters reports and monitors. The founder makes fixes, reviews the exact final preview, presses Go Live and enters OTP. No production website or Headquarters deployment is authorized by code tests alone.
