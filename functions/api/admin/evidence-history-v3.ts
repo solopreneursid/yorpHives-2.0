@@ -31,7 +31,7 @@ export async function onRequestGet(context:AdminRequestContext):Promise<Response
     "SELECT o.target_id,o.observed_at,o.status,o.evidence_kind,o.note,r.status AS run_status FROM monitor_observations o JOIN monitor_observation_runs r ON r.id=o.run_id WHERE r.collector='external-watchdog' ORDER BY o.observed_at DESC LIMIT 270"
    ).all(),
    db.prepare(
-    "SELECT id,category,state,priority,title,evidence_ref,observed_at,founder_action FROM monitor_signals WHERE id LIKE 'watch-signal-%' OR id LIKE 'radar-%' ORDER BY priority DESC,observed_at DESC LIMIT 100"
+    "SELECT id,category,state,priority,title,evidence_ref,observed_at,founder_action FROM monitor_signals WHERE id LIKE 'watch-signal-%' OR id LIKE 'radar-%' OR id LIKE 'market-hn-%' OR id LIKE 'security-header-%' ORDER BY priority DESC,observed_at DESC LIMIT 100"
    ).all()
   ]);
   const safeRuns=(runs.results||[]).map(x=>({
@@ -62,8 +62,10 @@ export async function onRequestGet(context:AdminRequestContext):Promise<Response
     review_signals:safeSignals.filter(x=>x.state==="unreviewed").length,
     recorded_signals:safeSignals.length},
    revenue:{state:"not_connected",verified_amount:null,currency:null},
-   market_sources:{state:safeSignals.some(x=>x.id.startsWith("radar-"))?
-    "source_candidates_unvalidated":"not_connected"},
+   market_sources:{state:safeSignals.some(x=>x.id.startsWith("market-hn-"))?
+    "public_discussion_candidates_unvalidated":"not_connected"},
+   technology_sources:{state:safeSignals.some(x=>x.id.startsWith("radar-"))?
+    "public_changelog_candidates_unvalidated":"not_connected"},
    alerts_outside_dashboard:{state:"not_connected",
     reason:"No independently tested outbound notification transport installed"}
   };
