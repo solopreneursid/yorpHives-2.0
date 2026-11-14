@@ -1,10 +1,9 @@
 /**
- * Isolated Workflow staging harness. No public HTTP mission endpoint.
- * The ONLY executable entrypoint is the Cloudflare-authenticated Workflow API.
- * This module intentionally does not export the production Worker fetch handler.
+ * RETIRED MONITORING-ONLY HEADQUARTERS REHEARSAL.
+ * Keep a closed HTTP entrypoint for historical config compatibility.
+ * No Worker, AI, Workflow or D1 bindings and no import of the archived
+ * mission engine. An accidental deploy cannot dispatch legacy work.
  */
-export { MissionWorkflow } from "./worker.js";
-
 export default {
   async fetch() {
     return new Response("Not found", {
