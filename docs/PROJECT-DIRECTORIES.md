@@ -26,7 +26,7 @@ The production website is **not** `headquarters/index.html`; that is old experim
 
 | Intent | Choose Git source | Allowed primary paths |
 | --- | --- | --- |
-| HQ design, UI, monitoring, issues, research, YorpMind, release oversight | `solopreneursid/yorpHives-2.0` | `admin/`, `self-host/`, `admin-monitor/`, `hq-intelligence/`, `hq-engine/` |
+| HQ design, UI, monitoring, issues, research, YorpMind and read-only investigation records | `solopreneursid/yorpHives-2.0` | `admin/`, `self-host/`, `admin-monitor/`, `hq-intelligence/`, `hq-engine/` |
 | Public YorpHives pages, free tools, growth, AdSense, new products | `solopreneursid/YorpHives` | Paths inside the separate `website/` checkout |
 | Logo/shared middleware/database/configuration | Both dependencies must be inspected | No unilateral changes; record consumers and tests first |
 
@@ -50,6 +50,6 @@ node scripts/workspace-boundaries.mjs guard headquarters admin/index.html
 
 Before changing the website, switch to the other working copy and independently verify the Git remote. `yorpHives-2.0` still retains historical public-preview files for compatibility; see `HEADQUARTERS-LEGACY-WEBSITE-EXTRACTION.md`. That remaining physical extraction is **unfinished**, even though the project ownership boundary is now explicit.
 
-## Non-negotiable release boundary
+## Non-negotiable monitoring boundary
 
-Headquarters monitors both systems but cannot automatically repair or publish either. A founder-reviewed *target-specific* preview, deliberate Go Live action and correct OTP are prerequisites for live changes. Separate independent tests, deployment configuration, database, private secrets and audit trail for each project.
+Headquarters monitors both systems but cannot repair, release or publish either. **No Headquarters Preview, Go Live, OTP or production execution controls exist.** The founder separately prepares, tests and deploys changes in the appropriate project workspace and can return to Headquarters for monitoring. Separate independent tests, deployment configuration, database, private secrets and audit trail for each project. Follow `HEADQUARTERS-MONITORING-ONLY-POLICY.md`; any older Go Live/OTP documents are historical.
