@@ -12,11 +12,11 @@ const dataForPath=Object.freeze({
   "/":"<!doctype html><html><head><title>YorpHives</title></head><body>Home</body></html>",
   "/free-tools/":"<!doctype html><html><head><title>Free Tools</title></head><body>Tools</body></html>",
   "/free-tools/file-studio/":"<!doctype html><html><head><title>File Studio</title></head><body>Studio</body></html>",
-  "/free-tools/manifest.json":'[{"slug":"word-counter"}]',
+  "/free-tools/manifest.json":'{"schema_version":1,"source":"yorphives-website","count":1,"tools":[{"slug":"word-counter","name":"Word Counter","category":"text","public_url":"/free-tools/word-counter/"}]}',
   "/llms.txt":"# YorpHives\\nPublic agent access guidelines.",
   "/openapi.yaml":"openapi: 3.1.0\\ninfo:\\n  title: YorpHives API",
   "/.well-known/yorphives.json":'{"name":"YorpHives"}',
-  "/api/v1/free-tools":'{"data":[]}'
+  "/api/v1/free-tools":'{"schema_version":1,"source":"yorphives-website","count":1,"tools":[{"slug":"word-counter","name":"Word Counter","category":"text","public_url":"/free-tools/word-counter/"}]}'
 });
 const types=Object.freeze({
   "/":"text/html; charset=utf-8",
