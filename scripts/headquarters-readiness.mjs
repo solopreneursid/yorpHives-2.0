@@ -202,10 +202,11 @@ export async function assessHeadquarters(root) {
     // Component check reports the missing file.
   }
   add("rehearsal-http-entrypoint", /status:\s*404/.test(rehearsalEntry) &&
-    /export\s+\{\s*MissionWorkflow\s*\}/.test(rehearsalEntry) &&
-    !/MISSION_WORKFLOW\.create\(/.test(rehearsalEntry) &&
-    !/AI\.run\(/.test(rehearsalEntry),
-    "Public HTTP requests to the rehearsal worker must be inert and cannot launch AI");
+    /export\s+default/.test(rehearsalEntry) &&
+    !/\bMissionWorkflow\b/.test(rehearsalEntry) &&
+    !/\bimport\s*\(/.test(rehearsalEntry) &&
+    !/\bAI\.run\(/.test(rehearsalEntry),
+    "Retired rehearsal must export only a denied HTTP handler and cannot import or expose a live Workflow.");
 
   let guard = "";
   try {
