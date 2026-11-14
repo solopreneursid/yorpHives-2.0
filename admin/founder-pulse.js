@@ -5,7 +5,7 @@
   const id = name => document.getElementById(name);
   const LIMIT = 9;
   const filters = ["all","attention","work","discover"];
-  const destinations = new Set(["headquarters","issues","monitoring","intelligence","business","activity","investigations"]);
+  const destinations = new Set(["headquarters","issues","monitoring","intelligence","business","activity","investigations","overview"]);
   const safeCount = value => Number.isSafeInteger(value) && value >= 0;
   const num = value => safeCount(value) ? new Intl.NumberFormat().format(value) : "—";
   const label = (value,fallback="Untitled update",max=150) => typeof value === "string" && value.trim()
