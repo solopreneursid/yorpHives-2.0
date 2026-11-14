@@ -40,6 +40,10 @@ export function evaluatePagesTopology(primary,archive) {
   check("canonical_identity",ownerOK,"Canonical HQ repository, project and production branch must be identified."),
   check("future_preview_db_isolated",ownerOK && evidence.isolated,
     "Current Pages preview and canonical D1 bindings must identify different physical databases."),
+  check("canonical_release_automation_disabled",
+    ownerOK && primary?.source?.config?.production_deployments_enabled===false &&
+      primary?.source?.config?.preview_deployment_setting==="none",
+    "HQ production and preview automatic GitHub builds must be disabled until explicit external review, staging QA and release decision."),
   check("preview_execution_bindings_removed",services.length===0,
     "Preview must not bind privileged repair/AI/research Worker services."),
   check("preview_otp_retired",!activePreviewEnv.some(name=>SECRET_KEYS.has(name)),
