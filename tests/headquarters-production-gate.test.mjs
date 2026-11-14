@@ -41,7 +41,7 @@ test('missing live evidence blocks launch even if the owner requests production 
   assert.equal(result.production_deployment_authorized,false);
   assert.equal(result.automatic_production_deploy_allowed,false);
   assert.equal(result.owner_permission_declared,true);
-  assert.equal(result.blockers.length,8);
+  assert.equal(result.blockers.length,10);
   assert.doesNotMatch(JSON.stringify(result),/bearer|token|password/i);
 });
 test('real shared Cloudflare preview/canonical DB is a fatal independent blocker',()=>{
