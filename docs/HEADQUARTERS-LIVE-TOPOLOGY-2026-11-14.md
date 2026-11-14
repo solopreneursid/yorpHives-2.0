@@ -34,6 +34,12 @@ snapshots, not a promise of continuous safety.
 - Automatic preview deployments disabled
   (`source.config.preview_deployment_setting="none"`).
 - Production deployments already disabled. The project/history remain.
+- Cloudflare Access self-hosted applications were added for
+  `yorphives-2-preview.pages.dev` and
+  `*.yorphives-2-preview.pages.dev`; both were independently read back
+  with **no allow policies** (Cloudflare Access default deny).
+  This is a configuration-level protection, NOT a verified anonymous HTTP
+  denial or owner-login exercise.
 - Historical preview deployments might retain prior deployment-time bindings,
   secrets or public URLs. Their access/security has **not** been independently
   proven safe by changing current project settings. Keep them out of founder
@@ -92,9 +98,15 @@ no production D1 SQL operations, Pages production changes or public site release
    dependency check/rollback. Do not simply delete it today.
 5. Install and independently supervise the local watchdog and its alert path,
    with fresh uptime/failure/recovery evidence.
-6. Verify current private D1 backup retention and independently restore into
+6. A normal DELETE of the orphaned `yorphives-hq-mission-engine` Worker
+   was rejected by Cloudflare error 10340 because one or more **historical
+   Pages Functions still reference it** despite no references in current
+   deployment configuration. Do NOT force-delete: Cloudflare warns that forced
+   deletion may break dependent Service bindings or Durable Object state.
+   Resolve historical deployments/references safely before removal.
+7. Verify current private D1 backup retention and independently restore into
    another disposable D1/SQLite target. No restore to the canonical database.
-7. Complete the stacked PR review and independent founder-led release.
+8. Complete the stacked PR review and independent founder-led release.
    The new `scripts/headquarters-production-gate.mjs` and
    `scripts/headquarters-cloudflare-topology.mjs` must not report
    a false green state.
