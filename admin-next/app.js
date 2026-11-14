@@ -3,6 +3,7 @@
 /* No write endpoints, privilege grants, payment, repair, PR or deploy actions. */
 const $=id=>document.getElementById(id);
 let latest=null;
+let watchdogHistory=null;
 let selectedFilter='all';
 let isChecking=false;
 const views=['live','opportunities','history'];
@@ -115,9 +116,11 @@ function renderLive(){
   const state=integrations[key];
   const card=document.createElement('div');card.className='integration';
   const h=document.createElement('strong');h.textContent=title;
-  const chip=badge('not_published');chip.textContent='Not connected';
+  const active=key==='independent_watchdog'&&watchdogHistory?.collector_installed_and_fresh===true;
+  const chip=badge(active?'verified':'not_published');chip.textContent=active?'Fresh evidence':'Not connected';
   const p=document.createElement('small');
-  p.textContent=state?.reason||'No verified source has been connected.';
+  p.textContent=active?'Independent history is fresh; outbound alerts still need a tested notification connector.':
+    state?.reason||'No verified source has been connected.';
   card.append(h,chip,p);cards.append(card);
  }
 }
@@ -182,22 +185,79 @@ async function runChecks(){
   isChecking=false;button.disabled=false;button.textContent='↻ Run live checks';
  }
 }
+async function loadIndependentHistory(){
+ try{
+  const data=await fetchPrivateJson('/api/admin/evidence-history-v3');
+  if(data.schema_version!==1||data.source!=='independent_readonly_watchdog_history'||
+    data.monitor_only!==true||data.production_deployment_authorized!==false||
+    data.writes_permitted_from_headquarters!==false||
+    !Array.isArray(data.run_history)||!Array.isArray(data.observations)||
+    !Array.isArray(data.signals))throw Error('Invalid independent evidence');
+  watchdogHistory=data;
+  const fresh=data.collector_installed_and_fresh===true;
+  $('collector-badge').className='badge '+(fresh?'status-verified':'status-degraded');
+  $('collector-badge').textContent=fresh?'Running':'Not verified';
+  $('history-heartbeat').className='badge '+(fresh?'status-verified':'status-degraded');
+  $('history-heartbeat').textContent=fresh?'Fresh':'Stale / missing';
+  const when=data.latest_run?.finished_at||null;
+  const explanation=fresh?
+   'Latest external collection: '+prettyTime(when)+
+   ' · '+data.counts.recent_observations+' stored website observations.':
+   'No fresh independent heartbeat. '+(data.latest_run?
+    'Last run: '+prettyTime(when)+'.':'No external runs recorded.')+
+    ' Do not assume monitoring runs continuously.';
+  setText('collector-summary',explanation);
+  setText('history-status',explanation+' History contains public GET evidence, not tool execution or payment activity.');
+  renderRows('watchdog-run-list',data.run_history.slice(0,10),r=>({
+   label:r.status+' · '+prettyTime(r.started_at),
+   detail:'External scheduler · receipt '+String(r.id).slice(0,80)
+  }),'No independent scheduler runs have been recorded.');
+  renderRows('watchdog-observation-list',data.observations.slice(0,22),r=>({
+   label:String(r.target_id).replace(/^watch-target-/,'')+' · '+r.status,
+   detail:prettyTime(r.observed_at)+' · '+String(r.note||'').slice(0,190)
+  }),'No actual website history has been recorded.');
+  const findings=data.signals.filter(x=>!String(x.id).startsWith('radar-'));
+  renderRows('decision-signal-list',findings.slice(0,35),r=>({
+   label:'Priority '+r.priority+' · '+r.title,
+   detail:r.state+' · '+r.category+' · '+String(r.evidence_ref).slice(0,220)+
+    ' · '+prettyTime(r.observed_at)
+  }),'No issue findings yet; absence of findings does not prove all-clear.');
+  const radar=data.signals.filter(x=>String(x.id).startsWith('radar-'));
+  setText('technology-source-status',radar.length?
+   radar.length+' public technology/security changelog candidates collected. All are unvalidated hypotheses with source references.':
+   'No verified public update-feed candidates yet. Daily RSS schedule/source health is unproven.');
+  if(latest)renderLive();
+ }catch{
+  watchdogHistory=null;
+  $('collector-badge').className='badge status-degraded';
+  $('collector-badge').textContent='Unavailable';
+  setText('collector-summary','Independent history could not be verified. Continuous monitoring is NOT certified.');
+  setText('history-status','Independent persisted evidence unavailable; no production changes were made.');
+  setText('decision-signal-list','Independent founder review evidence is unavailable.');
+  setText('technology-source-status','Technology radar has not produced verified source candidates.');
+ }
+}
+
 async function loadStagingEvidence(){
  try{
   const data=await fetchPrivateJson('/api/admin/monitor-only-v3');
   if(data.schema_version!==1||data.monitor_only!==true||
     data.source!=='isolated_monitor_schema'||data.environment!=='isolated_preview_only')
    throw Error('Unverified staging schema.');
-  for(const [id,name] of [['targets-count','targets'],
-   ['observations-count','observations'],['signals-count','signals'],
-   ['runs-count','observation_runs']])setText(id,data.counts?.[name]??'—');
-  renderRows('target-list',data.targets,x=>({
+  const syntheticTargets=(data.targets||[]).filter(x=>String(x.id).startsWith('synthetic-'));
+  const syntheticObservations=(data.observations||[]).filter(x=>String(x.id).startsWith('synthetic-'));
+  const syntheticSignals=(data.signals||[]).filter(x=>String(x.id).startsWith('synthetic-'));
+  const syntheticRuns=(data.recent_runs||[]).filter(x=>String(x.id).startsWith('synthetic-'));
+  for(const [id,count] of [['targets-count',syntheticTargets.length],
+   ['observations-count',syntheticObservations.length],['signals-count',syntheticSignals.length],
+   ['runs-count',syntheticRuns.length]])setText(id,count);
+  renderRows('target-list',syntheticTargets,x=>({
    label:x.label,detail:x.kind+' · '+(x.enabled?'tracked':'paused')
   }),'No synthetic targets.');
-  renderRows('signal-list',data.signals,x=>({
+  renderRows('signal-list',syntheticSignals,x=>({
    label:x.title,detail:x.category+' · priority '+x.priority+' · '+x.state
-  }),'No staging intelligence examples.');
-  renderRows('observation-list',data.observations,x=>({
+  }),'No synthetic intelligence examples.');
+  renderRows('observation-list',syntheticObservations,x=>({
    label:x.target_id+' · '+x.status,
    detail:x.evidence_kind+' · '+x.observed_at+' · '+(x.note||'')
   }),'No synthetic observations.');
@@ -214,7 +274,8 @@ for(const button of document.querySelectorAll('[data-view]'))
 $('run-checks').addEventListener('click',runChecks);
 selectView('live');
 loadStagingEvidence();
+loadIndependentHistory();
 runChecks();
 // Page-visible refresh only. This is NOT an independent always-on watchdog.
-setInterval(()=>{if(document.visibilityState==='visible')runChecks();},120000);
+setInterval(()=>{if(document.visibilityState==='visible'){runChecks();loadIndependentHistory();}},120000);
 })();
