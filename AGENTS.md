@@ -35,6 +35,21 @@ Historical **website-preview** files still exist here: root `index.html`, `app.j
 
 `brand/`, `functions/_lib/`, `functions/_middleware.js`, `migrations/`, root configuration and generic tests/docs are **shared/ambiguous**. Never assume ownership or copy secrets/data between projects.
 
+## YorpMind autonomous AI organization — founder mandate (14 November 2026)
+
+YorpMind is the continually improving PRIVATE AI OS that manages a
+specialist agentic company for monitoring and researching YorpHives
+Website **and Headquarters**, discovering global product and agent traffic
+opportunities, and investigating revenue, security and operational risks.
+This must not collapse into a static dashboard or cron-only health checks.
+See `docs/YORPMIND-AI-OS-AGENTIC-ORGANIZATION.md` and
+`staging/yorpmind-readonly-os-v2.sql`. Six specialist employees use
+swappable LOOPBACK-only private open-weight inference when actually
+provisioned, and source-linked shared feedback memory. Never describe
+a configured employee as actively analyzing if private-model run
+receipts are absent. The AI OS can only propose improvements; it cannot
+mutate its own source or permissions, repair websites or deploy.
+
 ## Evidence-driven Headquarters foundation — active development (14 November 2026)
 
 A separate scheduled monitoring collector is staged under `monitoring/`.
