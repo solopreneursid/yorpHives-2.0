@@ -91,12 +91,12 @@ test("emergency revoke remains available for any legacy pending or active record
   assert.equal((await normal.onRequestPatch(req(DB,"PATCH",{action:"revoke_all"},{origin:"https://evil.example"}))).status,403);
  }finally{sqlite.close();}
 });
-test("preview shows only production-authorized founder controls",async()=>{
+test("Headquarters shows historical access controls but no publishing actions",async()=>{
  const html=await source("../admin/index.html");
- assert.match(html,/id="founder-open-release"/);
+ assert.match(html,/id="view-investigations"/);
  assert.match(html,/id="founder-stop-all"/);
  assert.match(html,/id="view-security"/);
  assert.match(html,/class="founder-permission-panel"/);
  assert.doesNotMatch(html.slice(html.indexOf('id="view-headquarters"'),html.indexOf('id="view-yorpmind"')),/id="founder-stop-all"/);
- assert.match(html,/id="release-go-live"[^>]*disabled/);
+ assert.doesNotMatch(html,/id="release-go-live"|id="founder-open-release"|id="founder-open-preview"/);
 });
