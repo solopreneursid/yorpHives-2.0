@@ -87,9 +87,9 @@ function fixture(path) {
         {target:"headquarters-ready",system:"headquarters",checked_at:now,
           state:"ready",reason:"runtime_dependencies_ready",http_status:200},
         {target:"website-discovery",system:"website",checked_at:now,
-          state:"reachable",reason:"catalogue_contract_verified",http_status:200},
+          state:"reachable",reason:"catalogue_sources_match",http_status:200},
         {target:"website-manifest",system:"website",checked_at:now,
-          state:"reachable",reason:"catalogue_contract_verified",http_status:200}
+          state:"reachable",reason:"catalogue_sources_match",http_status:200}
       ]
     };
   }
@@ -106,24 +106,24 @@ function fixture(path) {
     ]};
   }
   if (path === "/api/admin/website-proof") {
-    const routes = ["/", "/free-tools/", "/free-tools/manifest.json",
+    const routes = ["/", "/free-tools/", "/free-tools/file-studio/", "/free-tools/manifest.json",
       "/llms.txt", "/openapi.yaml", "/.well-known/yorphives.json",
       "/api/v1/free-tools"];
     const checks = routes.map((path, index) => ({
       path, title: path === "/" ? "Homepage" : path,
-      expected_format: index < 2 ? "html" : "machine-readable",
-      status: index === 2 ? "needs_attention" : index === 4 ?
+      expected_format: index < 3 ? "html" : "machine-readable",
+      status: index === 3 ? "needs_attention" : index === 5 ?
         "not_verified" : "verified_basic",
-      http_status: index === 4 ? null : 200,
-      content_type: index < 2 ? "text/html" : "application/json",
-      note: index === 2 ? "Simulated HTML fallback for browser layout test." :
-        index === 4 ? "Simulated inaccessible site for browser layout test." :
+      http_status: index === 5 ? null : 200,
+      content_type: index < 3 ? "text/html" : "application/json",
+      note: index === 3 ? "Simulated HTML fallback for browser layout test." :
+        index === 5 ? "Simulated inaccessible site for browser layout test." :
         "Synthetic response passed layout test only.",
       security: null
     }));
     return {
       source: "real_public_http_get", origin: "https://yorphives.com",
-      checked_at: iso, total: 7, basic_passed: 5,
+      checked_at: iso, total: 8, basic_passed: 6, optional_missing: 0,
       needs_attention: 1, unverified: 1,
       overall: "needs_attention", checks,
       previous_findings_auto_resolved: false,
@@ -381,7 +381,7 @@ async function main() {
     }));
     check("watchtower:recorded-coverage-not-fake-health",
       coverage.cards===5 && coverage.website==="CHECK FAILURE" &&
-      ["FUNCTIONS UNVERIFIED","API CONTRACTS ONLY"].includes(coverage.products) &&
+      ["FUNCTIONS UNVERIFIED","CATALOGUES MATCH"].includes(coverage.products) &&
       ["RUNTIME UNVERIFIED","EXTERNAL CHECK"].includes(coverage.headquarters) &&
       coverage.market==="5 saved ideas" && coverage.revenue==="Not connected" && coverage.readOnly,
       "Each business surface reports stored reachability, unverified capabilities, or disconnected data without inventing earnings.");
@@ -391,7 +391,7 @@ async function main() {
     null, {timeout:TIMEOUT});
     check("watchdog:authenticated-independent-evidence",
       await page.locator("#hq-watchtower-headquarters-value").textContent() === "Runtime ready" &&
-      await page.locator("#hq-watchtower-products-state").textContent() === "API CONTRACTS ONLY",
+      await page.locator("#hq-watchtower-products-state").textContent() === "CATALOGUES MATCH",
       "Synthetic independently reported runtime and catalogue contracts appear without claiming individual tools work.");
     await page.waitForFunction(() =>
       document.querySelectorAll("#hq-pulse-feed .hq-pulse-post").length >= 4,
@@ -555,10 +555,10 @@ async function main() {
     await page.locator("#website-proof-run").click();
     await page.locator(".website-proof-item").first().waitFor({state:"visible",timeout:TIMEOUT});
     check("website-proof:read-only-panel",
-      await page.locator(".website-proof-item").count()===7 &&
+      await page.locator(".website-proof-item").count()===8 &&
       (await page.locator("#website-proof-status").textContent()).includes("need investigation") &&
       await page.locator("#website-proof-foot").isVisible(),
-      "Seven synthetic website results render in the founder's scrollable issue panel.");
+      "Eight synthetic website results render in the founder's scrollable issue panel.");
     await screenshot(page, "07-desktop-website-check.png");
     await page.locator("#website-proof-chatgpt").click();
     check("website-proof:chatgpt-handoff",

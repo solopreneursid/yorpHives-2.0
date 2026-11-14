@@ -35,4 +35,6 @@ Exactly matching HTTPS production website hostnames or private Headquarters stag
 4. **Read-only business sources:** Bring first-party traffic, revenue, expenses and relevant market evidence into private, timestamped snapshots with explicit missing-data states. Require founder consent and no third-party paid lock-in.
 5. **Independent rollout verification:** Node platform tests, CodeQL, offline desktop/mobile visual QA, authenticated isolated staging and recovery checks must pass before the founder chooses to deploy Headquarters through a separate workflow.
 
+For the dynamic website-owned discovery adapter, unpublished optional endpoints, source ownership and compatible v1 catalogue fingerprint validation see `docs/HEADQUARTERS-WEBSITE-SYNC-2026-11-14.md`.
+
 **Headquarters observes and recommends. The founder implements and publishes elsewhere.**

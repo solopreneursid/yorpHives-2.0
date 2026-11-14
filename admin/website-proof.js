@@ -8,7 +8,7 @@
     if (content !== undefined) el.textContent = String(content);
     return el;
   };
-  const VALID = new Set(["verified_basic", "needs_attention", "not_verified"]);
+  const VALID = new Set(["verified_basic", "needs_attention", "not_verified", "not_published"]);
   const COPY_LIMIT = 2800;
   let lastReceipt = null;
   let running = false;
@@ -18,10 +18,12 @@
     const intro =
       "This read-only check inspected public HTTP responses, not a production deployment. " +
       "It found " + receipt.basic_passed + " basic passes, " + receipt.needs_attention +
-      " addresses to investigate and " + receipt.unverified + " unverified addresses.\n";
+      " addresses to investigate, " + receipt.unverified + " unverified and " +
+      (receipt.optional_missing || 0) + " optional unpublished contracts.\n";
     const lines = receipt.checks.map(row => {
       const status = row.status === "verified_basic" ? "Basic check passed" :
-        row.status === "needs_attention" ? "Needs attention" : "Could not verify";
+        row.status === "needs_attention" ? "Needs attention" :
+        row.status === "not_published" ? "Optional · Not published" : "Could not verify";
       return row.path + " · " + status + " · HTTP " +
         (row.http_status === null ? "unknown" : row.http_status) +
         " · " + row.note;
@@ -32,8 +34,8 @@
   function validate(data) {
     if (!data || data.source !== "real_public_http_get" ||
         data.origin !== "https://yorphives.com" ||
-        data.total !== 7 || !Array.isArray(data.checks) ||
-        data.checks.length !== 7 || data.new_ai_model_calls !== 0 ||
+        data.total !== 8 || !Array.isArray(data.checks) ||
+        data.checks.length !== 8 || data.new_ai_model_calls !== 0 ||
         data.database_writes !== 0 || data.production_changes !== 0 ||
         data.previous_findings_auto_resolved !== false ||
         data.documents_proven_fully_correct !== false) {
@@ -52,11 +54,13 @@
     const counts = {
       verified_basic: data.checks.filter(item => item.status === "verified_basic").length,
       needs_attention: data.checks.filter(item => item.status === "needs_attention").length,
-      not_verified: data.checks.filter(item => item.status === "not_verified").length
+      not_verified: data.checks.filter(item => item.status === "not_verified").length,
+      not_published: data.checks.filter(item => item.status === "not_published").length
     };
     if (counts.verified_basic !== data.basic_passed ||
         counts.needs_attention !== data.needs_attention ||
-        counts.not_verified !== data.unverified) {
+        counts.not_verified !== data.unverified ||
+        counts.not_published !== data.optional_missing) {
       throw new Error("The website check totals did not match their evidence.");
     }
     return data;
@@ -70,7 +74,8 @@
     const labels = {
       verified_basic: "✓ Looks right",
       needs_attention: "! Needs attention",
-      not_verified: "· Couldn't verify"
+      not_verified: "· Couldn't verify",
+      not_published: "○ Not yet published"
     };
     for (const item of data.checks) {
       const row = make("article", "website-proof-item");
@@ -86,12 +91,14 @@
     status.textContent =
       data.needs_attention > 0 ? data.needs_attention + " addresses need investigation · checked " + when :
       data.unverified > 0 ? "Some addresses could not be verified · checked " + when :
-      "All seven addresses passed basic checks · checked " + when;
+      data.optional_missing > 0 ? data.optional_missing + " optional discovery routes not yet published · checked " + when :
+      "All eight addresses passed basic checks · checked " + when;
     status.dataset.status = data.needs_attention ? "attention" :
-      data.unverified ? "inconclusive" : "passed";
+      data.unverified ? "inconclusive" : data.optional_missing ? "inconclusive" : "passed";
     find("website-proof-count").textContent =
       data.basic_passed + " basic passes · " + data.needs_attention +
-      " need attention · " + data.unverified + " not verified";
+      " need attention · " + data.unverified + " not verified · " +
+      data.optional_missing + " optional not published";
     foot.hidden = false;
   }
 
@@ -108,7 +115,7 @@
     lastStarted = Date.now();
     trigger.disabled = true;
     trigger.textContent = "Checking…";
-    status.textContent = "Reading seven public website addresses. No changes will be made.";
+    status.textContent = "Reading eight public website addresses. No changes will be made.";
     status.dataset.status = "inconclusive";
     try {
       if (typeof window.api !== "function") {

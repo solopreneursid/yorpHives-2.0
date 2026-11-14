@@ -1,6 +1,6 @@
 # Legacy website preview inside Headquarters — extraction tracker
 
-**Status: NOT extracted.** The two Git origins are already distinct, but the Headquarters repository contains experimental public website preview sources alongside private Headquarters code. It is unsafe to delete or relocate them without updating callers.
+**Status: NOT extracted. Public website canonical source is verified separate. A read-only cross-repository metadata adapter exists in Headquarters, with website publisher still awaiting repository write access.** The two Git origins are already distinct, but the Headquarters repository contains experimental public website preview sources alongside private Headquarters code. It is unsafe to delete or relocate them without updating callers.
 
 ## This is NOT the production website
 

@@ -65,3 +65,48 @@ test('initial results, regressions and recoveries emit once while simultaneous p
   assert.deepEqual(events.map(x=>x.event), ['initial','regression','recovery']);
   assert.equal(calls,5);
 });
+
+test('optional missing website discovery endpoints are coverage gaps, not outage alerts',async()=>{
+  const targets=watchdogTargets();
+  const events=[];
+  const checks={
+    'headquarters-ready':{state:'ready',reason:'runtime_dependencies_ready',http_status:200},
+    'website-home':{state:'reachable',reason:'http_2xx_only',http_status:200},
+    'website-tools':{state:'reachable',reason:'http_2xx_only',http_status:200},
+    'website-studio':{state:'reachable',reason:'http_2xx_only',http_status:200},
+    'website-discovery':{state:'unavailable',reason:'optional_endpoint_missing',http_status:404},
+    'website-manifest':{state:'unavailable',reason:'optional_endpoint_missing',http_status:404}
+  };
+  const monitor=createIndependentWatchdog({targets,clock:time,emit:e=>events.push(e),
+    check:async target=>({checked_at:time(),...checks[target.id]})});
+  const value=await monitor.runOnce();
+  assert.equal(value.state,'reachable');
+  assert.equal(value.observations.length,6);
+  assert.equal(value.observations.filter(x=>x.state==='unavailable').length,2);
+  assert.equal(value.observations.find(x=>x.target==='website-studio').state,'reachable');
+  assert.equal(events.length,6);
+});
+
+test('two advertised catalogue endpoints must agree on tool slugs before sync is verified',async()=>{
+ const targets=watchdogTargets();
+ let manifest=['a','b'];
+ const events=[];
+ const {createHash}=await import('node:crypto');
+ const fingerprint=slugs=>createHash('sha256').update([...slugs].sort().join('\n')).digest('hex');
+ const monitor=createIndependentWatchdog({targets,clock:time,emit:e=>events.push(e),
+   check:async target=>target.kind==='catalogue'||target.kind==='manifest'
+     ? {checked_at:time(),state:'reachable',reason:'catalogue_contract_verified',
+        fingerprint:fingerprint(target.kind==='catalogue'?['a','b']:manifest),http_status:200}
+     : {checked_at:time(),state:target.kind==='readiness'?'ready':'reachable',
+        reason:target.kind==='readiness'?'runtime_dependencies_ready':'http_2xx_only',http_status:200}});
+ const first=await monitor.runOnce();
+ assert.equal(first.state,'reachable');
+ assert.deepEqual(first.observations.filter(x=>x.reason==='catalogue_sources_match').length,2);
+ manifest=['b','c'];
+ const drift=await monitor.runOnce();
+ assert.equal(drift.state,'degraded');
+ assert.equal(drift.observations.filter(x=>x.reason==='catalogue_sources_disagree').length,2);
+ assert.equal(events.filter(x=>x.event==='regression').length,2);
+ // No slugs, tool content or fingerprints may be persisted in observations.
+ assert.doesNotMatch(JSON.stringify(drift),/"fingerprint"|"slugs"|"tools"/);
+});

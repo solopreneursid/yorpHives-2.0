@@ -6,11 +6,12 @@ import {
   WEBSITE_PROOF_ORIGIN
 } from "../functions/_lib/website-proof.js";
 
-const urls=["/","/free-tools/","/free-tools/manifest.json","/llms.txt",
+const urls=["/","/free-tools/","/free-tools/file-studio/","/free-tools/manifest.json","/llms.txt",
   "/openapi.yaml","/.well-known/yorphives.json","/api/v1/free-tools"];
 const dataForPath=Object.freeze({
   "/":"<!doctype html><html><head><title>YorpHives</title></head><body>Home</body></html>",
   "/free-tools/":"<!doctype html><html><head><title>Free Tools</title></head><body>Tools</body></html>",
+  "/free-tools/file-studio/":"<!doctype html><html><head><title>File Studio</title></head><body>Studio</body></html>",
   "/free-tools/manifest.json":'[{"slug":"word-counter"}]',
   "/llms.txt":"# YorpHives\\nPublic agent access guidelines.",
   "/openapi.yaml":"openapi: 3.1.0\\ninfo:\\n  title: YorpHives API",
@@ -20,6 +21,7 @@ const dataForPath=Object.freeze({
 const types=Object.freeze({
   "/":"text/html; charset=utf-8",
   "/free-tools/":"text/html",
+  "/free-tools/file-studio/":"text/html",
   "/free-tools/manifest.json":"application/json",
   "/llms.txt":"text/plain",
   "/openapi.yaml":"text/yaml",
@@ -43,12 +45,12 @@ function mockResponses(changes={}) {
   };
   return {fetcher,requests};
 }
-test("fixed origin and seven bounded GET destinations, never user-defined targets",async()=>{
+test("fixed origin and eight bounded GET destinations, never user-defined targets",async()=>{
   assert.equal(WEBSITE_PROOF_ORIGIN,"https://yorphives.com");
   assert.deepEqual(WEBSITE_PROOF_TARGETS.map(x=>x.path),urls);
   const {fetcher,requests}=mockResponses();
   const data=await checkPublicWebsite(fetcher,()=>new Date("2026-11-13T05:00:00Z"));
-  assert.equal(data.basic_passed,7);
+  assert.equal(data.basic_passed,8);
   assert.equal(data.needs_attention,0);
   assert.equal(data.unverified,0);
   assert.equal(data.overall,"basic_routes_passed");
@@ -74,7 +76,7 @@ test("HTML fallback on machine routes is a real concern, not a missing canonical
   });
   const result=await checkPublicWebsite(fetcher);
   assert.equal(result.needs_attention,2);
-  assert.equal(result.basic_passed,5);
+  assert.equal(result.basic_passed,6);
   assert.equal(result.overall,"needs_attention");
   const affected=result.checks.filter(x=>x.status==="needs_attention");
   assert.deepEqual(affected.map(x=>x.path),["/openapi.yaml","/api/v1/free-tools"]);
@@ -102,7 +104,7 @@ test("errors, redirects, broken JSON and missing HTTPS protection require attent
   });
   const result=await checkPublicWebsite(fetcher);
   assert.equal(result.needs_attention,5);
-  assert.equal(result.basic_passed,2);
+  assert.equal(result.basic_passed,3);
   assert.equal(result.overall,"needs_attention");
 });
 test("HTTPS and framing require positive policies",()=>{
@@ -128,7 +130,7 @@ test("size limits and network errors are unverified and do not leak details",asy
   assert.equal(row.status,"not_verified");
   assert.match(row.note,/bounded inspection size/);
   const err=await checkPublicWebsite(async()=>{throw Error("Internal private error");});
-  assert.equal(err.unverified,7);
+  assert.equal(err.unverified,8);
   assert.doesNotMatch(JSON.stringify(err),/Internal private error/);
 });
 test("private route authenticates before network calls and serves Markdown or JSON",async()=>{
@@ -146,4 +148,23 @@ test("private route authenticates before network calls and serves Markdown or JS
   assert.doesNotMatch(browser,/innerHTML/);
   assert.match(html,/id="website-proof-run"/);
   assert.match(html,/id="website-proof-list"/);
+});
+
+test("unpublished optional website API and manifest are coverage gaps, not a public outage",async()=>{
+  const {fetcher}=mockResponses({
+    "/api/v1/free-tools":{status:404,body:"Not found",type:"text/html"},
+    "/free-tools/manifest.json":{status:404,body:"Not found",type:"text/html"},
+    "/llms.txt":{status:404,body:"Not found",type:"text/html"},
+    "/openapi.yaml":{status:404,body:"Not found",type:"text/html"},
+    "/.well-known/yorphives.json":{status:404,body:"Not found",type:"text/html"}
+  });
+  const result=await checkPublicWebsite(fetcher);
+  assert.equal(result.total,8);
+  assert.equal(result.basic_passed,3);
+  assert.equal(result.optional_missing,5);
+  assert.equal(result.needs_attention,0);
+  assert.equal(result.unverified,0);
+  assert.equal(result.overall,"basic_routes_passed_with_unpublished_capabilities");
+  assert.equal(result.checks.find(item=>item.path==="/free-tools/file-studio/").status,"verified_basic");
+  assert.equal(result.checks.find(item=>item.path==="/api/v1/free-tools").status,"not_published");
 });

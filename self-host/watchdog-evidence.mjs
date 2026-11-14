@@ -10,16 +10,18 @@ import { fileURLToPath } from 'node:url';
 
 export const DEFAULT_STATUS_FILE = fileURLToPath(new URL('./data/watchdog-status.json', import.meta.url));
 export const WATCHDOG_EVIDENCE_LIMIT = 8192;
-const STATES = new Set(['ready','reachable','degraded']);
+const STATES = new Set(['ready','reachable','degraded','unavailable']);
 const REASONS = new Set([
   'runtime_dependencies_ready','readiness_degraded_or_unverified','readiness_not_json',
   'readiness_invalid_json','readiness_too_large','redirect_requires_review',
   'http_unavailable','http_2xx_only','timeout','network_unavailable',
   'check_failed','unknown','catalogue_contract_verified','catalogue_contract_invalid',
-  'catalogue_contract_unverified','catalogue_contract_too_large'
+  'catalogue_contract_unverified','catalogue_contract_too_large',
+  'catalogue_contract_incompatible','catalogue_sources_disagree','catalogue_sources_match',
+  'optional_endpoint_missing','optional_endpoint_blocked'
 ]);
 const TARGETS = new Set([
-  'headquarters-ready','website-home','website-tools','website-discovery','website-manifest'
+  'headquarters-ready','website-home','website-tools','website-studio','website-discovery','website-manifest'
 ]);
 const safeTime = value => typeof value === 'string' &&
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value) &&
