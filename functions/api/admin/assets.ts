@@ -1,4 +1,6 @@
 import { adminJson, isAdminResponse, requireAdmin, type AdminRequestContext } from "../../_lib/admin-auth";
+import { normalizeWebsiteSitemapUrl, normalizeWebsiteToolInventory }
+  from "../../../admin-monitor/website-inventory-contract.js";
 
 const PUBLIC_ORIGIN = "https://yorphives.com";
 interface AssetRow {
@@ -25,7 +27,6 @@ interface AssetFinding {
   first_detected: string; last_verified: string;
 }
 interface PublicCatalogueResponse { data: PublicCatalogueListing[]; pagination?: { count?: number; limit?: number; offset?: number }; }
-interface PublicToolsResponse { data: PublicTool[]; count?: number; }
 interface PublicSourceResult<T> { data: T; error: string | null; }
 
 function sameOriginUrl(value: string): URL | null {
@@ -45,9 +46,17 @@ async function fetchPublicJson<T>(path: string): Promise<T> {
     redirect: "manual",
     signal: AbortSignal.timeout(7000)
   });
-  if (!response.ok) throw new Error("Public inventory source returned HTTP " + response.status + ".");
+  if (response.status !== 200) throw new Error("Public inventory source returned HTTP " + response.status + ".");
   if (response.url && new URL(response.url).origin !== PUBLIC_ORIGIN) throw new Error("Public inventory source redirected outside YorpHives.");
-  return await response.json() as T;
+  if (!/^(application\/json|[a-z0-9.+-]+\/[a-z0-9.+-]+\+json)(?:;|$)/i.test(
+       (response.headers.get("content-type")||"").trim()))
+    throw new Error("Public inventory endpoint returned HTML or another non-JSON document; this is not a published JSON API.");
+  if (Number(response.headers.get("content-length")||0)>196608)
+    throw new Error("Public inventory JSON exceeded its safe size limit.");
+  const bytes=await response.arrayBuffer();
+  if (bytes.byteLength>196608) throw new Error("Public inventory JSON exceeded its safe size limit.");
+  try { return JSON.parse(new TextDecoder().decode(bytes)) as T; }
+  catch { throw new Error("Public inventory endpoint returned malformed JSON."); }
 }
 
 async function loadPublicCatalogue(): Promise<PublicSourceResult<PublicCatalogueListing[]>> {
@@ -77,9 +86,8 @@ async function loadPublicCatalogue(): Promise<PublicSourceResult<PublicCatalogue
 
 async function loadPublicTools(): Promise<PublicSourceResult<PublicTool[]>> {
   try {
-    const response = await fetchPublicJson<PublicToolsResponse>("/api/v1/free-tools");
-    if (!Array.isArray(response.data)) throw new Error("Free Tools inventory response is invalid.");
-    return { data: response.data.filter(item => item && typeof item.slug === "string" && typeof item.url === "string"), error: null };
+    const response = await fetchPublicJson<unknown>("/api/v1/free-tools");
+    return { data: normalizeWebsiteToolInventory(response) as PublicTool[], error: null };
   } catch (cause) {
     return { data: [], error: cause instanceof Error ? cause.message : "Free Tools inventory could not be loaded." };
   }
@@ -93,9 +101,14 @@ async function loadOpenApi(): Promise<PublicSourceResult<string[]>> {
       redirect: "manual",
       signal: AbortSignal.timeout(7000)
     });
-    if (!response.ok) throw new Error("OpenAPI document returned HTTP " + response.status + ".");
+    if (response.status!==200) throw new Error("OpenAPI document returned HTTP " + response.status + ".");
+    if (!/^(application\/(?:yaml|x-yaml)|text\/(?:yaml|x-yaml|plain))(?:;|$)/i.test(
+        (response.headers.get("content-type")||"").trim()))
+      throw new Error("OpenAPI document is not YAML; possible HTML fallback.");
     const spec = await response.text();
     if (spec.length > 2_000_000) throw new Error("OpenAPI document exceeded the 2 MB inventory limit.");
+    if (!/^\s*openapi:\s*['"]?3\./.test(spec))
+      throw new Error("OpenAPI document does not contain a supported version declaration.");
     const lines = spec.split(/\r?\n/);
     const paths = new Set<string>();
     for (let index = 0; index < lines.length; index++) {
@@ -122,19 +135,28 @@ async function loadSitemap(): Promise<PublicSourceResult<string[]>> {
       redirect: "manual",
       signal: AbortSignal.timeout(7000)
     });
-    if (!response.ok) throw new Error("Sitemap returned HTTP " + response.status + ".");
+    if (response.status!==200) throw new Error("Sitemap returned HTTP " + response.status + ".");
+    if (!/^(application\/xml|text\/xml)(?:;|$)/i.test((response.headers.get("content-type")||"").trim()))
+      throw new Error("Sitemap response is not XML; possible HTML fallback.");
     const xml = await response.text();
     if (xml.length > 2_000_000) throw new Error("Sitemap exceeded the 2 MB inventory limit.");
+    if (!/^(?:\s*<\?xml[^>]*>\s*)?<urlset\b/i.test(xml))
+      throw new Error("Sitemap returned a document other than an XML urlset.");
     const paths = new Set<string>();
     let sitemapEntries = 0;
+    let legacyEntries = 0;
     for (const match of xml.matchAll(/<loc(?:\s[^>]*)?>\s*([^<]+?)\s*<\/loc>/gi)) {
       sitemapEntries++;
-      const url = sameOriginUrl(match[1].replace(/&amp;/g, "&").trim());
-      if (!url || url.pathname === "/sitemap.xml" || url.pathname === "/free-tools/manifest.json") continue;
-      paths.add(url.pathname);
+      const item = normalizeWebsiteSitemapUrl(match[1].replace(/&amp;/g, "&").trim());
+      if (!item || item.path === "/sitemap.xml" || item.path === "/free-tools/manifest.json") continue;
+      if (item.legacy_origin) legacyEntries++;
+      paths.add(item.path);
     }
-    if (sitemapEntries === 0) throw new Error("Sitemap returned HTTP 200 but contained no <loc> entries.");
-    return { data: [...paths], error: null };
+    if (sitemapEntries === 0 || paths.size===0)
+      throw new Error("Sitemap returned HTTP 200 but contained no recognized first-party asset URLs.");
+    return { data: [...paths], error: legacyEntries
+      ? "Sitemap contains older first-party pages.dev URLs; paths were normalized to yorphives.com. Canonical sitemap publication is pending."
+      : null };
   } catch (cause) {
     return { data: [], error: cause instanceof Error ? cause.message : "Sitemap could not be loaded." };
   }
