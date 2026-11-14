@@ -15,7 +15,8 @@ test("the read-only founder feed is part of Headquarters Home", () => {
   assert.match(ui,/hq-mobile-dock/);
   assert.match(ui,/admin\/founder-pulse\.css/);
   assert.match(ui,/admin\/founder-pulse\.js/);
-  assert.match(ui,/Founder Control/);
+  assert.match(ui,/Your action inbox/);
+  assert.doesNotMatch(ui,/id="founder-open-release"|id="founder-open-preview"/);
 });
 test("same authenticated read-only cockpit evidence; no second API or privileged action", () => {
   assert.match(cockpit,/yorphives:cockpit-evidence/);
