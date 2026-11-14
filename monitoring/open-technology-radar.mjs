@@ -83,9 +83,15 @@ export async function storeTechnologyCandidates(db,report,{clock=()=>new Date().
   throw Error('Unverified technology candidate batch');
  let newly_seen=0;
  for(const entry of report.candidates){
+  let origin;
+  try{origin=new URL(entry.source);}catch{throw Error('Invalid technology evidence');}
   if(!entry.hypothesis_only||
     !['security','technology'].includes(entry.category)||
-    typeof entry.source!=='string'||!entry.source.startsWith('https://')||
+    ![2,3].includes(entry.priority)||
+    origin.protocol!=='https:'||
+    !['developers.cloudflare.com','blog.cloudflare.com'].includes(origin.hostname)||
+    origin.search||origin.hash||origin.username||origin.password||
+    entry.source!==origin.origin+origin.pathname||
     typeof entry.title!=='string'||entry.title.length>180)
    throw Error('Invalid technology evidence');
   const hash=await crypto.subtle.digest('SHA-256',
