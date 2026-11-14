@@ -35,6 +35,27 @@ Historical **website-preview** files still exist here: root `index.html`, `app.j
 
 `brand/`, `functions/_lib/`, `functions/_middleware.js`, `migrations/`, root configuration and generic tests/docs are **shared/ambiguous**. Never assume ownership or copy secrets/data between projects.
 
+## Evidence-driven Headquarters foundation — active development (14 November 2026)
+
+A separate scheduled monitoring collector is staged under `monitoring/`.
+Only it may write **sanitized read-only-observation evidence** into the
+**isolated preview** D1. Headquarters Pages Functions remain GET-only for
+evidence and never receive GitHub/Cloudflare provider write or publishing
+credentials. A stale/missing collector heartbeat is NOT reported as healthy;
+synthetic fixtures remain separate. Public changelog items are unvalidated
+research candidates; revenue, actual market demand, vulnerability scans,
+outbound alerts and real agent payment are never invented.
+
+Deployment safety: the new collector is staging-only, no Workers URL/route,
+and restricted to D1 `a5aa51d7-98c0-4adb-a304-0f4f555e01f5`. No
+canonical D1 `e8690813-b139-44a2-a1c7-bea2d2777ead`, privileged
+Agent Worker, repair/Go Live path or private service binding may be present.
+Never change the running HQ or website, or install the release executor,
+without the founder's explicit reviewed-preview + OTP workflow.
+The provider-neutral Node+SQLite alternative is in
+`monitoring/self-host-collector.mjs`; installation on an actual private
+server must be verified separately. Read `monitoring/README.md`.
+
 ## Permanent agentic-internet design mandate (Cloudflare Connect 2026)
 
 **Founder requirement:** Both website and Headquarters must support the open
