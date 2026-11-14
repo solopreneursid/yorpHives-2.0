@@ -86,3 +86,22 @@ test('unverified restore, missing Access policy or fake source cannot pass',()=>
 test('invalid review time is rejected',()=>{
   assert.throws(()=>evaluateHeadquartersProductionEvidence({now:new Date('bad')}),/Invalid readiness review clock/);
 });
+
+test('current real canonical repair service binding blocks production regardless of all green CI',()=>{
+  const d=record();
+  d.project.deployment_configs.production.services={
+    ADMIN_AGENT_SERVICE:{service:'yorphives-admin-agent'}
+  };
+  const r=evaluateHeadquartersProductionEvidence(d);
+  assert.equal(r.technical_ready,false);
+  assert.deepEqual(r.blockers.map(x=>x.id),['canonical-no-privileged-execution-services']);
+  assert.equal(r.production_deployment_authorized,false);
+});
+test('a preview with historic OTP secrets or AI services is never technically ready',()=>{
+  const d=record();
+  d.project.deployment_configs.preview.env_vars={FOUNDER_OTP_ENABLED:{type:'plain_text',value:'true'}};
+  d.project.deployment_configs.preview.services={HQ_ENGINE_SERVICE:{service:'yorphives-hq-mission-engine'}};
+  const r=evaluateHeadquartersProductionEvidence(d);
+  assert.equal(r.technical_ready,false);
+  assert.deepEqual(r.blockers.map(x=>x.id),['preview-no-repair-or-otp-authority']);
+});
