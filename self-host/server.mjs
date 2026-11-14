@@ -9,6 +9,7 @@ import { createDatabase } from './sqlite.mjs';
 import { authorizeOwnerRequest, adminJson } from './auth.mjs';
 import { createObservationScheduler } from './scheduler.mjs';
 import { assessRuntimeReadiness } from './readiness.mjs';
+import { readFunctionalSnapshot } from './functional-state.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('../', import.meta.url)));
 const API_ROOT = resolve(ROOT, 'functions/api/admin');
@@ -159,6 +160,10 @@ export async function createHeadquartersServer({
       const response = redirect('/auth/login');
       response.headers.set('set-cookie', `yorphives_owner=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${origin.protocol === 'https:' ? '; Secure' : ''}`);
       return response;
+    }
+    if (pathname === '/api/admin/functional-checks') {
+      if (write) return adminJson({ error: { code: 'MONITOR_ONLY', message: 'Functional check evidence is read-only.' } }, 405);
+      return adminJson(await readFunctionalSnapshot(dataDirectory));
     }
     if (pathname === '/api/admin/runtime-status' && !write) return adminJson({ runtime: 'self-hosted', storage: 'private_sqlite', owner: identity.email, inference_configured: Boolean(env.HQ_ENGINE_SERVICE), scheduled_workers: Boolean(observations), observation_schedule: observations?.status() || null, production_execution_enabled: false });
     const match = /^\/api\/admin\/([a-z][a-z-]+)$/.exec(pathname);
