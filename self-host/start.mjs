@@ -13,6 +13,7 @@ const runtime = await createHeadquartersServer({
   port: Number(process.env.YORPHIVES_PORT || 8788),
   publicOrigin: process.env.YORPHIVES_PUBLIC_ORIGIN,
   dataDirectory,
+  watchdogStatusFile: process.env.HQ_WATCHDOG_STATUS_FILE,
   enableObservationSchedule: process.env.HQ_OBSERVATION_SCHEDULE !== 'no',
   ...(modelUrl ? { createMissionEngine: async ({ db }) => {
     const { createLocalMissionEngine } = await import('./mission-engine.mjs');
