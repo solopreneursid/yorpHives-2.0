@@ -79,6 +79,32 @@ function fixture(path) {
     recorded_jobs_scanned: 0,
     items: []
   };
+  if (path === "/api/admin/watchdog-status") {
+    const now = new Date().toISOString();
+    return {source:"independent_local_watchdog",connected:true,status:"ready",
+      observed_at:now,repairs_authorized:false,production_execution_enabled:false,
+      observations:[
+        {target:"headquarters-ready",system:"headquarters",checked_at:now,
+          state:"ready",reason:"runtime_dependencies_ready",http_status:200},
+        {target:"website-discovery",system:"website",checked_at:now,
+          state:"reachable",reason:"catalogue_contract_verified",http_status:200},
+        {target:"website-manifest",system:"website",checked_at:now,
+          state:"reachable",reason:"catalogue_contract_verified",http_status:200}
+      ]
+    };
+  }
+  if (path === "/api/admin/findings") {
+    return {data:[
+      {id:"fixture-critical",title:"Synthetic critical security observation",
+        details:"Offline QA only, not a live production finding.",severity:"critical",
+        source_type:"monitor",status:"open",environment:"production",
+        last_verified:iso,evidence_state:"recent",triage_level:"urgent",priority_rank:0},
+      {id:"fixture-tool",title:"Synthetic tool route concern",
+        details:"Synthetic stale product finding for filter QA.",severity:"medium",
+        source_type:"asset",status:"open",environment:"production",
+        last_verified:"2026-11-11T12:00:00.000Z",evidence_state:"stale",triage_level:"review",priority_rank:2}
+    ]};
+  }
   if (path === "/api/admin/website-proof") {
     const routes = ["/", "/free-tools/", "/free-tools/manifest.json",
       "/llms.txt", "/openapi.yaml", "/.well-known/yorphives.json",
@@ -356,10 +382,17 @@ async function main() {
     check("watchtower:recorded-coverage-not-fake-health",
       coverage.cards===5 && coverage.website==="CHECK FAILURE" &&
       coverage.products==="FUNCTIONS UNVERIFIED" &&
-      coverage.headquarters==="RUNTIME UNVERIFIED" &&
+      ["RUNTIME UNVERIFIED","EXTERNAL CHECK"].includes(coverage.headquarters) &&
       coverage.market==="5 saved ideas" && coverage.revenue==="Not connected" && coverage.readOnly,
       "Each business surface reports stored reachability, unverified capabilities, or disconnected data without inventing earnings.");
 
+    await page.waitForFunction(() =>
+      document.getElementById("hq-watchtower-headquarters-state")?.textContent === "EXTERNAL CHECK",
+    null, {timeout:TIMEOUT});
+    check("watchdog:authenticated-independent-evidence",
+      await page.locator("#hq-watchtower-headquarters-value").textContent() === "Runtime ready" &&
+      await page.locator("#hq-watchtower-products-state").textContent() === "API CONTRACTS ONLY",
+      "Synthetic independently reported runtime and catalogue contracts appear without claiming individual tools work.");
     await page.waitForFunction(() =>
       document.querySelectorAll("#hq-pulse-feed .hq-pulse-post").length >= 4,
     null, {timeout:TIMEOUT});
@@ -498,6 +531,24 @@ async function main() {
       issueScroll.overflowY === "auto" && issueScroll.header === "sticky" &&
       issueScroll.collapsed && Number.parseFloat(issueScroll.maxHeight) < 800,
       "Problem list scrolls inside its own bounded panel; suggestions start closed.");
+    check("inbox:triage-priority-and-data-integrity",
+      (await page.locator("#findings-list tr").count())===2 &&
+      (await page.locator("#findings-list tr").first().innerText()).includes("critical") &&
+      (await page.locator("#hq-triage-summary").textContent()).includes("1 need fresh verification"),
+      "Critical evidence stays ahead of a stale medium-severity tool finding.");
+    await page.locator('[data-triage-mode="recheck"]').click();
+    check("inbox:stale-evidence-filter",
+      (await page.locator("#findings-list tr").count())===1 &&
+      (await page.locator("#findings-list").innerText()).includes("Synthetic tool") &&
+      await page.locator('[data-triage-mode="recheck"]').getAttribute("aria-pressed")==="true",
+      "Needs recheck only filters evidence; no issue status changes.");
+    await page.locator('[data-triage-mode="products"]').click();
+    check("inbox:product-focus-no-fixes",
+      (await page.locator("#findings-list tr").count())===1 &&
+      (await page.locator("#findings-list").innerText()).includes("Synthetic tool") &&
+      blockedMutations.length===0,
+      "Products and tools filter is read-only.");
+    await page.locator('[data-triage-mode="priority"]').click();
     await screenshot(page, "02-desktop-problems.png");
     // This is a FAKE website result to test visual layout and founder choice.
     // It must never be presented as a successful real public HTTP probe.
