@@ -75,16 +75,17 @@ test('optional missing website discovery endpoints are coverage gaps, not outage
     'website-tools':{state:'reachable',reason:'http_2xx_only',http_status:200},
     'website-studio':{state:'reachable',reason:'http_2xx_only',http_status:200},
     'website-discovery':{state:'unavailable',reason:'optional_endpoint_missing',http_status:404},
-    'website-manifest':{state:'unavailable',reason:'optional_endpoint_missing',http_status:404}
+    'website-manifest':{state:'unavailable',reason:'optional_endpoint_missing',http_status:404},
+    'website-agent-capabilities':{state:'unavailable',reason:'optional_endpoint_missing',http_status:404}
   };
   const monitor=createIndependentWatchdog({targets,clock:time,emit:e=>events.push(e),
     check:async target=>({checked_at:time(),...checks[target.id]})});
   const value=await monitor.runOnce();
   assert.equal(value.state,'reachable');
-  assert.equal(value.observations.length,6);
-  assert.equal(value.observations.filter(x=>x.state==='unavailable').length,2);
+  assert.equal(value.observations.length,7);
+  assert.equal(value.observations.filter(x=>x.state==='unavailable').length,3);
   assert.equal(value.observations.find(x=>x.target==='website-studio').state,'reachable');
-  assert.equal(events.length,6);
+  assert.equal(events.length,7);
 });
 
 test('two advertised catalogue endpoints must agree on tool slugs before sync is verified',async()=>{
