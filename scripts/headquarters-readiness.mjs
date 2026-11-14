@@ -105,6 +105,8 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   "scripts/admin-smoke.mjs",
   "scripts/headquarters-production-gate.mjs",
   "scripts/headquarters-cloudflare-preflight.mjs",
+  "scripts/headquarters-cloudflare-topology.mjs",
+  "tests/headquarters-cloudflare-topology.test.mjs",
   ".github/workflows/headquarters-provider-safety.yml",
   "docs/HEADQUARTERS-PRODUCTION-HARDENING-2026-11-14.md",
   "functions/_lib/hq-resource-isolation.js",
@@ -230,7 +232,8 @@ export async function assessHeadquarters(root) {
     checks,
     required_live_evidence: [
       "Review the cumulative changes for every stacked Headquarters draft PR against main.",
-      "Verify the actual Cloudflare Pages project identity and that preview/canonical DB bindings use different physical D1 databases.",
+      "Verify Cloudflare project identity, unique preview/canonical D1, and archived project auto-build/DB shutdown; do not trust legacy historical preview deployments until separately inspected.",
+      "Confirm the canonical production Pages project no longer binds the privileged ADMIN_AGENT_SERVICE Worker, after functional replacement and safe external release.",
       "Test actual owner-only Cloudflare Access policies and anonymous denial for all Headquarters origins and deployment aliases.",
       "Run authenticated, read-only browser QA against the exact reviewed commit in an isolated staging environment.",
       "Prove a private backup can be restored into a disposable independent database with matching schema and rows.",
