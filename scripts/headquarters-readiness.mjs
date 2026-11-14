@@ -106,6 +106,8 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   "scripts/headquarters-production-gate.mjs",
   "scripts/headquarters-cloudflare-preflight.mjs",
   "scripts/headquarters-cloudflare-topology.mjs",
+  "scripts/headquarters-retired-access-audit.mjs",
+  "tests/headquarters-retired-access-audit.test.mjs",
   "tests/headquarters-cloudflare-topology.test.mjs",
   ".github/workflows/headquarters-provider-safety.yml",
   "docs/HEADQUARTERS-PRODUCTION-HARDENING-2026-11-14.md",
