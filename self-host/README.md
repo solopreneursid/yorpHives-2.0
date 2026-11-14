@@ -102,3 +102,9 @@ The optional Node module-resolution adapter is activated only by this runtime. I
 ## Runtime supervision
 
 `GET /health` reports process liveness. `GET /ready` returns HTTP 200 only when the database migration table is readable and the observation scheduler has completed a successful scan within two configured intervals. Failed, stopped, stale or disabled observations return HTTP 503. These endpoints expose only service status and require the configured Host header. An independent supervisor can poll `/ready` and alert you when coverage is degraded. Configuring that external supervisor on your server remains a deployment step. This readiness result covers the local runtime dependencies, not release approval or external data integrations.
+
+## Independent outside-in watchdog (development addition)
+
+The local observation scheduler runs **inside** Headquarters, so it cannot detect its own process stopping. The separate read-only supervisor at `self-host/watchdog.mjs` observes the local `/ready` endpoint and the public website's canonical home, tools directory and discovery API every minute. It labels public 2xx responses as *reachable only*, never as proof that individual tools work. Regressions and recoveries are printed as JSON records; no fix, AI task, release or third-party service is triggered.
+
+Run `node self-host/watchdog.mjs` in a **second process** on your own server and see `docs/HEADQUARTERS-INDEPENDENT-WATCHDOG.md` for tests, HTTPS origin options, limitations and OS-level supervision. This is not yet installed on your live server and has no remote alert delivery. The production release gates, preview database isolation and founder-only OTP remain unchanged.
