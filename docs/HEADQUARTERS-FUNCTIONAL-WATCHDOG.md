@@ -57,6 +57,7 @@ RestartSec=30
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
+ReadWritePaths=%h/yorphives-headquarters/self-host/data
 
 [Install]
 WantedBy=default.target
