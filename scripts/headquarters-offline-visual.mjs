@@ -125,7 +125,15 @@ function fixture(path) {
         memory:{ experiences:2, approved_skills:1 },
         opportunities:{ proposed:4, shortlisted:1 }
       },
-      sources:Object.fromEntries(["missions","issues","monitors","memory",
+      coverage:{scope:"recorded_http_reachability_only",freshness_hours:8,
+        truncated:false,ignored_routes:1,headquarters_runtime_verified:false,
+        product_functionality_verified:false,
+        surfaces:{
+          website:{configured:3,recent_passes:2,recent_failures:1,stale:0,unchecked:0,last_checked_at:iso},
+          products:{configured:2,recent_passes:2,recent_failures:0,stale:0,unchecked:0,last_checked_at:iso},
+          headquarters:{configured:2,recent_passes:2,recent_failures:0,stale:0,unchecked:0,last_checked_at:iso}
+        }},
+      sources:Object.fromEntries(["missions","issues","monitors","memory","coverage",
         "opportunities","activity"].map(name=>[name,{...available}])),
       recent_missions:[{
         job_id:"123e4567-e89b-42d3-a456-000000000001",
@@ -333,6 +341,26 @@ async function main() {
       "A single founder heading and source-backed counts keep optional detail collapsed.");
 
     await page.waitForFunction(() =>
+      document.getElementById("hq-watchtower-website-value")?.textContent?.includes("failed"),
+    null, {timeout:TIMEOUT});
+    const coverage = await page.evaluate(() => ({
+      cards:document.querySelectorAll("#hq-watchtower-grid .hq-watchtower-card").length,
+      website:document.getElementById("hq-watchtower-website-state")?.textContent,
+      products:document.getElementById("hq-watchtower-products-state")?.textContent,
+      headquarters:document.getElementById("hq-watchtower-headquarters-state")?.textContent,
+      market:document.getElementById("hq-watchtower-market-value")?.textContent,
+      revenue:document.getElementById("hq-watchtower-revenue-value")?.textContent,
+      readOnly:[...document.querySelectorAll("#hq-watchtower-grid button")].every(button=>
+        button.type === "button" && Boolean(button.dataset.pulseRoute))
+    }));
+    check("watchtower:recorded-coverage-not-fake-health",
+      coverage.cards===5 && coverage.website==="CHECK FAILURE" &&
+      coverage.products==="FUNCTIONS UNVERIFIED" &&
+      coverage.headquarters==="RUNTIME UNVERIFIED" &&
+      coverage.market==="5 saved ideas" && coverage.revenue==="Not connected" && coverage.readOnly,
+      "Each business surface reports stored reachability, unverified capabilities, or disconnected data without inventing earnings.");
+
+    await page.waitForFunction(() =>
       document.querySelectorAll("#hq-pulse-feed .hq-pulse-post").length >= 4,
     null, {timeout:TIMEOUT});
     const pulse = await page.evaluate(() => ({
@@ -423,6 +451,11 @@ async function main() {
     await page.waitForFunction(() =>
       document.getElementById("cockpit-memory")?.textContent === "—",
     null, { timeout:TIMEOUT });
+    check("watchtower:optional-source-failure-isolated",
+      (await page.locator("#hq-watchtower-products-state").textContent()) === "FUNCTIONS UNVERIFIED" &&
+      (await page.locator("#hq-watchtower-revenue-state").textContent()) === "NO VERIFIED DATA",
+      "Missing memory evidence cannot turn product reachability into functional verification or financial proof.");
+
     check("cockpit:optional-source-failure-isolated",
       (await page.locator("#cockpit-missions").textContent()) === "5" &&
       (await page.locator("#cockpit-skills").textContent()) === "—",
@@ -507,6 +540,12 @@ async function main() {
     await measure(page, 1024, 768, "demand");
     await screenshot(page, "04-tablet-market.png");
     await measure(page, 390, 844, "headquarters");
+    check("watchtower:mobile-swipe-without-overflow",
+      await page.locator("#hq-watchtower-grid").evaluate(el =>
+        getComputedStyle(el).overflowX === "auto" &&
+        el.scrollWidth > el.clientWidth &&
+        document.documentElement.scrollWidth <= innerWidth + 2),
+      "Five area cards scroll within the panel while the page stays within phone width.");
     await screenshot(page, "05-mobile-home.png");
 
 
