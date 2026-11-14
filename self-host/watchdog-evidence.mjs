@@ -17,7 +17,7 @@ const REASONS = new Set([
   'http_unavailable','http_2xx_only','timeout','network_unavailable',
   'check_failed','unknown','catalogue_contract_verified','catalogue_contract_invalid',
   'catalogue_contract_unverified','catalogue_contract_too_large',
-  'catalogue_contract_incompatible','catalogue_sources_disagree',
+  'catalogue_contract_incompatible','catalogue_sources_disagree','catalogue_sources_match',
   'optional_endpoint_missing','optional_endpoint_blocked'
 ]);
 const TARGETS = new Set([
