@@ -17,10 +17,7 @@ async function fixture() {
         'export { MissionWorkflow } from "./worker.js"; export default { async fetch() { return new Response("No route", {status:404}); } };' :
       path === "hq-engine/wrangler.rehearsal.jsonc" ? JSON.stringify({
         name: "yorphives-hq-mission-rehearsal", main: "./staging-rehearsal-entry.js",
-        workers_dev: false, ai: {binding:"AI"},
-        d1_databases:[{binding:"DB",database_id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}],
-        workflows:[{binding:"MISSION_WORKFLOW",name:"yorphives-hq-missions-rehearsal",
-          class_name:"MissionWorkflow"}]
+        workers_dev: false, preview_urls: false
       }) : "fixture");
   }
   await writeFile(join(dir, "package.json"), JSON.stringify({
@@ -90,4 +87,19 @@ test("missing migration and missing CI checks are independently reported", async
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test("historical shared-D1 rehearsal permissions must never be revived",async()=>{
+  const dir=await fixture();
+  try{
+    const configPath=join(dir,"hq-engine/wrangler.rehearsal.jsonc");
+    const config=JSON.parse(await (await import("node:fs/promises")).readFile(configPath,"utf8"));
+    config.workers_dev=false;
+    config.d1_databases=[{binding:"DB",database_id:"e8690813-b139-44a2-a1c7-bea2d2777ead"}];
+    await writeFile(configPath,JSON.stringify(config));
+    const report=await assessHeadquarters(dir);
+    assert.equal(report.static_checks_passed,false);
+    assert.equal(report.checks.find(c=>c.id==="rehearsal-worker-isolation").status,"fail");
+    assert.equal(report.ready_for_production,false);
+  }finally{await rm(dir,{recursive:true,force:true});}
 });
