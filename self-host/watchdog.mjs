@@ -4,11 +4,14 @@
  * No credentials, repair actions, agent dispatch, model calls or publishing controls.
  */
 import { pathToFileURL } from 'node:url';
+import { inspectCatalogueResponse } from './catalogue-contract.mjs';
+import { DEFAULT_STATUS_FILE, writeWatchdogEvidence } from './watchdog-evidence.mjs';
 
 const WEBSITE_ROUTES = Object.freeze([
   ['website-home', 'https://yorphives.com/'],
   ['website-tools', 'https://yorphives.com/free-tools/'],
-  ['website-discovery', 'https://yorphives.com/api/v1/free-tools']
+  ['website-discovery', 'https://yorphives.com/api/v1/free-tools'],
+  ['website-manifest', 'https://yorphives.com/free-tools/manifest.json']
 ]);
 
 export function watchdogTargets(headquartersOrigin = 'http://127.0.0.1:8788') {
@@ -20,7 +23,10 @@ export function watchdogTargets(headquartersOrigin = 'http://127.0.0.1:8788') {
   }
   return Object.freeze([
     Object.freeze({ id: 'headquarters-ready', system: 'headquarters', url: new URL('/ready', origin).href, kind: 'readiness' }),
-    ...WEBSITE_ROUTES.map(([id, url]) => Object.freeze({ id, system: 'website', url, kind: 'http' }))
+    ...WEBSITE_ROUTES.map(([id, url]) => Object.freeze({
+      id, system: 'website', url,
+      kind: id === 'website-discovery' ? 'catalogue' : id === 'website-manifest' ? 'manifest' : 'http'
+    }))
   ]);
 }
 
@@ -54,6 +60,21 @@ export async function checkWatchdogTarget(target, { fetcher = fetch, timeoutMs =
     observation.http_status = response.status;
     if (response.status < 200 || response.status >= 300) {
       observation.reason = response.status >= 300 && response.status < 400 ? 'redirect_requires_review' : 'http_unavailable';
+    } else if (target.kind === 'catalogue' || target.kind === 'manifest') {
+      if (!/^(application\/json|[a-z0-9.+-]+\/[a-z0-9.+-]+\+json)(?:\s*;|\s*$)/i.test(
+        response.headers.get('content-type') || '')) {
+        observation.reason = 'catalogue_contract_invalid';
+      } else if (Number(response.headers.get('content-length') || 0) > 131072) {
+        observation.reason = 'catalogue_contract_too_large';
+      } else {
+        const body = await boundedRead(response, 131072);
+        if (body === null) observation.reason = 'catalogue_contract_too_large';
+        else {
+          const outcome = inspectCatalogueResponse(target.kind,response.headers.get('content-type') || '',body);
+          observation.state = outcome.ok ? 'reachable' : 'degraded';
+          observation.reason = outcome.reason;
+        }
+      }
     } else if (target.kind !== 'readiness') {
       observation.state = 'reachable';
       observation.reason = 'http_2xx_only';
@@ -122,10 +143,14 @@ async function main() {
   if (!Number.isSafeInteger(intervalMs) || intervalMs < 10000 || intervalMs > 3600000) throw new Error('HQ_WATCHDOG_INTERVAL_MS must be 10000–3600000.');
   const targets = watchdogTargets(process.env.HQ_WATCHDOG_HEADQUARTERS_ORIGIN);
   const watcher = createIndependentWatchdog({ targets, emit: record => console.log(JSON.stringify(record)) });
+  const statusPath = process.env.HQ_WATCHDOG_STATUS_FILE || DEFAULT_STATUS_FILE;
   let stopped = false;
   async function poll() {
     if (stopped) return;
     const snapshot = await watcher.runOnce();
+    // Atomic private snapshot makes the outside process observable by Headquarters.
+    // It contains only fixed target IDs, enum reasons and timestamps.
+    await writeWatchdogEvidence(statusPath,{...snapshot,interval_ms:intervalMs});
     // Machine-readable heartbeat lets a supervisor detect a stopped watchdog.
     console.log(JSON.stringify({ event: 'heartbeat', checked_at: snapshot.checked_at, state: snapshot.state, targets_checked: snapshot.observations.length }));
   }
