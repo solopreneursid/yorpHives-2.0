@@ -76,6 +76,8 @@ CREATE TABLE IF NOT EXISTS yorpmind_feedback_memory (
 
 CREATE INDEX IF NOT EXISTS idx_ym_runs_recent
  ON yorpmind_analysis_runs(agent_id,started_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ym_briefs_agent_source
+ ON yorpmind_decision_briefs(agent_id,source_signal_id);
 CREATE INDEX IF NOT EXISTS idx_ym_briefs_review
  ON yorpmind_decision_briefs(review_state,generated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ym_memory_verified
