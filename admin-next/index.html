@@ -34,9 +34,18 @@
    <div class="toolbar" role="group" aria-label="Headquarters views">
     <button class="tab is-active" type="button" data-view="live" aria-pressed="true">Live monitoring</button>
     <button class="tab" type="button" data-view="opportunities" aria-pressed="false">Opportunities & revenue</button>
-    <button class="tab" type="button" data-view="history" aria-pressed="false">Staging evidence</button>
+    <button class="tab" type="button" data-view="yorpmind" aria-pressed="false">YorpMind AI employees</button>
+    <button class="tab" type="button" data-view="history" aria-pressed="false">Evidence history</button>
    </div>
    <section id="live-view" class="view" aria-label="Live website monitoring">
+    <section class="panel collector-status">
+     <div class="section-head">
+      <div><h2>Independent watchdog</h2>
+       <p>Its evidence is collected outside this browser. Missing or stale heartbeat is a warning, never an all-clear.</p>
+      </div><span class="badge status-not_published" id="collector-badge">Unverified</span>
+     </div>
+     <div id="collector-summary" aria-live="polite">Checking historical evidence and the latest scheduler heartbeat…</div>
+    </section>
     <section class="stats" aria-label="Current website evidence summary">
      <div><span>Verified documents</span><strong id="verified-count">—</strong><small>Schema/content validated</small></div>
      <div><span>Pages reachable</span><strong id="reachable-count">—</strong><small>HTTP only, not feature QA</small></div>
@@ -75,8 +84,19 @@
      <div class="section-head"><div><h2>Intelligence & revenue</h2>
       <p>Recommendations must cite a verified first-party signal or a reproducible public source.</p></div>
       <span class="badge warning">NOT CONNECTED</span></div>
-     <div class="signal-callout">No verified revenue or market feeds have been connected. This is <strong>missing coverage</strong>, not evidence that your website has no revenue or opportunities.</div>
-     <h3>Recorded staging signals (synthetic)</h3>
+     <div class="signal-callout">Verified revenue analytics and independently validated customer-demand feeds are not connected. Public problem discussions and changelogs can supply <strong>unverified research leads</strong>, never assumed sales or traffic.</div>
+     <h3>Evidence-backed founder review queue</h3>
+     <p>Findings are deduplicated across scans and are suggestions, never instructions to automatically change a product.</p>
+     <div id="decision-signal-list" class="list">Checking independent evidence…</div>
+     <h3>Market & product problem radar</h3>
+     <p>Public Ask HN / Show HN discussions are hypotheses for tools, agent services and business opportunities—not proof of buyers.</p>
+     <div id="market-source-status" class="signal-callout">Public problem and product discussion sources not yet verified.</div>
+     <div id="market-candidate-list" class="list" aria-live="polite">No public market candidates collected.</div>
+     <h3>Technology & security radar</h3>
+     <p>Public vendor changelog candidates are not proof of customer demand. Review their original source before taking action.</p>
+     <div id="technology-source-status" class="signal-callout">Daily technology feeds not yet verified.</div>
+     <div id="radar-candidate-list" class="list" aria-live="polite">No technology candidates collected.</div>
+     <h3>Synthetic examples (separate from real evidence)</h3>
      <div id="signal-list" class="list">Loading staging examples…</div>
     </section>
     <section class="panel"><h2>Open agentic Internet architecture</h2>
@@ -88,8 +108,45 @@
      </div>
     </section>
    </section>
-   <section id="history-view" class="view hidden" aria-label="Historical staging evidence">
-    <div class="notice subdued">These records are synthetic recovery-test fixtures, not live website performance, security findings or verified revenue.</div>
+   <section id="yorpmind-view" class="view hidden" aria-label="YorpMind AI operating system">
+    <section class="panel">
+     <div class="section-head"><div><h2>YorpMind — monitoring AI organization</h2>
+      <p>Specialist agents analyze independently collected website and internet evidence using only your private open-weight model. They have no tools to repair, deploy, spend or change their own permissions.</p>
+     </div><span class="badge status-not_published" id="ym-ai-status">Not verified</span></div>
+     <p id="ym-ai-summary" aria-live="polite">Checking private agent roster and inference receipts…</p>
+     <div class="stats" aria-label="YorpMind workforce evidence">
+      <div><span>AI roles configured</span><strong id="ym-roles-count">—</strong><small>Not proof of active agents</small></div>
+      <div><span>Completed private model tasks</span><strong id="ym-model-runs">—</strong><small>Actual open-weight inference only</small></div>
+      <div><span>Evidence bot reviews</span><strong id="ym-bot-runs">—</strong><small>Deterministic analysis, not AI inference</small></div>
+      <div><span>Ideas awaiting founder review</span><strong id="ym-brief-count">—</strong><small>No autonomous release rights</small></div>
+      <div><span>Verified learning records</span><strong id="ym-learning-count">—</strong><small>Founder-reviewed outcomes</small></div>
+     </div>
+     <h3>Specialist employees & evidence bots</h3>
+     <div id="ym-roster" class="integration-list">Loading declared roles…</div>
+    </section>
+    <section class="panel">
+     <h2>Agent findings and hypotheses</h2>
+     <p>Evidence-linked analyses appear here only after an actual private model completes an inference task. Missing runs mean AI employees have not been demonstrated as active.</p>
+     <div id="ym-brief-list" class="list" aria-live="polite">No verified agent briefs yet.</div>
+    </section>
+    <section class="panel">
+     <h2>Self-evolving intelligence, not self-authorized code</h2>
+     <p>YorpMind can learn from founder-reviewed outcomes and propose improvements in its investigation methods. Every change to its code, models, permissions or production systems remains an independent founder decision.</p>
+     <div id="ym-lesson-list" class="list">No approved lessons recorded.</div>
+    </section>
+   </section>
+   <section id="history-view" class="view hidden" aria-label="Monitoring history">
+    <section class="panel">
+     <div class="section-head"><div><h2>Independent monitoring history</h2>
+      <p>Persisted checks must come from a fresh, external scheduler; the browser is not the watchdog.</p>
+     </div><span class="badge status-not_published" id="history-heartbeat">Not verified</span></div>
+     <p id="history-status" aria-live="polite">Loading stored monitoring receipts…</p>
+     <div class="columns">
+      <div><h3>Recent independent runs</h3><div id="watchdog-run-list" class="list">No verified runs loaded.</div></div>
+      <div><h3>Recent observed changes</h3><div id="watchdog-observation-list" class="list">No verified history loaded.</div></div>
+     </div>
+    </section>
+    <div class="notice subdued">The records below are synthetic recovery-test fixtures, not live website performance, security findings or verified revenue.</div>
     <section class="stats" aria-label="Synthetic staging record counts">
      <div><span>Staging targets</span><strong id="targets-count">—</strong></div>
      <div><span>Staging receipts</span><strong id="observations-count">—</strong></div>
@@ -104,9 +161,10 @@
     </div>
    </section>
    <footer>
-    Live checks run on demand and periodically <em>only while this browser tab is open</em>.
-    An independent 24/7 watchdog, real revenue analytics, authenticated vulnerability scanning, founder release OTP
-    and production change authority are <strong>not enabled</strong> by this preview.
+    Browser checks refresh only while the tab is visible. An external watchdog must prove a fresh heartbeat
+    before Headquarters calls it connected. Revenue and market demand analytics, complete vulnerability scanning,
+    outbound alerts, founder release OTP and production change authority remain separately gated.
+    Headquarters never deploys, repairs or spends.
    </footer>
   </main>
  </div>

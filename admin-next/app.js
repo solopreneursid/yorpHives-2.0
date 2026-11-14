@@ -3,9 +3,10 @@
 /* No write endpoints, privilege grants, payment, repair, PR or deploy actions. */
 const $=id=>document.getElementById(id);
 let latest=null;
+let watchdogHistory=null;
 let selectedFilter='all';
 let isChecking=false;
-const views=['live','opportunities','history'];
+const views=['live','opportunities','yorpmind','history'];
 const statusName={
  verified:'Verified',reachable:'Reachable only',degraded:'Needs review',
  unavailable:'Unavailable',not_published:'Not published'
@@ -51,6 +52,36 @@ function renderRows(id,records,toRow,empty){
   const detail=document.createElement('small');
   detail.textContent=String(data.detail||'').slice(0,420);
   item.append(label,detail);target.append(item);
+ }
+}
+/** Render only independently allowlisted original public source links.
+ * Never turn an arbitrary model-provided string into an outbound URL.
+ */
+function renderResearchCandidates(id,records,kind){
+ const target=$(id);target.replaceChildren();
+ if(!records.length){
+  target.textContent='No independently sourced candidates collected yet.';
+  return;
+ }
+ for(const item of records.slice(0,30)){
+  const src=String(item.evidence_ref||'');
+  const trusted=kind==='market'?
+   /^https:\/\/news\.ycombinator\.com\/item\?id=[1-9][0-9]{0,12}$/.test(src):
+   /^https:\/\/(?:developers|blog)\.cloudflare\.com\/[a-zA-Z0-9/_-]{1,350}\/?$/.test(src);
+  const entry=document.createElement('div');entry.className='row';
+  const title=document.createElement('strong');
+  title.textContent=String(item.title||'Unverified research lead').slice(0,220);
+  const details=document.createElement('small');
+  details.textContent='Candidate only · '+String(item.category||'research')+
+    ' · '+prettyTime(item.observed_at)+' · source not independently market-validated';
+  entry.append(title,details);
+  if(trusted){
+   const link=document.createElement('a');
+   link.href=src;link.target='_blank';link.rel='noopener noreferrer';
+   link.textContent='Review original source ↗';
+   entry.append(link);
+  }
+  target.append(entry);
  }
 }
 function badge(state){
@@ -115,9 +146,11 @@ function renderLive(){
   const state=integrations[key];
   const card=document.createElement('div');card.className='integration';
   const h=document.createElement('strong');h.textContent=title;
-  const chip=badge('not_published');chip.textContent='Not connected';
+  const active=key==='independent_watchdog'&&watchdogHistory?.collector_installed_and_fresh===true;
+  const chip=badge(active?'verified':'not_published');chip.textContent=active?'Fresh evidence':'Not connected';
   const p=document.createElement('small');
-  p.textContent=state?.reason||'No verified source has been connected.';
+  p.textContent=active?'Independent history is fresh; outbound alerts still need a tested notification connector.':
+    state?.reason||'No verified source has been connected.';
   card.append(h,chip,p);cards.append(card);
  }
 }
@@ -182,22 +215,144 @@ async function runChecks(){
   isChecking=false;button.disabled=false;button.textContent='↻ Run live checks';
  }
 }
+async function loadYorpMindOS(){
+ try{
+  const d=await fetchPrivateJson('/api/admin/yorpmind-os-v3');
+  if(d.schema_version!==2||d.source!=='private_yorpmind_monitoring_organization'||
+    d.monitor_only!==true||d.production_deployment_authorized!==false||
+    !Array.isArray(d.employees)||!Array.isArray(d.decision_briefs)||
+    !Array.isArray(d.founder_verified_feedback))
+   throw Error('YorpMind OS evidence unverified');
+  const summary=d.summary||{};
+  const active=d.actual_agent_inference_verified===true;
+  const bots=d.deterministic_evidence_bots_verified===true;
+  $('ym-ai-status').className='badge '+(active?'status-verified':bots?'status-reachable':'status-not_published');
+  $('ym-ai-status').textContent=active?'Private AI analysis recorded':bots?'Evidence bots active':'AI model not yet verified';
+  setText('ym-ai-summary',active?
+   'Private open-weight model analysis receipts exist. Proposals require independent human verification before any action.':
+   bots?'Deterministic YorpMind research and security bots are producing review briefs. No private open-weight AI inference has been verified yet.':
+   'Specialist roles are configured, but neither actual evidence-bot work nor private open-weight model inference has been independently verified.');
+  for(const [id,key] of [['ym-roles-count','configured_employees'],
+   ['ym-model-runs','completed_agent_runs'],
+   ['ym-bot-runs','completed_evidence_bot_reviews'],
+   ['ym-brief-count','pending_founder_reviews'],
+   ['ym-learning-count','verified_learning_records']])
+   setText(id,summary[key]??'—');
+  const roster=$('ym-roster');roster.replaceChildren();
+  for(const emp of d.employees){
+   const card=document.createElement('article');card.className='integration';
+   const name=document.createElement('strong');name.textContent=emp.agent_role;
+   const model=emp.activity==='has_completed_model_run';
+   const bot=emp.activity==='has_completed_evidence_bot_review';
+   const state=badge(model?'verified':bot?'reachable':'not_published');
+   state.textContent=model?'Private model run':bot?'Evidence bot review':'Configured only';
+   const detail=document.createElement('small');
+   detail.textContent=String(emp.department)+' · local open-weight model · observe & recommend only';
+   card.append(name,state,detail);roster.append(card);
+  }
+  if(!d.employees.length)roster.textContent='No verified specialist roster in isolated monitoring memory.';
+  renderRows('ym-brief-list',d.decision_briefs.slice(0,30),x=>({
+   label:x.title+' · '+x.classification,
+   detail:x.confidence+' · '+x.review_state+' · '+x.evidence_ref+
+    ' · next: '+x.proposed_next_step+' · verify: '+x.verification_plan
+  }),'No completed model findings. Public RSS and website checks alone are not AI employee analysis.');
+  renderRows('ym-lesson-list',d.founder_verified_feedback.slice(0,12),x=>({
+   label:x.outcome+' · '+x.source_brief_id,
+   detail:'Owner-reviewed feedback · '+prettyTime(x.recorded_at)
+  }),'No independently reviewed outcome records; self-improvement remains unverified.');
+ }catch{
+  $('ym-ai-status').className='badge status-degraded';
+  $('ym-ai-status').textContent='Unavailable';
+  setText('ym-ai-summary','YorpMind private analysis memory is not configured or could not be verified. Never assume AI employees are running.');
+  setText('ym-roster','Agent roster unavailable.');
+  setText('ym-brief-list','No verified AI brief history available.');
+  setText('ym-lesson-list','No verified learning history available.');
+ }
+}
+
+async function loadIndependentHistory(){
+ try{
+  const data=await fetchPrivateJson('/api/admin/evidence-history-v3');
+  if(data.schema_version!==1||data.source!=='independent_readonly_watchdog_history'||
+    data.monitor_only!==true||data.production_deployment_authorized!==false||
+    data.writes_permitted_from_headquarters!==false||
+    !Array.isArray(data.run_history)||!Array.isArray(data.observations)||
+    !Array.isArray(data.signals))throw Error('Invalid independent evidence');
+  watchdogHistory=data;
+  const fresh=data.collector_installed_and_fresh===true;
+  $('collector-badge').className='badge '+(fresh?'status-verified':'status-degraded');
+  $('collector-badge').textContent=fresh?'Running':'Not verified';
+  $('history-heartbeat').className='badge '+(fresh?'status-verified':'status-degraded');
+  $('history-heartbeat').textContent=fresh?'Fresh':'Stale / missing';
+  const when=data.latest_run?.finished_at||null;
+  const explanation=fresh?
+   'Latest external collection: '+prettyTime(when)+
+   ' · '+data.counts.recent_observations+' stored website observations.':
+   'No fresh independent heartbeat. '+(data.latest_run?
+    'Last run: '+prettyTime(when)+'.':'No external runs recorded.')+
+    ' Do not assume monitoring runs continuously.';
+  setText('collector-summary',explanation);
+  setText('history-status',explanation+' History contains public GET evidence, not tool execution or payment activity.');
+  renderRows('watchdog-run-list',data.run_history.slice(0,10),r=>({
+   label:r.status+' · '+prettyTime(r.started_at),
+   detail:'External scheduler · receipt '+String(r.id).slice(0,80)
+  }),'No independent scheduler runs have been recorded.');
+  renderRows('watchdog-observation-list',data.observations.slice(0,22),r=>({
+   label:String(r.target_id).replace(/^watch-target-/,'')+' · '+r.status,
+   detail:prettyTime(r.observed_at)+' · '+String(r.note||'').slice(0,190)
+  }),'No actual website history has been recorded.');
+  const market=data.signals.filter(x=>String(x.id).startsWith('market-hn-'));
+  const radar=data.signals.filter(x=>String(x.id).startsWith('radar-'));
+  const findings=data.signals.filter(x=>!String(x.id).startsWith('radar-')&&
+    !String(x.id).startsWith('market-hn-'));
+  renderRows('decision-signal-list',findings.slice(0,35),r=>({
+   label:'Priority '+r.priority+' · '+r.title,
+   detail:r.state+' · '+r.category+' · '+String(r.evidence_ref).slice(0,220)+
+    ' · '+prettyTime(r.observed_at)
+  }),'No independent risk findings yet; absence does not prove an all-clear.');
+  setText('market-source-status',market.length?
+   market.length+' public Ask HN / Show HN research leads found. None represents independently validated customer demand or revenue.':
+   'No independently sourced market research candidates yet. A daily scan must complete before drawing conclusions.');
+  renderResearchCandidates('market-candidate-list',market,'market');
+  setText('technology-source-status',radar.length?
+   radar.length+' public technology/security changelog candidates collected. None is verified business demand.':
+   'No public changelog candidates yet. Feed freshness and daily schedule must be verified.');
+  renderResearchCandidates('radar-candidate-list',radar,'radar');
+  if(latest)renderLive();
+ }catch{
+  watchdogHistory=null;
+  $('collector-badge').className='badge status-degraded';
+  $('collector-badge').textContent='Unavailable';
+  setText('collector-summary','Independent history could not be verified. Continuous monitoring is NOT certified.');
+  setText('history-status','Independent persisted evidence unavailable; no production changes were made.');
+  setText('decision-signal-list','Independent founder review evidence is unavailable.');
+  setText('technology-source-status','Technology radar has not produced verified source candidates.');
+  setText('market-source-status','Public problem/product candidate history is unavailable.');
+  setText('market-candidate-list','No verified public market leads available.');
+  setText('radar-candidate-list','No verified technology candidates available.');
+ }
+}
+
 async function loadStagingEvidence(){
  try{
   const data=await fetchPrivateJson('/api/admin/monitor-only-v3');
   if(data.schema_version!==1||data.monitor_only!==true||
     data.source!=='isolated_monitor_schema'||data.environment!=='isolated_preview_only')
    throw Error('Unverified staging schema.');
-  for(const [id,name] of [['targets-count','targets'],
-   ['observations-count','observations'],['signals-count','signals'],
-   ['runs-count','observation_runs']])setText(id,data.counts?.[name]??'—');
-  renderRows('target-list',data.targets,x=>({
+  const syntheticTargets=(data.targets||[]).filter(x=>String(x.id).startsWith('synthetic-'));
+  const syntheticObservations=(data.observations||[]).filter(x=>String(x.id).startsWith('synthetic-'));
+  const syntheticSignals=(data.signals||[]).filter(x=>String(x.id).startsWith('synthetic-'));
+  const syntheticRuns=(data.recent_runs||[]).filter(x=>String(x.id).startsWith('synthetic-'));
+  for(const [id,count] of [['targets-count',syntheticTargets.length],
+   ['observations-count',syntheticObservations.length],['signals-count',syntheticSignals.length],
+   ['runs-count',syntheticRuns.length]])setText(id,count);
+  renderRows('target-list',syntheticTargets,x=>({
    label:x.label,detail:x.kind+' · '+(x.enabled?'tracked':'paused')
   }),'No synthetic targets.');
-  renderRows('signal-list',data.signals,x=>({
+  renderRows('signal-list',syntheticSignals,x=>({
    label:x.title,detail:x.category+' · priority '+x.priority+' · '+x.state
-  }),'No staging intelligence examples.');
-  renderRows('observation-list',data.observations,x=>({
+  }),'No synthetic intelligence examples.');
+  renderRows('observation-list',syntheticObservations,x=>({
    label:x.target_id+' · '+x.status,
    detail:x.evidence_kind+' · '+x.observed_at+' · '+(x.note||'')
   }),'No synthetic observations.');
@@ -214,7 +369,9 @@ for(const button of document.querySelectorAll('[data-view]'))
 $('run-checks').addEventListener('click',runChecks);
 selectView('live');
 loadStagingEvidence();
+loadIndependentHistory();
+loadYorpMindOS();
 runChecks();
 // Page-visible refresh only. This is NOT an independent always-on watchdog.
-setInterval(()=>{if(document.visibilityState==='visible')runChecks();},120000);
+setInterval(()=>{if(document.visibilityState==='visible'){runChecks();loadIndependentHistory();loadYorpMindOS();}},120000);
 })();

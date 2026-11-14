@@ -35,6 +35,57 @@ Historical **website-preview** files still exist here: root `index.html`, `app.j
 
 `brand/`, `functions/_lib/`, `functions/_middleware.js`, `migrations/`, root configuration and generic tests/docs are **shared/ambiguous**. Never assume ownership or copy secrets/data between projects.
 
+## YorpMind autonomous AI organization — founder mandate (14 November 2026)
+
+YorpMind is the continually improving PRIVATE AI OS that manages a
+specialist agentic company for monitoring and researching YorpHives
+Website **and Headquarters**, discovering global product and agent traffic
+opportunities, and investigating revenue, security and operational risks.
+This must not collapse into a static dashboard or cron-only health checks.
+See `docs/YORPMIND-AI-OS-AGENTIC-ORGANIZATION.md` and
+`staging/yorpmind-readonly-os-v2.sql`. Six specialist employees use
+swappable LOOPBACK-only private open-weight inference when actually
+provisioned, and source-linked shared feedback memory. Never describe
+a configured employee as actively analyzing if private-model run
+receipts are absent. The AI OS can only propose improvements; it cannot
+mutate its own source or permissions, repair websites or deploy.
+
+## Founder-approved YorpMind mission — permanent
+YorpMind is the continually improving **AI operating system of a
+private autonomous monitoring and business intelligence organization**,
+NOT a static admin dashboard or production execution agent. It leads
+six departments: engineering & reliability, security, worldwide market
+research, user/agent traffic & product growth, revenue research and
+YorpMind evolution. Bots and optional *self-hosted* open-weight
+specialists continuously investigate BOTH YorpHives Website and HQ,
+discover internet opportunities and propose founder-reviewed improvements.
+All decisions have source timestamps, evidence, risk, and independent
+verification. Bot-only receipts cannot be represented as AI inference.
+Founder-reviewed learning may refine future proposals, never self-approve
+code or release privileges. See
+`docs/YORPMIND-AGENTIC-ORGANIZATION.md`.
+
+## Evidence-driven Headquarters foundation — active development (14 November 2026)
+
+A separate scheduled monitoring collector is staged under `monitoring/`.
+Only it may write **sanitized read-only-observation evidence** into the
+**isolated preview** D1. Headquarters Pages Functions remain GET-only for
+evidence and never receive GitHub/Cloudflare provider write or publishing
+credentials. A stale/missing collector heartbeat is NOT reported as healthy;
+synthetic fixtures remain separate. Public changelog items are unvalidated
+research candidates; revenue, actual market demand, vulnerability scans,
+outbound alerts and real agent payment are never invented.
+
+Deployment safety: the new collector is staging-only, no Workers URL/route,
+and restricted to D1 `a5aa51d7-98c0-4adb-a304-0f4f555e01f5`. No
+canonical D1 `e8690813-b139-44a2-a1c7-bea2d2777ead`, privileged
+Agent Worker, repair/Go Live path or private service binding may be present.
+Never change the running HQ or website, or install the release executor,
+without the founder's explicit reviewed-preview + OTP workflow.
+The provider-neutral Node+SQLite alternative is in
+`monitoring/self-host-collector.mjs`; installation on an actual private
+server must be verified separately. Read `monitoring/README.md`.
+
 ## Permanent agentic-internet design mandate (Cloudflare Connect 2026)
 
 **Founder requirement:** Both website and Headquarters must support the open
