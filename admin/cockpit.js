@@ -128,7 +128,14 @@
         // Reuse the application's authenticated client and standard error state.
         const data = await api("/api/admin/cockpit");
         render(data);
-      } catch { unavailable(); }
+        // Read-only handoff to the optional social-style founder digest.
+        // Never fetch a second time or give the feed additional permissions.
+        window.dispatchEvent(new CustomEvent("yorphives:cockpit-evidence",{detail:data}));
+      } catch {
+        unavailable();
+        // Clear a stale feed when its source becomes unavailable.
+        window.dispatchEvent(new CustomEvent("yorphives:cockpit-evidence",{detail:null}));
+      }
       finally {
         button.disabled = false;
         button.removeAttribute("aria-busy");

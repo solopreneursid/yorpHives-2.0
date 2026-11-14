@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="/admin/headquarters-refined.css">
 <link rel="stylesheet" href="/admin/headquarters-prism-theme.css">
 <link rel="stylesheet" href="/admin/cockpit.css">
+<link rel="stylesheet" href="/admin/founder-pulse.css">
 </head>
 <body>
 <div class="app-shell">
@@ -114,6 +115,54 @@
           <strong id="cockpit-memory">—</strong><small id="cockpit-memory-note">Reading YorpMind memory</small>
         </button>
       </div>
+
+      <section class="hq-pulse" id="hq-pulse" aria-labelledby="hq-pulse-title">
+        <div class="hq-pulse-heading">
+          <div><span class="hq-pulse-overline">THE HIVE / YOUR DAILY DIGEST</span><h2 id="hq-pulse-title">Your daily pulse<span aria-hidden="true"> ✦</span></h2>
+            <p>The important updates first. Like a familiar feed, backed by your private records.</p></div>
+          <span class="hq-pulse-identity"><i aria-hidden="true"></i> HEADQUARTERS · PRIVATE</span>
+        </div>
+        <div class="hq-pulse-layout">
+          <div class="hq-pulse-main">
+            <div class="hq-pulse-toolbar">
+              <div class="hq-pulse-compose"><span class="hq-pulse-compose-icon" aria-hidden="true">Y</span>
+                <div><strong>What has Headquarters noticed?</strong><small>Updates arrive here. You decide what to act on.</small></div>
+                <button type="button" class="hq-pulse-refresh" id="hq-pulse-refresh">↻ Refresh</button>
+              </div>
+              <div class="hq-pulse-tabs" role="tablist" aria-label="Filter Headquarters updates">
+                <button type="button" role="tab" aria-controls="hq-pulse-feed" aria-selected="true" tabindex="0" data-pulse-filter="all">✦ For you</button>
+                <button type="button" role="tab" aria-controls="hq-pulse-feed" aria-selected="false" tabindex="-1" data-pulse-filter="attention">⚑ Needs attention</button>
+                <button type="button" role="tab" aria-controls="hq-pulse-feed" aria-selected="false" tabindex="-1" data-pulse-filter="work">▤ Work &amp; activity</button>
+                <button type="button" role="tab" aria-controls="hq-pulse-feed" aria-selected="false" tabindex="-1" data-pulse-filter="discover">◇ Discover</button>
+              </div>
+            </div>
+            <p id="hq-pulse-status" class="hq-pulse-status" role="status" aria-live="polite">Reading private Headquarters records…</p>
+            <div id="hq-pulse-feed" class="hq-pulse-feed" role="feed" aria-label="Headquarters recorded updates" aria-busy="true">
+              <div class="hq-pulse-empty"><strong>Connecting to your private workspace…</strong><p>Only verified stored observations appear here.</p></div>
+            </div>
+            <p class="hq-pulse-footer">Read-only snapshot · Research hypotheses are not proven demand · No automatic fixes or publishing.</p>
+          </div>
+          <aside class="hq-pulse-aside" aria-label="Quick status and safe actions">
+            <section class="hq-pulse-side-card">
+              <span class="hq-pulse-overline">WATCHTOWER</span><h3>Website monitoring</h3>
+              <strong id="hq-pulse-monitor-summary">Loading…</strong><p id="hq-pulse-monitor-note">Checking recorded observations…</p>
+              <button type="button" data-pulse-route="monitoring">See all checks ↗</button>
+            </section>
+            <section class="hq-pulse-side-card">
+              <span class="hq-pulse-overline">FOR YOUR EYES</span><h3>Review queue</h3>
+              <strong id="hq-pulse-attention">Loading…</strong>
+              <p>Priorities are suggestions; evidence stays available for your decision.</p>
+              <button type="button" data-pulse-route="issues">Open problem inbox ↗</button>
+            </section>
+            <section class="hq-pulse-side-card hq-pulse-release">
+              <span class="hq-pulse-safe">🔒 FOUNDER ONLY</span><h3>Publishing stays in your hands.</h3>
+              <p>Review the exact target preview before any Go Live request. An OTP is required.</p>
+              <button type="button" data-pulse-route="releases">Review releases ↗</button>
+              <p class="hq-pulse-note">Headquarters reports. You fix and approve.</p>
+            </section>
+          </aside>
+        </div>
+      </section>
       <div class="cockpit-overview">
         <section class="cockpit-next" aria-labelledby="cockpit-next-title">
           <div class="cockpit-section-label"><span class="cockpit-spark" aria-hidden="true">✦</span> YOUR NEXT STEP <span class="cockpit-evidence-tag">FROM YOUR RECORDS</span></div>
@@ -1052,6 +1101,13 @@
 </main>
 </div>
 
+<nav class="hq-mobile-dock" aria-label="Quick Headquarters navigation">
+  <button type="button" data-pulse-route="headquarters" aria-current="page"><span aria-hidden="true">⌂</span>Home</button>
+  <button type="button" data-pulse-route="issues"><span aria-hidden="true">⚑</span>Inbox</button>
+  <button type="button" data-pulse-route="intelligence"><span aria-hidden="true">✦</span>Discover</button>
+  <button type="button" data-pulse-route="releases"><span aria-hidden="true">⇧</span>Releases</button>
+</nav>
+
 <script src="/admin/admin.js" defer></script>
 <script src="/admin/incident-workspace.js" defer></script>
 <script src="/admin/website-proof.js" defer></script>
@@ -1078,5 +1134,6 @@
 <script src="/admin/business-intelligence.js" defer></script>
 <script src="/admin/headquarters-refined.js" defer></script>
 <script src="/admin/cockpit.js" defer></script>
+<script src="/admin/founder-pulse.js" defer></script>
 </body>
 </html>

@@ -331,6 +331,34 @@ async function main() {
       cockpit.counts.join(",") === "5,3,5,2" && cockpit.optionalClosed &&
       cockpit.heading?.includes("Today at Headquarters"),
       "A single founder heading and source-backed counts keep optional detail collapsed.");
+
+    await page.waitForFunction(() =>
+      document.querySelectorAll("#hq-pulse-feed .hq-pulse-post").length >= 4,
+    null, {timeout:TIMEOUT});
+    const pulse = await page.evaluate(() => ({
+      count:document.querySelectorAll("#hq-pulse-feed .hq-pulse-post").length,
+      readiness:document.getElementById("hq-pulse-status")?.dataset.state,
+      monitor:document.getElementById("hq-pulse-monitor-summary")?.textContent,
+      posted:[...document.querySelectorAll("#hq-pulse-feed .hq-pulse-post h3")].map(x=>x.textContent)
+    }));
+    check("pulse:source-backed-home",
+      pulse.count >= 4 && pulse.readiness === "ready" &&
+      pulse.monitor.includes("6 / 7") && pulse.posted.some(x=>x.includes("monitoring")),
+      "The founder feed shows the same synthetic monitored evidence, labeled as recorded rather than live.");
+    await page.locator('[data-pulse-filter="attention"]').click();
+    const attentionFilter = await page.evaluate(() => ({
+      selected:document.querySelector('[data-pulse-filter="attention"]')?.getAttribute("aria-selected"),
+      posts:[...document.querySelectorAll("#hq-pulse-feed .hq-pulse-post")].map(x=>x.dataset.kind)
+    }));
+    check("pulse:filter-attention",
+      attentionFilter.selected === "true" && attentionFilter.posts.length > 0 &&
+      attentionFilter.posts.every(kind=>kind==="attention"),
+      "The feed filter only changes presentation, never runs a new job.");
+    await page.locator('[data-pulse-filter="attention"]').press("ArrowRight");
+    check("pulse:keyboard-filters",
+      await page.locator('[data-pulse-filter="work"]').getAttribute("aria-selected") === "true",
+      "Arrow keys can move between feed tabs.");
+    await page.locator('[data-pulse-filter="all"]').click();
     check("cockpit:next-action-enabled",
       await page.locator("#cockpit-next-action").isEnabled() &&
       (await page.locator("#cockpit-next-title").textContent()).includes("critical"),
@@ -365,6 +393,11 @@ async function main() {
       (await page.locator("#cockpit-missions").textContent()) === "—" &&
       await page.locator("#cockpit-refresh").isEnabled(),
       "An unavailable backend must clear stale totals and leave a usable retry action.");
+
+    check("pulse:outage-clears-stale-records",
+      await page.locator("#hq-pulse-status").getAttribute("data-state") === "unavailable" &&
+      await page.locator("#hq-pulse-feed .hq-pulse-post").count() === 0,
+      "A failed read must clear the previously displayed digest rather than showing stale success.");
     await page.unroute("**/api/admin/cockpit",failedCockpit);
     await page.locator("#cockpit-refresh").click();
     await page.waitForFunction(() =>
@@ -394,6 +427,11 @@ async function main() {
       (await page.locator("#cockpit-missions").textContent()) === "5" &&
       (await page.locator("#cockpit-skills").textContent()) === "—",
       "Missing memory must not erase missions or pretend the missing counters are zero.");
+
+    check("pulse:partial-evidence-honest",
+      await page.locator("#hq-pulse-status").getAttribute("data-state") === "partial" &&
+      await page.locator("#hq-pulse-feed .hq-pulse-post").count() > 0,
+      "One unavailable source is labeled partial without discarding available evidence.");
     await page.unroute("**/api/admin/cockpit",partialCockpit);
     await page.locator("#cockpit-refresh").click();
     await page.waitForFunction(() =>
@@ -471,6 +509,16 @@ async function main() {
     await measure(page, 390, 844, "headquarters");
     await screenshot(page, "05-mobile-home.png");
 
+
+    check("pulse:mobile-dock-visible",
+      await page.locator('.hq-mobile-dock [data-pulse-route="issues"]').isVisible(),
+      "Mobile offers direct Home / Inbox / Discover / Releases navigation.");
+    await page.locator('.hq-mobile-dock [data-pulse-route="issues"]').click();
+    check("pulse:mobile-dock-navigation",
+      await page.locator("#view-issues").isVisible() &&
+      await page.locator('.hq-mobile-dock [data-pulse-route="issues"]').getAttribute("aria-current") === "page",
+      "Mobile navigation opens the existing Inbox with the right active state.");
+    await navigate(page,"headquarters");
     // The founder can choose either helper. These are pure local UI actions:
     // do not paste secrets, send chat messages, start workers or create jobs.
     await page.locator(".cockpit-reference > summary").click();
