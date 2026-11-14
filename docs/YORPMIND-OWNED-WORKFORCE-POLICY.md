@@ -103,3 +103,30 @@ deployed bindings and secrets have not been inspected or revoked.
 **Critical:** a worker returning `monitor_only` does not prove the deployed
 credential itself is read-only. A successful CI run cannot prove it either.
 No production deployment or credential rotation was performed by this change.
+
+### Token revocation and tokenless public issue evidence (November 14)
+
+The founder confirmed deletion of the former GitHub **YorpHives Repair Agent**
+fine-grained PAT (previously allowing Actions, code and pull-request writes).
+Connected Cloudflare inspection showed the `GITHUB_TOKEN` secret removed from
+the saved Worker settings, while the historical deployment remained active.
+Do not infer that a saved configuration is serving traffic.
+
+The repository `solopreneursid/yorpHives-2.0` was verified as public.
+The revised read-only `/issue-inbox` Worker performs an unauthenticated
+**GET** to GitHub's public issues API, with no token dependency. This is
+direct public-source access, not MCP or a third-party AI provider.
+Normal GitHub API quotas and outages may make evidence temporarily unavailable;
+the UI must report that as unavailable, never claim an empty issue list.
+If the repository becomes private, the design must be reviewed instead of
+silently reintroducing a write-capable token.
+
+The retired `/health` endpoint intentionally returns HTTP 503
+(`retired_pending_cloudflare_cleanup`), not a false healthy claim. It does
+not imply that uptime monitoring itself has failed.
+
+**Uncompleted:** the deployed Worker source has not been replaced with the
+hardened branch, obsolete workflow/AI/DB bindings have not been detached from
+the active Worker, and historical Workflow instances have not been audited.
+The saved token-free Cloudflare version is *not* the same as this hardened
+source revision. Never promote it as though it contains the newer code.
