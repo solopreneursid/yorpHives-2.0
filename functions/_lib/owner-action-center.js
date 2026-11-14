@@ -34,14 +34,14 @@ export function founderActionQueue(facts, now = new Date()) {
     const code = failureCode(job.result_json);
     add("failed-" + job.job_id, "attention", "Team: investigate a failed specialist mission",
       "A recorded AI mission failed (" + code + "). No successful brief was stored.",
-      "Engineering can inspect and test a fix in staging within existing budgets. No founder production approval is needed for investigation.",
+      "Review the failed recommendation and evidence. If a code fix is useful, investigate and implement it separately outside Headquarters.",
       "headquarters", "failed");
   }
   const reviews = ownerJobs.filter(j => j.status === "awaiting_owner_approval");
   if (reviews.length) add("review-briefs", "planning", "Team working brief: " + reviews.length + " draft" +
       (reviews.length === 1 ? "" : "s"),
       "These are unverified drafts, not production approval requests.",
-      "YorpMind can continue evaluating and improving drafts. Founder review is optional until a production-ready release exists.",
+      "YorpMind can continue evaluating research drafts; you decide whether to act and implement changes outside Headquarters.",
       "headquarters", "review");
   const rehearsal = rehearsals[0];
   if (rehearsal && ["awaiting_owner_approval", "failed"].includes(rehearsal.status))
@@ -51,20 +51,20 @@ export function founderActionQueue(facts, now = new Date()) {
       "Open Staging rehearsals and expand Check mission evidence. Review the recorded steps; do not acknowledge it as an owner brief or approve production.",
       "headquarters", "staging");
   if (Number(facts.repairReviewCount) > 0)
-    add("repair-review", "attention", "Team: verify repair candidates",
+    add("repair-review", "attention", "Inspect earlier repair investigations",
       facts.repairReviewCount + " repair proposal(s) still need independent verification, not founder approval.",
-      "Engineering and QA should complete checks and prepare a verified preview. Escalate to the founder only when release-ready.",
-      "releases");
+      "Inspect saved QA evidence. Independently reproduce and fix issues in the appropriate development repository if needed.",
+      "investigations");
   if (Number(facts.pendingMfaCount) > 0)
     add("mfa-release", "attention", "Legacy temporary-access request",
       facts.pendingMfaCount + " legacy privilege request(s) remain pending. These are not production-ready release approvals.",
-      "No assistant needs administrator rights for isolated development. Ignore or revoke legacy requests; Go Live approval is separate.",
-      "releases");
+      "Review archived access requests and revoke any remaining legacy permissions in Security. Headquarters cannot grant publishing rights.",
+      "security");
   const failedReviews = Number(facts.pendingTeamReports) || 0;
   if (failedReviews > 0)
     add("manager-reports", "attention", "Review YorpMind team reports",
       failedReviews + " supervisor recommendation(s) need review. They are not approved changes.",
-      "YorpMind can triage and improve these suggestions within the development environment; your release approval is not needed.",
+      "YorpMind can continue researching and explaining the findings. It cannot change production software.",
       "yorpmind");
   if (facts.teamSchemaReady === false)
     add("team-schema", "attention", "Finish the private team database rollout",
@@ -103,6 +103,6 @@ export function founderActionQueue(facts, now = new Date()) {
       pending_release_mfa: Number(facts.pendingMfaCount) || 0,
       pending_team_reports: failedReviews
     },
-    limitations: "Private D1 evidence only. Up to 50 recent missions were sampled. No live GitHub CI, production health, preview-to-SHA attestation, MFA enforcement or billing was independently verified. This read-only queue cannot authorize actions."
+    limitations: "Private D1 evidence only. Up to 50 recent missions were sampled. No live GitHub CI, functional production coverage or actual billing was independently verified. This queue can only recommend founder decisions."
   };
 }
