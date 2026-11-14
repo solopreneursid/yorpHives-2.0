@@ -12,6 +12,7 @@
  */
 import {runLiveWebsiteSnapshot,LIVE_WEBSITE_TARGETS} from '../admin-monitor/live-website-evidence.js';
 import {collectTechnologyCandidates,storeTechnologyCandidates} from './open-technology-radar.mjs';
+import {collectMarketCandidates,storeMarketCandidates} from './market-demand-sources.mjs';
 
 const TARGET_KIND=Object.freeze({website:'website',security:'security'});
 const MONITOR_SOURCE='hq-staging-independent-watchdog-v1';
@@ -145,8 +146,13 @@ export default {
    if(event.cron==='0 2 * * *'){
     const report=await collectTechnologyCandidates();
     const result=await storeTechnologyCandidates(env.DB,report);
-    console.log(JSON.stringify({event:'staging-technology-radar',
-      candidates:result.candidate_count,unverified_sources:result.source_failures.length}));
+    const market=await collectMarketCandidates();
+    const research=await storeMarketCandidates(env.DB,market);
+    console.log(JSON.stringify({event:'staging-technology-and-market-radar',
+      technology_candidates:result.candidate_count,
+      product_problem_candidates:research.total,
+      failed_public_feeds:result.source_failures.length+research.failed_sources.length,
+      actual_market_demand_validated:false,revenue_verified:false}));
    }else if(event.cron==='*/5 * * * *'){
     const snapshot=await runLiveWebsiteSnapshot();
     const outcome=await persistMonitoringSnapshot(env.DB,snapshot);
