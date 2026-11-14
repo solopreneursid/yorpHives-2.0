@@ -52,7 +52,7 @@
         ". Individual product workflows have not been tested.",
         "API NEEDS REVIEW","alert");
     } else if (checks.length === 2 &&
-        checks.every(item => item.reason === "catalogue_contract_verified")) {
+        checks.every(item => item.reason === "catalogue_sources_match")) {
       show("products","Catalogues in sync",
         "Two published website tool lists agree on active tool slugs · observed "+when+
         ". This does not establish that any individual workflow works.",
