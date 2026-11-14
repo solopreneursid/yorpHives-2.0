@@ -2,7 +2,7 @@
  * No URLs, cookies, tokens or error messages may appear in the saved evidence.
  * This file is managed by the watchdog process, NOT the HQ application.
  */
-import { mkdir, open, rename, unlink } from 'node:fs/promises';
+import { mkdir, open, rename, unlink, lstat } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { dirname, isAbsolute } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -47,6 +47,14 @@ function cleanSnapshot(snapshot) {
     interval_ms:snapshot.interval_ms,observations,
     state:observations.some(item=>item.state==='degraded') ? 'degraded' : 'observed'};
 }
+async function safePrivateDirectory(folder) {
+  const info = await lstat(folder);
+  if (!info.isDirectory() || info.isSymbolicLink() ||
+      (info.mode & 0o077) !== 0 ||
+      (typeof process.getuid === 'function' && info.uid !== process.getuid()))
+    throw Error('Watchdog status directory is not owner-private');
+}
+
 function filePath(value) {
   if (typeof value !== 'string' || !isAbsolute(value) || !value.endsWith('.json') ||
       value.includes('\0')) throw Error('Watchdog status file must be an absolute JSON file');
@@ -61,6 +69,7 @@ export async function writeWatchdogEvidence(path, snapshot) {
   if (Buffer.byteLength(data) > WATCHDOG_EVIDENCE_LIMIT) throw Error('Watchdog snapshot too large');
   const folder = dirname(destination);
   await mkdir(folder,{recursive:true,mode:0o700});
+  await safePrivateDirectory(folder);
   const staging = destination + '.' + randomBytes(8).toString('hex') + '.tmp';
   try {
     const file = await open(staging,'wx',0o600);
@@ -77,6 +86,7 @@ export async function readWatchdogEvidence(path,{ now = Date.now() } = {}) {
     repairs_authorized:false,production_execution_enabled:false};
   try {
     const destination = filePath(path);
+    await safePrivateDirectory(dirname(destination));
     // O_NOFOLLOW + fstat on the same descriptor closes the symlink swap
     // window between a separate lstat() and open(). Reject permissive files.
     const file = await open(destination,constants.O_RDONLY|constants.O_NOFOLLOW);
