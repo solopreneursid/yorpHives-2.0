@@ -102,7 +102,17 @@ export const REQUIRED_COMPONENTS = Object.freeze([
   ".github/workflows/security.yml",
   ".github/workflows/site-quality.yml",
   ".github/workflows/admin-staging-quality.yml",
-  "scripts/admin-smoke.mjs"
+  "scripts/admin-smoke.mjs",
+  "scripts/headquarters-production-gate.mjs",
+  "functions/_lib/hq-resource-isolation.js",
+  "functions/api/admin/watchdog-status.ts",
+  "self-host/watchdog.mjs",
+  "self-host/watchdog-evidence.mjs",
+  "self-host/catalogue-contract.mjs",
+  "admin/independent-watchdog.js",
+  "admin/inbox-triage.css",
+  "docs/HEADQUARTERS-MONITORING-ONLY-POLICY.md",
+  "docs/HEADQUARTERS-FUNCTIONAL-WATCHDOG-INBOX.md"
 ]);
 
 export const APPROVED_DIRECT_PACKAGES = Object.freeze([
@@ -155,7 +165,7 @@ export async function assessHeadquarters(root) {
   add("headquarters-migrations", missing.length === 0 && duplicates.length === 0,
     missing.length || duplicates.length ?
       "Missing migration IDs: " + missing.join(", ") + "; duplicate IDs: " + duplicates.join(", ") :
-      "Migrations 0004–0030 exist with unique IDs; the new isolated release OTP migration still requires private D1 backup, restore and staging application checks");
+      "Migrations 0004–0030 exist with unique IDs. Historical OTP migration 0030 is archival only; do NOT apply migrations to a shared preview/canonical D1. Private backup/restore and a separate staging database are required.");
 
   let workflow = "";
   try {
@@ -176,21 +186,15 @@ export async function assessHeadquarters(root) {
     rehearsalConfig?.name === "yorphives-hq-mission-rehearsal" &&
     rehearsalConfig?.main === "./staging-rehearsal-entry.js" &&
     rehearsalConfig?.workers_dev === false &&
-    rehearsalConfig?.ai?.binding === "AI" &&
-    Array.isArray(rehearsalConfig?.d1_databases) &&
-    rehearsalConfig.d1_databases.length === 1 &&
-    rehearsalConfig.d1_databases[0]?.binding === "DB" &&
-    rehearsalConfig.d1_databases[0]?.database_id === "e8690813-b139-44a2-a1c7-bea2d2777ead" &&
-    Array.isArray(rehearsalConfig?.workflows) &&
-    rehearsalConfig.workflows.length === 1 &&
-    rehearsalConfig.workflows[0]?.name === "yorphives-hq-missions-rehearsal" &&
-    rehearsalConfig.workflows[0]?.class_name === "MissionWorkflow" &&
-    rehearsalConfig.workflows[0]?.binding === "MISSION_WORKFLOW" &&
+    rehearsalConfig?.preview_urls === false &&
+    !rehearsalConfig?.ai &&
+    (!rehearsalConfig?.d1_databases || rehearsalConfig.d1_databases.length === 0) &&
+    (!rehearsalConfig?.workflows || rehearsalConfig.workflows.length === 0) &&
     !rehearsalConfig?.triggers &&
     !rehearsalConfig?.routes
   );
   add("rehearsal-worker-isolation", rehearsalPolicy,
-    "The rehearsal must use one preview D1, an isolated one-concurrency Workflow, no public subdomain or routes and no production Worker binding");
+    "Retired rehearsal configuration must have NO D1, AI, Workflows, public subdomains, triggers or routes. Never reuse Headquarters data or compute privileges for archived release experiments.");
   let rehearsalEntry = "";
   try {
     rehearsalEntry = await readFile(join(root, "hq-engine/staging-rehearsal-entry.js"), "utf8");
@@ -221,17 +225,19 @@ export async function assessHeadquarters(root) {
     static_checks_passed: failed.length === 0,
     checks,
     required_live_evidence: [
-      "Full cumulative diff review against main across all stacked Headquarters pull requests",
-      "Independent security review and authenticated owner-only mutation tests",
-      "Verified staging D1 migration, backup and restore rehearsal",
-      "Real repair-agent execution with regression test, independent QA and preview",
-      "Verified complete desktop and mobile owner approval flow",
-      "Cloudflare Workers, Workflows, D1 and Workers AI actual usage and cost review",
-      "Signed owner authorization for the exact production release commit",
-      "Post-deployment production health and rollback verification"
+      "Review the cumulative changes for every stacked Headquarters draft PR against main.",
+      "Verify the actual Cloudflare Pages project identity and that preview/canonical DB bindings use different physical D1 databases.",
+      "Test actual owner-only Cloudflare Access policies and anonymous denial for all Headquarters origins and deployment aliases.",
+      "Run authenticated, read-only browser QA against the exact reviewed commit in an isolated staging environment.",
+      "Prove a private backup can be restored into a disposable independent database with matching schema and rows.",
+      "Install a separate watchdog process; prove local scheduler readiness and independent regression/recovery alert delivery.",
+      "Verify the complete monitoring-only UI, historical 410 endpoints and absent automated repair, publishing and OTP actions.",
+      "Review required capacity, backup retention, operational access and any incremental infrastructure cost with the founder.",
+      "Founder makes an independent deployment decision; Headquarters cannot authorize or perform production publishing.",
+      "After any independently authorized deployment, verify live authentication, monitoring data, uptime, rollback and recovery."
     ],
     policy: {
-      approved_services: ["Cloudflare", "ChatGPT/OpenAI", "GitHub free capabilities"],
+      approved_services: ["Existing Cloudflare infrastructure", "GitHub source control", "self-hosted open-source software"],
       new_external_paid_services: "prohibited_without_prior_owner_approval",
       production_auto_publish: false,
       cost_target_usd_monthly_incremental: 0,
@@ -259,7 +265,7 @@ export function formatMarkdown(report) {
     "",
     "## Cost and provider policy",
     "",
-    "Only Cloudflare, existing ChatGPT/OpenAI access, and free GitHub capabilities are approved. New paid external providers require explicit founder authorization. Monthly cost targets are operational preferences, not guaranteed provider billing caps.",
+    "The current Cloudflare/GitHub deployment footprint is historical infrastructure, not a mandate for proprietary providers. Prefer local open-source services; new paid resources require founder approval. Monthly cost targets are preferences, not billing caps.",
     ""
   ];
   return lines.join("\n");
