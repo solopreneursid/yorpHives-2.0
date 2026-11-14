@@ -9,7 +9,9 @@ const source = path => readFile(new URL(path, import.meta.url), "utf8");
 const moduleUrl = code => "data:text/javascript;base64," +
   Buffer.from(stripTypeScriptTypes(code)).toString("base64");
 const authUrl = moduleUrl(await source("../functions/_lib/admin-auth.ts"));
-const domainUrl = moduleUrl(await source("../functions/_lib/cockpit.js"));
+const coverageUrl = moduleUrl(await source("../functions/_lib/watchtower-coverage.js"));
+const domainUrl = moduleUrl((await source("../functions/_lib/cockpit.js"))
+  .replace('"./watchtower-coverage.js"',JSON.stringify(coverageUrl)));
 const routeUrl = moduleUrl((await source("../functions/api/admin/cockpit.ts"))
   .replace('"../../_lib/admin-auth"', JSON.stringify(authUrl))
   .replace('"../../_lib/cockpit.js"', JSON.stringify(domainUrl)));
@@ -69,6 +71,14 @@ test("cockpit counts the whole real schema, excludes rehearsals, and limits rece
     assert.equal(data.finances.operating_cost,null);
     assert.equal(data.finances.status,"not_connected");
     assert.equal(data.read_only,true);
+    assert.equal(data.sources.coverage.available,true);
+    assert.equal(data.coverage.scope,"recorded_http_reachability_only");
+    assert.equal(data.coverage.surfaces.website.configured,2);
+    assert.equal(data.coverage.surfaces.products.configured,2);
+    assert.equal(data.coverage.surfaces.headquarters.configured,2);
+    assert.equal(data.coverage.surfaces.headquarters.recent_passes,0);
+    assert.equal(data.coverage.headquarters_runtime_verified,false);
+    assert.equal(data.coverage.product_functionality_verified,false);
     assert.ok(data.next_actions.some(action=>action.id==="failed-missions"));
     assert.ok(data.next_actions.every(action=>["headquarters","issues","monitoring","intelligence","yorpmind"].includes(action.view)));
     assert.ok(queries.length<=12,"The overview uses a fixed number of queries, independent of record count");
@@ -102,6 +112,20 @@ test("monitor health uses only latest checks and distinguishes stale, absent, in
     assert.equal(data.sources.monitors.observed_at,"2026-11-13T11:30:00.000Z");
     assert.ok(data.next_actions.some(action=>action.id==="monitor-evidence"));
     assert.ok(data.next_actions.some(action=>action.id==="monitor-failures" && action.urgency==="urgent"));
+  }finally{db.close();}
+});
+
+test("missing monitor tables do not fake product or Headquarters health",async()=>{
+  const db=fixture();
+  try {
+    db.exec("DROP TABLE admin_checks");
+    db.exec("DROP TABLE admin_monitors");
+    const data=await cockpitSnapshot(adapter(db),now);
+    assert.equal(data.sources.monitors.available,false);
+    assert.equal(data.sources.coverage.available,false);
+    assert.equal(data.coverage,null);
+    assert.equal(data.availability,"partial");
+    assert.equal(data.metrics.monitors.enabled,null);
   }finally{db.close();}
 });
 
