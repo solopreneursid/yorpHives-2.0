@@ -6,6 +6,24 @@ sanitized evidence into a **physically isolated monitoring database**.
 It can never change production, repair source, approve a PR, dispatch agents,
 hold a GitHub token, deploy a website, settle payments or issue OTP.
 
+## YorpMind agentic-organization integration
+The founder's authoritative design is in
+`docs/YORPMIND-AGENTIC-ORGANIZATION.md`. The independent scheduler
+feeds six monitoring/research employee departments. Deterministic
+evidence bots prepare bounded review briefs. A private open-weight model
+can enrich them only through a separate self-hosted Node+SQLite runtime,
+and has **not been connected to live HQ**. Cloudflare staging D1 and
+private local SQLite are independent; their evidence is not synced
+without an authenticated, tested one-way bridge. Never call a
+configured agent an active inference employee.
+
+The daily fixed-source scan includes official Ask HN/Show HN public API
+problem/product discussions, as well as selected technology/security
+changelogs. Sources are hypotheses to validate, not verified worldwide
+market demand or revenue. An anonymous HQ Access challenge check is
+non-invasive and does not prove private APIs and application internals
+are healthy.
+
 ## What's implemented
 
 1. Every five minutes, `monitoring/staging-watchdog.worker.mjs` reads
