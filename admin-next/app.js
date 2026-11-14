@@ -6,7 +6,7 @@ let latest=null;
 let watchdogHistory=null;
 let selectedFilter='all';
 let isChecking=false;
-const views=['live','opportunities','history'];
+const views=['live','opportunities','yorpmind','history'];
 const statusName={
  verified:'Verified',reachable:'Reachable only',degraded:'Needs review',
  unavailable:'Unavailable',not_published:'Not published'
@@ -185,6 +185,57 @@ async function runChecks(){
   isChecking=false;button.disabled=false;button.textContent='↻ Run live checks';
  }
 }
+async function loadYorpMindOS(){
+ try{
+  const d=await fetchPrivateJson('/api/admin/yorpmind-os-v3');
+  if(d.schema_version!==2||d.source!=='private_yorpmind_monitoring_organization'||
+    d.monitor_only!==true||d.production_deployment_authorized!==false||
+    !Array.isArray(d.employees)||!Array.isArray(d.decision_briefs)||
+    !Array.isArray(d.founder_verified_feedback))
+   throw Error('YorpMind OS evidence unverified');
+  const summary=d.summary||{};
+  const active=d.actual_agent_inference_verified===true;
+  $('ym-ai-status').className='badge '+(active?'status-verified':'status-not_published');
+  $('ym-ai-status').textContent=active?'Private analysis recorded':'AI model not yet verified';
+  setText('ym-ai-summary',active?
+   'Private model analysis receipts have been recorded. Recommendations are evidence-linked, not approved actions.':
+   'Agent roles are configured in isolated staging. No completed private open-weight model inference has yet been independently verified.');
+  for(const [id,key] of [['ym-roles-count','configured_employees'],
+   ['ym-model-runs','completed_agent_runs'],
+   ['ym-brief-count','pending_founder_reviews'],
+   ['ym-learning-count','verified_learning_records']])
+   setText(id,summary[key]??'—');
+  const roster=$('ym-roster');roster.replaceChildren();
+  for(const emp of d.employees){
+   const card=document.createElement('article');card.className='integration';
+   const name=document.createElement('strong');name.textContent=emp.agent_role;
+   const state=badge(emp.activity==='has_completed_model_run'?'verified':'not_published');
+   state.textContent=emp.activity==='has_completed_model_run'?
+    'Analysis recorded':'Configured only';
+   const detail=document.createElement('small');
+   detail.textContent=String(emp.department)+' · local open-weight model · observe & recommend only';
+   card.append(name,state,detail);roster.append(card);
+  }
+  if(!d.employees.length)roster.textContent='No verified specialist roster in isolated monitoring memory.';
+  renderRows('ym-brief-list',d.decision_briefs.slice(0,30),x=>({
+   label:x.title+' · '+x.classification,
+   detail:x.confidence+' · '+x.review_state+' · '+x.evidence_ref+
+    ' · next: '+x.proposed_next_step+' · verify: '+x.verification_plan
+  }),'No completed model findings. Public RSS and website checks alone are not AI employee analysis.');
+  renderRows('ym-lesson-list',d.founder_verified_feedback.slice(0,12),x=>({
+   label:x.outcome+' · '+x.source_brief_id,
+   detail:'Owner-reviewed feedback · '+prettyTime(x.recorded_at)
+  }),'No independently reviewed outcome records; self-improvement remains unverified.');
+ }catch{
+  $('ym-ai-status').className='badge status-degraded';
+  $('ym-ai-status').textContent='Unavailable';
+  setText('ym-ai-summary','YorpMind private analysis memory is not configured or could not be verified. Never assume AI employees are running.');
+  setText('ym-roster','Agent roster unavailable.');
+  setText('ym-brief-list','No verified AI brief history available.');
+  setText('ym-lesson-list','No verified learning history available.');
+ }
+}
+
 async function loadIndependentHistory(){
  try{
   const data=await fetchPrivateJson('/api/admin/evidence-history-v3');
@@ -275,7 +326,8 @@ $('run-checks').addEventListener('click',runChecks);
 selectView('live');
 loadStagingEvidence();
 loadIndependentHistory();
+loadYorpMindOS();
 runChecks();
 // Page-visible refresh only. This is NOT an independent always-on watchdog.
-setInterval(()=>{if(document.visibilityState==='visible'){runChecks();loadIndependentHistory();}},120000);
+setInterval(()=>{if(document.visibilityState==='visible'){runChecks();loadIndependentHistory();loadYorpMindOS();}},120000);
 })();
