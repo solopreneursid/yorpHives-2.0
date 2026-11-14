@@ -113,8 +113,8 @@ test("monitor maintains safe findings while retired repair route never dispatche
   assert.match(monitor,/classification: "not_applicable"/);
   assert.match(router,/MONITOR_ONLY/);
   assert.match(router,/dispatch_performed: false/);
-  assert.match(worker,/readWorkersAiText\(response\)/);
-  assert.match(worker,/reasoning_effort: "medium"/);
-  assert.doesNotMatch(worker,/retries: \{ limit: 1/);
-  assert.equal((worker.match(/retries: \{ limit: 0/g)||[]).length,2);
+  assert.match(worker,/class AdminRepairWorkflow/);
+ assert.match(worker,/request\.method !== "GET"/);
+ assert.match(worker,/MONITOR_ONLY/);
+ assert.doesNotMatch(worker,/readWorkersAiText\(response\)|reasoning_effort|triggerPlatformChecks/);
 });
