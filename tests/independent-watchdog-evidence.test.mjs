@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm, readFile, stat, symlink, writeFile, chmod, link } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { writeWatchdogEvidence, readWatchdogEvidence } from '../self-host/watchdog-evidence.mjs';
 
 const date = '2026-11-14T02:00:00.000Z';
@@ -81,10 +81,7 @@ test('watchdog reports never trust group-readable, hardlinked or unsafe parent f
   await link(path,second);
   assert.equal((await readWatchdogEvidence(path,{now})).connected,false);
   await rm(second);
-  await chmod(join(path,'..'),0o755).catch(async()=>{
-    const {dirname}=await import('node:path');
-    await chmod(dirname(path),0o755);
-  });
+  await chmod(dirname(path),0o755);
   assert.equal((await readWatchdogEvidence(path,{now})).connected,false);
   await assert.rejects(()=>writeWatchdogEvidence(path,record()),/owner-private/);
 });
